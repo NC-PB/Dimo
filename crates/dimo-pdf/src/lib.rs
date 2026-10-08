@@ -4,6 +4,10 @@
 //! Current scope (T0.5): open a document from bytes, its SHA-256 (FR-DOC-07), sheet count and
 //! sheet sizes, and rendering a region of a sheet at a zoom level into an RGBA buffer.
 //!
+//! T0.6: text runs with geometry per sheet ([`Document::text_runs`], see [`TextRun`] for how
+//! characters are merged) and sheet classification from the page content
+//! ([`Document::analyze_sheet`], see [`SheetAnalysis`] for the rule).
+//!
 //! # Coordinates
 //!
 //! All geometry is in sheet space (AGENTS.md rule 4): PDF user units, origin at the top left of
@@ -38,10 +42,13 @@
 
 pub mod geometry;
 pub mod library;
+pub mod sheet_kind;
+pub mod text;
 
 mod engine;
 mod error;
 mod hash;
+mod page_space;
 mod raster;
 
 pub use engine::{Document, MAX_RENDER_SIDE, PdfEngine};
@@ -49,3 +56,5 @@ pub use error::PdfError;
 pub use geometry::{SheetRect, SheetSize};
 pub use hash::ContentHash;
 pub use raster::RgbaImage;
+pub use sheet_kind::{FontInfo, MIN_TEXT_CHARS, RASTER_COVERAGE, SheetAnalysis};
+pub use text::TextRun;
