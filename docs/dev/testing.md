@@ -17,7 +17,8 @@
 - Every bug fix comes with a test that fails without the fix.
 - Snapshot changes are reviewed, never blindly accepted.
 - Tests must not need the network. PDFium is loaded from `vendor/pdfium/`; tests that need it
-  are skipped with a clear message if it is missing, and CI always provides it.
+  are skipped with a clear message if it is missing, and CI always provides it. With `CI=true` or
+  `DIMO_REQUIRE_PDFIUM=1` a missing library fails these tests instead of skipping them.
 - Corpus based tests reference drawings by file name and verify the SHA-256 from `PROVENANCE.md`.
 - `corpus/drawings/test_drawing_1.pdf` is a required regression test: it has a real text layer
   (74 text objects) that some libraries fail to see. Sheet classification must report `vector_text`.

@@ -10,7 +10,7 @@
 | Tauri CLI | 2.x, pinned in `apps/desktop/package.json` | installed by `pnpm install` |
 | cargo-deny | latest | `cargo install --locked cargo-deny` |
 | cargo-insta | latest | `cargo install --locked cargo-insta` |
-| PDFium binaries | pinned in `scripts/pdfium.toml` | `./scripts/fetch-pdfium.sh` (task T0.5) |
+| PDFium binaries | pinned in `scripts/pdfium.toml` | `./scripts/fetch-pdfium.sh`, on Windows `./scripts/fetch-pdfium.ps1` |
 
 If `corepack enable` fails with a permission error (Node installed under `/usr/local`), put the
 shims into a directory you own that is on your `PATH`:
@@ -28,6 +28,35 @@ pnpm install
 ./scripts/check.sh
 pnpm -C apps/desktop tauri dev
 ```
+
+## PDFium
+
+`dimo-pdf` loads PDFium as a shared library at runtime (ADR 0005). The release and the SHA-256
+of every archive are pinned in `scripts/pdfium.toml`.
+
+```sh
+./scripts/fetch-pdfium.sh              # host platform, into vendor/pdfium/<target>/
+./scripts/fetch-pdfium.sh --all        # all six targets (packaging)
+./scripts/fetch-pdfium.sh linux-arm64  # named targets
+```
+
+The scripts verify the checksum before unpacking and skip targets that are already installed,
+so running them again is cheap. Targets: `mac-arm64`, `mac-x64`, `win-x64`, `win-arm64`,
+`linux-x64`, `linux-arm64`.
+
+Where `dimo-pdf` looks for the library, first match wins:
+
+1. a path passed by the caller (the installed app passes its bundled library),
+2. `DIMO_PDFIUM_PATH`: the library file or the directory that contains it,
+3. `vendor/pdfium/<target>/lib/` (`bin/` on Windows) in the repository.
+
+Without the library, tests that need it print `SKIPPED (PDFium missing)` and pass. Set
+`DIMO_REQUIRE_PDFIUM=1` (CI sets `CI=true`, which has the same effect) to make them fail instead.
+
+To bump PDFium: pick a release at least 14 days old whose API level matches a `pdfium_*`
+feature of `pdfium-render`, update `scripts/pdfium.toml` (download every archive and compute its
+SHA-256) and the feature in the workspace `Cargo.toml` together, then run `./scripts/check.sh`
+and review any snapshot change.
 
 ## Folders that are not committed
 

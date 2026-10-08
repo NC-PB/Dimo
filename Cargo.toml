@@ -23,8 +23,14 @@ dimo-report = { path = "crates/dimo-report" }
 
 # External crates, exact versions (AGENTS.md rule 10)
 clap = { version = "=4.6.7", features = ["derive"] }
+insta = { version = "=1.48.0" }
+# PDFium bindings. API level must match the PDFium release pinned in scripts/pdfium.toml.
+pdfium-render = { version = "=0.9.4", default-features = false, features = ["pdfium_7881"] }
+sha2 = { version = "=0.10.9" }
 tauri = { version = "=2.11.6", features = [] }
 tauri-build = { version = "=2.6.3", features = [] }
+thiserror = { version = "=2.0.21" }
+tracing = { version = "=0.1.44" }
 
 [workspace.lints.rust]
 # Exceptions only in an isolated FFI module with a safety comment (rust.md).
