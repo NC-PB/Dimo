@@ -8,12 +8,33 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 export const commands = {
 	/**  Returns version, build profile and PDFium availability of the running app. */
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	/**
+	 *  Opens a PDF file and registers it for tile rendering. Opening the same file again returns
+	 *  the same document.
+	 * 
+	 *  Minimal entry point for T0.7. The file dialog command of T0.8 should replace it, so the
+	 *  webview never names arbitrary paths (NFR-SEC-01).
+	 */
+	openDocument: (path: string) => typedError<DocumentInfo, CommandError>(__TAURI_INVOKE("open_document", { path })),
+	/**
+	 *  Declares the tiles of a document the viewport still wants. Queued tile requests outside
+	 *  `ranges` are answered with `204 No Content` and not rendered; an empty list cancels every
+	 *  queued request of the document. See "Cancellation" in `dimo_pdf::tiles`.
+	 */
+	setTileInterest: (doc: string, ranges: TileRange[]) => typedError<null, CommandError>(__TAURI_INVOKE("set_tile_interest", { doc, ranges })),
 };
 
 /** Events */
 export const events = {
 	jobProgress: makeEvent<JobProgress>("job-progress"),
 };
+
+/* Constants */
+export const MAX_TILE_ZOOM = 5 as const;
+
+export const MIN_TILE_ZOOM = -4 as const;
+
+export const TILE_SIZE = 512 as const;
 
 /* Types */
 /**  Static facts about the running app, shown in the UI and in bug reports. */
@@ -33,6 +54,33 @@ export type BuildProfile =
 /**  Optimized release build. */
 "release";
 
+/**  Error of a command: a machine readable kind and a message for logs and bug reports. */
+export type CommandError = 
+/**  The PDFium library could not be loaded at startup; no drawing can be opened. */
+{ kind: "pdfium_unavailable"; 
+/**  Why loading failed. */
+message: string } | 
+/**  A file could not be read. */
+{ kind: "io"; 
+/**  The operating system error. */
+message: string } | 
+/**  The file is not a PDF that PDFium can open. */
+{ kind: "invalid_document"; 
+/**  The PDFium error. */
+message: string } | 
+/**  An argument is malformed, for example a document id that is not a content hash. */
+{ kind: "invalid_argument"; 
+/**  What is wrong. */
+message: string };
+
+/**  An open document as the viewport needs it. */
+export type DocumentInfo = {
+	/**  Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs. */
+	doc: string,
+	/**  Sheets in order; the index is the `{sheet}` part of tile URLs. */
+	sheets: SheetInfo[],
+};
+
 /**  Identifier of a background job within one app session. */
 export type JobId = number;
 
@@ -46,7 +94,60 @@ export type JobProgress = {
 	message: string,
 };
 
+/**  Size of one sheet in sheet units (PDF user units, 1/72 inch). */
+export type SheetInfo = {
+	/**  Width in sheet units. */
+	width: number | null,
+	/**  Height in sheet units. */
+	height: number | null,
+};
+
+/**
+ *  Address of one tile, the parts of `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`.
+ *  Used by the frontend helper that builds tile URLs.
+ */
+export type TileAddress = {
+	/**  Content hash of the document. */
+	doc: string,
+	/**  Zero based sheet index. */
+	sheet: number,
+	/**  Zoom level: `2^zoom` pixels per sheet unit, from `MIN_TILE_ZOOM` to `MAX_TILE_ZOOM`. */
+	zoom: number,
+	/**  Tile column. */
+	x: number,
+	/**  Tile row. */
+	y: number,
+};
+
+/**
+ *  A rectangle of tiles the viewport still wants: columns `x0..x1` and rows `y0..y1`
+ *  (end exclusive) of one sheet at one zoom level.
+ */
+export type TileRange = {
+	/**  Zero based sheet index. */
+	sheet: number,
+	/**  Zoom level. */
+	zoom: number,
+	/**  First column. */
+	x0: number,
+	/**  First row. */
+	y0: number,
+	/**  Column after the last one. */
+	x1: number,
+	/**  Row after the last one. */
+	y1: number,
+};
+
 /* Tauri Specta runtime */
+async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
+    try {
+        return { status: "ok", data: await result };
+    } catch (e) {
+        if (e instanceof Error) throw e;
+        return { status: "error", error: e as any };
+    }
+}
+
 type EventEmit<T> = [T] extends [null] ? () => Promise<void> : (payload: T) => Promise<void>;
 
 function makeEvent<T>(name: string, serialize?: (payload: T) => unknown, deserialize?: (payload: any) => T) {

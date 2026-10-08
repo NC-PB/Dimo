@@ -3,5 +3,10 @@
   "identifier": "default",
   "description": "Main window. Core defaults and the app commands it calls, no shell, fs or http plugins (NFR-SEC-01).",
   "windows": ["main"],
-  "permissions": ["core:default", "allow-app-info"]
+  "permissions": [
+    "core:default",
+    "allow-app-info",
+    "allow-open-document",
+    "allow-set-tile-interest"
+  ]
 }
