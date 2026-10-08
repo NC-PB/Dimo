@@ -1,0 +1,27 @@
+# Rust
+/target/
+**/target/
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+.svelte-kit/
+apps/desktop/src/lib/paraglide/
+
+# Downloaded binaries, never committed
+/vendor/
+data/models/*.onnx
+
+# Local and generated
+.DS_Store
+*.log
+.env
+.env.*
+coverage/
+*.profraw
+*.dimo.journal
+
+# Claude Code personal files
+CLAUDE.local.md
+.claude/settings.local.json
