@@ -26,6 +26,26 @@ impl ContentHash {
     pub fn to_hex(&self) -> String {
         self.to_string()
     }
+
+    /// Parses the 64 digit hex form written by [`ContentHash::to_hex`]. Upper case digits are
+    /// accepted. Returns `None` for any other input.
+    pub fn from_hex(hex: &str) -> Option<Self> {
+        let digits = hex.as_bytes();
+        if digits.len() != 64 {
+            return None;
+        }
+        let mut bytes = [0u8; 32];
+        for (byte, &[high, low]) in bytes.iter_mut().zip(digits.as_chunks::<2>().0) {
+            let high = char::from(high).to_digit(16)?;
+            let low = char::from(low).to_digit(16)?;
+            // Two hex digits are at most 255.
+            #[allow(clippy::cast_possible_truncation)]
+            {
+                *byte = (high * 16 + low) as u8;
+            }
+        }
+        Some(Self(bytes))
+    }
 }
 
 impl fmt::Display for ContentHash {
@@ -52,5 +72,19 @@ mod tests {
             ContentHash::of(b"abc").to_hex(),
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
+    }
+
+    #[test]
+    fn hex_round_trip() {
+        let hash = ContentHash::of(b"abc");
+        assert_eq!(ContentHash::from_hex(&hash.to_hex()), Some(hash));
+        assert_eq!(
+            ContentHash::from_hex(&hash.to_hex().to_uppercase()),
+            Some(hash)
+        );
+        assert_eq!(ContentHash::from_hex(""), None);
+        assert_eq!(ContentHash::from_hex(&hash.to_hex()[1..]), None);
+        assert_eq!(ContentHash::from_hex(&"g".repeat(64)), None);
+        assert_eq!(ContentHash::from_hex(&"é".repeat(32)), None);
     }
 }

@@ -4,9 +4,12 @@
 //! invoke handler and the generated TypeScript bindings, so both always agree (NFR-MNT-03).
 
 pub mod ipc;
+pub mod tiles;
 
 use std::path::{Path, PathBuf};
 
+use dimo_pdf::tiles::{MAX_ZOOM, MIN_ZOOM, TILE_SIZE};
+use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
@@ -18,11 +21,19 @@ pub fn bindings_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/bindings.ts")
 }
 
-/// Collects every command and event the frontend may use.
+/// Collects every command, event, type and constant the frontend may use.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(collect_commands![ipc::app_info])
+        .commands(collect_commands![
+            ipc::app_info,
+            ipc::open_document,
+            ipc::set_tile_interest
+        ])
         .events(collect_events![ipc::JobProgress])
+        .typ::<ipc::TileAddress>()
+        .constant("TILE_SIZE", TILE_SIZE)
+        .constant("MIN_TILE_ZOOM", MIN_ZOOM)
+        .constant("MAX_TILE_ZOOM", MAX_ZOOM)
 }
 
 /// Writes the TypeScript bindings of `builder` to `path`.
@@ -52,8 +63,12 @@ pub fn run() -> tauri::Result<()> {
 
     tauri::Builder::default()
         .invoke_handler(builder.invoke_handler())
+        .register_asynchronous_uri_scheme_protocol(tiles::SCHEME, tiles::handle)
         .setup(move |app| {
             builder.mount_events(app);
+            // Tile cache in the user cache directory, never in the project (07 Data model).
+            let cache_dir = app.path().app_cache_dir().ok().map(|dir| dir.join("tiles"));
+            app.manage(tiles::TileState::start(cache_dir));
             Ok(())
         })
         .run(tauri::generate_context!())

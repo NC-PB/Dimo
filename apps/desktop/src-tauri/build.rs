@@ -4,7 +4,11 @@
 //! permission and the webview can call only the commands its capability lists (NFR-SEC-01).
 
 fn main() {
-    let manifest = tauri_build::AppManifest::new().commands(&["app_info"]);
+    let manifest = tauri_build::AppManifest::new().commands(&[
+        "app_info",
+        "open_document",
+        "set_tile_interest",
+    ]);
     if let Err(err) = tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest))
     {
         panic!("tauri build failed: {err:#}");

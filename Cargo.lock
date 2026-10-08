@@ -859,12 +859,15 @@ dependencies = [
 name = "dimo-desktop"
 version = "0.0.0"
 dependencies = [
+ "dimo-pdf",
  "serde",
  "specta",
  "specta-typescript",
  "tauri",
  "tauri-build",
  "tauri-specta",
+ "thiserror 2.0.21",
+ "tracing",
 ]
 
 [[package]]
@@ -895,7 +898,9 @@ dependencies = [
  "dimo-core",
  "insta",
  "pdfium-render",
+ "png 0.18.1",
  "sha2",
+ "tempfile",
  "thiserror 2.0.21",
  "tracing",
 ]

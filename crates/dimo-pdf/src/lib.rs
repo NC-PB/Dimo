@@ -3,6 +3,8 @@
 //!
 //! Current scope (T0.5): open a document from bytes, its SHA-256 (FR-DOC-07), sheet count and
 //! sheet sizes, and rendering a region of a sheet at a zoom level into an RGBA buffer.
+//! T0.7 adds [`tiles`]: the tile grid, worker pool and memory and disk caches behind the
+//! viewport's `dimo://tile/...` protocol.
 //!
 //! T0.6: text runs with geometry per sheet ([`Document::text_runs`], see [`TextRun`] for how
 //! characters are merged) and sheet classification from the page content
@@ -44,6 +46,7 @@ pub mod geometry;
 pub mod library;
 pub mod sheet_kind;
 pub mod text;
+pub mod tiles;
 
 mod engine;
 mod error;
