@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Placeholder app icon: a balloon with a leader line. -->
+  <rect width="1024" height="1024" rx="200" fill="#1f6feb"/>
+  <line x1="600" y1="600" x2="820" y2="820" stroke="#ffffff" stroke-width="56" stroke-linecap="round"/>
+  <circle cx="440" cy="440" r="250" fill="none" stroke="#ffffff" stroke-width="64"/>
+  <circle cx="440" cy="440" r="70" fill="#ffffff"/>
+</svg>

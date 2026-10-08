@@ -1,0 +1,18 @@
+[package]
+name = "dimo-desktop"
+description = "Tauri shell of the Dimo desktop app: commands, events, protocols and permissions."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+tauri.workspace = true
+
+[lints]
+workspace = true

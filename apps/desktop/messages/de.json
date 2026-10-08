@@ -1,0 +1,14 @@
+{
+  "app_title": "Dimo",
+  "sample_greeting": "Öffne eine Zeichnung, um zu beginnen.",
+  "view_switch_label": "Ansicht",
+  "view_drawing": "Zeichnung",
+  "view_review": "Prüfen",
+  "view_measure": "Messen",
+  "view_export": "Export",
+  "view_settings": "Einstellungen",
+  "language_label": "Sprache",
+  "viewport_label": "Zeichnungsansicht",
+  "side_panel_label": "Seitenleiste",
+  "side_panel_empty": "Nichts ausgewählt."
+}

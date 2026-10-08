@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Main window. Core defaults only, no shell, fs or http plugins (NFR-SEC-01).",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,14 @@
+{
+  "app_title": "Dimo",
+  "sample_greeting": "Open a drawing to start.",
+  "view_switch_label": "View",
+  "view_drawing": "Drawing",
+  "view_review": "Review",
+  "view_measure": "Measure",
+  "view_export": "Export",
+  "view_settings": "Settings",
+  "language_label": "Language",
+  "viewport_label": "Drawing viewport",
+  "side_panel_label": "Side panel",
+  "side_panel_empty": "Nothing selected."
+}

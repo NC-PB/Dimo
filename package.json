@@ -1,0 +1,13 @@
+{
+  "name": "dimo-workspace",
+  "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.27.1",
+  "scripts": {
+    "format": "prettier --write \"apps/desktop/**/*.{ts,js,svelte,css,json}\""
+  },
+  "devDependencies": {
+    "prettier": "3.9.9",
+    "prettier-plugin-svelte": "4.1.1"
+  }
+}

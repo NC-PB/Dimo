@@ -5,7 +5,18 @@
 all-features = true
 
 [advisories]
-ignore = []
+# "Unmaintained" notices only, no known vulnerability. All arrive through Tauri 2.11 and have no
+# upgrade path on our side. Remove each entry when Tauri drops the crate.
+ignore = [
+  # proc-macro-error: tauri > muda > gtk 0.18 (Linux GTK3 bindings)
+  { id = "RUSTSEC-2024-0370", reason = "via Tauri GTK3 bindings, no fix available" },
+  # unic-*: tauri-utils > urlpattern 0.3
+  { id = "RUSTSEC-2025-0075", reason = "unic-char-range via tauri-utils > urlpattern" },
+  { id = "RUSTSEC-2025-0080", reason = "unic-common via tauri-utils > urlpattern" },
+  { id = "RUSTSEC-2025-0081", reason = "unic-char-property via tauri-utils > urlpattern" },
+  { id = "RUSTSEC-2025-0098", reason = "unic-ucd-version via tauri-utils > urlpattern" },
+  { id = "RUSTSEC-2025-0100", reason = "unic-ucd-ident via tauri-utils > urlpattern" },
+]
 
 [licenses]
 confidence-threshold = 0.8

@@ -25,3 +25,7 @@ coverage/
 # Claude Code personal files
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Paraglide: keep only the project settings
+apps/desktop/project.inlang/*
+!apps/desktop/project.inlang/settings.json

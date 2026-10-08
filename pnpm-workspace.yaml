@@ -1,0 +1,7 @@
+packages:
+  - apps/desktop
+
+# AGENTS.md rule 10: every package release must be at least 14 days old (value in minutes).
+# Applies to transitive dependencies too.
+minimumReleaseAge: 20160
+savePrefix: ""
