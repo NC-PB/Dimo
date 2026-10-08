@@ -1,0 +1,4 @@
+doc-valid-idents = ["PDFium", ".."]
+# rust.md: unwrap and expect are fine in tests.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

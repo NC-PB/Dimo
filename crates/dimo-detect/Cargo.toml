@@ -1,0 +1,18 @@
+[package]
+name = "dimo-detect"
+description = "Layout analysis, token grouping, characteristic proposals with confidence, and balloon placement."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+dimo-pdf.workspace = true
+dimo-vision.workspace = true
+dimo-notation.workspace = true
+dimo-tolerance.workspace = true
+
+[lints]
+workspace = true

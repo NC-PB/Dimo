@@ -1,0 +1,42 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "Apache-2.0"
+repository = "https://github.com/NC-PB/dimo"
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+dimo-core = { path = "crates/dimo-core" }
+dimo-notation = { path = "crates/dimo-notation" }
+dimo-tolerance = { path = "crates/dimo-tolerance" }
+dimo-pdf = { path = "crates/dimo-pdf" }
+dimo-vision = { path = "crates/dimo-vision" }
+dimo-detect = { path = "crates/dimo-detect" }
+dimo-io = { path = "crates/dimo-io" }
+dimo-report = { path = "crates/dimo-report" }
+
+# External crates, exact versions (AGENTS.md rule 10)
+clap = { version = "=4.6.7", features = ["derive"] }
+
+[workspace.lints.rust]
+# Exceptions only in an isolated FFI module with a safety comment (rust.md).
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+unwrap_used = "warn"
+expect_used = "warn"
+# rust.md: tracing, never println! in library code. Binaries allow it locally.
+print_stdout = "warn"
+print_stderr = "warn"

@@ -1,0 +1,15 @@
+[package]
+name = "dimo-io"
+description = "Project container, migrations, and imports and exports of inspection data."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+dimo-core.workspace = true
+
+[lints]
+workspace = true
