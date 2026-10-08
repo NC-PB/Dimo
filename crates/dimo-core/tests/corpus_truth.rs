@@ -113,15 +113,16 @@ fn truth_files_load_and_match_their_drawing() {
         let actual = format!("{:x}", Sha256::digest(&drawing));
         assert_eq!(truth.drawing.sha256, actual, "{name}: drawing hash");
 
-        // PROVENANCE.md lists `| <file> | <first 8>...<last 7> | ...`.
+        // PROVENANCE.md lists `| <file> | <sha256> | ...`, the hash in full or abbreviated as
+        // `<first 8>...<last 7>`.
         let row = provenance
             .lines()
             .find(|line| line.starts_with(&format!("| {} |", truth.drawing.file)))
             .unwrap_or_else(|| panic!("{name}: no PROVENANCE.md row for the drawing"));
         let short = row.split('|').nth(2).unwrap().trim();
-        let (head, tail) = short.split_once("...").unwrap();
+        let (head, tail) = short.split_once("...").unwrap_or((short, ""));
         assert!(
-            head.len() >= 8 && tail.len() >= 7,
+            head.len() == 64 || (head.len() >= 8 && tail.len() >= 7),
             "{name}: short hash {short:?}"
         );
         assert!(
