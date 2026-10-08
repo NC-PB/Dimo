@@ -1,0 +1,48 @@
+# Pinned prebuilt PDFium binaries (ADR 0005, T0.5).
+#
+# Source: the pdfium-binaries project, which builds upstream PDFium unmodified for each platform.
+# Licenses: PDFium is BSD-3-Clause; the build scripts are MIT; every archive contains the
+# licenses of PDFium and its bundled third party code in licenses/ (all permissive). Installers
+# must ship that folder.
+#
+# The release must match the PDFium API level of pdfium-render: feature "pdfium_7881" in the
+# workspace Cargo.toml. Change both together. Rules for a bump: release at least 14 days old,
+# download every archive, recompute sha256, run ./scripts/check.sh.
+#
+# Read by scripts/fetch-pdfium.sh and scripts/fetch-pdfium.ps1 with a simple line parser:
+# keep one `key = "value"` per line and one [targets.<name>] header per target.
+
+release = "chromium/7881"
+version = "151.0.7881.0"
+published = "2026-06-08"
+base_url = "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F7881"
+
+[targets.mac-arm64]
+archive = "pdfium-mac-arm64.tgz"
+sha256 = "52e94ca5aa8847934330daf3f8150c190682c5ca93831468794f8b90d4392e40"
+library = "lib/libpdfium.dylib"
+
+[targets.mac-x64]
+archive = "pdfium-mac-x64.tgz"
+sha256 = "6dedf83990e0e3d6b7c93c9e7589c5a126b0ae14b7464d76120cff7a26afb18b"
+library = "lib/libpdfium.dylib"
+
+[targets.win-x64]
+archive = "pdfium-win-x64.tgz"
+sha256 = "73cc0de638ac2095e7445bf56a38200a5b7c7ca0e9f4ba144598f2457377ac08"
+library = "bin/pdfium.dll"
+
+[targets.win-arm64]
+archive = "pdfium-win-arm64.tgz"
+sha256 = "d3035d4d2cacac6ecd1a2ece197a3d702a1b2a58466276b9f870b8cb278a9d84"
+library = "bin/pdfium.dll"
+
+[targets.linux-x64]
+archive = "pdfium-linux-x64.tgz"
+sha256 = "1470e21b8b4a3b4ad7f85684e2da11d94f3b69a86d81dee11b9b6709d927ac1d"
+library = "lib/libpdfium.so"
+
+[targets.linux-arm64]
+archive = "pdfium-linux-arm64.tgz"
+sha256 = "ee7f7b7d5468958336a818c1cd580bdd20972846b7377b13f9a923d92d1d4674"
+library = "lib/libpdfium.so"
