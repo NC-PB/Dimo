@@ -894,7 +894,9 @@ version = "0.0.0"
 dependencies = [
  "insta",
  "pdfium-render",
+ "png 0.18.1",
  "sha2",
+ "tempfile",
  "thiserror 2.0.21",
  "tracing",
 ]

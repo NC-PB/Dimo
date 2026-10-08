@@ -3,6 +3,8 @@
 //!
 //! Current scope (T0.5): open a document from bytes, its SHA-256 (FR-DOC-07), sheet count and
 //! sheet sizes, and rendering a region of a sheet at a zoom level into an RGBA buffer.
+//! T0.7 adds [`tiles`]: the tile grid, worker pool and memory and disk caches behind the
+//! viewport's `dimo://tile/...` protocol.
 //!
 //! # Coordinates
 //!
@@ -38,6 +40,7 @@
 
 pub mod geometry;
 pub mod library;
+pub mod tiles;
 
 mod engine;
 mod error;
