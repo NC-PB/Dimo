@@ -1,0 +1,26 @@
+[package]
+name = "dimo-synth"
+description = "Synthetic drawing generator: writes a dimensioned drawing PDF and its truth file from a seed. Development tool, not shipped."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "dimo-synth"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+dimo-core.workspace = true
+rust_decimal.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+boon.workspace = true
+
+[lints]
+workspace = true
