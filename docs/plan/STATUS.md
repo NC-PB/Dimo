@@ -5,7 +5,7 @@ Single place for progress. Agents update this file at the end of every task.
 ## Current
 
 - Milestone: **M0 Foundations** ([plan](M0.md))
-- Next tasks (wave 2, parallel): **T0.6 Text runs**, **T0.7 Tile protocol**, **T0.11 Synthetic generator**
+- Next task: **T0.8 Viewport with SVG overlay**, then T0.9 Performance harness
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -18,7 +18,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.4 Checks and CI | review | Owner: push, confirm CI green on 3 platforms, enable branch protection |
 | T0.5 PDFium integration | done | Snapshot verified on mac arm64 only; `fetch-pdfium.ps1` untested |
 | T0.6 Text runs with geometry | done | 24 of 24 truth callouts matched by runs; thresholds need calibration on more drawings (Q-10) |
-| T0.7 Tile protocol and cache | todo | |
+| T0.7 Tile protocol and cache | done | Windows webview not verified (CI build only) |
 | T0.8 Viewport with SVG overlay | todo | |
 | T0.9 Performance harness | todo | |
 | T0.10 Corpus truth format | review | Owner: review `corpus/truth/test_drawing_1.truth.json`, see log 2026-10-09 |
@@ -41,6 +41,11 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Tiles: `dimo://localhost/tile/{content hash}/{sheet}/{zoom}/{x}/{y}` (`http://dimo.localhost/...` on Windows), 512 px, zoom -4 to 5 as 2^zoom px per sheet unit; logic in `dimo_pdf::tiles::TileService`, src-tauri only wires the async scheme | Rust owns logic (ADR 0001), never block main thread | T0.7, agent |
+| 2026-10-09 | Tile encoding PNG `Compression::Fast`, greyscale when possible (0.7 to 0.9 ms, 5 to 7 KB per tile); memory LRU 128 MiB, disk cache 2 GiB in the app cache dir keyed by render version and content hash; `Cache-Control: immutable` | Fast and small; bump `RENDER_VERSION` in `tiles/disk.rs` when PDFium or encoder settings change | T0.7, agent |
+| 2026-10-09 | Tile cancellation by interest: `set_tile_interest(doc, ranges)`, queued tiles outside get HTTP 204 | Simple, no per request ids | T0.7, agent |
+| 2026-10-09 | Tiles render with a 32 unit left and top margin, then crop | PDFium draws anti aliased glyphs wrong where they cross the left or top bitmap edge. `Document::render_region` has the same issue, fix before OCR crops (M5) | T0.7, agent |
+| 2026-10-09 | `open_document(path)` command is temporary; T0.8 replaces it with a Rust file dialog command | NFR-SEC-01: the webview must not pass arbitrary paths | T0.7, agent |
 | 2026-10-09 | Sheet kind from PDFium page objects (text objects, fonts, paths, images, form XObjects) plus share of unmapped characters: `vector_text` needs at least 10 readable chars with at most half unmapped, `raster` if images cover at least 50 percent, else `vector_outlined`. No lopdf | PDFium already exposes what is needed; lopdf adds about 19 crates and a second parser | T0.6, agent |
 | 2026-10-09 | Text runs: same font, size within 5 percent, rotation within 1 degree, baseline within 0.2 em, gap -0.3 to 0.8 em; space inserted from 0.2 em; invisible and generated chars skipped; subset tags stripped from font names | Matches all callouts of test_drawing_1; to be calibrated (Q-10) | T0.6, agent |
 | 2026-10-09 | Synthetic generator writes the PDF by hand (no lopdf yet), Helvetica with WinAnsi plus `/Differences` for minus, Ø, ± and a ToUnicode CMap; deterministic (no Info, ID or dates); regions from Helvetica AFM widths | lopdf 0.45 too new, 0.44 not needed for a first cut; keeps text extractable | T0.11, agent |
@@ -73,6 +78,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: T0.7 done and merged. Wave 2 complete. Disk nearly full (about 2 GB free); merged worktrees removed.
 - 2026-10-09: T0.6 and T0.11 done and merged. PDFium treats a `/ToUnicode` name (Identity-H) as code = Unicode; correct for test_drawing_1 only because CIDs equal code points (details in corpus notes).
 - 2026-10-09: T0.5 done and merged. Wave 1 complete. Disk ran full during parallel builds; wave 2 agents share the main `target/`.
 - 2026-10-09: T0.3 done, T0.4 and T0.10 in review (merged into main). Truth file has 24 characteristics; owner to check: ISO 286 limits of c01, c04, c06 (`Ø8 c10`, `h6`, `d9`) taken from memory, the plain `Ø8 f7` (c02, c12) using 7.987/7.972 vs the printed toleranced variant, `R15 H7` (c05) applied literally, whether the burr note (c24) belongs in the truth. New finding: the font `/ToUnicode` is the name `/Identity-H`, not a CMap stream (in corpus notes).
