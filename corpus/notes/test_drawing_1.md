@@ -6,7 +6,7 @@
 - 1 sheet, 1584 x 1224 pt = 22 x 17 inch (ANSI C size), zone grid A to D and 1 to 4
 - Metric drawing with ISO fit designations, despite the inch sheet format. Units must never be inferred from the sheet size.
 - Optional content groups (layers): Visible, TITLE_BLOCK, BORDER_FRAME, BORDER_ZONES, CENTERMARKS, ANNOTATION_TEXT
-- **Sheet kind: `vector_text`.** 74 text objects in an embedded subset font (NotoSans, Type0 with ToUnicode). All callouts are real text.
+- **Sheet kind: `vector_text`.** 74 text objects in an embedded subset font (NotoSans, Type0, Identity-H encoding; `/ToUnicode` is a name instead of a CMap stream, see Pitfall). All callouts are real text.
 
 ## Metadata and privacy check (2026-10-08)
 
@@ -19,6 +19,8 @@
 ## Pitfall: text layer not found by every library
 
 macOS PDFKit reported 0 characters for this page, although the content stream holds 74 text objects with a ToUnicode map. Our first analysis wrongly classified the sheet as outlined text because of this. Consequence: sheet classification (FR-DOC-03) must inspect the content stream itself (text operators, fonts) and must not rely on a single library's text extraction. This file is a regression test for that.
+
+Likely cause (found in T0.10): the font's `/ToUnicode` entry is the name `/Identity-H` instead of a CMap stream, which the PDF specification does not allow. The CIDs equal the Unicode code points (for example `0x2212` for the minus sign, `0xD8` for `Ø`), so decoding them as UTF-16 code units gives the correct text. Text extraction must tolerate this.
 
 ## Text content (from the content stream)
 
@@ -50,6 +52,6 @@ Callouts:
 
 macOS Vision fast mode on a 300 dpi render found 29 of the 74 text items. It read `Ø` as `0` (`08f7`, `030 H7`), split `Ø8 h6`, merged `R15 H7` incorrectly, and read `+0.0°` as `+O.O°`. Accurate mode failed with a runtime error in this environment. Useful later as an OCR test by ignoring the text layer.
 
-## To do
+## Ground truth
 
-- Create `truth/test_drawing_1.truth.json` once the truth format exists (M0). The text content above is the basis.
+`truth/test_drawing_1.truth.json` (T0.10): 24 characteristics, regions measured from the content stream. Draft until the owner has reviewed it; entries with a `review_note` need a decision.
