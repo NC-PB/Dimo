@@ -1,0 +1,126 @@
+# CI (T0.4). Runs scripts/check.sh on all three platforms, the npm license check and the DCO check.
+# Every action is pinned to a full commit SHA, the release must be at least 14 days old
+# (AGENTS.md rule 10). To update a pin: pick a release older than 14 days, look up its commit
+# with `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, change SHA and comment together.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+  # Read by scripts/check.sh: a missing cargo-deny fails instead of being skipped.
+  CI: "true"
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+
+      - name: Install Tauri system packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential curl wget file patchelf libssl-dev libxdo-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      # rust-toolchain.toml pins channel, components and profile.
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install
+          rustc --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (2026-08-06)
+
+      - uses: taiki-e/install-action@dfae9bf3d6f6c6f20ef4ebb3486c01a51341ff12 # v2.87.18 (2026-09-22)
+        with:
+          tool: cargo-deny@0.20.2
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 (2026-07-14)
+        with:
+          node-version: 22
+
+      # pnpm version comes from "packageManager" in the root package.json.
+      - name: Enable pnpm via corepack
+        run: corepack enable
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (2026-06-26)
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Added by T0.5. Skipped until the scripts exist.
+      - name: Fetch PDFium (Unix)
+        if: runner.os != 'Windows' && hashFiles('scripts/fetch-pdfium.sh') != ''
+        run: ./scripts/fetch-pdfium.sh
+
+      - name: Fetch PDFium (Windows)
+        if: runner.os == 'Windows' && hashFiles('scripts/fetch-pdfium.ps1') != ''
+        shell: pwsh
+        run: ./scripts/fetch-pdfium.ps1
+
+      - name: Cache PDFium
+        if: hashFiles('scripts/pdfium.toml') != ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (2026-06-26)
+        with:
+          path: vendor/pdfium
+          key: pdfium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/pdfium.toml') }}
+
+      - name: Run checks
+        run: ./scripts/check.sh
+
+  npm-licenses:
+    name: npm licenses
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 (2026-07-14)
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/check-npm-licenses.mjs
+
+  dco:
+    name: DCO sign-off
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+        with:
+          fetch-depth: 0
+      - name: Check Signed-off-by on every commit of the PR
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: ./scripts/check-dco.sh "$BASE_SHA" "$HEAD_SHA"
