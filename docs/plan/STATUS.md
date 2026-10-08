@@ -22,7 +22,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.8 Viewport with SVG overlay | todo | |
 | T0.9 Performance harness | todo | |
 | T0.10 Corpus truth format | review | Owner: review `corpus/truth/test_drawing_1.truth.json`, see log 2026-10-09 |
-| T0.11 Synthetic generator (stretch) | todo | |
+| T0.11 Synthetic generator (stretch) | done | `cargo run -p dimo-synth -- --seed N --count 6`. Owner: check fit table `FITS` in `tools/synth/src/lib.rs` (D-43) |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -41,6 +41,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Synthetic generator writes the PDF by hand (no lopdf yet), Helvetica with WinAnsi plus `/Differences` for minus, Ø, ± and a ToUnicode CMap; deterministic (no Info, ID or dates); regions from Helvetica AFM widths | lopdf 0.45 too new, 0.44 not needed for a first cut; keeps text extractable | T0.11, agent |
 | 2026-10-09 | PDFium pinned to chromium/7881 (matches pdfium-render 0.9.4 feature `pdfium_7881`); all PDFium work on one dedicated render thread; lookup order: explicit path, `DIMO_PDFIUM_PATH`, `vendor/pdfium/<target>/`, never a system library; renders capped at 16384 px per side | pdfium-render binds PDFium once per process and documents borrow it, a single owner thread avoids `unsafe` | T0.5, agent |
 | 2026-10-09 | PDFium tests skip with a message when the library is missing, fail with `CI=true` or `DIMO_REQUIRE_PDFIUM=1`. Tile snapshot fingerprint: 396 x 306 render, 12 px blocks, 4 grey levels, hashed | Contributors without PDFium can still run checks; fingerprint robust to tiny rasterizer differences | T0.5, agent |
 | 2026-10-09 | Installers must ship the `licenses/` folder from the PDFium archive | BSD-3-Clause attribution | T0.5, agent, for release 0.1 |
