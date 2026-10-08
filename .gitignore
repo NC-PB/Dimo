@@ -29,3 +29,6 @@ CLAUDE.local.md
 # Paraglide: keep only the project settings
 apps/desktop/project.inlang/*
 !apps/desktop/project.inlang/settings.json
+
+# Agent worktrees
+.claude/worktrees/
