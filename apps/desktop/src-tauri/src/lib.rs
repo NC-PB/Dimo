@@ -3,6 +3,7 @@
 //! Commands and events are registered once in [`specta_builder`]. The same builder drives the Tauri
 //! invoke handler and the generated TypeScript bindings, so both always agree (NFR-MNT-03).
 
+pub mod dev;
 pub mod ipc;
 pub mod tiles;
 
@@ -13,7 +14,7 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src/ipc.rs. \
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src/ipc.rs and dev.rs. \
 Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
@@ -26,8 +27,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(collect_commands![
             ipc::app_info,
-            ipc::open_document,
-            ipc::set_tile_interest
+            ipc::open_document_dialog,
+            ipc::set_tile_interest,
+            dev::dev_startup,
+            dev::dev_report_frame_times
         ])
         .events(collect_events![ipc::JobProgress])
         .typ::<ipc::TileAddress>()

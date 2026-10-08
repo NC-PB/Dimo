@@ -13,6 +13,7 @@ tauri-build.workspace = true
 
 [dependencies]
 dimo-pdf.workspace = true
+rfd.workspace = true
 serde.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
@@ -20,6 +21,9 @@ tauri.workspace = true
 tauri-specta.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true

@@ -6,7 +6,9 @@
   "permissions": [
     "core:default",
     "allow-app-info",
-    "allow-open-document",
-    "allow-set-tile-interest"
+    "allow-open-document-dialog",
+    "allow-set-tile-interest",
+    "allow-dev-startup",
+    "allow-dev-report-frame-times"
   ]
 }

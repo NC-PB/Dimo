@@ -1,6 +1,7 @@
-import type { BuildProfile } from "./ipc/bindings";
+import type { BuildProfile, CommandError } from "./ipc/bindings";
 import { m } from "./paraglide/messages.js";
 import { getLocale, locales, setLocale, type Locale } from "./paraglide/runtime.js";
+import type { ShortcutAction } from "./shortcuts";
 import type { View } from "./stores/view.svelte";
 
 export { getLocale, locales, m, setLocale, type Locale };
@@ -35,4 +36,39 @@ export function buildProfileLabel(profile: BuildProfile): string {
     case "release":
       return m.build_profile_release();
   }
+}
+
+/** Translated description of a shortcut action (D-52). */
+export function shortcutLabel(action: ShortcutAction): string {
+  switch (action) {
+    case "open":
+      return m.open_drawing();
+    case "zoom_in":
+      return m.zoom_in();
+    case "zoom_out":
+      return m.zoom_out();
+    case "fit":
+      return m.fit_sheet();
+    case "pan_left":
+      return m.pan_left();
+    case "pan_right":
+      return m.pan_right();
+    case "pan_up":
+      return m.pan_up();
+    case "pan_down":
+      return m.pan_down();
+    case "previous_sheet":
+      return m.previous_sheet();
+    case "next_sheet":
+      return m.next_sheet();
+    case "show_shortcuts":
+      return m.show_shortcuts();
+  }
+}
+
+/** Translated message for a failed command. */
+export function commandErrorMessage(error: CommandError): string {
+  return error.kind === "pdfium_unavailable"
+    ? m.pdfium_missing()
+    : m.open_error({ message: error.message });
 }
