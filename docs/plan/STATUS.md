@@ -17,7 +17,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.3 Typed IPC with tauri-specta | done | Bindings test in `apps/desktop/src-tauri/tests/bindings.rs` |
 | T0.4 Checks and CI | review | Owner: push, confirm CI green on 3 platforms, enable branch protection |
 | T0.5 PDFium integration | done | Snapshot verified on mac arm64 only; `fetch-pdfium.ps1` untested |
-| T0.6 Text runs with geometry | todo | |
+| T0.6 Text runs with geometry | done | 24 of 24 truth callouts matched by runs; thresholds need calibration on more drawings (Q-10) |
 | T0.7 Tile protocol and cache | todo | |
 | T0.8 Viewport with SVG overlay | todo | |
 | T0.9 Performance harness | todo | |
@@ -41,6 +41,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Sheet kind from PDFium page objects (text objects, fonts, paths, images, form XObjects) plus share of unmapped characters: `vector_text` needs at least 10 readable chars with at most half unmapped, `raster` if images cover at least 50 percent, else `vector_outlined`. No lopdf | PDFium already exposes what is needed; lopdf adds about 19 crates and a second parser | T0.6, agent |
+| 2026-10-09 | Text runs: same font, size within 5 percent, rotation within 1 degree, baseline within 0.2 em, gap -0.3 to 0.8 em; space inserted from 0.2 em; invisible and generated chars skipped; subset tags stripped from font names | Matches all callouts of test_drawing_1; to be calibrated (Q-10) | T0.6, agent |
 | 2026-10-09 | Synthetic generator writes the PDF by hand (no lopdf yet), Helvetica with WinAnsi plus `/Differences` for minus, Ø, ± and a ToUnicode CMap; deterministic (no Info, ID or dates); regions from Helvetica AFM widths | lopdf 0.45 too new, 0.44 not needed for a first cut; keeps text extractable | T0.11, agent |
 | 2026-10-09 | PDFium pinned to chromium/7881 (matches pdfium-render 0.9.4 feature `pdfium_7881`); all PDFium work on one dedicated render thread; lookup order: explicit path, `DIMO_PDFIUM_PATH`, `vendor/pdfium/<target>/`, never a system library; renders capped at 16384 px per side | pdfium-render binds PDFium once per process and documents borrow it, a single owner thread avoids `unsafe` | T0.5, agent |
 | 2026-10-09 | PDFium tests skip with a message when the library is missing, fail with `CI=true` or `DIMO_REQUIRE_PDFIUM=1`. Tile snapshot fingerprint: 396 x 306 render, 12 px blocks, 4 grey levels, hashed | Contributors without PDFium can still run checks; fingerprint robust to tiny rasterizer differences | T0.5, agent |
@@ -71,6 +73,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: T0.6 and T0.11 done and merged. PDFium treats a `/ToUnicode` name (Identity-H) as code = Unicode; correct for test_drawing_1 only because CIDs equal code points (details in corpus notes).
 - 2026-10-09: T0.5 done and merged. Wave 1 complete. Disk ran full during parallel builds; wave 2 agents share the main `target/`.
 - 2026-10-09: T0.3 done, T0.4 and T0.10 in review (merged into main). Truth file has 24 characteristics; owner to check: ISO 286 limits of c01, c04, c06 (`Ø8 c10`, `h6`, `d9`) taken from memory, the plain `Ø8 f7` (c02, c12) using 7.987/7.972 vs the printed toleranced variant, `R15 H7` (c05) applied literally, whether the burr note (c24) belongs in the truth. New finding: the font `/ToUnicode` is the name `/Identity-H`, not a CMap stream (in corpus notes).
 - 2026-10-08: T0.2 in review. Tauri shell with Svelte 5, Tailwind 4 tokens, Bits UI, Paraglide (en, de), view store. `tauri dev` opened the native window (checked by window capture). View and language switch tested in the browser pane against the same dev server; clicking inside the native window was not possible with the available tools.
