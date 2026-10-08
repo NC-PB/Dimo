@@ -18,7 +18,8 @@
 - Every bug fix comes with a test that fails without the fix.
 - Snapshot changes are reviewed, never blindly accepted.
 - Tests must not need the network. PDFium is loaded from `vendor/pdfium/`; tests that need it
-  are skipped with a clear message if it is missing, and CI always provides it.
+  are skipped with a clear message if it is missing, and CI always provides it. With `CI=true` or
+  `DIMO_REQUIRE_PDFIUM=1` a missing library fails these tests instead of skipping them.
 - Corpus based tests reference drawings by file name and verify the SHA-256 from `PROVENANCE.md`.
 - Ground truth files `corpus/truth/*.truth.json` are validated against `docs/schema/truth.schema.json`
   and checked for consistency (`dimo_core::truth`). Expected limits come from the drawing and the

@@ -1,11 +1,51 @@
-//! PDF access through PDFium: tile rendering, text runs with geometry, vector paths and writing ballooned PDFs.
+//! PDF access through PDFium: tile rendering, text runs with geometry, vector paths and writing
+//! ballooned PDFs (ADR 0005).
 //!
-//! Stub created in T0.1. Content follows in later milestones.
+//! Current scope (T0.5): open a document from bytes, its SHA-256 (FR-DOC-07), sheet count and
+//! sheet sizes, and rendering a region of a sheet at a zoom level into an RGBA buffer.
+//!
+//! # Coordinates
+//!
+//! All geometry is in sheet space (AGENTS.md rule 4): PDF user units, origin at the top left of
+//! the sheet, y downward. See [`geometry`].
+//!
+//! # Threading
+//!
+//! PDFium is not thread safe, and pdfium-render keeps its function bindings in a process
+//! global, so a process can load PDFium only once. This crate therefore runs **all PDFium calls
+//! on one dedicated render thread** (`dimo-pdfium`), started by [`PdfEngine::start`].
+//! [`PdfEngine`] and [`Document`] are handles that send requests to that thread over a channel
+//! and wait for the answer. They are `Send + Sync` and can be used from any thread.
+//!
+//! Why a thread and not a mutex around a shared instance:
+//!
+//! - A document borrows the PDFium instance. A thread that owns both keeps that borrow inside
+//!   one stack frame: no self referential structs, no `unsafe`.
+//! - A mutex would serialize the same calls, but every caller would hold it for a whole render,
+//!   and pdfium-render's `thread_safe` feature would add a second global lock around every FFI
+//!   call.
+//! - A request queue is where tile priorities and cancellation (M1 viewer) fit naturally.
+//!
+//! The cost is one extra thread and that rendering uses one core; PDFium cannot render in
+//! parallel within one process anyway. If the render thread panics, every later call returns
+//! [`PdfError::EngineStopped`].
+//!
+//! # Locating PDFium
+//!
+//! See [`library`]: explicit path, then `DIMO_PDFIUM_PATH`, then `vendor/pdfium/<target>/`
+//! filled by `scripts/fetch-pdfium.sh`. The pinned release is in `scripts/pdfium.toml`; its API
+//! level must match the `pdfium_*` feature of pdfium-render in the workspace `Cargo.toml`.
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn crate_builds() {
-        assert_eq!(env!("CARGO_PKG_NAME"), "dimo-pdf");
-    }
-}
+pub mod geometry;
+pub mod library;
+
+mod engine;
+mod error;
+mod hash;
+mod raster;
+
+pub use engine::{Document, MAX_RENDER_SIDE, PdfEngine};
+pub use error::PdfError;
+pub use geometry::{SheetRect, SheetSize};
+pub use hash::ContentHash;
+pub use raster::RgbaImage;
