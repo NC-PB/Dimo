@@ -5,7 +5,7 @@ Drawings used for recognition development and regression tests (see [08 Recognit
 ```
 corpus/
   drawings/      source files (PDF, TIFF, PNG)
-  truth/         ground truth per drawing: <name>.truth.json (format defined in M0)
+  truth/         ground truth per drawing: <name>.truth.json (schema: docs/schema/truth.schema.json)
   notes/         observations per drawing: sheet kind, baseline results, pitfalls
   PROVENANCE.md  origin and license of every file
 ```

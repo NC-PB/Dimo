@@ -1,0 +1,395 @@
+{
+  "$defs": {
+    "CharacteristicKind": {
+      "description": "What a characteristic describes (data model `Characteristic.kind`).",
+      "oneOf": [
+        {
+          "const": "linear",
+          "description": "Linear size or distance.",
+          "type": "string"
+        },
+        {
+          "const": "diameter",
+          "description": "Diameter (`Ø`, `⌀`, `DIA`).",
+          "type": "string"
+        },
+        {
+          "const": "radius",
+          "description": "Radius (`R`).",
+          "type": "string"
+        },
+        {
+          "const": "spherical_radius",
+          "description": "Spherical radius (`SR`).",
+          "type": "string"
+        },
+        {
+          "const": "angle",
+          "description": "Angle.",
+          "type": "string"
+        },
+        {
+          "const": "chamfer",
+          "description": "Chamfer, e.g. `1x45°`.",
+          "type": "string"
+        },
+        {
+          "const": "thread",
+          "description": "Thread, e.g. `M8x1.25-6H`.",
+          "type": "string"
+        },
+        {
+          "const": "surface_texture",
+          "description": "Surface texture requirement.",
+          "type": "string"
+        },
+        {
+          "const": "geometric",
+          "description": "Geometric tolerance (feature control frame).",
+          "type": "string"
+        },
+        {
+          "const": "note",
+          "description": "Text note with an inspectable requirement.",
+          "type": "string"
+        },
+        {
+          "const": "flag_note",
+          "description": "Flag note, linked from a flag symbol.",
+          "type": "string"
+        }
+      ]
+    },
+    "OrientedBox": {
+      "additionalProperties": false,
+      "description": "Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).",
+      "properties": {
+        "angle": {
+          "description": "Rotation in degrees, counterclockwise as seen on the sheet, in the range (-180, 180].\n`0` is text read left to right, `90` is text read bottom to top.",
+          "format": "double",
+          "type": "number"
+        },
+        "center": {
+          "$ref": "#/$defs/Point",
+          "description": "Center of the box."
+        },
+        "size": {
+          "$ref": "#/$defs/Size",
+          "description": "Size of the box before rotation."
+        }
+      },
+      "required": [
+        "center",
+        "size",
+        "angle"
+      ],
+      "type": "object"
+    },
+    "Point": {
+      "additionalProperties": false,
+      "description": "A point in sheet space.",
+      "properties": {
+        "x": {
+          "description": "Distance from the left sheet edge in PDF user units.",
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "description": "Distance from the top sheet edge in PDF user units.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "SheetKind": {
+      "description": "How the text of a sheet is stored, which decides the recognition path (FR-DOC-03).",
+      "oneOf": [
+        {
+          "const": "vector_text",
+          "description": "PDF text objects cover the dimension text.",
+          "type": "string"
+        },
+        {
+          "const": "vector_outlined",
+          "description": "Text was exported as curves.",
+          "type": "string"
+        },
+        {
+          "const": "raster",
+          "description": "Scanned or image only.",
+          "type": "string"
+        }
+      ]
+    },
+    "Size": {
+      "additionalProperties": false,
+      "description": "A width and height in PDF user units.",
+      "properties": {
+        "height": {
+          "description": "Vertical extent; for an oriented box, along its own y axis before rotation.",
+          "format": "double",
+          "type": "number"
+        },
+        "width": {
+          "description": "Horizontal extent; for an oriented box, along its own x axis before rotation.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "type": "object"
+    },
+    "ToleranceRule": {
+      "description": "Which rule produced the limits of a characteristic (data model `ToleranceDerivation`,\nprecedence FR-TOL-01).",
+      "oneOf": [
+        {
+          "const": "explicit",
+          "description": "Explicit tolerance on the callout (deviations, `±`, limits). Wins over a fit table.",
+          "type": "string"
+        },
+        {
+          "const": "fit",
+          "description": "Fit designation expanded with the ISO 286 tables.",
+          "type": "string"
+        },
+        {
+          "const": "drawing_rule",
+          "description": "Drawing specific rule such as a variable table or a local note.",
+          "type": "string"
+        },
+        {
+          "const": "general",
+          "description": "General tolerance standard from the title block.",
+          "type": "string"
+        },
+        {
+          "const": "decimal_rule",
+          "description": "Decimal place rule from the title block.",
+          "type": "string"
+        },
+        {
+          "const": "custom_table",
+          "description": "Custom tolerance table.",
+          "type": "string"
+        },
+        {
+          "const": "no_tolerance_defined",
+          "description": "The callout has no tolerance and the drawing declares no general tolerance.\nThe characteristic is flagged for review and has no limits.",
+          "type": "string"
+        }
+      ]
+    },
+    "TruthCharacteristic": {
+      "additionalProperties": false,
+      "description": "One expected characteristic.",
+      "properties": {
+        "fit": {
+          "description": "Fit designation such as `H7`, if the callout has one.",
+          "pattern": "^[A-Za-z]{1,2}[0-9]{1,2}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Key that is unique within the truth file and stable across edits, e.g. `c07`.\nNot the balloon number.",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$",
+          "type": "string"
+        },
+        "inspect": {
+          "description": "Whether the characteristic is inspected (false for reference and basic dimensions).",
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/CharacteristicKind",
+          "description": "What the characteristic describes."
+        },
+        "lower_limit": {
+          "description": "Expected lower limit. Present exactly when the rule yields limits.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "nominal": {
+          "description": "Nominal value. Absent for characteristics without a value (notes).",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "region": {
+          "$ref": "#/$defs/OrientedBox",
+          "description": "Oriented box around all text of the callout, in sheet space."
+        },
+        "requirement_text": {
+          "description": "Callout text as printed, normalized: the text objects of the callout joined with one\nspace in reading order (main text, then upper deviation, then lower deviation), without\nleading, trailing or repeated spaces. Characters are kept as printed, including `Ø` and\nthe Unicode minus U+2212.",
+          "type": "string"
+        },
+        "review_note": {
+          "description": "Why this entry is uncertain and what the owner should check. Absent when certain.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sheet": {
+          "description": "Zero based index of the sheet that holds the callout.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tolerance_rule": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToleranceRule"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rule that produces the limits (FR-TOL-01). Present exactly when a nominal is present."
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Unit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Unit of the nominal and the limits. Present exactly when a nominal is present."
+        },
+        "upper_limit": {
+          "description": "Expected upper limit. Present exactly when the rule yields limits.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "sheet",
+        "kind",
+        "requirement_text",
+        "region",
+        "inspect"
+      ],
+      "type": "object"
+    },
+    "TruthDrawing": {
+      "additionalProperties": false,
+      "description": "Identifies the drawing file.",
+      "properties": {
+        "file": {
+          "description": "Path relative to the `corpus/` directory with `/` separators,\ne.g. `drawings/test_drawing_1.pdf`.",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "SHA-256 of the file, 64 lowercase hex digits. Must match `corpus/PROVENANCE.md`.",
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "TruthSheet": {
+      "additionalProperties": false,
+      "description": "One sheet of the drawing.",
+      "properties": {
+        "index": {
+          "description": "Zero based sheet index (page index in the PDF).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/SheetKind",
+          "description": "Expected sheet classification (FR-DOC-03)."
+        },
+        "size": {
+          "$ref": "#/$defs/Size",
+          "description": "Sheet size in PDF user units."
+        }
+      },
+      "required": [
+        "index",
+        "kind",
+        "size"
+      ],
+      "type": "object"
+    },
+    "Unit": {
+      "description": "Unit of a nominal value and its limits.",
+      "oneOf": [
+        {
+          "const": "mm",
+          "description": "Millimeter.",
+          "type": "string"
+        },
+        {
+          "const": "in",
+          "description": "Inch.",
+          "type": "string"
+        },
+        {
+          "const": "deg",
+          "description": "Degree of angle (decimal degrees).",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Ground truth for one corpus drawing.",
+  "properties": {
+    "characteristics": {
+      "description": "Every characteristic a correct recognition proposes, in a stable order.",
+      "items": {
+        "$ref": "#/$defs/TruthCharacteristic"
+      },
+      "type": "array"
+    },
+    "drawing": {
+      "$ref": "#/$defs/TruthDrawing",
+      "description": "The drawing this truth describes."
+    },
+    "format_version": {
+      "description": "Format version, currently `1`.",
+      "format": "uint32",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "notes": {
+      "description": "Free text: how the truth was made (for example how regions were measured), conventions,\nopen questions.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sheets": {
+      "description": "Every sheet of the drawing, in document order.",
+      "items": {
+        "$ref": "#/$defs/TruthSheet"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "format_version",
+    "drawing",
+    "sheets",
+    "characteristics"
+  ],
+  "title": "Dimo corpus truth file",
+  "type": "object"
+}

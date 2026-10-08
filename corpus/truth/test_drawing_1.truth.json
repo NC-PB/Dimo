@@ -1,0 +1,567 @@
+{
+  "format_version": 1,
+  "drawing": {
+    "file": "drawings/test_drawing_1.pdf",
+    "sha256": "635a89735fc1a305a99c3d42e394785d0ca00e2d82f2af1d5bdba8b66fca5c82"
+  },
+  "sheets": [
+    {
+      "index": 0,
+      "kind": "vector_text",
+      "size": {
+        "width": 1584.0,
+        "height": 1224.0
+      }
+    }
+  ],
+  "characteristics": [
+    {
+      "id": "c01",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø8 c10",
+      "region": {
+        "center": {
+          "x": 237.51,
+          "y": 166.1
+        },
+        "size": {
+          "width": 39.02,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "8",
+      "unit": "mm",
+      "fit": "c10",
+      "tolerance_rule": "fit",
+      "upper_limit": "7.920",
+      "lower_limit": "7.862",
+      "inspect": true,
+      "review_note": "Fit designation without printed deviations. Limits from ISO 286 (c10 at 8 mm: -0.080 / -0.138) as recalled by the agent; the ISO 286 data table is not verified yet (D-43). Owner: check the values."
+    },
+    {
+      "id": "c02",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø8 f7",
+      "region": {
+        "center": {
+          "x": 413.62,
+          "y": 158.96
+        },
+        "size": {
+          "width": 30.48,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "8",
+      "unit": "mm",
+      "fit": "f7",
+      "tolerance_rule": "fit",
+      "upper_limit": "7.987",
+      "lower_limit": "7.972",
+      "inspect": true,
+      "review_note": "Fit designation without printed deviations. Limits from ISO 286 (f7 at 8 mm: -0.013 / -0.028). The same callout elsewhere on this sheet prints -0.0127 / -0.0279 (inch based fit table of the CAD tool, notes finding 1). Owner: confirm that ISO 286 values are expected here, not the printed values of the other callout."
+    },
+    {
+      "id": "c03",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø30 H7 +0.0203 -0",
+      "region": {
+        "center": {
+          "x": 594.3,
+          "y": 159.07
+        },
+        "size": {
+          "width": 89.28,
+          "height": 27.66
+        },
+        "angle": 0.0
+      },
+      "nominal": "30",
+      "unit": "mm",
+      "fit": "H7",
+      "tolerance_rule": "explicit",
+      "upper_limit": "30.0203",
+      "lower_limit": "30",
+      "inspect": true
+    },
+    {
+      "id": "c04",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø8 h6",
+      "region": {
+        "center": {
+          "x": 527.91,
+          "y": 269.08
+        },
+        "size": {
+          "width": 33.79,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "8",
+      "unit": "mm",
+      "fit": "h6",
+      "tolerance_rule": "fit",
+      "upper_limit": "8.000",
+      "lower_limit": "7.991",
+      "inspect": true,
+      "review_note": "Fit designation without printed deviations. Limits from ISO 286 (h6 at 8 mm: 0 / -0.009) as recalled by the agent; the ISO 286 data table is not verified yet (D-43). Owner: check the values."
+    },
+    {
+      "id": "c05",
+      "sheet": 0,
+      "kind": "radius",
+      "requirement_text": "R15 H7",
+      "region": {
+        "center": {
+          "x": 784.07,
+          "y": 324.07
+        },
+        "size": {
+          "width": 40.25,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "15",
+      "unit": "mm",
+      "fit": "H7",
+      "tolerance_rule": "fit",
+      "upper_limit": "15.018",
+      "lower_limit": "15.000",
+      "inspect": true,
+      "review_note": "Fit designation on a radius. ISO 286 H7 applied literally to the size 15 mm (+0.018 / 0). R15 H7 and Ø30 H7 (c03) point to the same bore, so the drawing states two different requirements for one feature. Owner: decide whether this entry and its limits are what a correct recognition returns."
+    },
+    {
+      "id": "c06",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø8 d9",
+      "region": {
+        "center": {
+          "x": 648.88,
+          "y": 323.94
+        },
+        "size": {
+          "width": 33.75,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "8",
+      "unit": "mm",
+      "fit": "d9",
+      "tolerance_rule": "fit",
+      "upper_limit": "7.960",
+      "lower_limit": "7.924",
+      "inspect": true,
+      "review_note": "Fit designation without printed deviations. Limits from ISO 286 (d9 at 8 mm: -0.040 / -0.076) as recalled by the agent; the ISO 286 data table is not verified yet (D-43). Owner: check the values."
+    },
+    {
+      "id": "c07",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "100 +0 −0.6",
+      "region": {
+        "center": {
+          "x": 399.89,
+          "y": 291.2
+        },
+        "size": {
+          "width": 43.99,
+          "height": 27.71
+        },
+        "angle": 0.0
+      },
+      "nominal": "100",
+      "unit": "mm",
+      "tolerance_rule": "explicit",
+      "upper_limit": "100",
+      "lower_limit": "99.4",
+      "inspect": true
+    },
+    {
+      "id": "c08",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "50",
+      "region": {
+        "center": {
+          "x": 222.88,
+          "y": 313.92
+        },
+        "size": {
+          "width": 13.79,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "50",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c09",
+      "sheet": 0,
+      "kind": "angle",
+      "requirement_text": "90.0°",
+      "region": {
+        "center": {
+          "x": 306.34,
+          "y": 346.5
+        },
+        "size": {
+          "width": 29.07,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "90.0",
+      "unit": "deg",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c10",
+      "sheet": 0,
+      "kind": "angle",
+      "requirement_text": "90.0° +0.0° −0.1°",
+      "region": {
+        "center": {
+          "x": 662.57,
+          "y": 397.71
+        },
+        "size": {
+          "width": 57.54,
+          "height": 27.71
+        },
+        "angle": 0.0
+      },
+      "nominal": "90.0",
+      "unit": "deg",
+      "tolerance_rule": "explicit",
+      "upper_limit": "90.0",
+      "lower_limit": "89.9",
+      "inspect": true
+    },
+    {
+      "id": "c11",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø8 f7 -0.0127 -0.0279",
+      "region": {
+        "center": {
+          "x": 543.03,
+          "y": 523.12
+        },
+        "size": {
+          "width": 74.71,
+          "height": 27.71
+        },
+        "angle": 0.0
+      },
+      "nominal": "8",
+      "unit": "mm",
+      "fit": "f7",
+      "tolerance_rule": "explicit",
+      "upper_limit": "7.9873",
+      "lower_limit": "7.9721",
+      "inspect": true
+    },
+    {
+      "id": "c12",
+      "sheet": 0,
+      "kind": "diameter",
+      "requirement_text": "Ø8 f7",
+      "region": {
+        "center": {
+          "x": 673.07,
+          "y": 522.99
+        },
+        "size": {
+          "width": 30.48,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "8",
+      "unit": "mm",
+      "fit": "f7",
+      "tolerance_rule": "fit",
+      "upper_limit": "7.987",
+      "lower_limit": "7.972",
+      "inspect": true,
+      "review_note": "Fit designation without printed deviations. Limits from ISO 286 (f7 at 8 mm: -0.013 / -0.028). The same callout elsewhere on this sheet prints -0.0127 / -0.0279 (inch based fit table of the CAD tool, notes finding 1). Owner: confirm that ISO 286 values are expected here, not the printed values of the other callout."
+    },
+    {
+      "id": "c13",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "12.39±0.1",
+      "region": {
+        "center": {
+          "x": 130.7,
+          "y": 498.58
+        },
+        "size": {
+          "width": 54.72,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "12.39",
+      "unit": "mm",
+      "tolerance_rule": "explicit",
+      "upper_limit": "12.49",
+      "lower_limit": "12.29",
+      "inspect": true
+    },
+    {
+      "id": "c14",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "31.05",
+      "region": {
+        "center": {
+          "x": 140.95,
+          "y": 523.09
+        },
+        "size": {
+          "width": 30.81,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "31.05",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c15",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "52.61",
+      "region": {
+        "center": {
+          "x": 141.81,
+          "y": 543.73
+        },
+        "size": {
+          "width": 30.81,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "52.61",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c16",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "71.04",
+      "region": {
+        "center": {
+          "x": 140.74,
+          "y": 563.72
+        },
+        "size": {
+          "width": 30.81,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "71.04",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c17",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "86.16",
+      "region": {
+        "center": {
+          "x": 140.87,
+          "y": 585.0
+        },
+        "size": {
+          "width": 30.81,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "86.16",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c18",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "50±0.1",
+      "region": {
+        "center": {
+          "x": 663.44,
+          "y": 763.11
+        },
+        "size": {
+          "width": 37.7,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "50",
+      "unit": "mm",
+      "tolerance_rule": "explicit",
+      "upper_limit": "50.1",
+      "lower_limit": "49.9",
+      "inspect": true
+    },
+    {
+      "id": "c19",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "30",
+      "region": {
+        "center": {
+          "x": 821.73,
+          "y": 819.59
+        },
+        "size": {
+          "width": 13.79,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "30",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c20",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "20",
+      "region": {
+        "center": {
+          "x": 789.94,
+          "y": 849.65
+        },
+        "size": {
+          "width": 13.79,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "20",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c21",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "200",
+      "region": {
+        "center": {
+          "x": 317.88,
+          "y": 912.02
+        },
+        "size": {
+          "width": 20.68,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "200",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c22",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "40",
+      "region": {
+        "center": {
+          "x": 1183.37,
+          "y": 763.14
+        },
+        "size": {
+          "width": 13.79,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "40",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c23",
+      "sheet": 0,
+      "kind": "linear",
+      "requirement_text": "100",
+      "region": {
+        "center": {
+          "x": 1244.36,
+          "y": 912.02
+        },
+        "size": {
+          "width": 20.68,
+          "height": 15.92
+        },
+        "angle": 0.0
+      },
+      "nominal": "100",
+      "unit": "mm",
+      "tolerance_rule": "no_tolerance_defined",
+      "inspect": true
+    },
+    {
+      "id": "c24",
+      "sheet": 0,
+      "kind": "note",
+      "requirement_text": "BREAK ALL SHARP EDGES AND REMOVE BURRS",
+      "region": {
+        "center": {
+          "x": 1145.07,
+          "y": 1142.07
+        },
+        "size": {
+          "width": 68.55,
+          "height": 12.17
+        },
+        "angle": 0.0
+      },
+      "inspect": true,
+      "review_note": "Title block note. Included as an inspectable requirement (visual check of edges). Owner: confirm that a correct recognition proposes it."
+    }
+  ],
+  "notes": [
+    "Status: draft written by an agent from corpus/notes/test_drawing_1.md and the content stream (T0.10). Not yet reviewed by the owner.",
+    "Regions: union of the font boxes of the text objects of each callout. Horizontal extent from the glyph advance widths (/W of the CID font) without leading or trailing spaces, vertical extent from font ascent to descent (/FontDescriptor). Positions from Tm, Tf and the page CTM, computed with a local Python script using pypdf 6.14.2, rounded to 0.01 pt. All text on this sheet is horizontal, so every angle is 0.",
+    "Not characteristics: zone labels, title block labels and empty fields, UNLESS OTHERWISE SPECIFIED / DIMENSIONS ARE IN MILLIMETERS, the empty ANGULAR = ± ° and SURFACE FINISH fields, DO NOT SCALE DRAWING, THIRD ANGLE PROJECTION, SIZE C, SCALE 1:1, SHEET 1 of 1.",
+    "Untoleranced dimensions and the untoleranced angle have no limits and rule no_tolerance_defined: the drawing declares no general tolerance (notes finding 2).",
+    "Explicit deviations win over the fit table (notes finding 1): c03 uses the printed +0.0203 / -0 although ISO 286 H7 at 30 mm gives +0.021 / 0, c11 uses the printed -0.0127 / -0.0279.",
+    "The ISO view has no callouts. Each Ø8 f7 callout points to one hole and has no quantity, so the three are separate characteristics (notes finding 5)."
+  ]
+}
