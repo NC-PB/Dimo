@@ -10,5 +10,8 @@
   "language_label": "Language",
   "viewport_label": "Drawing viewport",
   "side_panel_label": "Side panel",
-  "side_panel_empty": "Nothing selected."
+  "side_panel_empty": "Nothing selected.",
+  "app_version": "Version {version}",
+  "build_profile_debug": "debug build",
+  "build_profile_release": "release build"
 }

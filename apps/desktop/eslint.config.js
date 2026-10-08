@@ -5,7 +5,8 @@ import ts from "typescript-eslint";
 import svelteConfig from "./svelte.config.js";
 
 export default ts.config(
-  { ignores: ["dist/", "src-tauri/", "src/lib/paraglide/"] },
+  // Generated code: Paraglide messages and the tauri-specta bindings (checked by a Rust test).
+  { ignores: ["dist/", "src-tauri/", "src/lib/paraglide/", "src/lib/ipc/bindings.ts"] },
   js.configs.recommended,
   ...ts.configs.strict,
   ...svelte.configs.recommended,

@@ -1,3 +1,4 @@
+import type { BuildProfile } from "./ipc/bindings";
 import { m } from "./paraglide/messages.js";
 import { getLocale, locales, setLocale, type Locale } from "./paraglide/runtime.js";
 import type { View } from "./stores/view.svelte";
@@ -23,5 +24,15 @@ export function viewLabel(view: View): string {
       return m.view_export();
     case "settings":
       return m.view_settings();
+  }
+}
+
+/** Translated label of a build profile reported by `app_info`. */
+export function buildProfileLabel(profile: BuildProfile): string {
+  switch (profile) {
+    case "debug":
+      return m.build_profile_debug();
+    case "release":
+      return m.build_profile_release();
   }
 }

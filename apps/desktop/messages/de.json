@@ -10,5 +10,8 @@
   "language_label": "Sprache",
   "viewport_label": "Zeichnungsansicht",
   "side_panel_label": "Seitenleiste",
-  "side_panel_empty": "Nichts ausgewählt."
+  "side_panel_empty": "Nichts ausgewählt.",
+  "app_version": "Version {version}",
+  "build_profile_debug": "Debug-Build",
+  "build_profile_release": "Release-Build"
 }
