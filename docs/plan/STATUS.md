@@ -51,5 +51,5 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
-- 2026-10-08: T0.1 done. Workspace with 8 library stubs and `dimo-cli` (clap 4.6.7). `cargo deny` not run locally (not installed); all locked crates checked by hand: at least 14 days old, MIT/Apache/Unicode licenses.
+- 2026-10-08: T0.1 done. Workspace with 8 library stubs and `dimo-cli` (clap 4.6.7). `cargo deny check` passes (wildcard paths allowed for unpublished internal crates); all locked crates are at least 14 days old.
 - 2026-10-08: Repository bootstrapped: agent instructions, conventions, M0 plan, governance files, guard hooks. No code yet.

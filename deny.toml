@@ -30,6 +30,8 @@ allow = [
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# Internal path dependencies have no version. Allowed because every crate has publish = false.
+allow-wildcard-paths = true
 
 [sources]
 unknown-registry = "deny"
