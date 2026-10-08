@@ -1,0 +1,77 @@
+---
+source: crates/dimo-pdf/tests/text.rs
+expression: out
+---
+72 runs
+"UNLESS OTHERWISE SPECIFIED," rot 0 NotoSans 4.8
+"DIMENSIONS ARE IN MILLIMETERS" rot 0 NotoSans 4.8
+"ANGULAR = ± °" rot 0 NotoSans 4.3
+"SURFACE FINISH" rot 0 NotoSans 4.8
+"DO NOT SCALE DRAWING" rot 0 NotoSans 6.3
+"BREAK ALL SHARP EDGES AND" rot 0 NotoSans 4.8
+"REMOVE BURRS" rot 0 NotoSans 4.8
+"THIRD ANGLE PROJECTION" rot 0 NotoSans 4.8
+"NAME" rot 0 NotoSans 4.8
+"DATE" rot 0 NotoSans 4.8
+"DRAWN" rot 0 NotoSans 4.8
+"CHECKED" rot 0 NotoSans 4.8
+"APPROVED" rot 0 NotoSans 4.8
+"MATERIAL" rot 0 NotoSans 4.8
+"FINISH" rot 0 NotoSans 4.8
+"TITLE" rot 0 NotoSans 4.8
+"SIZE" rot 0 NotoSans 3.9
+"C" rot 0 NotoSans 14.5
+"DWG NO." rot 0 NotoSans 3.9
+"REV." rot 0 NotoSans 3.9
+"SCALE" rot 0 NotoSans 3.9
+"1:1" rot 0 NotoSans 8.7
+"WEIGHT" rot 0 NotoSans 3.9
+"SHEET" rot 0 NotoSans 3.9
+"1 of 1" rot 0 NotoSans 8.7
+"4" rot 0 NotoSans 24.1
+"4" rot 0 NotoSans 24.1
+"3" rot 0 NotoSans 24.1
+"3" rot 0 NotoSans 24.1
+"2" rot 0 NotoSans 24.1
+"2" rot 0 NotoSans 24.1
+"1" rot 0 NotoSans 24.1
+"1" rot 0 NotoSans 24.1
+"A" rot 0 NotoSans 24.1
+"A" rot 0 NotoSans 24.1
+"B" rot 0 NotoSans 24.1
+"B" rot 0 NotoSans 24.1
+"C" rot 0 NotoSans 24.1
+"C" rot 0 NotoSans 24.1
+"D" rot 0 NotoSans 24.1
+"Ø30 H7" rot 0 NotoSans 12.1
+"+0.0203" rot 0 NotoSans 12.1
+"-0" rot 0 NotoSans 12.1
+"D" rot 0 NotoSans 24.1
+"100" rot 0 NotoSans 12.1
+"+0" rot 0 NotoSans 12.1
+"−0.6" rot 0 NotoSans 12.1
+"50" rot 0 NotoSans 12.1
+"50±0.1" rot 0 NotoSans 12.1
+"30" rot 0 NotoSans 12.1
+"20" rot 0 NotoSans 12.1
+"200" rot 0 NotoSans 12.1
+"100" rot 0 NotoSans 12.1
+"12.39±0.1" rot 0 NotoSans 12.1
+"31.05" rot 0 NotoSans 12.1
+"52.61" rot 0 NotoSans 12.1
+"71.04" rot 0 NotoSans 12.1
+"86.16" rot 0 NotoSans 12.1
+"40" rot 0 NotoSans 12.1
+"90.0°" rot 0 NotoSans 12.1
+"90.0°" rot 0 NotoSans 12.1
+"+0.0°" rot 0 NotoSans 12.1
+"−0.1°" rot 0 NotoSans 12.1
+"R15 H7" rot 0 NotoSans 12.1
+"Ø8 f7" rot 0 NotoSans 12.1
+"Ø8 f7" rot 0 NotoSans 12.1
+"-0.0127" rot 0 NotoSans 12.1
+"-0.0279" rot 0 NotoSans 12.1
+"Ø8 d9" rot 0 NotoSans 12.1
+"Ø8 h6" rot 0 NotoSans 12.1
+"Ø8 f7" rot 0 NotoSans 12.1
+"Ø8 c10" rot 0 NotoSans 12.1

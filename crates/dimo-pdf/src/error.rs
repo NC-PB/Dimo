@@ -50,6 +50,10 @@ pub enum PdfError {
     #[error("render failed: {0}")]
     Render(String),
 
+    /// PDFium reported an error while reading text or page content.
+    #[error("text extraction failed: {0}")]
+    Text(String),
+
     /// The render thread is gone (it panicked or could not start). Nothing more can be rendered
     /// in this process.
     #[error("PDFium render thread is not running")]

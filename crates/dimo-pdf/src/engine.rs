@@ -15,6 +15,8 @@ use crate::geometry::{SheetRect, SheetSize};
 use crate::hash::ContentHash;
 use crate::library::resolve_library_path;
 use crate::raster::RgbaImage;
+use crate::sheet_kind::{SheetAnalysis, analyze_sheet};
+use crate::text::{TextRun, text_runs};
 
 /// Largest width or height of one rendered image in pixels. A0 at 300 dpi is about
 /// 9933 x 14043 pixels, so this leaves headroom while bounding memory (1 GiB RGBA at most).
@@ -40,6 +42,16 @@ enum Request {
     },
     Close {
         doc: u64,
+    },
+    TextRuns {
+        doc: u64,
+        sheet: usize,
+        reply: Reply<Vec<TextRun>>,
+    },
+    AnalyzeSheet {
+        doc: u64,
+        sheet: usize,
+        reply: Reply<SheetAnalysis>,
     },
 }
 
@@ -184,6 +196,28 @@ impl Document {
     }
 }
 
+impl Document {
+    /// The text runs of a sheet in content order, in sheet space (stage 2). See [`TextRun`].
+    pub fn text_runs(&self, sheet: usize) -> Result<Vec<TextRun>, PdfError> {
+        self.sheet_size(sheet)?;
+        self.engine.call(|reply| Request::TextRuns {
+            doc: self.id,
+            sheet,
+            reply,
+        })
+    }
+
+    /// Classifies a sheet from its content (FR-DOC-03, stage 1). See [`SheetAnalysis`].
+    pub fn analyze_sheet(&self, sheet: usize) -> Result<SheetAnalysis, PdfError> {
+        self.sheet_size(sheet)?;
+        self.engine.call(|reply| Request::AnalyzeSheet {
+            doc: self.id,
+            sheet,
+            reply,
+        })
+    }
+}
+
 impl Drop for Document {
     fn drop(&mut self) {
         // If the render thread is gone there is nothing left to close.
@@ -286,8 +320,25 @@ fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
             Request::Close { doc } => {
                 docs.remove(&doc);
             }
+            Request::TextRuns { doc, sheet, reply } => {
+                let _ = reply.send(with_doc(&docs, doc, |d| text_runs(d, sheet)));
+            }
+            Request::AnalyzeSheet { doc, sheet, reply } => {
+                let _ = reply.send(with_doc(&docs, doc, |d| analyze_sheet(d, sheet)));
+            }
         }
     }
+}
+
+fn with_doc<'a, T>(
+    docs: &HashMap<u64, PdfDocument<'a>>,
+    doc: u64,
+    f: impl FnOnce(&PdfDocument<'a>) -> Result<T, PdfError>,
+) -> Result<T, PdfError> {
+    docs.get(&doc).map_or_else(
+        || Err(PdfError::Text(format!("document {doc} is not open"))),
+        f,
+    )
 }
 
 fn sheet_sizes(doc: &PdfDocument<'_>) -> Vec<SheetSize> {
