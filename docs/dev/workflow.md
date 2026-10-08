@@ -8,6 +8,20 @@
   docs, build, ci, chore. Scope is the crate or area.
 - One logical change per commit. Requirement IDs in the body when relevant.
 
+## CI
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+- `check`: `./scripts/check.sh` on Ubuntu, macOS and Windows (fmt, clippy, tests, `cargo deny`,
+  frontend check, lint, npm licenses, tests).
+- `npm-licenses`: `node scripts/check-npm-licenses.mjs`. The allow list mirrors `deny.toml`; the
+  accepted build time exceptions are listed in the script and in the STATUS decision log.
+- `dco`: on pull requests, `./scripts/check-dco.sh <base> <head>` fails if a commit lacks
+  `Signed-off-by`. Run it locally with `./scripts/check-dco.sh origin/main`.
+
+Actions are pinned to full commit SHAs of releases at least 14 days old. Release workflows come
+with 0.1.
+
 ## Task lifecycle
 
 1. Task is listed in `docs/plan/M<n>.md` with acceptance criteria.

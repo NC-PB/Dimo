@@ -34,6 +34,8 @@ if [[ -f apps/desktop/package.json ]]; then
   pnpm -C apps/desktop check
   step "frontend lint"
   pnpm -C apps/desktop lint
+  step "npm licenses"
+  node scripts/check-npm-licenses.mjs
   if [[ $FAST -eq 0 ]]; then
     step "frontend test"
     pnpm -C apps/desktop test
