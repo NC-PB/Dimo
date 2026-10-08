@@ -12,7 +12,11 @@ publish.workspace = true
 tauri-build.workspace = true
 
 [dependencies]
+serde.workspace = true
+specta.workspace = true
+specta-typescript.workspace = true
 tauri.workspace = true
+tauri-specta.workspace = true
 
 [lints]
 workspace = true
