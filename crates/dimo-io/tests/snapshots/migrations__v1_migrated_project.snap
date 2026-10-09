@@ -1,0 +1,214 @@
+---
+source: crates/dimo-io/tests/migrations.rs
+expression: migrated
+---
+{
+  "info": {
+    "part_number": "P-100",
+    "part_name": "Bracket",
+    "customer": "Example customer",
+    "order_reference": "PO 4711"
+  },
+  "revisions": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "label": "",
+      "file_name": "part-100.pdf",
+      "sha256": "afeeeee7d0ae4766925fdc4e895b12d25a34a0f6f1b8a3d9ced882ebab4004f6",
+      "imported_at": "2026-03-01T08:00:00Z",
+      "sheets": [
+        {
+          "id": "00000000-0000-0000-0000-000000000002",
+          "index": 0,
+          "size": {
+            "width": 1190.55,
+            "height": 841.89
+          },
+          "rotation": "deg0",
+          "kind": "vector_text",
+          "raster_dpi": null,
+          "unit": "mm",
+          "scale": {
+            "drawing": 1,
+            "actual": 1
+          }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000003",
+          "index": 1,
+          "size": {
+            "width": 595.276,
+            "height": 841.89
+          },
+          "rotation": "deg0",
+          "kind": "raster",
+          "raster_dpi": null,
+          "unit": "mm",
+          "scale": {
+            "drawing": 1,
+            "actual": 1
+          }
+        }
+      ]
+    }
+  ],
+  "current_revision": "00000000-0000-0000-0000-000000000001",
+  "characteristics": [
+    {
+      "id": "00000000-0000-0000-0000-000000000004",
+      "number": 1,
+      "kind": "diameter",
+      "requirement_text": "Ø8 ±0.1",
+      "nominal": "8.000",
+      "unit": "mm",
+      "upper_dev": "0.1",
+      "lower_dev": "-0.1",
+      "upper_limit": "8.100",
+      "lower_limit": "7.900",
+      "fit": null,
+      "quantity": 1,
+      "classification": "none",
+      "inspection": {
+        "method": "",
+        "gauge": "",
+        "sampling": "",
+        "frequency": ""
+      },
+      "inspect": true,
+      "status": "accepted",
+      "origin": "manual",
+      "sources": [
+        {
+          "sheet": "00000000-0000-0000-0000-000000000002",
+          "region": {
+            "center": {
+              "x": 60.25,
+              "y": 200.5
+            },
+            "size": {
+              "width": 33.3,
+              "height": 7.1
+            },
+            "angle": 0.1
+          },
+          "text_source": {
+            "type": "manual"
+          },
+          "raw_text": null
+        }
+      ],
+      "comment": ""
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000006",
+      "number": 2,
+      "kind": "linear",
+      "requirement_text": "",
+      "nominal": "30.0203",
+      "unit": "mm",
+      "upper_dev": null,
+      "lower_dev": null,
+      "upper_limit": null,
+      "lower_limit": null,
+      "fit": null,
+      "quantity": 1,
+      "classification": "none",
+      "inspection": {
+        "method": "",
+        "gauge": "",
+        "sampling": "",
+        "frequency": ""
+      },
+      "inspect": true,
+      "status": "accepted",
+      "origin": "manual",
+      "sources": [
+        {
+          "sheet": "00000000-0000-0000-0000-000000000002",
+          "region": {
+            "center": {
+              "x": 260.0,
+              "y": 0.3333333333333333
+            },
+            "size": {
+              "width": 33.3,
+              "height": 7.1
+            },
+            "angle": 0.1
+          },
+          "text_source": {
+            "type": "manual"
+          },
+          "raw_text": null
+        }
+      ],
+      "comment": "check twice"
+    }
+  ],
+  "balloons": [
+    {
+      "id": "00000000-0000-0000-0000-000000000005",
+      "characteristic": "00000000-0000-0000-0000-000000000004",
+      "sheet": "00000000-0000-0000-0000-000000000002",
+      "position": {
+        "x": 0.30000000000000004,
+        "y": 1e-7
+      },
+      "anchor": {
+        "x": 78.95,
+        "y": 200.6
+      },
+      "style": {
+        "shape": null,
+        "size_mm": null,
+        "outline_mm": null,
+        "outline_color": null,
+        "fill_color": null,
+        "text_color": null,
+        "leader": null
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000007",
+      "characteristic": "00000000-0000-0000-0000-000000000006",
+      "sheet": "00000000-0000-0000-0000-000000000002",
+      "position": {
+        "x": 300.0,
+        "y": 0.3333333333333333
+      },
+      "anchor": {
+        "x": 278.7,
+        "y": 0.43333333333333335
+      },
+      "style": {
+        "shape": null,
+        "size_mm": null,
+        "outline_mm": null,
+        "outline_color": null,
+        "fill_color": null,
+        "text_color": null,
+        "leader": null
+      }
+    }
+  ],
+  "numbering": {
+    "lock": {
+      "reason": "manual",
+      "locked_at": "2026-03-01T08:09:59.999Z",
+      "locked_by": "tester",
+      "insert_policy": "next_free",
+      "highest_number": 2
+    }
+  },
+  "settings": {
+    "balloon_style": {
+      "shape": "circle",
+      "size_mm": 7.0,
+      "outline_mm": 0.35,
+      "outline_color": "#0057B8",
+      "fill_color": "#FFFFFF",
+      "text_color": "#000000",
+      "leader": true
+    }
+  }
+}

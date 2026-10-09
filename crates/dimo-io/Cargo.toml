@@ -10,6 +10,18 @@ publish.workspace = true
 
 [dependencies]
 dimo-core.workspace = true
+serde.workspace = true
+# float_roundtrip: sheet geometry (f64) must load exactly as saved, or save, load, save differs.
+serde_json = { workspace = true, features = ["float_roundtrip"] }
+sha2.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+boon.workspace = true
+insta.workspace = true
+proptest.workspace = true
 
 [lints]
 workspace = true

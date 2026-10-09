@@ -1,11 +1,8 @@
 //! Project container, migrations, and imports and exports of inspection data.
 //!
-//! Stub created in T0.1. Content follows in later milestones.
+//! - [`project`]: the `.dimo` project file (ZIP or folder), schema versions and migrations,
+//!   drawing import, and [`project::ProjectSession`] for an open project (T1.3).
+//! - [`journal`]: the autosave journal and crash recovery (NFR-REL-01, D-28).
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn crate_builds() {
-        assert_eq!(env!("CARGO_PKG_NAME"), "dimo-io");
-    }
-}
+pub mod journal;
+pub mod project;
