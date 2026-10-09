@@ -22,7 +22,10 @@ pub mod project;
 pub mod sheet;
 pub mod truth;
 
-pub use balloon::{Balloon, BalloonShape, BalloonStyle, BalloonStyleOverride, Color};
+pub use balloon::{
+    BALLOON_METRICS, Balloon, BalloonLayout, BalloonMetrics, BalloonShape, BalloonStyle,
+    BalloonStyleOverride, Color, UNITS_PER_MM,
+};
 pub use characteristic::{
     Characteristic, CharacteristicKind, CharacteristicStatus, Classification, FieldError,
     FieldValue, Inspection, Origin, SourceRegion, TextSource, ToleranceRule, Unit,

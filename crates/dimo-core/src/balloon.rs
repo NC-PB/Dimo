@@ -164,6 +164,123 @@ impl BalloonStyle {
     }
 }
 
+/// The numbers that turn a [`BalloonStyle`] and a balloon text into the balloon's size and
+/// font size (D-24, FR-BAL-03). The ballooned PDF and the viewport use the same values: the
+/// export through [`BalloonStyle::layout`], the viewport through the generated constant
+/// `BALLOON_METRICS` in the TypeScript bindings. A test checks that both give the same sizes.
+///
+/// The rule, with `h` the style size in sheet units:
+///
+/// - height `h`, outline width `outline_mm` in sheet units, font size `font_share * h`;
+/// - text width estimated per character: `narrow_em` for `.` and `,`, `digit_em` for every
+///   other character, times the font size;
+/// - circle: width `h`; if the text is wider than `circle_text_share * h` the font shrinks
+///   until it fits;
+/// - rectangle: width `max(h, text + 2 * box_padding_share * h)`;
+/// - flag: the rectangle width plus `flag_point_share * h` for the pointed end, at least
+///   `flag_min_width_share * h`.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub struct BalloonMetrics {
+    /// Sheet units per millimeter on the printed sheet (72 / 25.4).
+    pub units_per_mm: f64,
+    /// Font size as a share of the balloon height.
+    pub font_share: f64,
+    /// Advance of a digit, in em, also used for any other character except `.` and `,`
+    /// (balloon texts are numbers). At least the digit advance of the bundled bold font, so
+    /// the estimate never runs short for numbers.
+    pub digit_em: f64,
+    /// Advance of `.` and `,` in em.
+    pub narrow_em: f64,
+    /// Share of the circle diameter the text may fill before the font shrinks.
+    pub circle_text_share: f64,
+    /// Free space left and right of the text in a rectangle or flag, as a share of the height.
+    pub box_padding_share: f64,
+    /// Extra width of a flag for its pointed end, as a share of the height.
+    pub flag_point_share: f64,
+    /// Smallest flag width as a share of the height.
+    pub flag_min_width_share: f64,
+}
+
+/// The balloon layout rule (D-24). See [`BalloonMetrics`].
+pub const BALLOON_METRICS: BalloonMetrics = BalloonMetrics {
+    units_per_mm: UNITS_PER_MM,
+    font_share: 0.5,
+    digit_em: 0.6,
+    narrow_em: 0.3,
+    circle_text_share: 0.78,
+    box_padding_share: 0.25,
+    flag_point_share: 0.5,
+    flag_min_width_share: 1.5,
+};
+
+/// Size of one balloon in sheet units, from [`BalloonStyle::layout`]. The shape is drawn in
+/// the box of `width` x `height` around the balloon position.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub struct BalloonLayout {
+    /// Box width.
+    pub width: f64,
+    /// Box height.
+    pub height: f64,
+    /// Outline and leader width.
+    pub stroke: f64,
+    /// Font size (em) of the text.
+    pub font_size: f64,
+}
+
+impl BalloonMetrics {
+    /// Estimated width of `text` in em.
+    pub fn text_width_em(&self, text: &str) -> f64 {
+        text.chars()
+            .map(|c| {
+                if matches!(c, '.' | ',') {
+                    self.narrow_em
+                } else {
+                    self.digit_em
+                }
+            })
+            .sum()
+    }
+
+    /// Layout of a balloon in `style` showing `text`.
+    pub fn layout(&self, style: &BalloonStyle, text: &str) -> BalloonLayout {
+        let height = style.size_mm * self.units_per_mm;
+        let stroke = style.outline_mm * self.units_per_mm;
+        let mut font_size = height * self.font_share;
+        let text_width = self.text_width_em(text) * font_size;
+        let padded = text_width + 2.0 * self.box_padding_share * height;
+        let width = match style.shape {
+            BalloonShape::Circle => {
+                let room = height * self.circle_text_share;
+                if text_width > room {
+                    font_size *= room / text_width;
+                }
+                height
+            }
+            BalloonShape::Rectangle => height.max(padded),
+            BalloonShape::Flag => {
+                (height * self.flag_min_width_share).max(padded + height * self.flag_point_share)
+            }
+        };
+        BalloonLayout {
+            width,
+            height,
+            stroke,
+            font_size,
+        }
+    }
+}
+
+impl BalloonStyle {
+    /// Size of a balloon in this style showing `text`, by the rule of [`BALLOON_METRICS`].
+    pub fn layout(&self, text: &str) -> BalloonLayout {
+        BALLOON_METRICS.layout(self, text)
+    }
+}
+
 /// Per balloon deviations from the project default style. `null` means "use the default".
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -245,6 +362,39 @@ mod tests {
         assert!((style.size_mm - 7.0).abs() < f64::EPSILON);
         assert_eq!(style.outline_color.rgb(), [0x00, 0x57, 0xB8]);
         assert!(style.leader && style.is_valid());
+    }
+
+    #[test]
+    fn layout_follows_the_metrics() {
+        let circle = BalloonStyle::default();
+        let one = circle.layout("7");
+        assert!((one.height - 7.0 * UNITS_PER_MM).abs() < 1e-12);
+        assert!((one.width - one.height).abs() < 1e-12);
+        assert!((one.stroke - 0.35 * UNITS_PER_MM).abs() < 1e-12);
+        assert!((one.font_size - one.height / 2.0).abs() < 1e-12);
+        // Four digits do not fit at full size: the circle keeps its size, the font shrinks.
+        let long = circle.layout("1234");
+        assert!((long.width - one.width).abs() < 1e-12);
+        assert!(long.font_size < one.font_size);
+        assert!((4.0 * 0.6 * long.font_size - 0.78 * long.height).abs() < 1e-9);
+        // Boxes grow instead.
+        let rect = BalloonStyle {
+            shape: BalloonShape::Rectangle,
+            ..BalloonStyle::default()
+        };
+        let wide = rect.layout("1234");
+        assert!((wide.font_size - one.font_size).abs() < 1e-12);
+        assert!((wide.width - (2.4 * wide.font_size + 0.5 * wide.height)).abs() < 1e-9);
+        let short = rect.layout("1");
+        assert!((short.width - short.height).abs() < 1e-12);
+        let flag = BalloonStyle {
+            shape: BalloonShape::Flag,
+            ..BalloonStyle::default()
+        };
+        let flag_one = flag.layout("1");
+        assert!((flag_one.width - 1.5 * flag_one.height).abs() < 1e-12);
+        assert!(flag.layout("12345").width > flag_one.width);
+        assert!((BALLOON_METRICS.text_width_em("1.2") - 1.5).abs() < 1e-12);
     }
 
     #[test]
