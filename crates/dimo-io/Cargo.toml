@@ -10,6 +10,15 @@ publish.workspace = true
 
 [dependencies]
 dimo-core.workspace = true
+csv.workspace = true
+rust_decimal.workspace = true
+rust_xlsxwriter.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+rust_decimal.workspace = true
+zip = { version = "=8.3.0", default-features = false, features = ["deflate"] }
 
 [lints]
 workspace = true

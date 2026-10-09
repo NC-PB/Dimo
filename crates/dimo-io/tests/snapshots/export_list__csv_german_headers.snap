@@ -1,0 +1,5 @@
+---
+source: crates/dimo-io/tests/export_list.rs
+expression: text.lines().next().unwrap()
+---
+Nr,Art,Anforderung,Nennmaß,Oberes Abmaß,Unteres Abmaß,Obere Grenze,Untere Grenze,Einheit,Passung,Anzahl,Klassifizierung,Prüfmethode,Prüfmittel,Stichprobe,Häufigkeit,Prüfen,Status,Blatt,Kommentar
