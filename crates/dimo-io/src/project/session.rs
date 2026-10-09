@@ -19,7 +19,7 @@
 
 use std::path::{Path, PathBuf};
 
-use dimo_core::{Document, Project, ProjectInfo, Sha256Hex};
+use dimo_core::{Document, Project, ProjectInfo, Sha256Hex, Timestamp};
 
 use super::error::ProjectError;
 use super::import::ImportedDrawing;
@@ -159,6 +159,23 @@ impl ProjectSession {
     /// The saved audit log plus everything flushed since.
     pub fn audit(&self) -> &[dimo_core::AuditEntry] {
         &self.file.audit
+    }
+
+    /// The drawing file of the current revision, for exports.
+    pub fn current_drawing(&self) -> Option<&[u8]> {
+        let revision = self.project().current_revision()?;
+        self.drawing(&revision.sha256)
+    }
+
+    /// When the project was last changed: the time of the newest audit entry, flushed or not,
+    /// else the creation time. The manifest's `modified` of the next save. Exports take dates
+    /// from here, never from the clock (FR-EXP-11).
+    pub fn modified(&self) -> Timestamp {
+        self.document
+            .audit()
+            .last()
+            .or_else(|| self.file.audit.last())
+            .map_or_else(|| self.file.created.clone(), |e| e.timestamp.clone())
     }
 
     /// The project file and its layout, `None` before the first save.

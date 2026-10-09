@@ -263,3 +263,17 @@ fn unsaved_projects_keep_entries_in_the_audit_log() {
         Err(dimo_io::project::ProjectError::NoPath)
     ));
 }
+
+#[test]
+fn modified_follows_the_audit_log_not_the_clock() {
+    let mut env = common::env();
+    let mut session = ProjectSession::create(common::info(), common::drawing(&mut env));
+    assert_eq!(session.modified().as_str(), "2026-03-01T08:00:00Z");
+    assert!(session.current_drawing().is_some_and(|d| !d.is_empty()));
+    common::at(&mut env, "2026-03-02T09:30:00Z");
+    rename(&mut session, &mut env, "draft");
+    // Pending in the document, not yet flushed.
+    assert_eq!(session.modified().as_str(), "2026-03-02T09:30:00Z");
+    session.flush_journal().unwrap();
+    assert_eq!(session.modified().as_str(), "2026-03-02T09:30:00Z");
+}
