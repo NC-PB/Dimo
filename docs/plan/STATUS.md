@@ -1,6 +1,7 @@
 # Status
 
 Single place for progress. Agents update this file at the end of every task.
+Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.md).
 
 ## Current
 
@@ -113,7 +114,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 | 2026-10-08 | TypeScript 6.0.3 instead of 7.x | svelte-check 4.7 and typescript-eslint 8.70 support TypeScript only up to 6.0 | T0.2, agent |
 | 2026-10-08 | pnpm 11.27.1 instead of 12.x | corepack 0.34 (bundled with Node 22.20) cannot start pnpm 12 (`bin/pnpm.mjs`) | T0.2, agent |
 | 2026-10-08 | Tauri app identifier `io.github.nc-pb.dimo` | Determines the app data folder, hard to change after release. **Owner: confirm** | T0.2, agent |
-| 2026-10-08 | Theme follows the OS only. The settings switch of D-51 comes with the Settings view | Settings view has no content yet. **Owner: confirm** | T0.2, agent |
+| 2026-10-08 | Theme follows the OS only. The settings switch of D-51 comes with the Settings view (done in T1.9) | Settings view had no content yet | T0.2, agent |
 | 2026-10-08 | UI language: stored in localStorage, else OS language, else English. Switching reloads the window | Paraglide default, every message rerenders without per message reactivity | T0.2, agent |
 | 2026-10-08 | Paraglide message format plugin loaded from `node_modules`, not from a CDN | Offline, reproducible builds (rule 9). Package has no license field, its LICENSE file is MIT | T0.2, agent |
 | 2026-10-08 | Accepted build time npm licenses outside rule 10 list: MPL-2.0 (`lightningcss`, used by Tailwind and Vite), unlabeled `@lix-js/sdk-<platform>` binaries (repository `opral/lix` is MIT, used by Paraglide at build time), BlueOak-1.0.0 (`minimatch`), 0BSD (`tslib`). None of the MPL or unlabeled code ships in the app bundle | Needed for the T0.4 npm license check. **Owner: confirm** | T0.2, agent |
