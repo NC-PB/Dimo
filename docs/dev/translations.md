@@ -37,7 +37,10 @@ changes beyond one table entry (FR-SET-04). Every visible string of the app goes
    In the app open Settings, choose the language and look through every view. The window
    reloads when the language changes.
 
-6. Optional: translate the user guide into `docs/user/<tag>/`.
+6. Optional: translate the user guide into `docs/user/<tag>/`. Copy `docs/user/en/shortcuts.md`
+   and add the table header words of the language to `WORDS` in
+   `apps/desktop/src/lib/shortcuts-docs.test.ts`; the test then checks the shortcut tables and
+   prints the correct ones when they differ.
 
 ## Wording
 

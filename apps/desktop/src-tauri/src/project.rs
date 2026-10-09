@@ -229,16 +229,20 @@ pub async fn save_project_as(app: AppHandle, window: WebviewWindow) -> Result<bo
         }
     })
     .await?;
-    let picked = rfd::AsyncFileDialog::new()
-        .add_filter("Dimo", &[EXTENSION])
-        .set_file_name(suggested)
-        .set_parent(&window)
-        .save_file()
-        .await;
-    let Some(file) = picked else {
-        return Ok(false);
+    let mut path = if let Some(path) = crate::dev::dev_save_as() {
+        path
+    } else {
+        let picked = rfd::AsyncFileDialog::new()
+            .add_filter("Dimo", &[EXTENSION])
+            .set_file_name(suggested)
+            .set_parent(&window)
+            .save_file()
+            .await;
+        let Some(file) = picked else {
+            return Ok(false);
+        };
+        file.path().to_path_buf()
     };
-    let mut path = file.path().to_path_buf();
     if path.extension().is_none() {
         path.set_extension(EXTENSION);
     }

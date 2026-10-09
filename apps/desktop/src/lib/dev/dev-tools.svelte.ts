@@ -108,8 +108,9 @@ export class DevToolsStore {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await this.measureTableScroll();
     }
-    if (startup.ui_script !== null && opened) {
-      // Let the first tiles arrive, so captures show the drawing.
+    if (startup.ui_script !== null) {
+      // Let the first tiles arrive, so captures show the drawing. Without `DIMO_DEV_OPEN` the
+      // script runs on whatever project the app restored (crash recovery check).
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await runUiScript(startup.ui_script);
     }

@@ -1,0 +1,72 @@
+[
+  { "mark": "main flow start" },
+  { "key": "b" },
+  {
+    "drag": [
+      [218, 158],
+      [257, 174]
+    ]
+  },
+  { "type": "Ø8 c10" },
+  { "key": "Enter" },
+  { "click": [413.6, 159] },
+  { "type": "Ø8 f7" },
+  { "key": "Enter" },
+  { "click": [594.3, 159.1] },
+  { "type": "Ø30 H7 +0.0203 -0" },
+  { "key": "Enter" },
+  { "click": [527.9, 269.1] },
+  { "type": "Ø8 h6" },
+  { "key": "Enter" },
+  { "click": [399.9, 291.2] },
+  { "type": "100 +0 -0.6" },
+  { "key": "Enter" },
+  { "report": "placed" },
+
+  { "row": 2 },
+  { "key": "ArrowRight" },
+  { "key": "Enter" },
+  { "type": "8.0" },
+  { "key": "Tab" },
+  { "key": "Enter" },
+  { "type": "0.02" },
+  { "key": "Tab" },
+  { "key": "Enter" },
+  { "type": "-0.05" },
+  { "key": "Enter" },
+  { "row": 5 },
+  { "key": "End" },
+  { "key": "ArrowLeft" },
+  { "key": "Enter" },
+  { "type": "check twice" },
+  { "key": "Enter" },
+  { "report": "edited" },
+
+  { "row": 5 },
+  { "key": "ArrowUp", "alt": true },
+  { "report": "reordered" },
+
+  { "button": "↻" },
+  { "select": ["Scale", "2:1"] },
+  { "check": ["Inch", true] },
+  { "report": "sheet set" },
+
+  { "button": "Save as" },
+  { "wait": 800 },
+  { "report": "saved as" },
+
+  { "show": "export" },
+  { "check": ["Export as issued", true] },
+  { "button": "Export PDF…" },
+  { "wait": 2500 },
+  { "button": "Export CSV…" },
+  { "wait": 1500 },
+  { "button": "Export Excel…" },
+  { "wait": 1500 },
+  { "report": "exported" },
+
+  { "show": "drawing" },
+  { "button": "Save" },
+  { "wait": 800 },
+  { "report": "final" }
+]
