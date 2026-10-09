@@ -30,7 +30,7 @@ Single place for progress. Agents update this file at the end of every task.
 |---|---|---|
 | T1.0 M0 follow-ups | review | Owner: confirm pinch and wheel zoom feel in `pnpm dev` |
 | T1.1 Domain model and command engine | done | Owner: confirm "unlock renumbers" (D-23 is silent) |
-| T1.2 Ballooned PDF writer | in progress | wave 1 |
+| T1.2 Ballooned PDF writer | done | Owner: confirm Open Sans Bold and the flag shape |
 | T1.3 Project file, autosave and recovery | in progress | wave 2 |
 | T1.4 CSV and XLSX characteristic list | in progress | wave 2 |
 | T1.5 Project session and IPC | todo | wave 3, after T1.1 and T1.3 |
@@ -39,7 +39,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.8 Sheet rotation, scale and units | todo | wave 4 |
 | T1.9 Export and settings views | todo | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
-| T1.11 Page cache on the render thread | todo | after T1.2 (both touch the render engine) |
+| T1.11 Page cache on the render thread | in progress | |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -58,6 +58,9 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Ballooned PDF written through pdfium-render page objects (full rewrite, not incremental update), not lopdf (about 25 extra crates). Trailer `/ID` parts that PDFium fills from clock and random are replaced by SHA-256 based values of equal length; annotation dates come from the caller | FR-EXP-01, FR-EXP-11 deterministic output | T1.2, agent |
+| 2026-10-09 | Balloon number font: Open Sans Bold 1.10 (Apache 2.0) in `data/fonts/`, subset at runtime; balloon text limited to printable ASCII except quote characters; flag shape is a box with a pointed left end | D-24 "bold sans". **Owner: confirm font and flag shape** | T1.2, agent |
+| 2026-10-09 | Known limits of the PDF writer: PDFium does not wrap original content in q/Q (an unclosed clip in the original could clip balloons) and drops unreferenced objects | Accepted for M1, revisit if a corpus drawing shows it | T1.2, agent |
 | 2026-10-09 | Numbering: unlocked always 1..n in placement order, unlocking renumbers immediately; locked adds get highest number ever used plus one, moves refused while locked; `number` is `u32` (sub-numbers need a migration in M2) | D-21, D-23. **Owner: confirm unlock behavior** | T1.1, agent |
 | 2026-10-09 | Limits derived from nominal plus deviations unless set directly; missing deviation clears derived limits; nominal implies a unit (degrees for angles, else sheet unit); hand placed characteristics start as kind `other`; new kinds counterbore, countersink, depth, material_process, other | FR-CHR-01, FR-CHR-02 | T1.1, agent |
 | 2026-10-09 | `Environment` trait provides UUIDs, clock (RFC 3339 `Timestamp`) and user name; tests use `FixedEnvironment`. `specta::Type` behind a `dimo-core` feature `specta` enabled only by src-tauri. Undo applies inverted changes, redo re-applies stored changes so IDs stay stable | Determinism (rule 11), core free of IPC concerns | T1.1, agent |
