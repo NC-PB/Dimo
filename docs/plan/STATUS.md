@@ -5,7 +5,7 @@ Single place for progress. Agents update this file at the end of every task.
 ## Current
 
 - Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) started
-- Next tasks: wave 5, **T1.9 Export and settings views**, then **T1.10 User guide and exit check**
+- Next task: **T1.10 User guide and exit check**, then the owner runs the M1 exit criterion
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -37,8 +37,8 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.6 Balloon placement and editing | done | Owner: shortcuts V, B, S, Shift+arrows; value field fills requirement text only |
 | T1.7 Characteristic table | done | 1000 rows: mean 17.2 ms, p95 21 ms. Review fixes merged (T1.7a). Owner: German kind names (Flachsenkung, Kegelsenkung, Fahnenhinweis) |
 | T1.8 Sheet rotation, scale and units | done | Owner: glance at German strings; shortcuts R and Shift+R |
-| T1.9 Export and settings views | in progress | wave 5 |
-| T1.10 User guide and exit check | todo | wave 5 |
+| T1.9 Export and settings views | done | Owner: rejected balloons left out of PDF, export options per user, issued lock kept when the write fails, shortcuts Cmd+1/Cmd+E/Cmd+, |
+| T1.10 User guide and exit check | in progress | wave 5 |
 | T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
@@ -58,6 +58,9 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Exports run as background jobs (`export_project` returns a job id, `JobProgress` then `JobFinished`), written to a temp file and renamed; "export as issued" locks numbering as an undoable command in the same step as the snapshot; annotation dates from `ProjectSession::modified()`; rejected characteristics left out of PDF, CSV and XLSX; export options remembered per user | FR-EXP-01, FR-EXP-09, FR-EXP-11, D-23, D-33. **Owner: confirm** | T1.9, agent |
+| 2026-10-09 | Balloon geometry single source: `dimo_core::BalloonStyle::layout`, used by the PDF export; the viewport reads generated `BALLOON_METRICS` and is checked against a Rust written fixture. D-24 "scaled with sheet size" read as 7 mm in sheet space; text width estimate 0.6 em per digit (tested never narrower than the real font) | No duplicated rule between export and viewport | T1.9, agent |
+| 2026-10-09 | App settings (theme, UI language, audit user, export options) stored by Rust in `settings.json` in the app config dir, loaded before first render; language picker moved to Settings; Review and Measure views show a "later version" placeholder | D-27, D-50, D-51, NFR-SEC-01 | T1.9, agent |
 | 2026-10-09 | Balloon tools: Select (V), Place (B), style popover (S), Shift+arrows nudge 1 mm; click placement stores no source region, drag placement stores an oriented box; balloon placed one balloon height up and right on screen; value field fills `requirement_text` only; balloon size and font rule in `viewport/balloons.ts` (to be moved to one place with the export, T1.9) | FR-BAL-01, FR-BAL-02, FR-BAL-12, FR-CHR-09. **Owner: confirm shortcuts** | T1.6, agent |
 | 2026-10-09 | Selection store from T1.6 (`focus(id, from)`); the view named in `from` takes keyboard focus, others only scroll; a viewport focus request only activates the table cell. While the table has focus only Cmd/Ctrl shortcuts and `?` reach the window | Avoid focus theft and key clashes between table and drawing | merge T1.6/T1.7 |
 | 2026-10-09 | Rust refusals carry `RejectReason` (12 kinds), translated in the frontend (`refusal_*`); argument parse errors from Tauri are translated by the kind of value typed; unknown errors show Rust's text | FR-SET-04, every visible string through Paraglide | T1.7a, agent |
