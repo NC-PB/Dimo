@@ -5,7 +5,7 @@ Single place for progress. Agents update this file at the end of every task.
 ## Current
 
 - Milestone: **M0 Foundations** ([plan](M0.md))
-- Next task: **T0.8 Viewport with SVG overlay**, then T0.9 Performance harness
+- Next task: **T0.9 Performance harness** (needs free disk space and measurements on the owner's Mac)
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -19,7 +19,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.5 PDFium integration | done | Snapshot verified on mac arm64 only; `fetch-pdfium.ps1` untested |
 | T0.6 Text runs with geometry | done | 24 of 24 truth callouts matched by runs; thresholds need calibration on more drawings (Q-10) |
 | T0.7 Tile protocol and cache | done | Windows webview not verified (CI build only) |
-| T0.8 Viewport with SVG overlay | todo | |
+| T0.8 Viewport with SVG overlay | review | Owner: confirm 500 balloons at 60 fps on own Mac (agent measured mean 16.67 ms, p95 18 ms on M2 16 GB, dev build), tune wheel zoom speed |
 | T0.9 Performance harness | todo | |
 | T0.10 Corpus truth format | review | Owner: review `corpus/truth/test_drawing_1.truth.json`, see log 2026-10-09 |
 | T0.11 Synthetic generator (stretch) | done | `cargo run -p dimo-synth -- --seed N --count 6`. Owner: check fit table `FITS` in `tools/synth/src/lib.rs` (D-43) |
@@ -41,6 +41,10 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | File dialog via `rfd` called from Rust; temporary `open_document(path)` removed; only `allow-open-document-dialog` granted | No dialog or fs plugin in the webview (NFR-SEC-01) | T0.8, agent |
+| 2026-10-09 | Viewport: one view transform `screen = sheet * scale + t` snapped to device pixels; tile level is the coarsest one not upscaled; max zoom 16 px per sheet unit; backdrop layer plus one tile prefetch margin; one device pixel tile overlap against seams | Crisp at all zoom levels, single transform per layer | T0.8, agent |
+| 2026-10-09 | Dev only hooks in debug builds: `DIMO_DEV_OPEN`, `DIMO_DEV_SHEET`, `DIMO_DEV_BALLOONS`, `DIMO_DEV_ANCHORS`, `DIMO_DEV_VIEW`, `DIMO_DEV_PAN_CHECK`; `dev_report_frame_times` | Lets agents verify the native window without clicking; no effect in release builds | T0.8, agent |
+| 2026-10-09 | Shortcuts: Cmd/Ctrl+O, +/=, -, 0, arrow keys, PgUp/PgDn, ? (D-52). Dummy balloons use a fixed 7 mm size; D-24 sizing belongs to the real balloon style in Rust | Defaults, owner may change | T0.8, agent |
 | 2026-10-09 | Tiles: `dimo://localhost/tile/{content hash}/{sheet}/{zoom}/{x}/{y}` (`http://dimo.localhost/...` on Windows), 512 px, zoom -4 to 5 as 2^zoom px per sheet unit; logic in `dimo_pdf::tiles::TileService`, src-tauri only wires the async scheme | Rust owns logic (ADR 0001), never block main thread | T0.7, agent |
 | 2026-10-09 | Tile encoding PNG `Compression::Fast`, greyscale when possible (0.7 to 0.9 ms, 5 to 7 KB per tile); memory LRU 128 MiB, disk cache 2 GiB in the app cache dir keyed by render version and content hash; `Cache-Control: immutable` | Fast and small; bump `RENDER_VERSION` in `tiles/disk.rs` when PDFium or encoder settings change | T0.7, agent |
 | 2026-10-09 | Tile cancellation by interest: `set_tile_interest(doc, ranges)`, queued tiles outside get HTTP 204 | Simple, no per request ids | T0.7, agent |
@@ -78,6 +82,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: T0.8 merged, in review. Pitfall: tests use `env!("CARGO_MANIFEST_DIR")`, so a target dir shared with deleted worktrees can run stale test binaries with dead paths; touch the test files or rebuild when that happens. Disk below 1 GB free, T0.9 waits for space.
 - 2026-10-09: T0.7 done and merged. Wave 2 complete. Disk nearly full (about 2 GB free); merged worktrees removed.
 - 2026-10-09: T0.6 and T0.11 done and merged. PDFium treats a `/ToUnicode` name (Identity-H) as code = Unicode; correct for test_drawing_1 only because CIDs equal code points (details in corpus notes).
 - 2026-10-09: T0.5 done and merged. Wave 1 complete. Disk ran full during parallel builds; wave 2 agents share the main `target/`.
