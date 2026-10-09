@@ -36,7 +36,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.5 Project session and IPC | done | Owner: check the unsaved changes prompt on window close and quit in the native window |
 | T1.6 Balloon placement and editing | in progress | wave 4 |
 | T1.7 Characteristic table | in progress | wave 4 |
-| T1.8 Sheet rotation, scale and units | in progress | wave 4 |
+| T1.8 Sheet rotation, scale and units | done | Owner: glance at German strings; shortcuts R and Shift+R |
 | T1.9 Export and settings views | todo | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
 | T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
@@ -58,6 +58,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Sheet rotation rotates the view transform (one matrix for tiles and overlay), not the rendered tiles; tile cache stays valid, Rust unchanged. Rotating keeps zoom and center, fit on first show; scale as exact ratio with presets and custom; shortcuts R and Shift+R | Rule 4: stored geometry stays in sheet space | T1.8, agent |
 | 2026-10-09 | IPC: `project_state`, `new_project`, `open_project`, `save_project`, `save_project_as`, `confirm_close` (each with `discard` where data could be lost), `execute(Command)`, `undo`, `redo`; events `project-loaded`, `project-patched` (with revision), `project-status-changed`, `close-requested`. Rust refuses to drop unsaved changes unless `discard` is true | Rust owns the document (ADR 0001); one patch path into the frontend | T1.5, agent |
 | 2026-10-09 | Frontend `projectStore`: `$state.raw` project replaced per patch, unchanged items keep identity, revision gap triggers a full reload; selection lives in separate view stores | One place applies patches (frontend.md) | T1.5, agent |
 | 2026-10-09 | Unsaved projects autosave to `<app data>/autosave/<uuid>.dimo` plus journal, restored at startup with a notice; instance lock is an OS file lock on `<project>.lock` (released by the OS on crash, stale lock files taken over) | NFR-REL-01 for never saved projects; no double editing. **Owner: confirm** | T1.5, agent |
