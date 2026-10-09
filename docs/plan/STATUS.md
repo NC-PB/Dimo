@@ -4,8 +4,8 @@ Single place for progress. Agents update this file at the end of every task.
 
 ## Current
 
-- Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) started
-- Next task: **T1.10 User guide and exit check**, then the owner runs the M1 exit criterion
+- Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) implemented, waiting for owner review and exit criterion
+- Next: **owner review of M0 and M1** (manual test, exit criterion, open "Owner: confirm" decisions), then plan M2
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -38,7 +38,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.7 Characteristic table | done | 1000 rows: mean 17.2 ms, p95 21 ms. Review fixes merged (T1.7a). Owner: German kind names (Flachsenkung, Kegelsenkung, Fahnenhinweis) |
 | T1.8 Sheet rotation, scale and units | done | Owner: glance at German strings; shortcuts R and Shift+R |
 | T1.9 Export and settings views | done | Owner: rejected balloons left out of PDF, export options per user, issued lock kept when the write fails, shortcuts Cmd+1/Cmd+E/Cmd+, |
-| T1.10 User guide and exit check | in progress | wave 5 |
+| T1.10 User guide and exit check | review | Smoke test passes (`scripts/e2e-smoke.sh`). Owner: run `docs/dev/manual-test-m1.md` and the exit criterion `docs/perf/M1-exit.md` |
 | T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
@@ -58,6 +58,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | End to end: `scripts/e2e-smoke.sh` drives the real debug app through the dev UI script (main flow, reopen, crash recovery) and checks the written files; replaces WebdriverIO on macOS (WKWebView has no WebDriver). New dev hooks `DIMO_DEV_SAVE_AS`, `DIMO_DEV_HOME`; `bindings.ts` is written only when its content changes | Test the real app where tauri-driver cannot | T1.10, agent |
 | 2026-10-09 | Exports run as background jobs (`export_project` returns a job id, `JobProgress` then `JobFinished`), written to a temp file and renamed; "export as issued" locks numbering as an undoable command in the same step as the snapshot; annotation dates from `ProjectSession::modified()`; rejected characteristics left out of PDF, CSV and XLSX; export options remembered per user | FR-EXP-01, FR-EXP-09, FR-EXP-11, D-23, D-33. **Owner: confirm** | T1.9, agent |
 | 2026-10-09 | Balloon geometry single source: `dimo_core::BalloonStyle::layout`, used by the PDF export; the viewport reads generated `BALLOON_METRICS` and is checked against a Rust written fixture. D-24 "scaled with sheet size" read as 7 mm in sheet space; text width estimate 0.6 em per digit (tested never narrower than the real font) | No duplicated rule between export and viewport | T1.9, agent |
 | 2026-10-09 | App settings (theme, UI language, audit user, export options) stored by Rust in `settings.json` in the app config dir, loaded before first render; language picker moved to Settings; Review and Measure views show a "later version" placeholder | D-27, D-50, D-51, NFR-SEC-01 | T1.9, agent |
@@ -129,6 +130,7 @@ Short entries, newest first: date, task, what changed, anything the next session
 
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
+- 2026-10-09: M1 implemented: T1.9 and T1.10 merged, smoke test passes on main (coordinator run). User guide in `docs/user/{en,de}/README.md`.
 - 2026-10-09: Wave 4 merged (T1.6, T1.7, T1.7a, T1.8): balloons can be placed, edited and listed in the app. Disk ran full twice; the shared `target/` reaches about 30 GB, clear `target/debug/incremental` after each wave.
 - 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
 - 2026-10-09: T0.8 merged, in review. Pitfall: tests use `env!("CARGO_MANIFEST_DIR")`, so a target dir shared with deleted worktrees can run stale test binaries with dead paths; touch the test files or rebuild when that happens. Disk below 1 GB free, T0.9 waits for space.
