@@ -18,7 +18,7 @@
  * ]
  * ```
  *
- * - `key`: key down and up on the focused element (`mod`, `shift` for modifiers).
+ * - `key`: key down and up on the focused element (`mod`, `shift`, `alt` for modifiers).
  * - `click`, `dblclick`, `drag`: pointer events on the drawing (`shift`, `mod`).
  * - `type`: sets the text of the focused field as typing would.
  * - `button`: clicks the button whose text is this label.
@@ -26,8 +26,10 @@
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
  * - `view`: zoom percent and the sheet point in the viewport center.
  * - `show`: switches to a view (`drawing`, `export`, `settings`, ...).
- * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text.
- * - `check`: `[label, checked]` sets the check box inside the label that starts with this text.
+ * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
+ *   or the `<select>` whose `aria-label` starts with it.
+ * - `check`: `[label, checked]` sets the check box (or turns on the radio button) inside the
+ *   label that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons and selection).
  */
 
@@ -46,6 +48,7 @@ type Pair = [number, number];
 interface Mods {
   shift?: boolean;
   mod?: boolean;
+  alt?: boolean;
 }
 
 export type UiStep =
@@ -67,6 +70,8 @@ export type UiStep =
 
 const STEP_PAUSE_MS = 120;
 const DRAG_STEPS = 6;
+/** Longest wait for a text field to take the focus before a `type` step. */
+const FIELD_WAIT_MS = 3000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -91,6 +96,7 @@ function modifiers(m: Mods) {
   const mac = isMacPlatform();
   return {
     shiftKey: m.shift ?? false,
+    altKey: m.alt ?? false,
     metaKey: mac && (m.mod ?? false),
     ctrlKey: !mac && (m.mod ?? false),
   };
@@ -167,7 +173,7 @@ function report(label: string): string {
     .join(",");
   const exports = EXPORT_FORMATS.map(exportState).join(", ");
   const theme = document.documentElement.dataset.theme ?? "-";
-  return `${label}: view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
+  return `${label}: view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -185,6 +191,14 @@ async function run(step: UiStep): Promise<void> {
   } else if ("drag" in step) {
     await press(step.drag[0], step.drag[1], step);
   } else if ("type" in step) {
+    // The field opens after the command came back from Rust; wait for it instead of typing
+    // into nothing on a slow machine.
+    for (let waited = 0; waited < FIELD_WAIT_MS; waited += 20) {
+      if (document.activeElement instanceof HTMLInputElement) {
+        break;
+      }
+      await sleep(20);
+    }
     const field = document.activeElement;
     if (field instanceof HTMLInputElement) {
       field.value = step.type;
@@ -225,6 +239,9 @@ async function run(step: UiStep): Promise<void> {
         ...modifiers(step),
       }),
     );
+    // A real click focuses the grid; a synthetic event does not, and the table reads keys only
+    // from the focused grid.
+    document.querySelector<HTMLElement>('[role="grid"]')?.focus({ preventScroll: true });
     await sleep(STEP_PAUSE_MS);
   } else if ("view" in step) {
     const [percent, x, y] = step.view;
@@ -241,14 +258,20 @@ async function run(step: UiStep): Promise<void> {
     view.set(step.show);
     await sleep(STEP_PAUSE_MS);
   } else if ("select" in step) {
-    const field = labelled(step.select[0])?.querySelector("select");
+    const field =
+      labelled(step.select[0])?.querySelector("select") ??
+      [...document.querySelectorAll("select")].find((f) =>
+        (f.getAttribute("aria-label") ?? "").startsWith(step.select[0]),
+      );
     if (field) {
       field.value = step.select[1];
       field.dispatchEvent(new Event("change", { bubbles: true }));
     }
     await sleep(STEP_PAUSE_MS);
   } else if ("check" in step) {
-    const box = labelled(step.check[0])?.querySelector<HTMLInputElement>("input[type=checkbox]");
+    const box = labelled(step.check[0])?.querySelector<HTMLInputElement>(
+      "input[type=checkbox], input[type=radio]",
+    );
     if (box && box.checked !== step.check[1]) {
       box.click();
     }

@@ -8,8 +8,8 @@ Drag the line above the table to change its height (or focus it and use ↑ and 
 | Column | Content |
 |---|---|
 | No | Balloon number. Drag the handle ⠿ to move the characteristic |
-| Kind | Linear, diameter, radius, spherical radius, angle, chamfer, thread, counterbore, countersink, depth, surface texture, geometric tolerance, note, flag note, material or process, other |
-| Requirement | Text as it appears on the drawing |
+| Kind | Linear, diameter, radius, spherical radius, angle, chamfer, thread, counterbore, countersink, depth, surface texture, geometric tolerance, note, flag note, material or process, other. A balloon you place starts as other |
+| Requirement | The text you typed into the balloon, as it appears on the drawing |
 | Nominal | Nominal value |
 | Upper dev., Lower dev. | Deviations, with sign |
 | Upper limit, Lower limit | Limits. Dimo works them out from nominal and deviations; you can also type them |
@@ -19,7 +19,7 @@ Drag the line above the table to change its height (or focus it and use ↑ and 
 | Class | Critical, major, minor, key, or empty when not classified |
 | Method, Gauge, Sampling, Frequency | How the characteristic is inspected, free text |
 | Comment | Free text |
-| Inspect | Cleared for reference and basic dimensions |
+| Inspect | Clear it for reference and basic dimensions, which are not measured. They stay in the list and are exported with `Inspect` set to `no` |
 
 Numbers are shown with exactly the digits stored, so `90.0` stays `90.0`.
 
@@ -39,11 +39,25 @@ the middle as well.
 
 Double click a cell, press Enter or F2, or start typing. Enter confirms, Escape cancels, Tab
 confirms and moves to the next column, ↑ and ↓ confirm and move to the row above or below.
-Kind, unit and class open a list. Space switches Inspect.
+Kind, unit and class open a list. In the Inspect column Space switches the check box.
 
 Type numbers with a point as decimal separator, for example `-0.05`. If Dimo cannot use a value,
 the cell stays open and the line above the table says why. Every change can be undone with ⌘Z
 (Ctrl+Z).
+
+## Limits
+
+Dimo works the limits out from the nominal value and both deviations, with the sign you typed:
+nominal `8.0` with upper deviation `0.02` and lower deviation `-0.05` gives upper limit `8.02` and
+lower limit `7.95`. When you change the nominal value or a deviation, the limits follow. When you
+remove a deviation, the limits that were worked out go too. A limit you type yourself is kept and
+wins over the deviations. All numbers are exact decimals; nothing is rounded.
+
+## Deleting
+
+The table has no delete key. Select the rows and use **Delete** in the toolbar above the drawing,
+or select the balloons on the drawing and press **Delete**. The balloons are deleted with their
+characteristics, and ⌘Z brings everything back.
 
 ## Changing the order
 
@@ -56,7 +70,9 @@ line above the table shows who locked the numbering and when.
 
 ## Keyboard
 
-The keyboard shortcut list (`?`) has a section for the table. While the table has the focus,
-the arrow keys, Enter, Escape, Space and ⌘A (Ctrl+A) act on the table, and single letter keys such
-as R, B or S never act on the drawing. Shortcuts with ⌘ (Ctrl), such as save and undo, work
-everywhere.
+The keyboard shortcut list (`?`) has a section for the table; all table keys are also in
+[Keyboard shortcuts](shortcuts.md). While the table has the focus, the arrow keys, Home, End,
+Enter, Escape, Space and ⌘A (Ctrl+A) act on the table, and single keys such as R, B, S, **+**, **-**
+or **0** never act on the drawing. Shortcuts with ⌘ (Ctrl), such as save and undo, work
+everywhere. Clicking a balloon, or empty drawing with the Select tool, gives the drawing the
+keyboard focus back.

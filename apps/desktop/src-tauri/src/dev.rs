@@ -22,6 +22,13 @@
 //! - `DIMO_DEV_EXPORT_DIR=<dir>`: exports skip the save dialog and write their suggested file
 //!   name into this directory (T1.9), so a UI script can click the export buttons.
 //!
+//! - `DIMO_DEV_SAVE_AS=<path>`: "save as" (and "save" of a project without a file) skips the
+//!   save dialog and saves to this path (T1.10).
+//! - `DIMO_DEV_HOME=<dir>`: the cache, data and config folders of the app (tiles, autosave,
+//!   `settings.json`) are `cache`, `data` and `config` below this folder instead of the
+//!   user's, so a scripted run neither reads nor changes the settings of the person running it
+//!   (T1.10).
+//!
 //! While `DIMO_DEV_OPEN` is set, a debug build does not restore unsaved projects at startup, so
 //! a crashed autosave of real work is left for the next normal start.
 //!
@@ -56,6 +63,27 @@ pub fn dev_export_dir() -> Option<PathBuf> {
     } else {
         None
     }
+}
+
+/// Debug builds started with `DIMO_DEV_SAVE_AS`: the save dialog is skipped and the project is
+/// saved to this path. `None` in release builds.
+pub fn dev_save_as() -> Option<PathBuf> {
+    if cfg!(debug_assertions) {
+        var("DIMO_DEV_SAVE_AS").map(PathBuf::from)
+    } else {
+        None
+    }
+}
+
+/// The folder for `kind` (`cache`, `data` or `config`) below `DIMO_DEV_HOME` in debug builds,
+/// else `default`.
+pub fn dev_folder(kind: &str, default: Option<PathBuf>) -> Option<PathBuf> {
+    if cfg!(debug_assertions)
+        && let Some(home) = var("DIMO_DEV_HOME")
+    {
+        return Some(PathBuf::from(home).join(kind));
+    }
+    default
 }
 
 fn var(name: &str) -> Option<String> {

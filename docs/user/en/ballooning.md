@@ -11,8 +11,8 @@ with ⌘Z (Ctrl+Z on Windows and Linux) and redone with ⇧⌘Z (Ctrl+Shift+Z or
 | Select | V | Click selects a balloon, drag moves balloons, drag on empty drawing pans |
 | Place balloon | B | Click or drag places a new balloon, drag on a balloon moves it |
 
-In both tools you can pan with the middle mouse button, or by holding Space while you drag.
-The mouse wheel and the trackpad zoom as before.
+In both tools you can move the drawing with the middle mouse button, or by holding Space while
+you drag. Zooming and sheets are in [Looking at a drawing](drawing-view.md).
 
 ## Place balloons
 
@@ -34,8 +34,19 @@ So the fastest way through a drawing is: click, type, Enter, click, type, Enter.
   where the value came from. A plain click stores no region.
 - **Enter** on a selected balloon, or a double click on it, opens the field again.
 
-The field stores the text as written. Nominal value, tolerances and the kind of characteristic
-are filled in the characteristic table.
+The field stores the text as written, in the **Requirement** column of the characteristic table.
+Dimo does not split it into nominal value and tolerances in this version; you fill nominal,
+deviations, kind and the rest in the table ([Characteristic table](characteristics.md)).
+
+## Balloon numbers
+
+While numbering is not locked, the balloons are numbered 1, 2, 3 and so on in the order of the
+characteristic table, without gaps. A new balloon gets the next number. Deleting a balloon or
+moving a row in the table numbers all of them again.
+
+After an export as issued ([Exports](exports.md)) the numbering is locked. Numbers then never
+change: a new balloon gets the highest number ever used plus one, a deleted number is not used
+again, and rows cannot be moved.
 
 ## Select balloons
 
@@ -45,7 +56,7 @@ are filled in the characteristic table.
 | Add or remove a balloon | Shift+click or ⌘+click (Ctrl+click) | |
 | Select several by area | Shift+drag on empty drawing, balloons whose center is inside are added | |
 | Select all balloons of the sheet | | ⌘A (Ctrl+A) |
-| Clear the selection | Click on empty drawing | Escape |
+| Clear the selection | Click on empty drawing (Select tool) | Escape |
 
 Selected balloons get a thick orange ring and a small square handle at the end of their leader.
 
@@ -89,4 +100,8 @@ Status is never shown by color alone:
 | Proposed | Dashed outline |
 | Rejected | Dashed grey outline, number in grey, struck through |
 
-All keys are also listed in the cheat sheet, press **?**.
+Balloons you place by hand are accepted. Proposed and rejected come with the automatic recognition
+of a later version; the file formats and exports already handle them (rejected characteristics get
+no balloon in the exported PDF and are left out of the lists).
+
+All keys are in [Keyboard shortcuts](shortcuts.md) and in the cheat sheet, press **?**.

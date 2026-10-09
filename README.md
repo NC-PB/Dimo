@@ -34,6 +34,11 @@ Status: **M0 Foundations**. Specification complete, implementation starting. Pro
 | [12 Implementation defaults](docs/spec/12-implementation-defaults.md) | Binding defaults so implementation needs no further questions |
 | [ADRs](docs/adr/) | Architecture decision records |
 
+## User guide
+
+[English](docs/user/en/README.md) and [Deutsch](docs/user/de/README.md): getting started, every
+view and the keyboard shortcuts.
+
 ## Development
 
 - Setup: [docs/dev/setup.md](docs/dev/setup.md)

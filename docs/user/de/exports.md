@@ -2,11 +2,16 @@
 
 ## Aus der App exportieren
 
-Öffne die Ansicht **Export** (Werkzeugleiste, oder Cmd+E auf macOS, Strg+E sonst). Jeder Export
-fragt, wo die Datei gespeichert wird, und läuft dann im Hintergrund; du kannst währenddessen
-weiterarbeiten. Unter dem Export erscheinen ein Fortschrittsbalken und danach der Dateiname.
+Öffne die Ansicht **Export** (die Schaltfläche **Export** in der oberen Leiste, oder ⌘E auf macOS,
+Strg+E sonst). Sie braucht ein offenes Projekt. Jeder Export fragt, wo die Datei gespeichert wird,
+und läuft dann im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das
+Projekt so, wie es war, als du die Schaltfläche geklickt hast. Unter dem Export erscheinen ein
+Fortschrittsbalken und danach der Dateiname, oder der Grund, warum der Export fehlschlug.
 
-Optionen, die für das nächste Mal gespeichert werden:
+Die vorgeschlagenen Dateinamen folgen der Projektdatei (bei einem nie gespeicherten Projekt der
+Zeichnung): `teil_ballooned.pdf`, `teil_characteristics.csv` und `teil_characteristics.xlsx`.
+
+Optionen. Die ersten beiden werden für den nächsten Start gespeichert:
 
 - **Spaltenüberschriften**: englische oder deutsche Überschriften in den CSV- und Excel-Dateien,
   unabhängig von der Sprache der App.
@@ -14,9 +19,14 @@ Optionen, die für das nächste Mal gespeichert werden:
   ein- und ausblenden oder löschen können.
 - **Als freigegeben exportieren**: sperrt die Nummerierung vor dem Export. Für Zeichnungen, die
   an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
-  werden nicht wieder vergeben und neue Merkmale erhalten die nächste freie Nummer. Die Sperre
-  steht im Änderungsprotokoll und lässt sich wie jede Änderung rückgängig machen (Cmd+Z direkt
-  nach dem Export oder später entsperren).
+  werden nicht wieder vergeben, ein neues Merkmal erhält die höchste je vergebene Nummer plus
+  eins, und Zeilen der Tabelle lassen sich nicht verschieben. Die Sperre steht im
+  Änderungsprotokoll. Dieses Feld wird nicht gespeichert und ist bei jedem Start aus. Solange die
+  Nummerierung gesperrt ist, ist das Feld deaktiviert und sagt das auch.
+
+Eine Schaltfläche zum Entsperren gibt es in dieser Version nicht. Die Sperre ist eine Änderung wie
+jede andere, ⌘Z macht sie also rückgängig, solange sie deine letzte Änderung ist, zum Beispiel
+direkt nach dem Export. Was du nach dem Export änderst, liegt im Verlauf darüber.
 
 ## PDF mit Ballons
 
@@ -33,11 +43,11 @@ Die Merkmalsliste enthält eine Zeile pro Merkmal, sortiert nach Ballonnummer. S
 Programmierung eines Koordinatenmessgeräts (CSV) und für die Arbeit in einer Tabellenkalkulation
 (XLSX) gedacht. Beide Dateien haben dieselben Spalten.
 
-Merkmale mit dem Status `rejected` werden nicht exportiert. Hilfsmaße (Referenzmaße) und theoretisch
-exakte Maße (Rahmenmaße) werden mit `Prüfen` gleich `no` exportiert und lassen sich so
-ausfiltern.
+Merkmale mit dem Status `rejected` werden nicht exportiert. Merkmale, bei denen du **Prüfen**
+abgewählt hast, etwa Hilfsmaße (Referenzmaße) und theoretisch genaue Maße (Rahmenmaße), werden mit
+`Prüfen` gleich `no` exportiert und lassen sich so ausfiltern.
 
-Die Sprache der Spaltenüberschriften wählen Sie pro Export: Englisch oder Deutsch. Die Werte
+Die Sprache der Spaltenüberschriften wählst du pro Export: Englisch oder Deutsch. Die Werte
 ändern sich mit der Sprache nicht.
 
 ### Spalten
@@ -54,7 +64,7 @@ Die Sprache der Spaltenüberschriften wählen Sie pro Export: Englisch oder Deut
 | Untere Grenze | Lower limit | Unteres Grenzmaß, absolut |
 | Einheit | Unit | `mm`, `in` oder `deg` |
 | Passung | Fit | Passungskurzzeichen, z. B. `H7` |
-| Anzahl | Quantity | Anzahl der Merkmale, für die der Eintrag steht (`4X` ergibt 4) |
+| Anzahl | Quantity | Anzahl der Elemente, für die das Merkmal steht, aus der Spalte Anzahl |
 | Klassifizierung | Classification | `critical`, `major`, `minor` oder `key`; leer ohne Klassifizierung |
 | Prüfmethode | Inspection method | Freitext |
 | Prüfmittel | Gauge | Freitext |
@@ -82,10 +92,10 @@ Nennmaße, Abmaße und Grenzen werden mit genau den im Projekt gespeicherten Zif
 UTF-8 ohne Byte-Order-Mark, Komma als Trennzeichen, eine Kopfzeile, Zeilenende `\n`. Ein Feld
 steht in doppelten Anführungszeichen, wenn es ein Komma, ein Anführungszeichen oder einen
 Zeilenumbruch enthält; Anführungszeichen im Text werden verdoppelt (RFC 4180). Anforderungstexte
-und Kommentare werden unverändert geschrieben. Öffnen Sie die CSV in einer Tabellenkalkulation,
-prüfen Sie Texte, die mit `=`, `+`, `-` oder `@` beginnen, bevor Sie sie erneut speichern.
-Deutsche Excel-Versionen erkennen UTF-8 ohne Byte-Order-Mark beim Doppelklick nicht immer; importieren
-Sie die Datei dann über "Daten aus Text/CSV" mit der Kodierung UTF-8.
+und Kommentare werden unverändert geschrieben. Öffnest du die CSV in einer Tabellenkalkulation,
+prüfe Texte, die mit `=`, `+`, `-` oder `@` beginnen, bevor du sie erneut speicherst. Deutsche
+Excel-Versionen erkennen UTF-8 ohne Byte-Order-Mark beim Doppelklick nicht immer; importiere die
+Datei dann über "Daten aus Text/CSV" mit der Kodierung UTF-8.
 
 ### XLSX-Format
 

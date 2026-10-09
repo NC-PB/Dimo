@@ -1,6 +1,6 @@
 # Projekte
 
-Ein Projekt enthält eine Zeichnung, ihre Merkmale und Ballone sowie das Protokoll aller
+Ein Projekt enthält eine Zeichnung, ihre Merkmale und Ballons sowie das Protokoll aller
 Änderungen. Es wird als eine `.dimo`-Datei gespeichert. Die Zeichnung liegt unverändert in der
 Datei, darum öffnet sich das Projekt auch dann, wenn das Original-PDF verschoben oder gelöscht
 wurde.
@@ -16,18 +16,37 @@ wurde.
 | Rückgängig | ↶ | ⌘Z | Ctrl+Z |
 | Wiederholen | ↷ | ⇧⌘Z | Ctrl+Shift+Z oder Ctrl+Y |
 
-Ein neues Projekt hat bis zum ersten Speichern keine Datei; die Werkzeugleiste zeigt
-"Unbenannt". Beim ersten Speichern fragt Dimo nach einem Dateinamen. Rückgängig ist unbegrenzt,
-solange das Projekt offen ist; nach erneutem Öffnen beginnt der Verlauf neu.
+**Neues Projekt** und **Projekt öffnen** fragen mit dem Dateidialog des Betriebssystems nach einer
+Datei. Ein Projekt entsteht aus einer PDF-Zeichnung; andere Dateitypen werden nicht angeboten. Ein
+neues Projekt hat bis zum ersten Speichern keine Datei; die Werkzeugleiste zeigt "Unbenannt".
+Beim ersten Speichern fragt Dimo nach einem Dateinamen und hängt `.dimo` an, wenn du es weglässt.
+Rückgängig ist unbegrenzt, solange das Projekt offen ist; nach erneutem Öffnen beginnt der Verlauf
+neu.
 
 Hat ein Projekt ungespeicherte Änderungen, fragt Dimo vor dem Anlegen oder Öffnen eines anderen
-Projekts und vor dem Schließen des Fensters: speichern, nicht speichern oder abbrechen.
+Projekts und vor dem Schließen des Fensters oder dem Beenden von Dimo: **Speichern**,
+**Nicht speichern** oder **Abbrechen**.
+
+## Was in einer Projektdatei steht
+
+Eine `.dimo`-Datei enthält die Zeichnung, wie du sie importiert hast, die Merkmale und Ballons,
+die Einstellungen des Projekts (zum Beispiel den Ballonstil), Drehung, Einheit und Maßstab jedes
+Blatts, die Nummerierungssperre und das Änderungsprotokoll: jede Änderung mit Zeit und dem
+Benutzernamen aus den [Einstellungen](settings.md). Die Datei ist ein ZIP-Archiv, du kannst sie also
+mit jedem ZIP-Programm ansehen, aber nur Dimo sollte sie schreiben.
+
+Ein Projekt, das eine ältere Dimo-Version gespeichert hat, lässt sich öffnen, und ein Hinweis sagt,
+dass es umgewandelt wurde; beim Speichern wird das aktuelle Format geschrieben. Ein Projekt von
+einer neueren Dimo-Version wird mit einer Meldung abgelehnt, damit nichts verloren geht;
+aktualisiere Dimo, um es zu öffnen.
 
 ## Automatische Sicherung und Wiederherstellung
 
 Jede Änderung wird sofort, spätestens aber alle 30 Sekunden, in ein Sicherungsjournal
-geschrieben. Die Werkzeugleiste zeigt den Zustand: "Gespeichert", "Ungespeicherte Änderungen,
-automatisch gesichert" oder eine Warnung, wenn das Journal nicht geschrieben werden konnte.
+geschrieben. Die Werkzeugleiste zeigt den Zustand: "Gespeichert", "Noch nicht gespeichert" (ein neues Projekt
+ohne Änderungen), "Ungespeicherte Änderungen, automatisch gesichert" oder eine Warnung, wenn das
+Journal nicht geschrieben werden konnte. Neben dem Dateinamen markiert ein Sternchen Änderungen,
+die noch nicht in der Projektdatei stehen.
 
 - Ein gespeichertes Projekt hat sein Journal neben der Datei: `part.dimo.journal`. Beim Speichern
   wird es in die Projektdatei übernommen und gelöscht.

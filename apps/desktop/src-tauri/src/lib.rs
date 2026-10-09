@@ -79,6 +79,25 @@ pub fn export_bindings(
     )
 }
 
+/// Debug builds: regenerates the bindings, but writes the committed file only if its content
+/// changes. Writing an identical file would still make the Vite dev server reload the page
+/// right after every start, which cancels scripted runs (`scripts/e2e-smoke.sh`).
+#[cfg(debug_assertions)]
+fn refresh_bindings(
+    builder: &tauri_specta::Builder<tauri::Wry>,
+    path: &Path,
+) -> Result<(), String> {
+    let generated_path =
+        std::env::temp_dir().join(format!("dimo-bindings-start-{}.ts", std::process::id()));
+    export_bindings(builder, &generated_path).map_err(|e| e.to_string())?;
+    let generated = std::fs::read(&generated_path).map_err(|e| e.to_string())?;
+    let _ = std::fs::remove_file(&generated_path);
+    if std::fs::read(path).ok().as_deref() != Some(generated.as_slice()) {
+        std::fs::write(path, generated).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 /// Starts the desktop app. In debug builds the bindings are regenerated first.
 #[allow(
     clippy::print_stderr,
@@ -88,7 +107,7 @@ pub fn run() -> tauri::Result<()> {
     let builder = specta_builder();
 
     #[cfg(debug_assertions)]
-    if let Err(err) = export_bindings(&builder, &bindings_path()) {
+    if let Err(err) = refresh_bindings(&builder, &bindings_path()) {
         // Not fatal: the app still works, and the bindings test fails until they are regenerated.
         eprintln!("failed to export TypeScript bindings: {err}");
     }
@@ -99,20 +118,15 @@ pub fn run() -> tauri::Result<()> {
         .setup(move |app| {
             builder.mount_events(app);
             // Tile cache in the user cache directory, never in the project (07 Data model).
-            let cache_dir = app.path().app_cache_dir().ok().map(|dir| dir.join("tiles"));
+            let cache_dir = dev::dev_folder("cache", app.path().app_cache_dir().ok())
+                .map(|dir| dir.join("tiles"));
             app.manage(tiles::TileState::start(cache_dir));
             // Autosave of never saved projects in the app data directory (NFR-REL-01).
-            let autosave_dir = app
-                .path()
-                .app_data_dir()
-                .ok()
+            let autosave_dir = dev::dev_folder("data", app.path().app_data_dir().ok())
                 .map(|dir| dir.join(AUTOSAVE_FOLDER));
             app.manage(project::SessionState::new(autosave_dir));
             // Settings of the user in the app config directory (T1.9).
-            let settings_path = app
-                .path()
-                .app_config_dir()
-                .ok()
+            let settings_path = dev::dev_folder("config", app.path().app_config_dir().ok())
                 .map(|dir| dir.join(settings::SETTINGS_FILE));
             let user_settings = settings::SettingsState::load(settings_path);
             settings::apply(app.handle(), &user_settings.get());
