@@ -130,6 +130,7 @@ Short entries, newest first: date, task, what changed, anything the next session
 
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
+- 2026-10-09: First CI runs on GitHub: macOS green, Windows (unused import in a unix only test) and Ubuntu (text run split with a substitute font) failed; both fixed in a120848. One unexplained local failure of the three `dimo-io` export snapshot tests during a full check, not reproducible in 8 later runs; watch in CI.
 - 2026-10-09: M1 implemented: T1.9 and T1.10 merged, smoke test passes on main (coordinator run). User guide in `docs/user/{en,de}/README.md`.
 - 2026-10-09: Wave 4 merged (T1.6, T1.7, T1.7a, T1.8): balloons can be placed, edited and listed in the app. Disk ran full twice; the shared `target/` reaches about 30 GB, clear `target/debug/incremental` after each wave.
 - 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
