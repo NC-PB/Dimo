@@ -78,10 +78,9 @@ pub(crate) struct Glyph {
     pub font_size: f64,
 }
 
-/// Extracts the text runs of one sheet. Runs on the render thread.
-pub(crate) fn text_runs(doc: &PdfDocument<'_>, sheet: usize) -> Result<Vec<TextRun>, PdfError> {
-    let page = load_page(doc, sheet)?;
-    let to_sheet = page_to_sheet(&page)?;
+/// Extracts the text runs of one loaded page. Runs on the render thread.
+pub(crate) fn text_runs(page: &PdfPage<'_>) -> Result<Vec<TextRun>, PdfError> {
+    let to_sheet = page_to_sheet(page)?;
     let text = page.text().map_err(text_error)?;
     let glyphs: Vec<Glyph> = text
         .chars()
@@ -91,9 +90,12 @@ pub(crate) fn text_runs(doc: &PdfDocument<'_>, sheet: usize) -> Result<Vec<TextR
     Ok(merge_runs(&glyphs))
 }
 
+/// Loads the page of `sheet`; a PDFium failure is mapped with `error`. The page does not borrow
+/// the document, but must be dropped before it (see `page_cache`).
 pub(crate) fn load_page<'a>(
-    doc: &'a PdfDocument<'_>,
+    doc: &PdfDocument<'a>,
     sheet: usize,
+    error: fn(PdfiumError) -> PdfError,
 ) -> Result<PdfPage<'a>, PdfError> {
     let count = usize::try_from(doc.pages().len()).unwrap_or(0);
     let out_of_range = PdfError::SheetOutOfRange {
@@ -104,7 +106,7 @@ pub(crate) fn load_page<'a>(
         return Err(out_of_range);
     }
     let index = PdfPageIndex::try_from(sheet).map_err(|_| out_of_range)?;
-    doc.pages().get(index).map_err(text_error)
+    doc.pages().get(index).map_err(error)
 }
 
 pub(crate) fn page_to_sheet(page: &PdfPage<'_>) -> Result<PageToSheet, PdfError> {

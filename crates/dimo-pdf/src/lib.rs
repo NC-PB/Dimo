@@ -40,6 +40,11 @@
 //! parallel within one process anyway. If the render thread panics, every later call returns
 //! [`PdfError::EngineStopped`].
 //!
+//! T1.11: the render thread keeps the most recently used loaded pages of every open document
+//! (four per document) and serves renders, text runs and sheet analysis from them, because
+//! loading a dense page costs several times more than rendering a tile of it. Closing a
+//! document closes its cached pages first. See `page_cache` for why this needs no `unsafe`.
+//!
 //! # Locating PDFium
 //!
 //! See [`library`]: explicit path, then `DIMO_PDFIUM_PATH`, then `vendor/pdfium/<target>/`
@@ -57,6 +62,7 @@ mod engine;
 mod error;
 mod font;
 mod hash;
+mod page_cache;
 mod page_space;
 mod raster;
 mod writer;
