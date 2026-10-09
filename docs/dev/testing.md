@@ -11,7 +11,7 @@
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
 | Frontend units | Vitest | `apps/desktop/src/**/*.test.ts` |
 | End to end | WebdriverIO with tauri-driver | `apps/desktop/e2e/`, from M1 |
-| Performance | benchmark harness with synthetic PDFs | `crates/dimo-pdf/benches/`, results in `docs/perf/` |
+| Performance | timed harness with a synthetic 50 sheet PDF, run by `scripts/perf.sh` (release build, takes minutes, not in CI) | `crates/dimo-pdf/examples/perf.rs`, generator `dimo-synth --stress`, results in `docs/perf/` |
 
 ## Rules
 
