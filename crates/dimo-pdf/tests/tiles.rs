@@ -17,7 +17,7 @@ use dimo_pdf::{ContentHash, PdfEngine, PdfError, SheetRect};
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 
 fn corpus_drawing(name: &str) -> Vec<u8> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let path = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default())
         .join("../../corpus/drawings")
         .join(name);
     std::fs::read(&path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()))

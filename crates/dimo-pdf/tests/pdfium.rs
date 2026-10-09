@@ -19,7 +19,7 @@ const TEST_DRAWING_1_SHA256: &str =
     "635a89735fc1a305a99c3d42e394785d0ca00e2d82f2af1d5bdba8b66fca5c82";
 
 fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+    PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default()).join("../..")
 }
 
 fn corpus_drawing(name: &str) -> Vec<u8> {
@@ -193,6 +193,42 @@ fn region_matches_crop_of_full_render() {
         "tile should contain drawing content, found {ink} dark pixels"
     );
     assert!(max_diff <= 2, "tile differs from full render by {max_diff}");
+}
+
+/// Crops at many tile edges equal the full render. PDFium misplaces glyphs that cross the left
+/// or top bitmap edge, so a grid of crops over the whole sheet catches a missing margin.
+#[test]
+fn region_crops_match_full_render_everywhere() {
+    let Some(engine) = engine() else { return };
+    let doc = engine.open(corpus_drawing(TEST_DRAWING_1)).unwrap();
+    let zoom = 2.0;
+    let size = doc.sheet_size(0).unwrap();
+    let full = doc.render_region(0, SheetRect::full(size), zoom).unwrap();
+    let step = 256u32;
+    let mut worst = 0u8;
+    for py in (0..full.height()).step_by(step as usize) {
+        for px in (0..full.width()).step_by(step as usize) {
+            let (w, h) = (step.min(full.width() - px), step.min(full.height() - py));
+            let region = SheetRect::new(
+                f64::from(px) / zoom,
+                f64::from(py) / zoom,
+                f64::from(w) / zoom,
+                f64::from(h) / zoom,
+            );
+            let crop = doc.render_region(0, region, zoom).unwrap();
+            assert_eq!((crop.width(), crop.height()), (w, h));
+            for y in 0..h {
+                for x in 0..w {
+                    let a = crop.pixel(x, y).unwrap();
+                    let b = full.pixel(px + x, py + y).unwrap();
+                    for c in 0..4 {
+                        worst = worst.max(a[c].abs_diff(b[c]));
+                    }
+                }
+            }
+        }
+    }
+    assert!(worst <= 2, "a crop differs from the full render by {worst}");
 }
 
 #[test]

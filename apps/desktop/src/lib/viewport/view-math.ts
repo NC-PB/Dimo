@@ -160,24 +160,56 @@ export function snapToDevicePixels(view: ViewTransform, devicePixelRatio: number
   };
 }
 
-/** Line height assumed for wheel events in line mode, in CSS px. */
-const WHEEL_LINE_PX = 16;
+/**
+ * Wheel and pinch zoom tuning. All constants live here (T1.0).
+ *
+ * Mouse wheel: discrete events, 100 px per notch in most webviews. Pinch on a trackpad arrives
+ * as wheel events with `ctrlKey` set (Chromium, WebKit in Tauri) and small continuous deltas,
+ * 1 to 10 px per event. Safari style gesture events carry an absolute `scale` instead.
+ */
+export const ZOOM_TUNING = {
+  /** Line height assumed for wheel events in line mode, in CSS px. */
+  wheelLinePx: 16,
+  /** Zoom per CSS pixel of wheel movement: 100 px (one notch) is 1.22x. */
+  wheelZoomPerPx: 0.002,
+  /** Largest wheel movement of a single event, so a fast flick never jumps too far. */
+  wheelMaxPx: 150,
+  /** Zoom per CSS pixel of a pinch wheel event: 10 px is 1.105x, a slow pinch stays smooth. */
+  pinchZoomPerPx: 0.01,
+  /** Largest pinch movement of a single event. */
+  pinchMaxPx: 40,
+} as const;
 
-/** Zoom per CSS pixel of wheel movement: 100 px (one mouse wheel notch in most webviews) is 1.22x. */
-const WHEEL_ZOOM_PER_PX = 0.002;
-
-/** Largest wheel movement of a single event, so a fast flick never jumps too far. */
-const WHEEL_MAX_PX = 150;
+/** The parts of a `WheelEvent` the zoom needs. */
+export interface WheelInput {
+  deltaY: number;
+  /** 0 pixels, 1 lines, 2 pages. */
+  deltaMode: number;
+  /** Set by the webview for a trackpad pinch. */
+  ctrlKey: boolean;
+}
 
 /**
- * Zoom factor for a wheel event. Wheel up (negative `deltaY`) zooms in. `deltaMode` 1 is lines,
- * 2 is pages (one page is the viewport height).
+ * Zoom factor for a wheel event. Wheel up (negative `deltaY`) zooms in; a pinch out (also
+ * negative) zooms in. `deltaMode` 1 is lines, 2 is pages (one page is `pageHeight`).
  */
-export function wheelZoomFactor(deltaY: number, deltaMode: number, pageHeight: number): number {
+export function wheelZoomFactor(event: WheelInput, pageHeight: number): number {
+  const { deltaY, deltaMode, ctrlKey } = event;
   const px =
-    deltaMode === 1 ? deltaY * WHEEL_LINE_PX : deltaMode === 2 ? deltaY * pageHeight : deltaY;
-  const clamped = Math.max(-WHEEL_MAX_PX, Math.min(WHEEL_MAX_PX, px));
-  return Math.exp(-clamped * WHEEL_ZOOM_PER_PX);
+    deltaMode === 1
+      ? deltaY * ZOOM_TUNING.wheelLinePx
+      : deltaMode === 2
+        ? deltaY * pageHeight
+        : deltaY;
+  const max = ctrlKey ? ZOOM_TUNING.pinchMaxPx : ZOOM_TUNING.wheelMaxPx;
+  const perPx = ctrlKey ? ZOOM_TUNING.pinchZoomPerPx : ZOOM_TUNING.wheelZoomPerPx;
+  const clamped = Math.max(-max, Math.min(max, px));
+  return Math.exp(-clamped * perPx);
+}
+
+/** Zoom factor between two `scale` values of a Safari gesture event (1 at gesture start). */
+export function gestureZoomFactor(previousScale: number, scale: number): number {
+  return previousScale > 0 && scale > 0 ? scale / previousScale : 1;
 }
 
 /** Zoom in percent of the printed size, as shown in the toolbar. */

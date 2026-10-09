@@ -26,7 +26,7 @@ corepack enable
 pnpm install
 ./scripts/fetch-pdfium.sh
 ./scripts/check.sh
-pnpm -C apps/desktop tauri dev
+pnpm dev    # same as: pnpm -C apps/desktop tauri dev
 ```
 
 ## PDFium

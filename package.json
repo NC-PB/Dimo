@@ -4,6 +4,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@11.27.1",
   "scripts": {
+    "dev": "pnpm -C apps/desktop tauri dev",
     "format": "prettier --write \"apps/desktop/**/*.{ts,js,svelte,css,json}\""
   },
   "devDependencies": {

@@ -16,7 +16,7 @@ use dimo_pdf::{FontInfo, PdfEngine, PdfError, SheetRect, TextRun};
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 
 fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+    PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default()).join("../..")
 }
 
 fn corpus_drawing(name: &str) -> Vec<u8> {

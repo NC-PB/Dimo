@@ -23,20 +23,6 @@ pub fn zoom_scale(level: i32) -> f64 {
     2f64.powi(level)
 }
 
-/// Extra sheet units rendered left of and above every tile, then cut off.
-///
-/// PDFium (chromium/7881) misplaces anti-aliased glyphs that cross the left or top edge of the
-/// target bitmap: such a glyph differed from a full sheet render by up to 131 of 255 levels at
-/// a tile edge of `test_drawing_1.pdf`. Right and bottom edges are not affected, and the
-/// clip rectangle does not help. Rendering with a margin moves the edge away from every glyph
-/// that starts at most this far outside the tile. 32 units (11 mm) cover glyphs of text up to
-/// about 10 mm high (ISO 3098 sizes up to 10).
-const GLYPH_MARGIN_UNITS: f64 = 32.0;
-
-/// Largest render margin in pixels, so deep zoom levels render at most four times the pixels
-/// of a tile. At zoom 4 and 5 only glyphs wider than 512 pixels can still be affected.
-const MAX_MARGIN_PX: u32 = TILE_SIZE;
-
 /// Address of one tile: document, sheet, zoom level and column and row in the tile grid.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TileKey {
@@ -206,16 +192,6 @@ impl TileGrid {
         Some((width, height))
     }
 
-    /// Margin in pixels to render left of and above each tile at this zoom level (see
-    /// `GLYPH_MARGIN_UNITS`). The rendered image is cut at this offset.
-    pub fn render_margin(&self) -> u32 {
-        let px = (GLYPH_MARGIN_UNITS * zoom_scale(self.zoom)).ceil();
-        // At most MAX_MARGIN_PX, so the cast cannot truncate.
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let px = px.min(f64::from(MAX_MARGIN_PX)) as u32;
-        px
-    }
-
     /// The sheet region tile `(x, y)` shows, or `None` outside the grid. Rendered at
     /// [`zoom_scale`]`(zoom)` it yields exactly [`TileGrid::tile_pixels`]: all values are
     /// multiples of a power of two, so the float arithmetic is exact.
@@ -260,14 +236,6 @@ mod tests {
         let g = TileGrid::new(A4, MIN_ZOOM).unwrap();
         assert_eq!((g.columns(), g.rows()), (1, 1));
         assert_eq!(g.tile_pixels(0, 0), Some((53, 38)));
-    }
-
-    #[test]
-    fn render_margin_grows_with_zoom_up_to_a_tile() {
-        let margins: Vec<u32> = (MIN_ZOOM..=MAX_ZOOM)
-            .map(|z| TileGrid::new(A4, z).unwrap().render_margin())
-            .collect();
-        assert_eq!(margins, vec![2, 4, 8, 16, 32, 64, 128, 256, 512, 512]);
     }
 
     #[test]

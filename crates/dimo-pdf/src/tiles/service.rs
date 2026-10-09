@@ -9,7 +9,6 @@ use std::time::SystemTime;
 
 use crate::engine::{Document, PdfEngine};
 use crate::error::PdfError;
-use crate::geometry::SheetRect;
 use crate::hash::ContentHash;
 
 use super::disk::DiskCache;
@@ -345,22 +344,12 @@ impl Shared {
             .tile_region(key.x, key.y)
             .zip(grid.tile_pixels(key.x, key.y))
             .ok_or_else(|| out_of_range(key))?;
-        // Render with a margin left and above, see `TileGrid::render_margin`. Margin and scale
-        // are powers of two, so the padded region still starts on a whole pixel.
-        let scale = zoom_scale(key.zoom);
-        let margin = grid.render_margin();
-        let pad = f64::from(margin) / scale;
-        let padded = SheetRect::new(
-            region.x - pad,
-            region.y - pad,
-            region.width + pad,
-            region.height + pad,
-        );
+        // `render_region` applies the glyph edge margin itself.
         let image = doc
-            .render_region(key.sheet as usize, padded, scale)
+            .render_region(key.sheet as usize, region, zoom_scale(key.zoom))
             .map_err(|e| TileError::Render(e.to_string()))?;
         self.renders.fetch_add(1, Ordering::Relaxed);
-        let tile = Tile::new(encode_png(&image, margin, margin, width, height)?);
+        let tile = Tile::new(encode_png(&image, 0, 0, width, height)?);
         lock(&self.memory).insert(*key, tile.clone());
         if let Some(disk) = &self.disk
             && let Err(e) = disk.write(key, tile.as_bytes())

@@ -12,7 +12,8 @@ use dimo_synth::generate;
 use sha2::{Digest, Sha256};
 
 fn schema_path() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/schema/truth.schema.json")
+    Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default())
+        .join("../../docs/schema/truth.schema.json")
 }
 
 fn validate(truth_json: &str) {
