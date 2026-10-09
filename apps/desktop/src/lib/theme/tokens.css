@@ -13,6 +13,12 @@
   --dimo-accent-text: #ffffff;
   --dimo-focus: #1f6feb;
   --dimo-danger: #b42318;
+  /* Overlay on the drawing. The sheet stays white in both themes, so these do not change. */
+  --dimo-balloon-selected: #e8590c;
+  --dimo-balloon-selected-fill: rgb(232 89 12 / 0.08);
+  --dimo-balloon-region: #0057b8;
+  --dimo-balloon-region-fill: rgb(0 87 184 / 0.08);
+  --dimo-balloon-rejected: #6b7280;
 }
 
 @media (prefers-color-scheme: dark) {

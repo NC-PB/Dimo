@@ -28,8 +28,9 @@
  */
 
 import type { CharId } from "$lib/ipc/bindings";
+import { frozenSet, without } from "$lib/sets";
 
-const EMPTY: ReadonlySet<CharId> = new Set();
+const EMPTY: ReadonlySet<CharId> = frozenSet([]);
 
 /** The view that asks to focus a characteristic. */
 export type FocusSource = "viewport" | "table";
@@ -64,7 +65,7 @@ export class SelectionStore {
 
   /** Replaces the selection. `primary` defaults to the last of `ids`. */
   select(ids: Iterable<CharId>, primary?: CharId | null): void {
-    const next = new Set(ids);
+    const next = frozenSet(ids);
     this.#set(next, primary === undefined ? last(next) : primary);
   }
 
@@ -74,16 +75,12 @@ export class SelectionStore {
     if (added.length === 0) {
       return;
     }
-    this.#set(new Set([...this.ids, ...added]), added[added.length - 1] ?? null);
+    this.#set(frozenSet([...this.ids, ...added]), added[added.length - 1] ?? null);
   }
 
   /** Removes `ids`. */
   remove(ids: Iterable<CharId>): void {
-    const next = new Set(this.ids);
-    let changed = false;
-    for (const id of ids) {
-      changed = next.delete(id) || changed;
-    }
+    const { set: next, changed } = without(this.ids, ids);
     if (changed) {
       this.#set(next, this.primary !== null && next.has(this.primary) ? this.primary : last(next));
     }

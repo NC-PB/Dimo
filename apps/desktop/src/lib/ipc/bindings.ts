@@ -65,6 +65,11 @@ export const commands = {
 	 *  Release builds: does nothing.
 	 */
 	devReportFrameTimes: (report: FrameTimeReport) => __TAURI_INVOKE<void>("dev_report_frame_times", { report }),
+	/**
+	 *  Debug builds: writes one line from the webview's UI script to the terminal of `tauri dev`.
+	 *  Release builds: does nothing.
+	 */
+	devLog: (message: string) => __TAURI_INVOKE<void>("dev_log", { message }),
 };
 
 /** Events */
@@ -531,6 +536,8 @@ export type DevStartup = {
 	view: DevView | null,
 	/**  Whether to run the scripted pan and report frame times. */
 	pan_check: boolean,
+	/**  Text of the `DIMO_DEV_UI_SCRIPT` file, played by the webview after loading. */
+	ui_script: string | null,
 };
 
 /**

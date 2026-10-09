@@ -21,6 +21,13 @@ export type ShortcutAction =
   | "pan_down"
   | "previous_sheet"
   | "next_sheet"
+  | "select_tool"
+  | "place_tool"
+  | "edit_value"
+  | "select_all"
+  | "delete_selection"
+  | "restyle"
+  | "cancel"
   | "show_shortcuts";
 
 /**
@@ -70,6 +77,17 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: "pan_down", keys: [{ key: "ArrowDown" }], viewportOnly: true },
   { action: "previous_sheet", keys: [{ key: "PageUp" }] },
   { action: "next_sheet", keys: [{ key: "PageDown" }] },
+  { action: "select_tool", keys: [{ key: "v" }] },
+  { action: "place_tool", keys: [{ key: "b" }] },
+  { action: "edit_value", keys: [{ key: "Enter" }], viewportOnly: true },
+  { action: "select_all", keys: [{ key: "a", mod: true }], textEditing: true },
+  {
+    action: "delete_selection",
+    keys: [{ key: "Delete" }, { key: "Backspace" }],
+    viewportOnly: true,
+  },
+  { action: "restyle", keys: [{ key: "s", shift: false }] },
+  { action: "cancel", keys: [{ key: "Escape" }] },
   { action: "show_shortcuts", keys: [{ key: "?" }] },
 ];
 
@@ -112,6 +130,10 @@ const KEY_NAMES: Record<string, string> = {
   ArrowDown: "↓",
   PageUp: "PgUp",
   PageDown: "PgDn",
+  Enter: "↵",
+  Delete: "Del",
+  Backspace: "⌫",
+  Escape: "Esc",
 };
 
 /** Display text of a key combination, for example `⌘O` on macOS and `Ctrl+O` elsewhere. */

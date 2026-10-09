@@ -1,4 +1,5 @@
 <script lang="ts">
+  import BalloonTools from "$lib/components/BalloonTools.svelte";
   import ProjectStatus from "$lib/components/ProjectStatus.svelte";
   import { m, shortcutLabel } from "$lib/i18n";
   import { shortcutKeys, type ShortcutAction } from "$lib/shortcuts";
@@ -73,6 +74,10 @@
         }}>›</button
       >
     </div>
+  {/if}
+
+  {#if hasDocument}
+    <BalloonTools />
   {/if}
 
   <div class="ml-auto flex items-center gap-1">

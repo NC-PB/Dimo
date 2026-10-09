@@ -14,6 +14,9 @@
 //! - `DIMO_DEV_VIEW=<percent>@<x>,<y>`: start zoomed to `percent` of the printed size with the
 //!   sheet point `x`, `y` in the viewport center, for screenshots at a known zoom.
 //! - `DIMO_DEV_PAN_CHECK=1`: run the scripted pan after loading and report the frame times.
+//! - `DIMO_DEV_UI_SCRIPT=<path>`: after loading, the webview plays the pointer and key steps of
+//!   this JSON file on the drawing (see `src/lib/dev/ui-script.ts` of the frontend) and writes
+//!   its marks to the terminal through [`dev_log`], so window captures can be timed.
 //!
 //! While `DIMO_DEV_OPEN` is set, a debug build does not restore unsaved projects at startup, so
 //! a crashed autosave of real work is left for the next normal start.
@@ -117,6 +120,8 @@ pub struct DevStartup {
     pub view: Option<DevView>,
     /// Whether to run the scripted pan and report frame times.
     pub pan_check: bool,
+    /// Text of the `DIMO_DEV_UI_SCRIPT` file, played by the webview after loading.
+    pub ui_script: Option<String>,
 }
 
 /// A start view for screenshots: zoom in percent of the printed size and the sheet point shown
@@ -218,6 +223,14 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
             .unwrap_or(0),
         view: var("DIMO_DEV_VIEW").and_then(|v| parse_view(&v)),
         pan_check: var("DIMO_DEV_PAN_CHECK").is_some_and(|v| v != "0"),
+        ui_script: match var("DIMO_DEV_UI_SCRIPT") {
+            Some(path) => Some(
+                std::fs::read_to_string(&path).map_err(|e| CommandError::Io {
+                    message: format!("{path}: {e}"),
+                })?,
+            ),
+            None => None,
+        },
     })
 }
 
@@ -362,6 +375,24 @@ pub fn dev_report_frame_times(report: FrameTimeReport) {
             report.viewport[0],
             report.viewport[1],
         );
+    }
+}
+
+/// Debug builds: writes one line from the webview's UI script to the terminal of `tauri dev`.
+/// Release builds: does nothing.
+#[tauri::command]
+#[specta::specta]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "Tauri commands take arguments by value"
+)]
+#[allow(
+    clippy::print_stderr,
+    reason = "dev only output for the tauri dev terminal, no tracing subscriber yet"
+)]
+pub fn dev_log(message: String) {
+    if cfg!(debug_assertions) {
+        eprintln!("[dimo dev] ui: {message}");
     }
 }
 

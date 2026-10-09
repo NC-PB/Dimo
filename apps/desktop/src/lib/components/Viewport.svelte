@@ -1,18 +1,18 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import BalloonEditor from "$lib/components/BalloonEditor.svelte";
+  import BalloonLayer from "$lib/components/BalloonLayer.svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
-  import {
-    DUMMY_STYLE,
-    dummyBalloons,
-    leaderLine,
-    type DummyBalloon,
-  } from "$lib/dev/dummy-balloons";
+  import { DUMMY_STYLE, dummyBalloons, leaderLine } from "$lib/dev/dummy-balloons";
   import { m } from "$lib/i18n";
   import { commands, type TileRange } from "$lib/ipc/bindings";
+  import { balloonTools } from "$lib/stores/balloon-tools.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
+  import { selection } from "$lib/stores/selection.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
+  import { balloonGestures, type PointerInput } from "$lib/viewport/gestures.svelte";
   import {
     backdropZoomFor,
     fullTileRange,
@@ -157,34 +157,23 @@
   /** The sheet outline in screen space (turned with the view), under the tiles. */
   const sheetBox = $derived(sheet === null ? null : sheetScreenRect(shown, sheet));
 
-  /**
-   * Balloons of the project on this sheet, drawn in the plain D-24 look until the balloon
-   * styles of T1.6 are rendered. Numbers come from Rust.
-   */
-  const projectBalloons = $derived.by((): { key: string; balloon: DummyBalloon }[] => {
-    const sheetId = projectStore.sheets[sheetIndex]?.id;
-    if (sheetId === undefined) {
-      return [];
-    }
-    return projectStore.balloonsOnSheet(sheetId).map((b) => ({
-      key: b.id,
-      balloon: {
-        number: projectStore.characteristicById.get(b.characteristic)?.number ?? 0,
-        center: { x: b.position.x ?? 0, y: b.position.y ?? 0 },
-        anchor: { x: b.anchor.x ?? 0, y: b.anchor.y ?? 0 },
-      },
-    }));
-  });
-
-  const balloons = $derived([
-    ...projectBalloons,
-    ...(DEV_TOOLS_ENABLED && devTools.balloons && sheet !== null
+  /** Dummy balloons of the performance check (development only, T0.8). */
+  const dummies = $derived(
+    DEV_TOOLS_ENABLED && devTools.balloons && sheet !== null
       ? dummyBalloons(sheet, devTools.count, sheetIndex + 1, devTools.anchors).map((b) => ({
           key: `dummy-${String(b.number)}`,
           balloon: b,
         }))
-      : []),
-  ]);
+      : [],
+  );
+
+  // Selected characteristics that were deleted (also by undo) leave the selection.
+  $effect(() => {
+    const exists = projectStore.characteristicById;
+    untrack(() => {
+      selection.retain((id) => exists.has(id));
+    });
+  });
 
   // Wheel and pinch zoom to the cursor. Added by hand because the listeners must not be passive.
   // A pinch arrives as wheel events with ctrlKey (Chromium, WebKit in Tauri) or, in Safari, as
@@ -240,40 +229,96 @@
     };
   });
 
-  let drag: { pointer: number; x: number; y: number } | null = null;
-  let dragging = $state(false);
+  /** Pointer position relative to the viewport element. */
+  function pointerInput(event: PointerEvent): PointerInput {
+    const rect = element?.getBoundingClientRect();
+    return {
+      pointerId: event.pointerId,
+      button: event.button,
+      shiftKey: event.shiftKey,
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+      x: event.clientX - (rect?.left ?? 0),
+      y: event.clientY - (rect?.top ?? 0),
+      timeStamp: event.timeStamp,
+    };
+  }
 
+  // Pointer gestures (T1.6): select, move, place, box select and pan, see `gestures.svelte.ts`.
   function onPointerDown(event: PointerEvent) {
-    // Left or middle button pans.
-    if (doc === null || (event.button !== 0 && event.button !== 1)) {
+    if (doc === null) {
       return;
     }
-    event.preventDefault();
     element?.focus({ preventScroll: true });
-    element?.setPointerCapture(event.pointerId);
-    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY };
-    dragging = true;
+    if (balloonGestures.down(pointerInput(event))) {
+      event.preventDefault();
+      try {
+        element?.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic events of the dev UI script have no active pointer to capture.
+      }
+    }
   }
 
   function onPointerMove(event: PointerEvent) {
-    if (drag?.pointer !== event.pointerId) {
-      return;
-    }
-    viewport.panBy(event.clientX - drag.x, event.clientY - drag.y);
-    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY };
+    balloonGestures.move(pointerInput(event));
   }
 
   function onPointerUp(event: PointerEvent) {
-    if (drag?.pointer === event.pointerId) {
-      drag = null;
-      dragging = false;
+    void balloonGestures.up(pointerInput(event));
+  }
+
+  function onPointerCancel() {
+    balloonGestures.cancel();
+  }
+
+  /** Space held: the left button pans in every tool. Not while typing in a field. */
+  function onSpace(event: KeyboardEvent, down: boolean) {
+    const target = event.target;
+    const typing =
+      target instanceof HTMLElement &&
+      (target.isContentEditable || target.closest("input, select, textarea, button") !== null);
+    if (event.key === " " && (!down || !typing)) {
+      balloonGestures.spaceHeld = down;
+      if (down && target === element) {
+        event.preventDefault();
+      }
     }
+  }
+
+  const cursor = $derived.by(() => {
+    if (balloonGestures.panning) {
+      return "grabbing";
+    }
+    if (balloonGestures.gesture?.kind === "move" || balloonGestures.hover === "balloon") {
+      return "move";
+    }
+    if (balloonGestures.hover === "anchor" || balloonGestures.gesture?.kind === "anchor") {
+      return "crosshair";
+    }
+    if (balloonGestures.spaceHeld) {
+      return "grab";
+    }
+    return balloonTools.tool === "place" ? "crosshair" : "default";
+  });
+
+  function focusDrawing() {
+    element?.focus({ preventScroll: true });
   }
 </script>
 
 <svelte:window
   onresize={() => {
     devicePixelRatio = window.devicePixelRatio || 1;
+  }}
+  onkeydown={(e) => {
+    onSpace(e, true);
+  }}
+  onkeyup={(e) => {
+    onSpace(e, false);
+  }}
+  onblur={() => {
+    balloonGestures.spaceHeld = false;
   }}
 />
 
@@ -341,37 +386,40 @@
         {/each}
       </div>
     {/each}
-    <svg class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-      <g transform={matrix(shown)}>
-        {#each balloons as { key, balloon } (key)}
-          {@const leader = leaderLine(balloon)}
-          {#if leader}
-            <line
-              x1={leader.from.x}
-              y1={leader.from.y}
-              x2={leader.to.x}
-              y2={leader.to.y}
+    {#if dummies.length > 0}
+      <svg class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+        <g transform={matrix(shown)}>
+          {#each dummies as { key, balloon } (key)}
+            {@const leader = leaderLine(balloon)}
+            {#if leader}
+              <line
+                x1={leader.from.x}
+                y1={leader.from.y}
+                x2={leader.to.x}
+                y2={leader.to.y}
+                stroke={DUMMY_STYLE.color}
+                stroke-width={DUMMY_STYLE.stroke}
+              />
+            {/if}
+            <circle
+              cx={balloon.center.x}
+              cy={balloon.center.y}
+              r={DUMMY_STYLE.radius}
+              fill="#ffffff"
               stroke={DUMMY_STYLE.color}
               stroke-width={DUMMY_STYLE.stroke}
             />
-          {/if}
-          <circle
-            cx={balloon.center.x}
-            cy={balloon.center.y}
-            r={DUMMY_STYLE.radius}
-            fill="#ffffff"
-            stroke={DUMMY_STYLE.color}
-            stroke-width={DUMMY_STYLE.stroke}
-          />
-          <text
-            x={balloon.center.x}
-            y={balloon.center.y}
-            font-size={DUMMY_STYLE.fontSize}
-            class="balloon-number">{balloon.number}</text
-          >
-        {/each}
-      </g>
-    </svg>
+            <text
+              x={balloon.center.x}
+              y={balloon.center.y}
+              font-size={DUMMY_STYLE.fontSize}
+              class="balloon-number">{balloon.number}</text
+            >
+          {/each}
+        </g>
+      </svg>
+    {/if}
+    <BalloonLayer view={shown} />
     <!-- The drawing surface on top of all layers: drag to pan, wheel to zoom, keys from the
          shortcut map. Focusable so keyboard users reach it (NFR-UX-01); "application" is the
          ARIA role for such a surface, but Svelte does not count it as interactive. -->
@@ -379,16 +427,19 @@
     <div
       bind:this={element}
       class="surface absolute inset-0 touch-none select-none"
-      class:cursor-grab={!dragging}
-      class:cursor-grabbing={dragging}
+      style:cursor
       role="application"
       aria-label={m.viewport_label()}
       tabindex="0"
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
-      onpointercancel={onPointerUp}
+      onpointercancel={onPointerCancel}
+      ondblclick={(e) => {
+        e.preventDefault();
+      }}
     ></div>
+    <BalloonEditor view={shown} onDone={focusDrawing} />
   {/if}
 </main>
 

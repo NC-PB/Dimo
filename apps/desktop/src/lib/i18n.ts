@@ -75,6 +75,20 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.previous_sheet();
     case "next_sheet":
       return m.next_sheet();
+    case "select_tool":
+      return m.select_tool();
+    case "place_tool":
+      return m.place_tool();
+    case "edit_value":
+      return m.edit_value();
+    case "select_all":
+      return m.select_all();
+    case "delete_selection":
+      return m.delete_selection();
+    case "restyle":
+      return m.balloon_style();
+    case "cancel":
+      return m.cancel_action();
     case "show_shortcuts":
       return m.show_shortcuts();
   }

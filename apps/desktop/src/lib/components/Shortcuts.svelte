@@ -4,9 +4,12 @@
   import { SHORTCUTS, formatCombo, matchShortcut, type ShortcutAction } from "$lib/shortcuts";
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
+  import { selection } from "$lib/stores/selection.svelte";
   import { unsavedPrompt } from "$lib/stores/prompt.svelte";
   import { rotateShownSheet } from "$lib/sheet-properties";
   import { viewport } from "$lib/stores/viewport.svelte";
+  import { balloonTools } from "$lib/stores/balloon-tools.svelte";
+  import { balloonGestures } from "$lib/viewport/gestures.svelte";
 
   interface Props {
     /** Whether the cheat sheet is open. */
@@ -15,7 +18,8 @@
 
   let { open = $bindable(false) }: Props = $props();
 
-  function run(action: ShortcutAction): void {
+  /** Runs a shortcut. Returns false if it did nothing, so the key keeps its usual meaning. */
+  function run(action: ShortcutAction): boolean {
     switch (action) {
       case "new_project":
         void projectStore.newProject();
@@ -69,10 +73,30 @@
       case "next_sheet":
         documentStore.nextSheet();
         break;
+      case "select_tool":
+        balloonTools.setTool("select");
+        break;
+      case "place_tool":
+        balloonTools.setTool("place");
+        break;
+      case "edit_value":
+        return balloonTools.editPrimary();
+      case "select_all":
+        balloonTools.selectAll();
+        break;
+      case "delete_selection":
+        void balloonTools.deleteSelection();
+        break;
+      case "restyle":
+        balloonTools.styleOpen = !selection.isEmpty;
+        break;
+      case "cancel":
+        return balloonGestures.cancel() || balloonTools.escape();
       case "show_shortcuts":
         open = !open;
         break;
     }
+    return true;
   }
 
   /** Text entry and choice controls keep their own keys. */
@@ -115,8 +139,9 @@
     if (shortcut.viewportOnly && !viewportOrNothingFocused(event.target)) {
       return;
     }
-    event.preventDefault();
-    run(shortcut.action);
+    if (run(shortcut.action)) {
+      event.preventDefault();
+    }
   }
 </script>
 

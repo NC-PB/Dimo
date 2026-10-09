@@ -66,6 +66,21 @@ describe("shortcut map (D-52)", () => {
     expect(matchShortcut(key("?", { shift: true }), true)?.action).toBe("show_shortcuts");
   });
 
+  it("maps the balloon tools (T1.6)", () => {
+    expect(matchShortcut(key("b"), true)?.action).toBe("place_tool");
+    expect(matchShortcut(key("v"), false)?.action).toBe("select_tool");
+    expect(matchShortcut(key("Enter"), true)?.action).toBe("edit_value");
+    expect(matchShortcut(key("Delete"), false)?.action).toBe("delete_selection");
+    expect(matchShortcut(key("Backspace"), true)?.action).toBe("delete_selection");
+    expect(matchShortcut(key("Escape"), true)?.action).toBe("cancel");
+    expect(matchShortcut(key("a", { meta: true }), true)?.action).toBe("select_all");
+    expect(matchShortcut(key("a"), true)).toBeNull();
+    expect(matchShortcut(key("s"), true)?.action).toBe("restyle");
+    expect(matchShortcut(key("s", { meta: true }), true)?.action).toBe("save_project");
+    expect(shortcutKeys("select_all", true)).toBe("⌘A");
+    expect(shortcutKeys("cancel", false)).toBe("Esc");
+  });
+
   it("formats keys for the platform", () => {
     expect(formatCombo({ key: "o", mod: true }, true)).toBe("⌘O");
     expect(formatCombo({ key: "o", mod: true }, false)).toBe("Ctrl+O");
