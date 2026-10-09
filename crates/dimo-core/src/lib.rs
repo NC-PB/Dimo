@@ -1,18 +1,44 @@
 //! Domain model of a Dimo project: characteristics, balloons, commands with undo and redo, numbering and validation. Pure logic without IO.
 //!
-//! Stub created in T0.1. T0.10 added the shared vocabulary (sheet kind, characteristic kind,
-//! unit, tolerance rule, sheet space geometry, exact decimals) and the corpus truth format.
+//! - [`project::Project`] is the state stored in `project.json`.
+//! - [`document::Document`] wraps a project, executes [`command::Command`]s, keeps unlimited
+//!   undo and redo, and records [`document::AuditEntry`]s (NFR-REL-02).
+//! - Every command returns a [`patch::Patch`] of primitive [`patch::Change`]s for the frontend.
+//! - IDs, time and the audit user come from an [`env::Environment`], so the same commands
+//!   give the same project (rule 11).
+//!
+//! The `specta` feature derives `specta::Type` on every IPC facing type.
 
+pub mod balloon;
 pub mod characteristic;
+pub mod command;
 pub mod decimal;
+pub mod document;
+pub mod env;
 pub mod geometry;
+pub mod id;
+pub mod patch;
+pub mod project;
 pub mod sheet;
 pub mod truth;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn crate_builds() {
-        assert_eq!(env!("CARGO_PKG_NAME"), "dimo-core");
-    }
+pub use balloon::{Balloon, BalloonShape, BalloonStyle, BalloonStyleOverride, Color};
+pub use characteristic::{
+    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, FieldValue,
+    Inspection, Origin, SourceRegion, TextSource, ToleranceRule, Unit,
+};
+pub use command::{BalloonMove, Command, CommandError};
+pub use document::{AuditAction, AuditEntry, Document};
+pub use env::{Environment, FixedEnvironment, Timestamp};
+pub use geometry::{OrientedBox, Point, Size};
+pub use id::{BalloonId, CharId, RevisionId, SheetId};
+pub use patch::{Change, Patch};
+pub use project::{
+    InsertPolicy, LockReason, Numbering, NumberingLock, Project, ProjectInfo, ProjectSettings,
+};
+pub use sheet::{DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind};
+
+/// The JSON schema of `project.json` content ([`Project`]), with object keys sorted.
+pub fn project_schema() -> serde_json::Value {
+    truth::sort_keys(schemars::schema_for!(Project).to_value())
 }

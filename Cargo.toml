@@ -28,6 +28,8 @@ insta = { version = "=1.48.0" }
 pdfium-render = { version = "=0.9.4", default-features = false, features = ["pdfium_7881"] }
 # Tile encoding (T0.7), pure Rust PNG with fdeflate.
 png = { version = "=0.18.1" }
+# Property tests (T1.1). No fork or timeout support, keeps the dependency tree small.
+proptest = { version = "=1.11.0", default-features = false, features = ["std"] }
 sha2 = { version = "=0.10.9" }
 tempfile = { version = "=3.27.0" }
 tauri = { version = "=2.11.6", features = [] }
@@ -42,9 +44,12 @@ serde_json = "=1.0.151"
 thiserror = "=2.0.21"
 # Typed IPC (NFR-MNT-03). Only release candidates exist; tauri-specta pins specta exactly.
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta-serde = "=0.0.12"
 specta-typescript = "=0.0.12"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 tracing = { version = "=0.1.44" }
+# Stable IDs of the domain model (FR-BAL-09). No generator features: IDs come from a provider.
+uuid = { version = "=1.26.1", default-features = false, features = ["std", "serde"] }
 
 [workspace.lints.rust]
 # Exceptions only in an isolated FFI module with a safety comment (rust.md).
