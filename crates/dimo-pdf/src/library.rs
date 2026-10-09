@@ -51,7 +51,10 @@ pub const fn host_target() -> Option<&'static str> {
 
 /// The development default: `vendor/pdfium/<target>/{lib,bin}/<library>` in this repository.
 ///
-/// Derived from the crate location at compile time, so it only exists in a source checkout.
+/// Only exists in a source checkout. Searched upwards from the crate being run by cargo
+/// (`CARGO_MANIFEST_DIR` at run time, set by `cargo test` and `cargo run`), then from this
+/// crate's location at compile time. The run time lookup keeps working when build output is
+/// shared between checkouts (git worktrees), where the compile time path can be stale.
 pub fn vendor_library_path() -> Option<PathBuf> {
     let target = host_target()?;
     let sub = if cfg!(target_os = "windows") {
@@ -59,14 +62,19 @@ pub fn vendor_library_path() -> Option<PathBuf> {
     } else {
         "lib"
     };
-    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    Some(
-        repo_root
-            .join("vendor/pdfium")
-            .join(target)
-            .join(sub)
-            .join(LIBRARY_FILE_NAME),
-    )
+    let relative = Path::new("vendor/pdfium")
+        .join(target)
+        .join(sub)
+        .join(LIBRARY_FILE_NAME);
+    let compile_time_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let run_time_dir = std::env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from);
+    let found = run_time_dir
+        .iter()
+        .flat_map(|dir| dir.ancestors())
+        .chain(compile_time_root.ancestors().take(1))
+        .map(|dir| dir.join(&relative))
+        .find(|candidate| candidate.is_file());
+    Some(found.unwrap_or_else(|| compile_time_root.join(relative)))
 }
 
 /// Resolves the library file according to the search order in the module docs.
