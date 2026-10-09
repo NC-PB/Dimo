@@ -46,7 +46,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 | Task | State | Notes |
 |---|---|---|
-| T2.1 Callout parser | in progress | Wave 1 |
+| T2.1 Callout parser | done | `parse_callout`, `Callout`, canonical printer; 4 property tests at 10,000 cases. Owner: confirm inch heuristic and limit order (decision log 2026-10-10) |
 | T2.2 Tolerance table format and ISO 2768-1 | review | Format, loader, schema, release gate (`scripts/check-table-status.sh`, CI job "tolerance tables (D-43)"). Owner: verify `iso-2768-1.toml` (D-43) |
 | T2.3 ISO 286 fit tables | review | 514 fit vectors pass; synth `FITS` and corpus truth fits match the table. Owner: verify `iso-286.toml` (D-43) |
 | T2.4 Data model version 2 | todo | Wave 1, held until the owner confirms M2 decisions 1 to 4 |
@@ -74,6 +74,10 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-10 | Callout parser: stacked lines joined by the caller with one space (main, upper, lower), as in the truth `requirement_text`; limit dimensions keep written order (`nominal` first, `Limits { other }` second), deviations stored as written, the engine decides which is upper. **Owner: confirm** | Keeps the parser free of tolerance logic | T2.1, agent |
+| 2026-10-10 | Inch notation (D-20): a `"`, `in` or `inch` marker, an inch fraction (power of two denominators 2 to 128), or a number without leading zero (`.250`) marks a callout as inch; `unit` is set only by an explicit marker. **Owner: confirm** the leading zero heuristic | D-20, no unit inference from sheet size | T2.1, agent |
+| 2026-10-10 | Callout parser forms: basic dimension in text as `[25]` (framed form left to T2.6), `42 REF` and `(42)` are reference; `4X 45°` reads as chamfer, so the canonical print writes an angle quantity as `N PL`; a second different unit marker is a parse error; counterbore, countersink, surface texture, inch threads, `DEEP`/`DP` and frames not parsed yet; `SØ` maps to kind diameter (core has no spherical diameter). **Owner: confirm** | Scope of T2.1 | T2.1, agent |
+| 2026-10-10 | `winnow` =1.0.4 (MIT, already in the lock through the toml crates) | Spec 06 parser library | T2.1, agent |
 | 2026-10-09 | Tolerance tables: one TOML format for general, fit and custom tables (`data/tolerances/README.md`); angular values in minutes of arc (`value_unit = "arcmin"`, 20' has no exact decimal in degrees); ISO 286 grade rules in code (`fit.rs`), all numbers in data; hole deviations stored explicitly, a test checks they mirror the shafts; CD, EF, FG not included; reported range of a fit is the step of the standard; user tables read by `dimo-tolerance::load_dir`, a missing folder means none | FR-TOL-02, FR-TOL-04, FR-TOL-07, D-43 | T2.2/T2.3, agent |
 | 2026-10-09 | ISO 286 rule choices: js/JS for IT7 to IT11 reduce an odd µm IT value by 1 µm first; classes not used up to 1 mm (IT14 to IT18, a, b, A, B, N above IT8) have no value there; K above IT8 only up to 3 mm. **Owner: confirm** | Standard footnotes | T2.3, agent |
 | 2026-10-09 | D-43 release gate: `scripts/check-table-status.sh` fails with `DIMO_RELEASE=1` or `GITHUB_REF_TYPE=tag` while a shipped table is draft, warns otherwise; tested with fixtures in `scripts/fixtures/table-status/` | D-43 | T2.2, agent |
@@ -150,6 +154,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-10: T2.1 merged (callout parser). Wave 1 done except T2.4, held for the owner's confirmation of M2 decisions 1 to 4.
 - 2026-10-09: T2.2 and T2.3 merged (tolerance table format, ISO 2768-1 and ISO 286 drafts). Tables wait for the owner's Tabellenbuch check.
 - 2026-10-09: M2 plan drafted (`docs/plan/M2.md`): 10 tasks in 3 waves, 6 decisions for the owner to confirm.
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
