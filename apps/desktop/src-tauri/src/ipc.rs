@@ -129,6 +129,12 @@ pub enum CommandError {
         /// What went wrong.
         message: String,
     },
+    /// An export could not be produced or written; no file was left behind.
+    #[error("export failed: {message}")]
+    Export {
+        /// What went wrong.
+        message: String,
+    },
     /// The document command was refused; the project is unchanged.
     #[error("command refused: {message}")]
     Rejected {

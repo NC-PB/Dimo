@@ -16,6 +16,9 @@
     "allow-execute",
     "allow-undo",
     "allow-redo",
+    "allow-export-project",
+    "allow-app-settings",
+    "allow-set-app-settings",
     "allow-dev-startup",
     "allow-dev-report-frame-times",
     "allow-dev-log"

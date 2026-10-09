@@ -13,6 +13,7 @@
   import { selection } from "$lib/stores/selection.svelte";
   import { unsavedPrompt } from "$lib/stores/prompt.svelte";
   import { rotateShownSheet } from "$lib/sheet-properties";
+  import { view } from "$lib/stores/view.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   import { balloonTools } from "$lib/stores/balloon-tools.svelte";
   import { balloonGestures } from "$lib/viewport/gestures.svelte";
@@ -109,6 +110,15 @@
       case "show_shortcuts":
         open = !open;
         break;
+      case "show_drawing":
+        view.set("drawing");
+        break;
+      case "show_export":
+        view.set("export");
+        break;
+      case "show_settings":
+        view.set("settings");
+        break;
     }
     return true;
   }
@@ -148,6 +158,9 @@
     }
     if (open && shortcut.action !== "show_shortcuts") {
       return; // The dialog has focus; Escape closes it.
+    }
+    if (view.current !== "drawing" && shortcut.anyView !== true) {
+      return; // Drawing and table keys act only while the drawing is shown.
     }
     if (
       isEditable(event.target) &&

@@ -1,5 +1,6 @@
 <script lang="ts">
   import DevPanel from "$lib/components/DevPanel.svelte";
+  import SelectionSummary from "$lib/components/SelectionSummary.svelte";
   import SheetProperties from "$lib/components/SheetProperties.svelte";
   import { DEV_TOOLS_ENABLED } from "$lib/dev/dev-tools.svelte";
   import { buildProfileLabel, m } from "$lib/i18n";
@@ -11,7 +12,7 @@
   aria-label={m.side_panel_label()}
 >
   <SheetProperties />
-  <p class="flex-1">{m.side_panel_empty()}</p>
+  <SelectionSummary />
   {#if DEV_TOOLS_ENABLED}
     <DevPanel />
   {/if}

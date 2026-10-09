@@ -5,9 +5,11 @@
 
 pub mod dev;
 pub mod env;
+pub mod export;
 pub mod ipc;
 pub mod project;
 pub mod session;
+pub mod settings;
 pub mod tiles;
 
 use std::path::{Path, PathBuf};
@@ -17,7 +19,7 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, dev.rs). \
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, settings.rs, dev.rs). \
 Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
@@ -43,12 +45,16 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             project::execute,
             project::undo,
             project::redo,
+            export::export_project,
+            settings::app_settings,
+            settings::set_app_settings,
             dev::dev_startup,
             dev::dev_report_frame_times,
             dev::dev_log
         ])
         .events(collect_events![
             ipc::JobProgress,
+            export::JobFinished,
             session::ProjectLoaded,
             session::ProjectPatched,
             session::ProjectStatusChanged,
@@ -58,6 +64,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         .constant("TILE_SIZE", TILE_SIZE)
         .constant("MIN_TILE_ZOOM", MIN_ZOOM)
         .constant("MAX_TILE_ZOOM", MAX_ZOOM)
+        // The balloon layout rule shared by the viewport and the ballooned PDF (D-24).
+        .constant("BALLOON_METRICS", dimo_core::BALLOON_METRICS)
 }
 
 /// Writes the TypeScript bindings of `builder` to `path`.
@@ -100,6 +108,15 @@ pub fn run() -> tauri::Result<()> {
                 .ok()
                 .map(|dir| dir.join(AUTOSAVE_FOLDER));
             app.manage(project::SessionState::new(autosave_dir));
+            // Settings of the user in the app config directory (T1.9).
+            let settings_path = app
+                .path()
+                .app_config_dir()
+                .ok()
+                .map(|dir| dir.join(settings::SETTINGS_FILE));
+            let user_settings = settings::SettingsState::load(settings_path);
+            settings::apply(app.handle(), &user_settings.get());
+            app.manage(user_settings);
             recover_unsaved(app.handle());
             project::start_autosave_timer(app.handle().clone());
             Ok(())

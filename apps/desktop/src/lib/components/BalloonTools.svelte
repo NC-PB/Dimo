@@ -1,27 +1,13 @@
 <script lang="ts">
   import { Popover, ToggleGroup } from "bits-ui";
+  import { COLORS, SHAPES, SIZES_MM, shapeLabel } from "$lib/balloon-style-options";
+  import ShapeIcon from "$lib/components/ShapeIcon.svelte";
   import { m, shortcutLabel } from "$lib/i18n";
-  import type { BalloonShape, Color } from "$lib/ipc/bindings";
   import { shortcutKeys, type ShortcutAction } from "$lib/shortcuts";
   import { balloonTools, type Tool } from "$lib/stores/balloon-tools.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
   import { selection } from "$lib/stores/selection.svelte";
   import { balloonGestures } from "$lib/viewport/gestures.svelte";
-
-  const SHAPES: readonly BalloonShape[] = ["circle", "flag", "rectangle"];
-  /** Balloon sizes offered, in mm on the printed sheet (D-24 default 7). */
-  const SIZES_MM: readonly number[] = [5, 6, 7, 8, 10, 12];
-  /**
-   * Outline colors offered: the D-24 blue, black and three colors of a color blind safe
-   * palette. Each one is named, so the choice never depends on seeing the color.
-   */
-  const COLORS: readonly { color: Color; label: () => string }[] = [
-    { color: "#0057B8", label: () => m.color_blue() },
-    { color: "#000000", label: () => m.color_black() },
-    { color: "#009988", label: () => m.color_teal() },
-    { color: "#CC3311", label: () => m.color_red() },
-    { color: "#EE3377", label: () => m.color_magenta() },
-  ];
 
   const hasDocument = $derived(documentStore.current !== null);
   const count = $derived(selection.size);
@@ -34,17 +20,6 @@
 
   function hint(action: ShortcutAction): string {
     return `${shortcutLabel(action)} (${shortcutKeys(action)})`;
-  }
-
-  function shapeLabel(shape: BalloonShape): string {
-    switch (shape) {
-      case "circle":
-        return m.shape_circle();
-      case "flag":
-        return m.shape_flag();
-      case "rectangle":
-        return m.shape_rectangle();
-    }
   }
 
   const buttonClass =
@@ -99,19 +74,7 @@
                 aria-pressed={current?.shape === shape}
                 onclick={() => void balloonTools.restyle({ shape })}
               >
-                <svg viewBox="0 0 24 16" class="h-3 w-5" aria-hidden="true">
-                  {#if shape === "circle"}
-                    <circle cx="12" cy="8" r="6.5" fill="none" stroke="currentColor" />
-                  {:else if shape === "flag"}
-                    <polygon
-                      points="8,1.5 22,1.5 22,14.5 8,14.5 2,8"
-                      fill="none"
-                      stroke="currentColor"
-                    />
-                  {:else}
-                    <rect x="2" y="1.5" width="20" height="13" fill="none" stroke="currentColor" />
-                  {/if}
-                </svg>
+                <ShapeIcon {shape} />
                 {shapeLabel(shape)}
               </button>
             {/each}

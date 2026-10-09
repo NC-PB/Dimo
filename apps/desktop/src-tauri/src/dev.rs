@@ -16,7 +16,11 @@
 //! - `DIMO_DEV_PAN_CHECK=1`: run the scripted pan after loading and report the frame times.
 //! - `DIMO_DEV_UI_SCRIPT=<path>`: after loading, the webview plays the pointer and key steps of
 //!   this JSON file on the drawing (see `src/lib/dev/ui-script.ts` of the frontend) and writes
-//!   its marks to the terminal through [`dev_log`], so window captures can be timed.
+//!   its marks to the terminal through [`dev_log`], so window captures can be timed. Played
+//!   once per process: a script that switches the UI language (which reloads the window) does
+//!   not start again.
+//! - `DIMO_DEV_EXPORT_DIR=<dir>`: exports skip the save dialog and write their suggested file
+//!   name into this directory (T1.9), so a UI script can click the export buttons.
 //!
 //! While `DIMO_DEV_OPEN` is set, a debug build does not restore unsaved projects at startup, so
 //! a crashed autosave of real work is left for the next normal start.
@@ -42,6 +46,16 @@ use crate::tiles::TileState;
 /// True if a debug build was started with `DIMO_DEV_OPEN`.
 pub fn dev_open_requested() -> bool {
     cfg!(debug_assertions) && var("DIMO_DEV_OPEN").is_some()
+}
+
+/// Debug builds started with `DIMO_DEV_EXPORT_DIR`: exports skip the save dialog and write
+/// their suggested file name into this directory. `None` in release builds.
+pub fn dev_export_dir() -> Option<PathBuf> {
+    if cfg!(debug_assertions) {
+        var("DIMO_DEV_EXPORT_DIR").map(PathBuf::from)
+    } else {
+        None
+    }
 }
 
 fn var(name: &str) -> Option<String> {
@@ -178,6 +192,9 @@ pub fn parse_anchors(text: &str) -> Vec<SheetPoint> {
 /// `DIMO_DEV_OPEN` runs once per process, so reloading the webview keeps the project.
 static DEV_OPEN_DONE: AtomicBool = AtomicBool::new(false);
 
+/// `DIMO_DEV_UI_SCRIPT` is played once per process, also when the window reloads.
+static DEV_UI_SCRIPT_DONE: AtomicBool = AtomicBool::new(false);
+
 /// Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
 /// builds: always the empty default.
 #[tauri::command]
@@ -224,12 +241,12 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
         view: var("DIMO_DEV_VIEW").and_then(|v| parse_view(&v)),
         pan_check: var("DIMO_DEV_PAN_CHECK").is_some_and(|v| v != "0"),
         ui_script: match var("DIMO_DEV_UI_SCRIPT") {
-            Some(path) => Some(
+            Some(path) if !DEV_UI_SCRIPT_DONE.swap(true, Ordering::SeqCst) => Some(
                 std::fs::read_to_string(&path).map_err(|e| CommandError::Io {
                     message: format!("{path}: {e}"),
                 })?,
             ),
-            None => None,
+            _ => None,
         },
     })
 }
