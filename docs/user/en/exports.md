@@ -2,20 +2,30 @@
 
 ## Exporting from the app
 
-Open the **Export** view (toolbar, or Cmd+E on macOS, Ctrl+E elsewhere). Each export asks where
-to save the file and then runs in the background; you can keep working meanwhile. A progress
-bar and then the saved file name appear below the export.
+Open the **Export** view (the **Export** button in the top bar, or ⌘E on macOS, Ctrl+E elsewhere).
+It needs an open project. Each export asks where to save the file and then runs in the
+background; you can keep working meanwhile. The file contains the project as it was when you
+clicked the button. A progress bar and then the saved file name appear below the export, or the
+reason why it failed.
 
-Options, remembered for the next time:
+The suggested file names follow the project file (or the drawing, for a project that was never
+saved): `part_ballooned.pdf`, `part_characteristics.csv` and `part_characteristics.xlsx`.
+
+Options. The first two are remembered for the next start:
 
 - **Column headers**: English or German headers in the CSV and Excel files, independent of the
   language of the app.
 - **Balloons in the PDF**: as part of the page (default), or as annotations that PDF viewers can
   show, hide or delete.
 - **Export as issued**: locks the numbering before exporting. Use it for drawings that go to a
-  customer. While locked, numbers never change, deleted numbers are not reused and new
-  characteristics get the next free number. The lock is recorded in the audit log and can be
-  undone like any other change (Cmd+Z right after the export, or unlock later).
+  customer. While locked, numbers never change, deleted numbers are not reused, a new
+  characteristic gets the highest number ever used plus one, and rows of the table cannot be
+  moved. The lock is recorded in the change log. This box is not remembered and is off at every
+  start. While the numbering is locked the box is disabled and says so.
+
+Dimo has no unlock button in this version. The lock is a change like any other, so ⌘Z undoes it
+as long as it is the last change you made, for example right after the export. Anything you
+change after the export goes on top of it in the history.
 
 ## Ballooned PDF
 
@@ -32,8 +42,9 @@ The characteristic list has one row per characteristic, in display number order.
 for programming a coordinate measuring machine (CSV) and for working in a spreadsheet (XLSX).
 Both files have the same columns.
 
-Characteristics with the status `rejected` are not exported. Reference and basic dimensions are
-exported with `Inspect` set to `no`, so you can filter them out.
+Characteristics with the status `rejected` are not exported. Characteristics for which you cleared
+**Inspect**, such as reference and basic dimensions, are exported with `Inspect` set to `no`, so you
+can filter them out.
 
 You choose the language of the column headers per export: English or German. The values do not
 change with the language.
@@ -52,7 +63,7 @@ change with the language.
 | Lower limit | Untere Grenze | Lower limit, absolute value |
 | Unit | Einheit | `mm`, `in` or `deg` |
 | Fit | Passung | Fit designation such as `H7` |
-| Quantity | Anzahl | Number of features the characteristic stands for (`4X` gives 4) |
+| Quantity | Anzahl | Number of features the characteristic stands for, from the Qty column |
 | Classification | Klassifizierung | `critical`, `major`, `minor` or `key`; empty if not classified |
 | Inspection method | Prüfmethode | Free text |
 | Gauge | Prüfmittel | Free text |

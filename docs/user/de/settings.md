@@ -1,7 +1,10 @@
 # Einstellungen
 
-Öffne die Ansicht **Einstellungen** in der Werkzeugleiste (Cmd+, auf macOS, Strg+, sonst).
-Änderungen gelten sofort und bleiben für den nächsten Start erhalten.
+Öffne die Ansicht **Einstellungen** in der Werkzeugleiste (⌘, auf macOS, Strg+, sonst).
+Änderungen gelten sofort und bleiben für den nächsten Start erhalten. Diese Einstellungen gehören
+dir, nicht einem Projekt: Sie gelten für jedes Projekt und liegen in einer kleinen
+Einstellungsdatei im Konfigurationsordner von Dimo deines Benutzerkontos. Auch die zuletzt
+verwendeten Exportoptionen ([Exporte](exports.md)) liegen dort.
 
 ## Darstellung
 

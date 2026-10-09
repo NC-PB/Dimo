@@ -1,7 +1,9 @@
 # Settings
 
-Open the **Settings** view from the toolbar (Cmd+, on macOS, Ctrl+, elsewhere). Changes apply
-at once and are kept for the next start.
+Open the **Settings** view from the toolbar (⌘, on macOS, Ctrl+, elsewhere). Changes apply
+at once and are kept for the next start. These settings belong to you, not to a project: they
+apply to every project and are stored in a small settings file in your user's Dimo configuration
+folder. The last export options ([Exports](exports.md)) are stored there too.
 
 ## Appearance
 

@@ -13,7 +13,7 @@ wiederholen.
 | Ballon setzen | B | Klick oder Ziehen setzt einen neuen Ballon, Ziehen auf einem Ballon verschiebt ihn |
 
 In beiden Werkzeugen verschiebst du die Ansicht mit der mittleren Maustaste oder mit gedrückter
-Leertaste beim Ziehen. Mausrad und Trackpad zoomen wie bisher.
+Leertaste beim Ziehen. Zoomen und Blätter stehen unter [Eine Zeichnung ansehen](drawing-view.md).
 
 ## Ballons setzen
 
@@ -35,8 +35,20 @@ Am schnellsten geht es so: klicken, tippen, Enter, klicken, tippen, Enter.
   der Wert stammt. Ein einfacher Klick speichert keinen Bereich.
 - **Enter** auf einem ausgewählten Ballon oder ein Doppelklick darauf öffnet das Feld wieder.
 
-Das Feld speichert den Text, wie er geschrieben ist. Nennmaß, Toleranzen und die Art des Merkmals
-füllst du in der Merkmalstabelle aus.
+Das Feld speichert den Text, wie er geschrieben ist, in der Spalte **Anforderung** der
+Merkmalstabelle. Dimo zerlegt ihn in dieser Version nicht in Nennmaß und Toleranzen; Nennmaß,
+Abmaße, Art und den Rest trägst du in der Tabelle ein ([Merkmalstabelle](characteristics.md)).
+
+## Ballonnummern
+
+Solange die Nummerierung nicht gesperrt ist, werden die Ballons ohne Lücken mit 1, 2, 3 und so
+weiter in der Reihenfolge der Merkmalstabelle nummeriert. Ein neuer Ballon erhält die nächste
+Nummer. Löschst du einen Ballon oder verschiebst eine Zeile in der Tabelle, werden alle neu
+nummeriert.
+
+Nach einem Export als freigegeben ([Exporte](exports.md)) ist die Nummerierung gesperrt. Die
+Nummern ändern sich dann nie: Ein neuer Ballon erhält die höchste je vergebene Nummer plus eins,
+eine gelöschte Nummer wird nicht wieder verwendet, und Zeilen lassen sich nicht verschieben.
 
 ## Ballons auswählen
 
@@ -46,7 +58,7 @@ füllst du in der Merkmalstabelle aus.
 | Ballon hinzufügen oder entfernen | Shift+Klick oder ⌘+Klick (Ctrl+Klick) | |
 | Mehrere über eine Fläche wählen | Shift+Ziehen auf leerer Zeichnung, Ballons mit dem Mittelpunkt im Rahmen kommen dazu | |
 | Alle Ballons des Blatts wählen | | ⌘A (Ctrl+A) |
-| Auswahl aufheben | Klick auf leere Zeichnung | Escape |
+| Auswahl aufheben | Klick auf leere Zeichnung (Werkzeug Auswählen) | Escape |
 
 Ausgewählte Ballons bekommen einen dicken orangen Ring und einen kleinen quadratischen Griff am
 Ende ihrer Bezugslinie.
@@ -94,4 +106,10 @@ Der Status wird nie nur über die Farbe angezeigt:
 | Vorgeschlagen | Gestrichelter Rand |
 | Abgelehnt | Gestrichelter grauer Rand, Nummer grau, durchgestrichen |
 
-Alle Tasten stehen auch in der Übersicht der Tastenkürzel, drücke **?**.
+Ballons, die du von Hand setzt, sind angenommen. Vorgeschlagen und abgelehnt kommen mit der
+automatischen Erkennung einer späteren Version; die Dateiformate und Exporte können sie schon
+verarbeiten (abgelehnte Merkmale erhalten im exportierten PDF keinen Ballon und fehlen in den
+Listen).
+
+Alle Tasten stehen unter [Tastenkürzel](shortcuts.md) und in der Übersicht der Tastenkürzel,
+drücke **?**.
