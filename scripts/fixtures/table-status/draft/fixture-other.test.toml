@@ -1,0 +1,2 @@
+# Fixture for scripts/test-check-table-status.sh: test vector files are not tables.
+table = "fixture-draft"

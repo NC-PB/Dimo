@@ -1,0 +1,69 @@
+# General tolerances for linear and angular dimensions without individual tolerance indications.
+# Format: data/tolerances/README.md, schema: docs/schema/tolerance-table.schema.json.
+# DRAFT (D-43): values drafted by the agent from its knowledge of the standard. The owner checks
+# every value against his Tabellenbuch; only he changes the status.
+
+[table]
+id = "iso-2768-1"
+title = "ISO 2768-1 general tolerances"
+standard = "ISO 2768-1"
+edition = "1989"
+kind = "general"
+unit = "mm"
+version = 1
+status = "draft"
+source = "ISO 2768-1:1989, tables 1, 2 and 3"
+
+# Permissible deviations (plus and minus) for linear dimensions except broken edges.
+[[part]]
+id = "linear"
+title = "Linear dimensions"
+source = "table 1"
+kind = "symmetric"
+applies_to = "linear"
+value_unit = "mm"
+columns = ["f", "m", "c", "v"]
+rows = [
+  { min_inclusive = "0.5", max_inclusive = "3", values = ["0.05", "0.1", "0.2", "-"] },
+  { min_exclusive = "3", max_inclusive = "6", values = ["0.05", "0.1", "0.3", "0.5"] },
+  { min_exclusive = "6", max_inclusive = "30", values = ["0.1", "0.2", "0.5", "1"] },
+  { min_exclusive = "30", max_inclusive = "120", values = ["0.15", "0.3", "0.8", "1.5"] },
+  { min_exclusive = "120", max_inclusive = "400", values = ["0.2", "0.5", "1.2", "2.5"] },
+  { min_exclusive = "400", max_inclusive = "1000", values = ["0.3", "0.8", "2", "4"] },
+  { min_exclusive = "1000", max_inclusive = "2000", values = ["0.5", "1.2", "3", "6"] },
+  { min_exclusive = "2000", max_inclusive = "4000", values = ["-", "2", "4", "8"] },
+]
+
+# Permissible deviations (plus and minus) for broken edges: external radii and chamfer heights.
+[[part]]
+id = "radius_chamfer"
+title = "Broken edges (external radii and chamfer heights)"
+source = "table 2"
+kind = "symmetric"
+applies_to = "radius_chamfer"
+value_unit = "mm"
+columns = ["f", "m", "c", "v"]
+rows = [
+  { min_inclusive = "0.5", max_inclusive = "3", values = ["0.2", "0.2", "0.4", "0.4"] },
+  { min_exclusive = "3", max_inclusive = "6", values = ["0.5", "0.5", "1", "1"] },
+  { min_exclusive = "6", values = ["1", "1", "2", "2"] },
+]
+
+# Permissible deviations (plus and minus) of angular dimensions in minutes of arc, by the
+# length of the shorter leg in mm. 60 is 1 degree.
+[[part]]
+id = "angular"
+title = "Angular dimensions"
+source = "table 3"
+kind = "symmetric"
+applies_to = "angular"
+range_of = "shorter_leg"
+value_unit = "arcmin"
+columns = ["f", "m", "c", "v"]
+rows = [
+  { max_inclusive = "10", values = ["60", "60", "90", "180"] },
+  { min_exclusive = "10", max_inclusive = "50", values = ["30", "30", "60", "120"] },
+  { min_exclusive = "50", max_inclusive = "120", values = ["20", "20", "30", "60"] },
+  { min_exclusive = "120", max_inclusive = "400", values = ["10", "10", "15", "30"] },
+  { min_exclusive = "400", values = ["5", "5", "10", "20"] },
+]

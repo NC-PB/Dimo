@@ -97,6 +97,17 @@ jobs:
       - name: Run checks
         run: ./scripts/check.sh
 
+  # D-43: a tag build (release) fails while any shipped tolerance table is a draft. check.sh runs
+  # the same gate; this job names the reason on its own. Branch builds only warn.
+  tolerance-tables:
+    name: tolerance tables (D-43)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+      - run: ./scripts/test-check-table-status.sh
+      - run: ./scripts/check-table-status.sh
+
   npm-licenses:
     name: npm licenses
     runs-on: ubuntu-24.04

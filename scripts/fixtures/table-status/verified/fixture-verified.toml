@@ -1,0 +1,20 @@
+# Fixture for scripts/test-check-table-status.sh, not a real table.
+[table]
+id = "fixture-verified"
+title = "Release gate fixture"
+kind = "custom"
+unit = "mm"
+version = 1
+status = "verified"
+verified_by = "Fixture"
+verified_date = "2026-01-01"
+source = "test fixture"
+
+[[part]]
+id = "linear"
+source = "test fixture"
+kind = "symmetric"
+applies_to = "linear"
+value_unit = "mm"
+columns = ["x"]
+rows = [{ values = ["1"] }]

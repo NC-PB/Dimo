@@ -977,6 +977,17 @@ dependencies = [
 [[package]]
 name = "dimo-tolerance"
 version = "0.0.0"
+dependencies = [
+ "boon",
+ "dimo-core",
+ "rust_decimal",
+ "schemars 1.2.2",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+]
 
 [[package]]
 name = "dimo-vision"
