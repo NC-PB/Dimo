@@ -43,5 +43,8 @@ fn embed_test_manifest() {
     let manifest = std::path::Path::new(&dir).join("windows-test-manifest.xml");
     println!("cargo:rerun-if-changed={}", manifest.display());
     println!("cargo:rustc-link-arg-tests=/MANIFEST:EMBED");
-    println!("cargo:rustc-link-arg-tests=/MANIFESTINPUT:{}", manifest.display());
+    println!(
+        "cargo:rustc-link-arg-tests=/MANIFESTINPUT:{}",
+        manifest.display()
+    );
 }
