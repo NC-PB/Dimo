@@ -20,7 +20,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.6 Text runs with geometry | done | 24 of 24 truth callouts matched by runs; thresholds need calibration on more drawings (Q-10) |
 | T0.7 Tile protocol and cache | done | Windows webview not verified (CI build only) |
 | T0.8 Viewport with SVG overlay | review | Owner: confirm 500 balloons at 60 fps on own Mac (agent measured mean 16.67 ms, p95 18 ms on M2 16 GB, dev build), tune wheel zoom speed |
-| T0.9 Performance harness | todo | |
+| T0.9 Performance harness | done | M2 16 GB: first sheet 0.82 s, 500 balloons 60 fps (p95 18 ms), memory 222 MiB Rust plus about 0.5 GiB WebKit. Windows laptop to measure. Fast pan at 100 percent has some late frames, see T1.11 |
 | T0.10 Corpus truth format | review | Owner: review `corpus/truth/test_drawing_1.truth.json`, see log 2026-10-09 |
 | T0.11 Synthetic generator (stretch) | done | `cargo run -p dimo-synth -- --seed N --count 6`. Owner: check fit table `FITS` in `tools/synth/src/lib.rs` (D-43) |
 
@@ -39,6 +39,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.8 Sheet rotation, scale and units | todo | wave 4 |
 | T1.9 Export and settings views | todo | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
+| T1.11 Page cache on the render thread | todo | after T1.2 (both touch the render engine) |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -57,6 +58,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Performance harness is a `dimo-pdf` example run by `scripts/perf.sh`, stress PDF from `dimo-synth --stress --sheets 50` written to `target/perf/`, never committed. `sheet_sizes` reads sizes without loading page content (open 1971 ms to 199 ms) | No criterion dependency needed; NFR-PERF-01 was missed before the fix | T0.9, agent |
 | 2026-10-09 | `render_region` pads left and top itself (shared with tiles), skipped only if the padded image would exceed the max render side. Wheel gain 0.002 per px, pinch gain 0.01 per px clamped at 40 px per event, constants in `ZOOM_TUNING`; Safari gesture events supported | PDFium glyph edge quirk; separate tuning for mouse and trackpad | T1.0, agent |
 | 2026-10-09 | File dialog via `rfd` called from Rust; temporary `open_document(path)` removed; only `allow-open-document-dialog` granted | No dialog or fs plugin in the webview (NFR-SEC-01) | T0.8, agent |
 | 2026-10-09 | Viewport: one view transform `screen = sheet * scale + t` snapped to device pixels; tile level is the coarsest one not upscaled; max zoom 16 px per sheet unit; backdrop layer plus one tile prefetch margin; one device pixel tile overlap against seams | Crisp at all zoom levels, single transform per layer | T0.8, agent |
@@ -99,6 +101,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
 - 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
 - 2026-10-09: T0.8 merged, in review. Pitfall: tests use `env!("CARGO_MANIFEST_DIR")`, so a target dir shared with deleted worktrees can run stale test binaries with dead paths; touch the test files or rebuild when that happens. Disk below 1 GB free, T0.9 waits for space.
 - 2026-10-09: T0.7 done and merged. Wave 2 complete. Disk nearly full (about 2 GB free); merged worktrees removed.
