@@ -1,6 +1,8 @@
 //! Project container, migrations, and imports and exports of inspection data.
 //!
-//! Stub created in T0.1. Content follows in later milestones.
+//! - [`export`]: characteristic list as CSV and XLSX (T1.4).
+
+pub mod export;
 
 #[cfg(test)]
 mod tests {
