@@ -200,14 +200,18 @@ impl BalloonOverlay {
 }
 
 impl PdfDate {
-    fn validate(self) -> Result<(), PdfError> {
-        let ok = (1..=9999).contains(&self.year)
+    /// True if every field is in its range.
+    pub fn is_valid(self) -> bool {
+        (1..=9999).contains(&self.year)
             && (1..=12).contains(&self.month)
             && (1..=31).contains(&self.day)
             && self.hour < 24
             && self.minute < 60
-            && self.second < 60;
-        if ok {
+            && self.second < 60
+    }
+
+    fn validate(self) -> Result<(), PdfError> {
+        if self.is_valid() {
             Ok(())
         } else {
             Err(invalid(format!("invalid date {self:?}")))
