@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError, mpsc};
 
 use pdfium_render::prelude::{
-    PdfColor, PdfDocument, PdfPageIndex, PdfRenderConfig, Pdfium, PdfiumError,
+    PdfColor, PdfDocument, PdfPage, PdfRenderConfig, Pdfium, PdfiumError,
 };
 
 use crate::PdfError;
@@ -15,9 +15,10 @@ use crate::geometry::{SheetRect, SheetSize};
 use crate::hash::ContentHash;
 use crate::library::resolve_library_path;
 use crate::overlay::BalloonOverlay;
+use crate::page_cache::{PAGES_PER_DOCUMENT, PageCache};
 use crate::raster::RgbaImage;
 use crate::sheet_kind::{SheetAnalysis, analyze_sheet};
-use crate::text::{TextRun, text_runs};
+use crate::text::{TextRun, load_page, text_error, text_runs};
 use crate::writer::write_ballooned;
 
 /// Largest width or height of one rendered image in pixels. A0 at 300 dpi is about
@@ -94,6 +95,12 @@ enum Request {
         original: Vec<u8>,
         overlay: BalloonOverlay,
         reply: Reply<Vec<u8>>,
+    },
+    /// Page cache counters of a document, `None` if it is not open. Tests only.
+    #[cfg(test)]
+    PageCacheStats {
+        doc: u64,
+        reply: mpsc::Sender<Option<crate::page_cache::PageCacheStats>>,
     },
 }
 
@@ -308,6 +315,23 @@ impl Document {
     }
 }
 
+#[cfg(test)]
+impl Document {
+    /// Page cache counters of this document on the render thread.
+    fn page_cache_stats(&self) -> Option<crate::page_cache::PageCacheStats> {
+        self.engine.page_cache_stats(self.id)
+    }
+}
+
+#[cfg(test)]
+impl PdfEngine {
+    fn page_cache_stats(&self, doc: u64) -> Option<crate::page_cache::PageCacheStats> {
+        let (reply, answer) = mpsc::channel();
+        self.tx.send(Request::PageCacheStats { doc, reply }).ok()?;
+        answer.recv().ok()?
+    }
+}
+
 impl Drop for Document {
     fn drop(&mut self) {
         // If the render thread is gone there is nothing left to close.
@@ -374,9 +398,44 @@ fn spawn_render_thread(library: PathBuf) -> Result<PdfEngine, PdfError> {
     })
 }
 
+/// An open document and its most recently used loaded pages (T1.11, see `page_cache`).
+struct OpenDoc<'a> {
+    pages: PageCache<PdfPage<'a>>,
+    doc: PdfDocument<'a>,
+}
+
+impl<'a> OpenDoc<'a> {
+    fn new(doc: PdfDocument<'a>) -> Self {
+        Self {
+            pages: PageCache::new(PAGES_PER_DOCUMENT),
+            doc,
+        }
+    }
+
+    /// The loaded page of `sheet`, from the cache or loaded now. A load failure is mapped with
+    /// `error`, so render and text requests keep their error kinds.
+    fn page(
+        &mut self,
+        sheet: usize,
+        error: fn(PdfiumError) -> PdfError,
+    ) -> Result<&PdfPage<'a>, PdfError> {
+        let doc = &self.doc;
+        self.pages
+            .get_or_load(sheet, || load_page(doc, sheet, error))
+    }
+}
+
+impl Drop for OpenDoc<'_> {
+    fn drop(&mut self) {
+        // Every page must be closed before its document (FPDF_ClosePage before
+        // FPDF_CloseDocument). Fields drop after this, `doc` last.
+        self.pages.clear();
+    }
+}
+
 /// The render thread loop. Owns every PDFium value; nothing PDFium related leaves this thread.
 fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
-    let mut docs: HashMap<u64, PdfDocument<'_>> = HashMap::new();
+    let mut docs: HashMap<u64, OpenDoc<'_>> = HashMap::new();
     let mut next_id: u64 = 0;
     while let Ok(request) = rx.recv() {
         match request {
@@ -388,7 +447,7 @@ fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
                         let sheets = sheet_sizes(&doc);
                         let id = next_id;
                         next_id += 1;
-                        docs.insert(id, doc);
+                        docs.insert(id, OpenDoc::new(doc));
                         tracing::debug!(id, sheets = sheets.len(), "PDF opened");
                         (id, sheets)
                     });
@@ -401,20 +460,27 @@ fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
                 zoom,
                 reply,
             } => {
-                let result = match docs.get(&doc) {
-                    Some(document) => render(document, sheet, region, zoom),
+                let result = match docs.get_mut(&doc) {
+                    Some(open) => open
+                        .page(sheet, render_error)
+                        .and_then(|page| render(page, region, zoom)),
                     None => Err(PdfError::Render(format!("document {doc} is not open"))),
                 };
                 let _ = reply.send(result);
             }
             Request::Close { doc } => {
-                docs.remove(&doc);
+                if let Some(open) = docs.remove(&doc) {
+                    let stats = open.pages.stats();
+                    tracing::debug!(doc, hits = stats.hits, misses = stats.misses, "PDF closed");
+                }
             }
             Request::TextRuns { doc, sheet, reply } => {
-                let _ = reply.send(with_doc(&docs, doc, |d| text_runs(d, sheet)));
+                let _ = reply.send(with_page(&mut docs, doc, sheet, text_runs));
             }
             Request::AnalyzeSheet { doc, sheet, reply } => {
-                let _ = reply.send(with_doc(&docs, doc, |d| analyze_sheet(d, sheet)));
+                let _ = reply.send(with_page(&mut docs, doc, sheet, |page| {
+                    analyze_sheet(page, sheet)
+                }));
             }
             Request::WriteBallooned {
                 original,
@@ -423,18 +489,24 @@ fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
             } => {
                 let _ = reply.send(write_ballooned(pdfium, &original, &overlay));
             }
+            #[cfg(test)]
+            Request::PageCacheStats { doc, reply } => {
+                let _ = reply.send(docs.get(&doc).map(|open| open.pages.stats()));
+            }
         }
     }
 }
 
-fn with_doc<'a, T>(
-    docs: &HashMap<u64, PdfDocument<'a>>,
+/// Runs `f` on the cached page of a sheet for the text and analysis requests.
+fn with_page<T>(
+    docs: &mut HashMap<u64, OpenDoc<'_>>,
     doc: u64,
-    f: impl FnOnce(&PdfDocument<'a>) -> Result<T, PdfError>,
+    sheet: usize,
+    f: impl FnOnce(&PdfPage<'_>) -> Result<T, PdfError>,
 ) -> Result<T, PdfError> {
-    docs.get(&doc).map_or_else(
+    docs.get_mut(&doc).map_or_else(
         || Err(PdfError::Text(format!("document {doc} is not open"))),
-        f,
+        |open| open.page(sheet, text_error).and_then(f),
     )
 }
 
@@ -465,18 +537,8 @@ fn sheet_sizes(doc: &PdfDocument<'_>) -> Vec<SheetSize> {
         .collect()
 }
 
-fn render(
-    doc: &PdfDocument<'_>,
-    sheet: usize,
-    region: SheetRect,
-    zoom: f64,
-) -> Result<RgbaImage, PdfError> {
+fn render(page: &PdfPage<'_>, region: SheetRect, zoom: f64) -> Result<RgbaImage, PdfError> {
     let (width, height) = output_size(region, zoom)?;
-    let index = PdfPageIndex::try_from(sheet).map_err(|_| PdfError::SheetOutOfRange {
-        index: sheet,
-        count: usize::try_from(doc.pages().len()).unwrap_or(0),
-    })?;
-    let page = doc.pages().get(index).map_err(render_error)?;
 
     // FPDF_RenderPageBitmapWithMatrix maps the displayed page to device space with one unit per
     // pixel, origin top left, y downward (crop box and /Rotate applied): that is sheet space.
@@ -575,5 +637,176 @@ mod margin_tests {
     fn glyph_margin_grows_with_zoom_up_to_a_tile() {
         let margins: Vec<u32> = (-4..=5).map(|z| glyph_margin_px(2f64.powi(z))).collect();
         assert_eq!(margins, vec![2, 4, 8, 16, 32, 64, 128, 256, 512, 512]);
+    }
+}
+/// Page cache on the real render thread (T1.11). Skips like `tests/pdfium.rs` when PDFium is
+/// missing, unless `CI=true` or `DIMO_REQUIRE_PDFIUM=1`.
+#[cfg(test)]
+mod page_cache_tests {
+    #![allow(clippy::print_stderr, clippy::unwrap_used)]
+
+    use super::*;
+    use crate::page_cache::PAGES_PER_DOCUMENT;
+
+    fn engine() -> Option<PdfEngine> {
+        let required = std::env::var("CI").is_ok_and(|v| v == "true")
+            || std::env::var("DIMO_REQUIRE_PDFIUM").is_ok_and(|v| !v.is_empty() && v != "0");
+        match PdfEngine::start() {
+            Ok(engine) => Some(engine),
+            Err(e @ PdfError::LibraryNotFound { .. }) if !required => {
+                eprintln!("SKIPPED (PDFium missing): {e}");
+                None
+            }
+            Err(e) => panic!("{e}"),
+        }
+    }
+
+    /// A PDF with `pages` pages of 100 x 100 units. Page `i` has a black square of `10 + i`
+    /// units at the top left and the text `P<i>`.
+    fn pdf(pages: usize) -> Vec<u8> {
+        let mut objects = vec![
+            "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+            String::new(),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_owned(),
+        ];
+        let mut kids = Vec::new();
+        for i in 0..pages {
+            let side = 10 + i;
+            let content = format!(
+                "0 g 0 {} {side} {side} re f BT /F1 12 Tf 50 50 Td (P{i}) Tj ET",
+                100 - side
+            );
+            let page_id = objects.len() + 1;
+            kids.push(format!("{page_id} 0 R"));
+            objects.push(format!(
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Contents {} 0 R \
+                 /Resources << /Font << /F1 3 0 R >> >> >>",
+                page_id + 1
+            ));
+            objects.push(format!(
+                "<< /Length {} >>\nstream\n{content}\nendstream",
+                content.len()
+            ));
+        }
+        objects[1] = format!(
+            "<< /Type /Pages /Kids [{}] /Count {pages} >>",
+            kids.join(" ")
+        );
+        let mut out = b"%PDF-1.7\n".to_vec();
+        let mut offsets = Vec::new();
+        for (i, object) in objects.iter().enumerate() {
+            offsets.push(out.len());
+            out.extend_from_slice(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+        }
+        let xref = out.len();
+        out.extend_from_slice(
+            format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes(),
+        );
+        for offset in offsets {
+            out.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+        }
+        out.extend_from_slice(
+            format!(
+                "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+                objects.len() + 1
+            )
+            .as_bytes(),
+        );
+        out
+    }
+
+    fn render_sheet(doc: &Document, sheet: usize) -> RgbaImage {
+        doc.render_region(sheet, SheetRect::new(0.0, 0.0, 100.0, 100.0), 1.0)
+            .unwrap()
+    }
+
+    /// Width of the black square in the top row, which tells the sheets apart.
+    fn square_side(img: &RgbaImage) -> usize {
+        (0..img.width())
+            .take_while(|&x| img.pixel(x, 0).is_some_and(|p| p[0] < 128))
+            .count()
+    }
+
+    #[test]
+    fn repeated_renders_of_a_sheet_hit_the_cache() {
+        let Some(engine) = engine() else { return };
+        let doc = engine.open(pdf(3)).unwrap();
+        assert_eq!(doc.page_cache_stats().unwrap().sheets, Vec::<usize>::new());
+        let first = render_sheet(&doc, 1);
+        let again = render_sheet(&doc, 1);
+        assert_eq!(first, again);
+        assert_eq!(square_side(&first), 11);
+        let stats = doc.page_cache_stats().unwrap();
+        assert_eq!(stats.sheets, vec![1]);
+        assert_eq!((stats.hits, stats.misses), (1, 1));
+        // Text runs and analysis use the same cached page.
+        let runs = doc.text_runs(1).unwrap();
+        assert_eq!(runs.first().map(|r| r.text.as_str()), Some("P1"));
+        doc.analyze_sheet(1).unwrap();
+        let stats = doc.page_cache_stats().unwrap();
+        assert_eq!((stats.hits, stats.misses), (3, 1));
+    }
+
+    #[test]
+    fn least_recently_used_sheet_is_evicted() {
+        let Some(engine) = engine() else { return };
+        let sheets = PAGES_PER_DOCUMENT + 2;
+        let doc = engine.open(pdf(sheets)).unwrap();
+        for sheet in 0..sheets {
+            assert_eq!(square_side(&render_sheet(&doc, sheet)), 10 + sheet);
+        }
+        let stats = doc.page_cache_stats().unwrap();
+        let expected: Vec<usize> = (0..sheets).rev().take(PAGES_PER_DOCUMENT).collect();
+        assert_eq!(stats.sheets, expected);
+        assert_eq!((stats.hits, stats.misses), (0, sheets as u64));
+        // Sheet 0 was evicted: it loads again and still renders correctly.
+        assert_eq!(square_side(&render_sheet(&doc, 0)), 10);
+        let stats = doc.page_cache_stats().unwrap();
+        assert_eq!(stats.sheets.first(), Some(&0));
+        assert_eq!(stats.sheets.len(), PAGES_PER_DOCUMENT);
+        assert_eq!(stats.misses, sheets as u64 + 1);
+    }
+
+    #[test]
+    fn documents_have_separate_caches() {
+        let Some(engine) = engine() else { return };
+        let a = engine.open(pdf(2)).unwrap();
+        let b = engine.open(pdf(2)).unwrap();
+        render_sheet(&a, 0);
+        render_sheet(&b, 1);
+        assert_eq!(a.page_cache_stats().unwrap().sheets, vec![0]);
+        assert_eq!(b.page_cache_stats().unwrap().sheets, vec![1]);
+    }
+
+    #[test]
+    fn close_drops_the_cached_pages() {
+        let Some(engine) = engine() else { return };
+        let doc = engine.open(pdf(2)).unwrap();
+        render_sheet(&doc, 0);
+        render_sheet(&doc, 1);
+        let id = doc.id;
+        assert_eq!(engine.page_cache_stats(id).unwrap().sheets.len(), 2);
+        drop(doc);
+        // The close is handled before the stats request: one queue, in order.
+        assert_eq!(engine.page_cache_stats(id), None);
+        // The engine still works after closing a document with cached pages.
+        let other = engine.open(pdf(1)).unwrap();
+        assert_eq!(square_side(&render_sheet(&other, 0)), 10);
+    }
+
+    #[test]
+    fn failed_page_load_is_reported_and_not_cached() {
+        let Some(engine) = engine() else { return };
+        let doc = engine.open(pdf(1)).unwrap();
+        // Bypasses the range check of `Document` to reach the render thread.
+        let result = engine.call(|reply| Request::Render {
+            doc: doc.id,
+            sheet: 5,
+            region: SheetRect::new(0.0, 0.0, 10.0, 10.0),
+            zoom: 1.0,
+            reply,
+        });
+        assert!(matches!(result, Err(PdfError::SheetOutOfRange { .. })));
+        assert_eq!(doc.page_cache_stats().unwrap().sheets, Vec::<usize>::new());
     }
 }

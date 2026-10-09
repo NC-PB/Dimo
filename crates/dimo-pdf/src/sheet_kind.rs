@@ -33,13 +33,13 @@
 
 use dimo_core::sheet::SheetKind;
 use pdfium_render::prelude::{
-    PdfDocument, PdfPageObject, PdfPageObjectCommon, PdfPageObjectsCommon, PdfPageTextChar,
+    PdfPage, PdfPageObject, PdfPageObjectCommon, PdfPageObjectsCommon, PdfPageTextChar,
 };
 
 use crate::PdfError;
 use crate::geometry::SheetRect;
 use crate::page_space::PageToSheet;
-use crate::text::{load_page, page_to_sheet, strip_subset_tag, text_error};
+use crate::text::{page_to_sheet, strip_subset_tag, text_error};
 
 /// Fewer readable characters than this are not enough for `vector_text` (page numbers, stamps).
 pub const MIN_TEXT_CHARS: usize = 10;
@@ -117,12 +117,8 @@ pub(crate) fn is_unmapped(value: u32) -> bool {
     }
 }
 
-/// Analyzes one sheet. Runs on the render thread.
-pub(crate) fn analyze_sheet(
-    doc: &PdfDocument<'_>,
-    sheet: usize,
-) -> Result<SheetAnalysis, PdfError> {
-    let page = load_page(doc, sheet)?;
+/// Analyzes the loaded page of `sheet`. Runs on the render thread.
+pub(crate) fn analyze_sheet(page: &PdfPage<'_>, sheet: usize) -> Result<SheetAnalysis, PdfError> {
     let sheet_rect = SheetRect::new(
         0.0,
         0.0,
@@ -130,7 +126,7 @@ pub(crate) fn analyze_sheet(
         f64::from(page.height().value),
     );
     let sheet_area = sheet_rect.width * sheet_rect.height;
-    let mut walk = Walk::new(page_to_sheet(&page)?, sheet_rect);
+    let mut walk = Walk::new(page_to_sheet(page)?, sheet_rect);
     for object in page.objects().iter() {
         walk.visit(&object, false, 0);
     }
