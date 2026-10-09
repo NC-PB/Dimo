@@ -1,0 +1,404 @@
+{
+  "$defs": {
+    "AppliesTo": {
+      "description": "Dimension type a symmetric part applies to (FR-TOL-02).",
+      "oneOf": [
+        {
+          "const": "linear",
+          "description": "Linear dimensions and diameters, except broken edges.",
+          "type": "string"
+        },
+        {
+          "const": "radius_chamfer",
+          "description": "External radii and chamfer heights (broken edges).",
+          "type": "string"
+        },
+        {
+          "const": "angular",
+          "description": "Angular dimensions.",
+          "type": "string"
+        }
+      ]
+    },
+    "Cell": {
+      "description": "Exact decimal number as a string, e.g. \"0.021\", or \"-\" where the source defines no value.",
+      "pattern": "^-?[0-9]+(\\.[0-9]+)?$|^-$",
+      "type": "string"
+    },
+    "Deviation": {
+      "description": "Which deviation a fundamental deviation part holds.",
+      "oneOf": [
+        {
+          "const": "upper",
+          "description": "Upper deviation (es for shafts, ES for holes).",
+          "type": "string"
+        },
+        {
+          "const": "lower",
+          "description": "Lower deviation (ei for shafts, EI for holes).",
+          "type": "string"
+        }
+      ]
+    },
+    "Feature": {
+      "description": "Shaft or hole, for fundamental deviations.",
+      "oneOf": [
+        {
+          "const": "shaft",
+          "description": "External feature, lowercase letters.",
+          "type": "string"
+        },
+        {
+          "const": "hole",
+          "description": "Internal feature, uppercase letters.",
+          "type": "string"
+        }
+      ]
+    },
+    "Part": {
+      "additionalProperties": false,
+      "description": "One `[[part]]`: a range table.",
+      "properties": {
+        "applies_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AppliesTo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Dimension type, required for `symmetric` parts and absent otherwise."
+        },
+        "columns": {
+          "description": "Column names, unique within the part.",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "deviation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Deviation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Upper or lower, required for `fundamental_deviation` parts and absent otherwise."
+        },
+        "feature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Feature"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Shaft or hole, required for `fundamental_deviation` parts and absent otherwise."
+        },
+        "id": {
+          "description": "Unique within the table, e.g. `linear` or `shaft_upper`.",
+          "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/PartKind",
+          "description": "What the values mean."
+        },
+        "range_of": {
+          "$ref": "#/$defs/RangeOf",
+          "description": "Which size selects the row. Default `nominal`."
+        },
+        "rows": {
+          "description": "Rows in ascending order without gaps. Each row has one value per column.",
+          "items": {
+            "$ref": "#/$defs/Row"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "source": {
+          "description": "Table number or section in the source, e.g. `table 1`.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "default": null,
+          "description": "Short human readable name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value_unit": {
+          "$ref": "#/$defs/ValueUnit",
+          "description": "Unit of the values."
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "kind",
+        "value_unit",
+        "columns",
+        "rows"
+      ],
+      "type": "object"
+    },
+    "PartKind": {
+      "description": "What the values of a part mean.",
+      "oneOf": [
+        {
+          "const": "symmetric",
+          "description": "A value `t` means the deviations `+t` and `-t`. Columns are tolerance classes.\nUsed by general and custom tables.",
+          "type": "string"
+        },
+        {
+          "const": "standard_tolerance",
+          "description": "Standard tolerance grades (ISO 286). Columns are `IT01`, `IT0`, `IT1` to `IT18`.",
+          "type": "string"
+        },
+        {
+          "const": "fundamental_deviation",
+          "description": "Fundamental deviations (ISO 286). Columns are deviation letters, see the README for\nthe columns that depend on the grade.",
+          "type": "string"
+        },
+        {
+          "const": "delta",
+          "description": "The delta values for holes (ISO 286). Columns are grades `IT3` to `IT8`.",
+          "type": "string"
+        },
+        {
+          "const": "override",
+          "description": "Fundamental deviations that replace the computed one for a single tolerance class in a\nsize range (special cases of ISO 286). Columns are tolerance classes such as `M6`.",
+          "type": "string"
+        }
+      ]
+    },
+    "RangeOf": {
+      "description": "Which size selects the row.",
+      "oneOf": [
+        {
+          "const": "nominal",
+          "description": "The nominal size of the dimension.",
+          "type": "string"
+        },
+        {
+          "const": "shorter_leg",
+          "description": "The length of the shorter leg of an angle.",
+          "type": "string"
+        }
+      ]
+    },
+    "Row": {
+      "additionalProperties": false,
+      "description": "One row of a part: a size range and one value per column.\n\nA range has at most one lower bound (`min_inclusive` or `min_exclusive`) and at most one\nupper bound (`max_inclusive` or `max_exclusive`). \"Over 30 up to and including 120\" is\n`min_exclusive = \"30\"`, `max_inclusive = \"120\"`. Without a lower bound the row starts above\nzero; only the last row may omit the upper bound.",
+      "properties": {
+        "max_exclusive": {
+          "default": null,
+          "description": "Upper bound, the bound itself does not belong to the row.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "max_inclusive": {
+          "default": null,
+          "description": "Upper bound, the bound itself belongs to the row.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "min_exclusive": {
+          "default": null,
+          "description": "Lower bound, the bound itself does not belong to the row.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "min_inclusive": {
+          "default": null,
+          "description": "Lower bound, the bound itself belongs to the row.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "values": {
+          "description": "One value per column, in column order.",
+          "items": {
+            "$ref": "#/$defs/Cell"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "values"
+      ],
+      "type": "object"
+    },
+    "SizeUnit": {
+      "description": "Unit of the size ranges.",
+      "oneOf": [
+        {
+          "const": "mm",
+          "description": "Millimetres.",
+          "type": "string"
+        }
+      ]
+    },
+    "Status": {
+      "description": "Verification status (D-43).",
+      "oneOf": [
+        {
+          "const": "draft",
+          "description": "Drafted, not yet checked. Limits from draft tables carry a warning badge, and a\nrelease build is blocked while any shipped table is a draft.",
+          "type": "string"
+        },
+        {
+          "const": "verified",
+          "description": "Every value checked by the owner against the printed source.",
+          "type": "string"
+        }
+      ]
+    },
+    "TableHeader": {
+      "additionalProperties": false,
+      "description": "The `[table]` header.",
+      "properties": {
+        "edition": {
+          "default": null,
+          "description": "Edition of the standard, e.g. `1989`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "description": "Unique id across shipped and user tables, e.g. `iso-2768-1`. Projects reference\nshipped tables by id and version.",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/TableKind",
+          "description": "What the table is used for."
+        },
+        "source": {
+          "description": "Where the values come from: standard, edition and table numbers, or the company\ndocument. Values and structure only, no text copied from the source.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "standard": {
+          "default": null,
+          "description": "Standard number, e.g. `ISO 2768-1`. Absent for company tables.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/Status",
+          "description": "`draft` until the owner has checked every value against the printed source (D-43)."
+        },
+        "title": {
+          "description": "Short human readable name.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "unit": {
+          "$ref": "#/$defs/SizeUnit",
+          "description": "Unit of all size ranges. Only millimetres for now."
+        },
+        "verified_by": {
+          "default": null,
+          "description": "Who verified the table. Present exactly when `status` is `verified`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "verified_date": {
+          "default": null,
+          "description": "When the table was verified, `YYYY-MM-DD`. Present exactly when `status` is `verified`.",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Version of this table file, starting at 1. Increased with every change of a value.",
+          "format": "uint32",
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "unit",
+        "version",
+        "status",
+        "source"
+      ],
+      "type": "object"
+    },
+    "TableKind": {
+      "description": "Purpose of a table.",
+      "oneOf": [
+        {
+          "const": "general",
+          "description": "General tolerances by size range and class (FR-TOL-02), e.g. ISO 2768-1.",
+          "type": "string"
+        },
+        {
+          "const": "fit",
+          "description": "ISO system of limits and fits (FR-TOL-04), e.g. ISO 286-1.",
+          "type": "string"
+        },
+        {
+          "const": "custom",
+          "description": "A table written by a user or a company (FR-TOL-07), applied as a drawing rule.",
+          "type": "string"
+        }
+      ]
+    },
+    "ValueUnit": {
+      "description": "Unit of the values in a part.",
+      "oneOf": [
+        {
+          "const": "mm",
+          "description": "Millimetres.",
+          "type": "string"
+        },
+        {
+          "const": "arcmin",
+          "description": "Minutes of arc (1 degree is 60). Exact for the angular general tolerances.",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A whole tolerance table file.",
+  "properties": {
+    "part": {
+      "description": "The range tables that make up this table, at least one.",
+      "items": {
+        "$ref": "#/$defs/Part"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "table": {
+      "$ref": "#/$defs/TableHeader",
+      "description": "Identification, source and verification status of the table."
+    }
+  },
+  "required": [
+    "table",
+    "part"
+  ],
+  "title": "Dimo tolerance table",
+  "type": "object"
+}

@@ -29,6 +29,14 @@ else
   echo "No Cargo.toml yet, skipping Rust checks"
 fi
 
+if [[ -d data/tolerances ]]; then
+  # D-43: fails with DIMO_RELEASE=1 or on a tag build while a shipped table is a draft,
+  # only warns otherwise.
+  step "tolerance tables release gate"
+  ./scripts/test-check-table-status.sh
+  ./scripts/check-table-status.sh
+fi
+
 if [[ -f apps/desktop/package.json ]]; then
   step "frontend check"
   pnpm -C apps/desktop check

@@ -1,0 +1,8 @@
+# Fixture for scripts/test-check-table-status.sh, not a real table: the status is missing.
+[table]
+id = "fixture-no-status"
+title = "Release gate fixture"
+kind = "custom"
+unit = "mm"
+version = 1
+source = "test fixture"
