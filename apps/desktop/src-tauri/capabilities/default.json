@@ -6,8 +6,16 @@
   "permissions": [
     "core:default",
     "allow-app-info",
-    "allow-open-document-dialog",
     "allow-set-tile-interest",
+    "allow-project-state",
+    "allow-new-project",
+    "allow-open-project",
+    "allow-save-project",
+    "allow-save-project-as",
+    "allow-confirm-close",
+    "allow-execute",
+    "allow-undo",
+    "allow-redo",
     "allow-dev-startup",
     "allow-dev-report-frame-times"
   ]

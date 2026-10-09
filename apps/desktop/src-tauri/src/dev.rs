@@ -3,7 +3,10 @@
 //! The native file dialog cannot be driven by scripts, so a debug build can open a drawing at
 //! startup from the environment and run the viewport performance check without any clicks:
 //!
-//! - `DIMO_DEV_OPEN=<path>`: PDF to open at startup.
+//! - `DIMO_DEV_OPEN=<path>`: at startup, create a new project from this PDF, or open this
+//!   project (`.dimo` file or project folder). Done once per process, not again on reload.
+//! - `DIMO_DEV_SCRIPT=<path>`: after `DIMO_DEV_OPEN`, run the steps of this JSON file through
+//!   the same session functions as the IPC commands (see [`DevStep`]).
 //! - `DIMO_DEV_BALLOONS=<n>`: number of dummy balloons to place on every sheet.
 //! - `DIMO_DEV_ANCHORS=<x,y;x,y;...>`: dummy balloons at these sheet points instead of random
 //!   positions, for checking that balloons stay aligned with the drawing.
@@ -12,16 +15,80 @@
 //!   sheet point `x`, `y` in the viewport center, for screenshots at a known zoom.
 //! - `DIMO_DEV_PAN_CHECK=1`: run the scripted pan after loading and report the frame times.
 //!
+//! While `DIMO_DEV_OPEN` is set, a debug build does not restore unsaved projects at startup, so
+//! a crashed autosave of real work is left for the next normal start.
+//!
 //! The path comes from the environment of the Rust process, never from the webview
 //! (NFR-SEC-01). In release builds [`dev_startup`] returns nothing and
 //! [`dev_report_frame_times`] does nothing.
 
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use dimo_core::Command;
+use dimo_pdf::tiles::TileService;
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tauri::State;
+use tauri::{AppHandle, Manager};
 
-use crate::ipc::{CommandError, DocumentInfo};
+use crate::ipc::{CommandError, tile_service};
+use crate::project::{SessionState, emit};
+use crate::session::{AppSession, ProjectLoaded};
 use crate::tiles::TileState;
+
+/// True if a debug build was started with `DIMO_DEV_OPEN`.
+pub fn dev_open_requested() -> bool {
+    cfg!(debug_assertions) && var("DIMO_DEV_OPEN").is_some()
+}
+
+fn var(name: &str) -> Option<String> {
+    std::env::var(name).ok().filter(|v| !v.trim().is_empty())
+}
+
+/// One step of a `DIMO_DEV_SCRIPT` file, a JSON array such as
+///
+/// ```json
+/// [
+///   { "execute": { "type": "add_characteristic", "sheet": "$SHEET0", "position": {"x": 1, "y": 2},
+///                  "anchor": {"x": 3, "y": 4}, "region": null, "values": [] } },
+///   "undo", "redo",
+///   { "save_as": "/tmp/part.dimo" }, "close", { "open": "/tmp/part.dimo" }
+/// ]
+/// ```
+///
+/// `$SHEET<n>` is replaced by the ID of sheet `n` of the current drawing revision.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DevStep {
+    /// Executes a document command.
+    Execute(Command),
+    /// Undoes the last command.
+    Undo,
+    /// Redoes the last undone command.
+    Redo,
+    /// Saves to the project file.
+    Save,
+    /// Saves to this path.
+    SaveAs(PathBuf),
+    /// Closes the project, discarding unsaved changes.
+    Close,
+    /// Opens this project, discarding unsaved changes of the open one.
+    Open(PathBuf),
+}
+
+/// Replaces `$SHEET<n>` in a script with the sheet IDs of the current revision. Higher indexes
+/// first, so `$SHEET1` is not taken for `$SHEET10`.
+pub fn substitute_sheets(script: &str, project: &dimo_core::Project) -> String {
+    let sheets = project
+        .current_revision()
+        .map(|r| r.sheets.as_slice())
+        .unwrap_or_default();
+    let mut text = script.to_owned();
+    for (index, sheet) in sheets.iter().enumerate().rev() {
+        text = text.replace(&format!("$SHEET{index}"), &sheet.id.to_string());
+    }
+    text
+}
 
 /// A point in sheet space (PDF user units, origin top left).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Type)]
@@ -37,8 +104,9 @@ pub struct SheetPoint {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub struct DevStartup {
-    /// Document opened from `DIMO_DEV_OPEN`, if set.
-    pub document: Option<DocumentInfo>,
+    /// The project after `DIMO_DEV_OPEN` and `DIMO_DEV_SCRIPT`, `None` if `DIMO_DEV_OPEN` is
+    /// unset or was handled by an earlier call.
+    pub project: Option<ProjectLoaded>,
     /// Number of dummy balloons per sheet, zero for none.
     pub balloons: u32,
     /// Fixed balloon anchors in sheet space; empty for random positions.
@@ -102,24 +170,43 @@ pub fn parse_anchors(text: &str) -> Vec<SheetPoint> {
         .collect()
 }
 
+/// `DIMO_DEV_OPEN` runs once per process, so reloading the webview keeps the project.
+static DEV_OPEN_DONE: AtomicBool = AtomicBool::new(false);
+
 /// Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
 /// builds: always the empty default.
 #[tauri::command]
 #[specta::specta]
-pub async fn dev_startup(tiles: State<'_, TileState>) -> Result<DevStartup, CommandError> {
+pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
     if !cfg!(debug_assertions) {
         return Ok(DevStartup::default());
     }
-    let var = |name: &str| std::env::var(name).ok().filter(|v| !v.trim().is_empty());
-    let document = match var("DIMO_DEV_OPEN") {
-        Some(path) => {
-            let service = crate::ipc::tile_service(&tiles)?;
-            Some(crate::ipc::open_path(service, path.into()).await?)
+    let project = match var("DIMO_DEV_OPEN") {
+        Some(path) if !DEV_OPEN_DONE.swap(true, Ordering::SeqCst) => {
+            let tiles = tile_service(&app.state::<TileState>())?;
+            let script = var("DIMO_DEV_SCRIPT");
+            let handle = app.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let state = handle.state::<SessionState>();
+                let mut session = state.lock();
+                dev_open(
+                    &handle,
+                    &mut session,
+                    &tiles,
+                    Path::new(&path),
+                    script.as_deref(),
+                )
+            })
+            .await
+            .map_err(|e| CommandError::Io {
+                message: e.to_string(),
+            })??;
+            Some(app.state::<SessionState>().lock().state())
         }
-        None => None,
+        _ => None,
     };
     Ok(DevStartup {
-        document,
+        project,
         balloons: var("DIMO_DEV_BALLOONS")
             .and_then(|n| n.trim().parse().ok())
             .unwrap_or(0),
@@ -132,6 +219,121 @@ pub async fn dev_startup(tiles: State<'_, TileState>) -> Result<DevStartup, Comm
         view: var("DIMO_DEV_VIEW").and_then(|v| parse_view(&v)),
         pan_check: var("DIMO_DEV_PAN_CHECK").is_some_and(|v| v != "0"),
     })
+}
+
+/// True if `path` is a project (file with the project extension or a folder), not a drawing.
+fn is_project(path: &Path) -> bool {
+    path.is_dir()
+        || path
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case(dimo_io::project::EXTENSION))
+}
+
+/// Opens the `DIMO_DEV_OPEN` path and runs the script, emitting the same events as the commands.
+#[allow(
+    clippy::print_stderr,
+    reason = "dev only output for the tauri dev terminal, no tracing subscriber yet"
+)]
+fn dev_open(
+    app: &AppHandle,
+    session: &mut AppSession,
+    tiles: &TileService,
+    path: &Path,
+    script: Option<&str>,
+) -> Result<(), CommandError> {
+    let loaded = if is_project(path) {
+        session.open_file(tiles, path, true)?
+    } else {
+        session.create_from_drawing(tiles, path, true)?
+    };
+    emit(app, &loaded);
+    eprintln!(
+        "[dimo dev] opened {}: session {}, {} characteristics",
+        path.display(),
+        loaded.session,
+        session.project().map_or(0, |p| p.characteristics.len())
+    );
+    let Some(script) = script else {
+        return Ok(());
+    };
+    let text = std::fs::read_to_string(script).map_err(|e| CommandError::Io {
+        message: format!("{script}: {e}"),
+    })?;
+    let text = session
+        .project()
+        .map_or(text.clone(), |p| substitute_sheets(&text, p));
+    let steps: Vec<DevStep> =
+        serde_json::from_str(&text).map_err(|e| CommandError::InvalidArgument {
+            message: format!("{script}: {e}"),
+        })?;
+    for (index, step) in steps.into_iter().enumerate() {
+        let what = format!("{step:?}");
+        let result = run_step(app, session, tiles, step);
+        let number = index + 1;
+        match &result {
+            Ok(summary) => eprintln!("[dimo dev] step {number}: {summary}"),
+            Err(error) => eprintln!("[dimo dev] step {number} failed: {error} ({what})"),
+        }
+        result?;
+    }
+    Ok(())
+}
+
+fn run_step(
+    app: &AppHandle,
+    session: &mut AppSession,
+    tiles: &TileService,
+    step: DevStep,
+) -> Result<String, CommandError> {
+    let patched = |p: &crate::session::ProjectPatched| {
+        format!(
+            "{} changes, revision {}, {} characteristics",
+            p.patch.changes.len(),
+            p.revision,
+            "{count}"
+        )
+    };
+    let count = |s: &AppSession| s.project().map_or(0, |p| p.characteristics.len());
+    let summary = match step {
+        DevStep::Execute(command) => {
+            let p = session.execute(command)?;
+            if !p.patch.is_empty() {
+                emit(app, &p);
+            }
+            patched(&p)
+        }
+        DevStep::Undo => {
+            let p = session.undo()?;
+            emit(app, &p);
+            patched(&p)
+        }
+        DevStep::Redo => {
+            let p = session.redo()?;
+            emit(app, &p);
+            patched(&p)
+        }
+        DevStep::Save => {
+            let s = session.save()?;
+            emit(app, &s);
+            format!("saved {:?}", s.status.file_name)
+        }
+        DevStep::SaveAs(path) => {
+            let s = session.save_as(&path)?;
+            emit(app, &s);
+            format!("saved as {}", path.display())
+        }
+        DevStep::Close => {
+            let l = session.close(Some(tiles), true)?;
+            emit(app, &l);
+            "closed".to_owned()
+        }
+        DevStep::Open(path) => {
+            let l = session.open_file(tiles, &path, true)?;
+            emit(app, &l);
+            format!("opened {}, notice {:?}", path.display(), l.notice)
+        }
+    };
+    Ok(summary.replace("{count}", &count(session).to_string()))
 }
 
 /// Debug builds: writes the frame times of a scripted pan to the terminal of `tauri dev`.
@@ -184,6 +386,52 @@ mod tests {
         );
         assert_eq!(parse_anchors(""), Vec::new());
         assert_eq!(parse_anchors("NaN,1"), Vec::new());
+    }
+
+    #[test]
+    fn script_steps_parse() {
+        let steps: Vec<DevStep> = serde_json::from_str(
+            r#"["undo", "redo", "save", "close", {"save_as": "/tmp/a.dimo"},
+                {"open": "/tmp/a.dimo"}, {"execute": {"type": "unlock_numbering"}}]"#,
+        )
+        .unwrap();
+        assert_eq!(steps.len(), 7);
+        assert_eq!(steps[4], DevStep::SaveAs("/tmp/a.dimo".into()));
+        assert_eq!(steps[6], DevStep::Execute(Command::UnlockNumbering));
+    }
+
+    #[test]
+    fn sheet_placeholders_become_sheet_ids() {
+        use dimo_core::{
+            DrawingRevision, Project, ProjectInfo, RevisionId, Sha256Hex, Sheet, SheetId,
+            SheetKind, Size, Timestamp,
+        };
+        let size = Size {
+            width: 1.0,
+            height: 1.0,
+        };
+        let sheets: Vec<Sheet> = (0..11u32)
+            .map(|i| {
+                let id = SheetId::from_uuid(uuid::Uuid::from_u128(u128::from(i) + 1));
+                Sheet::new(id, i, size, SheetKind::VectorText)
+            })
+            .collect();
+        let project = Project::new(
+            ProjectInfo::default(),
+            DrawingRevision {
+                id: RevisionId::from_uuid(uuid::Uuid::from_u128(100)),
+                label: String::new(),
+                file_name: "a.pdf".into(),
+                sha256: Sha256Hex::parse(&"0".repeat(64)).unwrap(),
+                imported_at: Timestamp::parse("2026-01-01T00:00:00Z").unwrap(),
+                sheets: sheets.clone(),
+            },
+        );
+        let text = substitute_sheets("$SHEET0 $SHEET10 $SHEET1", &project);
+        assert_eq!(
+            text,
+            format!("{} {} {}", sheets[0].id, sheets[10].id, sheets[1].id)
+        );
     }
 
     #[test]

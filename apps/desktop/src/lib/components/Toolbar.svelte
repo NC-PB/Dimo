@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ToggleGroup } from "bits-ui";
+  import ProjectActions from "$lib/components/ProjectActions.svelte";
   import { LOCALE_NAMES, getLocale, locales, m, setLocale, viewLabel } from "$lib/i18n";
   import { VIEWS, view } from "$lib/stores/view.svelte";
 
@@ -14,6 +15,8 @@
 
 <header class="flex items-center gap-4 border-b border-border bg-surface px-3 py-2">
   <span class="font-semibold">{m.app_title()}</span>
+
+  <ProjectActions />
 
   <ToggleGroup.Root
     type="single"

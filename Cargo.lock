@@ -890,9 +890,11 @@ name = "dimo-desktop"
 version = "0.0.0"
 dependencies = [
  "dimo-core",
+ "dimo-io",
  "dimo-pdf",
  "rfd",
  "serde",
+ "serde_json",
  "specta",
  "specta-typescript",
  "tauri",
@@ -901,6 +903,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "tracing",
+ "uuid",
 ]
 
 [[package]]

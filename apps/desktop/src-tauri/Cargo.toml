@@ -13,15 +13,20 @@ tauri-build.workspace = true
 
 [dependencies]
 dimo-core = { workspace = true, features = ["specta"] }
+dimo-io.workspace = true
 dimo-pdf.workspace = true
 rfd.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 specta.workspace = true
 specta-typescript.workspace = true
 tauri.workspace = true
 tauri-specta.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+# Random IDs for new characteristics and balloons (T1.5). Only the shell generates IDs; the
+# core gets them through `Environment` (rule 11).
+uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
 tempfile.workspace = true

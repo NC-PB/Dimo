@@ -4,7 +4,10 @@
 //! invoke handler and the generated TypeScript bindings, so both always agree (NFR-MNT-03).
 
 pub mod dev;
+pub mod env;
 pub mod ipc;
+pub mod project;
+pub mod session;
 pub mod tiles;
 
 use std::path::{Path, PathBuf};
@@ -14,7 +17,7 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src/ipc.rs and dev.rs. \
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, dev.rs). \
 Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
@@ -25,14 +28,31 @@ pub fn bindings_path() -> PathBuf {
 /// Collects every command, event, type and constant the frontend may use.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
+        // One TypeScript type per Rust type. The domain types serialize and deserialize alike
+        // (checked by `dimo-core/tests/ipc_types.rs`), so phase split aliases only add noise.
+        .disable_serde_phases()
         .commands(collect_commands![
             ipc::app_info,
-            ipc::open_document_dialog,
             ipc::set_tile_interest,
+            project::project_state,
+            project::new_project,
+            project::open_project,
+            project::save_project,
+            project::save_project_as,
+            project::confirm_close,
+            project::execute,
+            project::undo,
+            project::redo,
             dev::dev_startup,
             dev::dev_report_frame_times
         ])
-        .events(collect_events![ipc::JobProgress])
+        .events(collect_events![
+            ipc::JobProgress,
+            session::ProjectLoaded,
+            session::ProjectPatched,
+            session::ProjectStatusChanged,
+            session::CloseRequested
+        ])
         .typ::<ipc::TileAddress>()
         .constant("TILE_SIZE", TILE_SIZE)
         .constant("MIN_TILE_ZOOM", MIN_ZOOM)
@@ -64,7 +84,7 @@ pub fn run() -> tauri::Result<()> {
         eprintln!("failed to export TypeScript bindings: {err}");
     }
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .invoke_handler(builder.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(tiles::SCHEME, tiles::handle)
         .setup(move |app| {
@@ -72,7 +92,48 @@ pub fn run() -> tauri::Result<()> {
             // Tile cache in the user cache directory, never in the project (07 Data model).
             let cache_dir = app.path().app_cache_dir().ok().map(|dir| dir.join("tiles"));
             app.manage(tiles::TileState::start(cache_dir));
+            // Autosave of never saved projects in the app data directory (NFR-REL-01).
+            let autosave_dir = app
+                .path()
+                .app_data_dir()
+                .ok()
+                .map(|dir| dir.join(AUTOSAVE_FOLDER));
+            app.manage(project::SessionState::new(autosave_dir));
+            recover_unsaved(app.handle());
+            project::start_autosave_timer(app.handle().clone());
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                project::on_close_requested(window, api);
+            }
+        })
+        .build(tauri::generate_context!())?;
+    app.run(|handle, event| match event {
+        tauri::RunEvent::ExitRequested { api, code, .. } => {
+            project::on_exit_requested(handle, &api, code);
+        }
+        tauri::RunEvent::Exit => project::on_exit(handle),
+        _ => {}
+    });
+    Ok(())
+}
+
+/// Folder in the app data directory for projects that were never saved.
+pub const AUTOSAVE_FOLDER: &str = "autosave";
+
+/// Restores an unsaved project left by a crash (NFR-REL-01). The frontend gets it, with the
+/// recovery notice, from `project_state`.
+fn recover_unsaved(app: &tauri::AppHandle) {
+    if dev::dev_open_requested() {
+        return;
+    }
+    let tiles = app.state::<tiles::TileState>();
+    let Ok(service) = tiles.service() else {
+        return;
+    };
+    let state = app.state::<project::SessionState>();
+    if let Err(error) = state.lock().recover_unsaved(service) {
+        tracing::warn!("cannot restore an unsaved project: {error}");
+    }
 }

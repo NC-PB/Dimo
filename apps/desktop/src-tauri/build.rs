@@ -6,8 +6,16 @@
 fn main() {
     let manifest = tauri_build::AppManifest::new().commands(&[
         "app_info",
-        "open_document_dialog",
         "set_tile_interest",
+        "project_state",
+        "new_project",
+        "open_project",
+        "save_project",
+        "save_project_as",
+        "confirm_close",
+        "execute",
+        "undo",
+        "redo",
         "dev_startup",
         "dev_report_frame_times",
     ]);

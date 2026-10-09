@@ -4,7 +4,12 @@
  */
 
 export type ShortcutAction =
-  | "open"
+  | "new_project"
+  | "open_project"
+  | "save_project"
+  | "save_project_as"
+  | "undo"
+  | "redo"
   | "zoom_in"
   | "zoom_out"
   | "fit"
@@ -18,12 +23,13 @@ export type ShortcutAction =
 
 /**
  * One key combination. `key` is compared with `KeyboardEvent.key` (letters case insensitive).
- * `mod` is Cmd on macOS and Ctrl elsewhere. Shift is not compared, because symbols like `+` and
- * `?` need Shift on some keyboard layouts and not on others.
+ * `mod` is Cmd on macOS and Ctrl elsewhere. Shift is compared only when `shift` is given,
+ * because symbols like `+` and `?` need Shift on some keyboard layouts and not on others.
  */
 export interface KeyCombo {
   key: string;
   mod?: boolean;
+  shift?: boolean;
 }
 
 export interface Shortcut {
@@ -32,10 +38,24 @@ export interface Shortcut {
   keys: readonly KeyCombo[];
   /** Arrow keys and similar act only when the drawing or nothing else has focus. */
   viewportOnly?: boolean;
+  /** In a text field the key keeps its text editing meaning (undo typing, not the project). */
+  textEditing?: boolean;
 }
 
 export const SHORTCUTS: readonly Shortcut[] = [
-  { action: "open", keys: [{ key: "o", mod: true }] },
+  { action: "new_project", keys: [{ key: "n", mod: true }] },
+  { action: "open_project", keys: [{ key: "o", mod: true }] },
+  { action: "save_project", keys: [{ key: "s", mod: true, shift: false }] },
+  { action: "save_project_as", keys: [{ key: "s", mod: true, shift: true }] },
+  { action: "undo", keys: [{ key: "z", mod: true, shift: false }], textEditing: true },
+  {
+    action: "redo",
+    keys: [
+      { key: "z", mod: true, shift: true },
+      { key: "y", mod: true, shift: false },
+    ],
+    textEditing: true,
+  },
   { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }] },
   { action: "zoom_out", keys: [{ key: "-" }, { key: "_" }] },
   { action: "fit", keys: [{ key: "0" }] },
@@ -54,6 +74,7 @@ export interface KeyInput {
   ctrlKey: boolean;
   metaKey: boolean;
   altKey: boolean;
+  shiftKey: boolean;
 }
 
 export function isMacPlatform(): boolean {
@@ -64,6 +85,9 @@ function matches(combo: KeyCombo, input: KeyInput, mac: boolean): boolean {
   const modPressed = mac ? input.metaKey : input.ctrlKey;
   const otherModPressed = mac ? input.ctrlKey : input.metaKey;
   if (input.altKey || otherModPressed || modPressed !== (combo.mod ?? false)) {
+    return false;
+  }
+  if (combo.shift !== undefined && input.shiftKey !== combo.shift) {
     return false;
   }
   return combo.key.length === 1
@@ -91,6 +115,9 @@ export function formatCombo(combo: KeyCombo, mac: boolean = isMacPlatform()): st
     KEY_NAMES[combo.key] ?? (combo.key.length === 1 ? combo.key.toUpperCase() : combo.key);
   if (!combo.mod) {
     return key;
+  }
+  if (combo.shift) {
+    return mac ? `⇧⌘${key}` : `Ctrl+Shift+${key}`;
   }
   return mac ? `⌘${key}` : `Ctrl+${key}`;
 }

@@ -18,7 +18,7 @@ Every app command is declared in `build.rs` (`AppManifest::commands`) and must b
 ## Tile protocol
 
 The custom scheme `dimo` serves sheet tiles at `tile/{doc}/{sheet}/{zoom}/{x}/{y}` (`src/tiles.rs`,
-logic in `dimo_pdf::tiles`). `doc` is the content hash returned by `open_document_dialog`, zoom levels are
+logic in `dimo_pdf::tiles`). `doc` is the content hash of the project drawing (`ProjectSnapshot.drawing.doc`), zoom levels are
 powers of two (`2^zoom` pixels per sheet unit), tiles are 512 px PNG images. The URL differs per
 platform: `dimo://localhost/tile/...` on macOS and Linux, `http://dimo.localhost/tile/...` on
 Windows. Build URLs with `tileUrl` from `src/lib/viewport/tiles.ts`, never by hand. The CSP allows
@@ -30,10 +30,34 @@ requests outside them are answered with `204 No Content`. Other statuses: `400` 
 unknown document or tile outside the sheet, `503` PDFium missing. Rendered tiles are cached in
 memory (128 MiB LRU) and in `<user cache dir>/io.github.nc-pb.dimo/tiles/`, keyed by content hash.
 
-## Opening drawings
+## Project session
 
-`open_document_dialog` shows the native file dialog from Rust (`rfd`, no dialog or fs plugin and
-no extra capability) and opens the chosen PDF. The webview never passes a path (NFR-SEC-01).
+`src/session.rs` (`AppSession`) holds the open project: the `dimo-io` `ProjectSession`, the
+instance lock (`dimo_io::lock`) and the drawing opened in the tile service. It has no Tauri types
+and is tested in `tests/session.rs`. `src/project.rs` wraps it:
+
+| Command                            | Does                                                                                            |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `project_state`                    | Current state for a frontend that just started listening, with the startup recovery notice once |
+| `new_project(discard)`             | PDF file dialog (Rust), import, new unsaved project                                             |
+| `open_project(discard)`            | Project file dialog, open, replay journal after a crash                                         |
+| `save_project`, `save_project_as`  | Save; without a file, or for "save as", a save dialog                                           |
+| `confirm_close(discard)`           | Answer to `close-requested`: close the project and the window                                   |
+| `execute(command)`, `undo`, `redo` | Document commands as undo steps; return the `ProjectPatched` that is also sent as event         |
+
+`discard` must be `true` to drop unsaved changes; otherwise Rust answers `unsaved_changes`.
+Events: `project-loaded`, `project-patched` (patch plus revision), `project-status-changed`
+(save and autosave state), `close-requested`. Events are emitted while the session is locked, so
+they arrive in order.
+
+Autosave (D-28): the journal is written after every command, undo and redo, and every 30 s by a
+timer thread. New projects journal against a base file in `<app data>/autosave/`; after a crash
+the newest one is restored at startup (`AppSession::recover_unsaved`). Closing the window with
+unsaved changes is stopped and the frontend asks; quitting the app does the same. On exit,
+journals of projects with unsaved changes stay for recovery.
+
+File dialogs use `rfd` from Rust; no dialog or fs plugin, and the webview never names a path
+(NFR-SEC-01).
 
 ## Development helpers
 
@@ -42,7 +66,8 @@ Debug builds read these environment variables once at startup through `dev_start
 
 | Variable                          | Effect                                                     |
 | --------------------------------- | ---------------------------------------------------------- |
-| `DIMO_DEV_OPEN=<path>`            | open this PDF at startup                                   |
+| `DIMO_DEV_OPEN=<path>`            | new project from this PDF, or open this `.dimo` project    |
+| `DIMO_DEV_SCRIPT=<path>`          | then run these JSON steps (see `DevStep` in `src/dev.rs`)  |
 | `DIMO_DEV_SHEET=<n>`              | show zero based sheet `n` first                            |
 | `DIMO_DEV_BALLOONS=<n>`           | place `n` dummy balloons per sheet                         |
 | `DIMO_DEV_ANCHORS=<x,y;x,y;...>`  | dummy balloon leaders end at these sheet points            |

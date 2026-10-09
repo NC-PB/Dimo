@@ -8,7 +8,11 @@ describe("i18n (FR-SET-04)", () => {
   });
 
   it("translates the sample message", () => {
-    expect(m.sample_greeting({}, { locale: "en" })).toBe("Open a drawing to start.");
-    expect(m.sample_greeting({}, { locale: "de" })).toBe("Öffne eine Zeichnung, um zu beginnen.");
+    expect(m.sample_greeting({}, { locale: "en" })).toBe(
+      "Create a project from a drawing, or open a project.",
+    );
+    expect(m.sample_greeting({}, { locale: "de" })).toBe(
+      "Lege ein Projekt aus einer Zeichnung an oder öffne ein Projekt.",
+    );
   });
 });
