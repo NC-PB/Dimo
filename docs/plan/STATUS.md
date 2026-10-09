@@ -15,7 +15,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.1 Cargo workspace skeleton | done | Dependency direction enforced by `crates/dimo-cli/tests/dependency_direction.rs` |
 | T0.2 Tauri 2 shell with Svelte 5 | review | Owner: confirm the decisions marked "owner" in the log below |
 | T0.3 Typed IPC with tauri-specta | done | Bindings test in `apps/desktop/src-tauri/tests/bindings.rs` |
-| T0.4 Checks and CI | review | Owner: push, confirm CI green on 3 platforms, enable branch protection |
+| T0.4 Checks and CI | done | CI green on macOS, Windows, Ubuntu (run 37987569387). Owner: enable branch protection |
 | T0.5 PDFium integration | done | Snapshot verified on mac arm64 only; `fetch-pdfium.ps1` untested |
 | T0.6 Text runs with geometry | done | 24 of 24 truth callouts matched by runs; thresholds need calibration on more drawings (Q-10) |
 | T0.7 Tile protocol and cache | done | Windows webview not verified (CI build only) |
@@ -58,6 +58,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Windows test executables get the Common Controls v6 manifest through `rustc-link-arg-tests` in src-tauri `build.rs` (`windows-test-manifest.xml`) | tauri-build embeds it only into the app executable | coordinator |
 | 2026-10-09 | End to end: `scripts/e2e-smoke.sh` drives the real debug app through the dev UI script (main flow, reopen, crash recovery) and checks the written files; replaces WebdriverIO on macOS (WKWebView has no WebDriver). New dev hooks `DIMO_DEV_SAVE_AS`, `DIMO_DEV_HOME`; `bindings.ts` is written only when its content changes | Test the real app where tauri-driver cannot | T1.10, agent |
 | 2026-10-09 | Exports run as background jobs (`export_project` returns a job id, `JobProgress` then `JobFinished`), written to a temp file and renamed; "export as issued" locks numbering as an undoable command in the same step as the snapshot; annotation dates from `ProjectSession::modified()`; rejected characteristics left out of PDF, CSV and XLSX; export options remembered per user | FR-EXP-01, FR-EXP-09, FR-EXP-11, D-23, D-33. **Owner: confirm** | T1.9, agent |
 | 2026-10-09 | Balloon geometry single source: `dimo_core::BalloonStyle::layout`, used by the PDF export; the viewport reads generated `BALLOON_METRICS` and is checked against a Rust written fixture. D-24 "scaled with sheet size" read as 7 mm in sheet space; text width estimate 0.6 em per digit (tested never narrower than the real font) | No duplicated rule between export and viewport | T1.9, agent |
@@ -130,7 +131,7 @@ Short entries, newest first: date, task, what changed, anything the next session
 
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
-- 2026-10-09: First CI runs on GitHub: macOS green, Windows (unused import in a unix only test) and Ubuntu (text run split with a substitute font) failed; both fixed in a120848. One unexplained local failure of the three `dimo-io` export snapshot tests during a full check, not reproducible in 8 later runs; watch in CI.
+- 2026-10-09: First CI runs on GitHub: macOS green, Windows (unused import in a unix only test) and Ubuntu (text run split with a substitute font) failed; both fixed in a120848. Windows test executables then failed to start (STATUS_ENTRYPOINT_NOT_FOUND, Common Controls v6 manifest missing); fixed in abe16d5 by embedding the manifest for test targets. First fully green run: 37987569387 on 8a29001. One unexplained local failure of the three `dimo-io` export snapshot tests during a full check, not reproducible in 8 later runs; watch in CI.
 - 2026-10-09: M1 implemented: T1.9 and T1.10 merged, smoke test passes on main (coordinator run). User guide in `docs/user/{en,de}/README.md`.
 - 2026-10-09: Wave 4 merged (T1.6, T1.7, T1.7a, T1.8): balloons can be placed, edited and listed in the app. Disk ran full twice; the shared `target/` reaches about 30 GB, clear `target/debug/incremental` after each wave.
 - 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
