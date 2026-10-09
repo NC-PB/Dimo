@@ -1,5 +1,6 @@
 <script lang="ts">
   import DevPanel from "$lib/components/DevPanel.svelte";
+  import SheetProperties from "$lib/components/SheetProperties.svelte";
   import { DEV_TOOLS_ENABLED } from "$lib/dev/dev-tools.svelte";
   import { buildProfileLabel, m } from "$lib/i18n";
   import { appInfo } from "$lib/stores/app-info.svelte";
@@ -9,6 +10,7 @@
   class="flex w-72 shrink-0 flex-col gap-2 border-l border-border bg-surface p-3 text-sm text-text-muted"
   aria-label={m.side_panel_label()}
 >
+  <SheetProperties />
   <p class="flex-1">{m.side_panel_empty()}</p>
   {#if DEV_TOOLS_ENABLED}
     <DevPanel />

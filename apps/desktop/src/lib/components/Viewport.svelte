@@ -25,7 +25,9 @@
   } from "$lib/viewport/tiles";
   import {
     matrix,
+    sheetScreenRect,
     snapToDevicePixels,
+    viewRotation,
     visibleSheetRect,
     wheelZoomFactor,
     gestureZoomFactor,
@@ -49,6 +51,17 @@
 
   $effect(() => {
     viewport.sheet = sheet;
+  });
+
+  // The view follows the rotation stored on the sheet (FR-DOC-05), also for undo and redo. Tiles
+  // and overlay share the one view transform, so both turn together. Declared before the fit
+  // below, so a new sheet is fitted with its own rotation.
+  const sheetRotation = $derived(viewRotation(projectStore.sheets[sheetIndex]?.rotation ?? "deg0"));
+  $effect(() => {
+    const rotation = sheetRotation;
+    untrack(() => {
+      viewport.setRotation(rotation);
+    });
   });
 
   // Fit when a document or sheet is shown for the first time and the viewport has a size.
@@ -141,17 +154,8 @@
     }
   }
 
-  /** The sheet outline in screen space, under the tiles. */
-  const sheetBox = $derived(
-    sheet === null
-      ? null
-      : {
-          x: shown.tx,
-          y: shown.ty,
-          width: sheet.width * shown.scale,
-          height: sheet.height * shown.scale,
-        },
-  );
+  /** The sheet outline in screen space (turned with the view), under the tiles. */
+  const sheetBox = $derived(sheet === null ? null : sheetScreenRect(shown, sheet));
 
   /**
    * Balloons of the project on this sheet, drawn in the plain D-24 look until the balloon
@@ -315,7 +319,7 @@
       {@const overlap = seamOverlap(k, devicePixelRatio)}
       <div
         class="tile-layer absolute top-0 left-0"
-        style:transform={matrix({ scale: k, tx: shown.tx, ty: shown.ty })}
+        style:transform={matrix({ ...shown, scale: k })}
       >
         {#each layer.tiles as tile (tile.url)}
           <img

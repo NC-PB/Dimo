@@ -83,6 +83,7 @@ export class DevToolsStore {
           { x: view.center.x ?? 0, y: view.center.y ?? 0 },
           ((view.percent ?? 100) / 100) * ACTUAL_SIZE_SCALE,
           viewport.size,
+          viewport.rotation,
         ),
       );
     }
@@ -103,7 +104,7 @@ export class DevToolsStore {
     const start = viewport.view;
     try {
       const stats = await runPanCheck((dx, dy) => {
-        viewport.view = { scale: start.scale, tx: start.tx + dx, ty: start.ty + dy };
+        viewport.view = { ...start, tx: start.tx + dx, ty: start.ty + dy };
       });
       this.result = stats;
       await commands

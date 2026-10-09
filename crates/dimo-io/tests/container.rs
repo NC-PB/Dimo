@@ -8,7 +8,7 @@ mod common;
 use std::fs;
 use std::io::{Cursor, Read as _, Write as _};
 
-use dimo_core::{Point, Sha256Hex};
+use dimo_core::{Command, Document, Point, Project, Rotation, Scale, Sha256Hex, Unit};
 use dimo_io::project::{
     APP_VERSION, Layout, Limits, ProjectError, ProjectFile, SCHEMA_VERSION, sha256,
 };
@@ -71,6 +71,81 @@ fn save_load_save_gives_identical_bytes() {
     assert_eq!(loaded.migrated_from(), None);
     loaded.file.save(&path, Layout::Zip).unwrap();
     assert_eq!(fs::read(&path).unwrap(), first);
+}
+
+/// FR-DOC-05, D-20: rotation, unit and scale are stored per sheet and survive save and load.
+#[test]
+fn sheet_rotation_unit_and_scale_survive_save_and_load() {
+    let mut env = common::env();
+    let drawing = common::drawing(&mut env);
+    let mut document = Document::new(Project::new(common::info(), drawing.revision.clone()));
+    let sheets: Vec<_> = document.project().revisions[0]
+        .sheets
+        .iter()
+        .map(|s| s.id)
+        .collect();
+    common::at(&mut env, "2026-03-01T08:05:00Z");
+    // Sheet 0: all three; sheet 1 only the scale, so the sheets differ and nothing is shared.
+    document
+        .execute(
+            Command::UpdateSheet {
+                sheet: sheets[0],
+                rotation: Some(Rotation::Deg270),
+                unit: Some(Unit::In),
+                scale: Some(Scale {
+                    drawing: 2,
+                    actual: 1,
+                }),
+            },
+            &mut env,
+        )
+        .unwrap();
+    document
+        .execute(
+            Command::UpdateSheet {
+                sheet: sheets[1],
+                rotation: None,
+                unit: None,
+                scale: Some(Scale {
+                    drawing: 1,
+                    actual: 20,
+                }),
+            },
+            &mut env,
+        )
+        .unwrap();
+    let mut file = ProjectFile::new(document.project().clone(), drawing.revision.imported_at);
+    file.audit = document.take_audit();
+    file.insert_drawing(drawing.bytes);
+
+    let dir = tempfile::tempdir().unwrap();
+    for (name, layout) in [("part.dimo", Layout::Zip), ("folder.dimo", Layout::Folder)] {
+        let path = dir.path().join(name);
+        file.save(&path, layout).unwrap();
+        let loaded = ProjectFile::load(&path).unwrap().file;
+        let loaded_sheets = &loaded.project.revisions[0].sheets;
+        assert_eq!(loaded_sheets[0].rotation, Rotation::Deg270, "{name}");
+        assert_eq!(loaded_sheets[0].unit, Unit::In, "{name}");
+        assert_eq!(
+            loaded_sheets[0].scale,
+            Scale {
+                drawing: 2,
+                actual: 1
+            },
+            "{name}"
+        );
+        assert_eq!(loaded_sheets[1].rotation, Rotation::Deg0, "{name}");
+        assert_eq!(loaded_sheets[1].unit, Unit::Mm, "{name}");
+        assert_eq!(
+            loaded_sheets[1].scale,
+            Scale {
+                drawing: 1,
+                actual: 20
+            },
+            "{name}"
+        );
+        assert_eq!(loaded, file, "{name}");
+    }
 }
 
 #[test]
