@@ -68,8 +68,17 @@ describe("tile grid and visible range (T0.8)", () => {
 
   it("selects the tiles a viewport shows", () => {
     // Zoom 1 (2 px per unit): one tile covers 256 units. View shows x 300..700, y 0..250.
-    const view = { scale: 2, tx: -600, ty: 0 };
+    const view = { scale: 2, tx: -600, ty: 0, rotation: 0 as const };
     const area = visibleSheetRect(view, { width: 800, height: 500 });
+    expect(tileRangeFor(0, A4, 1, area)).toEqual({ sheet: 0, zoom: 1, x0: 1, y0: 0, x1: 3, y1: 1 });
+  });
+
+  it("selects the same unrotated tiles for a rotated view (T1.8)", () => {
+    // Turned 90 degrees clockwise, screen x is -2 y + 500 and screen y is 2 x - 600: the viewport
+    // shows sheet x 300..550 and y -150..250, so the tiles are those of the unrotated sheet.
+    const view = { scale: 2, tx: 500, ty: -600, rotation: 90 as const };
+    const area = visibleSheetRect(view, { width: 800, height: 500 });
+    expect(area).toEqual({ x: 300, y: -150, width: 250, height: 400 });
     expect(tileRangeFor(0, A4, 1, area)).toEqual({ sheet: 0, zoom: 1, x0: 1, y0: 0, x1: 3, y1: 1 });
   });
 

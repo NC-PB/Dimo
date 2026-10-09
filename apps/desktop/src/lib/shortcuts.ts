@@ -13,6 +13,8 @@ export type ShortcutAction =
   | "zoom_in"
   | "zoom_out"
   | "fit"
+  | "rotate_left"
+  | "rotate_right"
   | "pan_left"
   | "pan_right"
   | "pan_up"
@@ -59,6 +61,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }] },
   { action: "zoom_out", keys: [{ key: "-" }, { key: "_" }] },
   { action: "fit", keys: [{ key: "0" }] },
+  // Shift tells the direction, so the keys work on every keyboard layout (FR-DOC-05).
+  { action: "rotate_right", keys: [{ key: "r", shift: false }] },
+  { action: "rotate_left", keys: [{ key: "r", shift: true }] },
   { action: "pan_left", keys: [{ key: "ArrowLeft" }], viewportOnly: true },
   { action: "pan_right", keys: [{ key: "ArrowRight" }], viewportOnly: true },
   { action: "pan_up", keys: [{ key: "ArrowUp" }], viewportOnly: true },
@@ -114,7 +119,7 @@ export function formatCombo(combo: KeyCombo, mac: boolean = isMacPlatform()): st
   const key =
     KEY_NAMES[combo.key] ?? (combo.key.length === 1 ? combo.key.toUpperCase() : combo.key);
   if (!combo.mod) {
-    return key;
+    return combo.shift ? (mac ? `⇧${key}` : `Shift+${key}`) : key;
   }
   if (combo.shift) {
     return mac ? `⇧⌘${key}` : `Ctrl+Shift+${key}`;

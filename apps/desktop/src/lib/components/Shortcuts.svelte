@@ -5,6 +5,7 @@
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { unsavedPrompt } from "$lib/stores/prompt.svelte";
+  import { rotateShownSheet } from "$lib/sheet-properties";
   import { viewport } from "$lib/stores/viewport.svelte";
 
   interface Props {
@@ -42,6 +43,12 @@
         break;
       case "fit":
         viewport.fit();
+        break;
+      case "rotate_left":
+        void rotateShownSheet(-1);
+        break;
+      case "rotate_right":
+        void rotateShownSheet(1);
         break;
       // Arrow keys move the view over the drawing, so the drawing moves the other way.
       case "pan_left":
