@@ -81,6 +81,10 @@ export class RowVirtualizer {
   /** Connects the scroll element. Call from an effect; returns the cleanup for the effect. */
   attach(element: HTMLElement): () => void {
     this.#element = element;
+    // `_didMount` and `_willUpdate` are underscore-prefixed in @tanstack/virtual-core but are
+    // the documented hooks its framework adapters (React, Vue, Svelte) call; there is no public
+    // equivalent for wiring a scroll element by hand. The package version is therefore pinned
+    // exactly in package.json: re-check both calls (and the virtualizer tests) on every upgrade.
     const cleanup = this.#virtualizer._didMount();
     this.#virtualizer._willUpdate();
     this.#changed();

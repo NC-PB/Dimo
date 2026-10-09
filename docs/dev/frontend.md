@@ -53,8 +53,12 @@ the table (`select(ids, mode)`, `clear()`, `has(id)`, `focus(id)` for "edit this
 
 The table (`src/lib/table/`) uses TanStack Table for the column and row model and
 `@tanstack/virtual-core` (wrapped in `virtual.svelte.ts`) with one fixed row height. Cells send
-typed text as `update_fields`; decimals are never parsed in TypeScript, Rust's refusal is shown
-in the table's status line. Reordering sends one `move_characteristics`.
+typed text as `update_fields`; decimals are never parsed in TypeScript, and a quantity is
+read only if it is plain digits (anything else goes to Rust as `NaN`, which it refuses). Rust's
+refusal is shown in the table's status line: `rejected` errors carry a machine readable `reason`
+(`RejectReason`) that `src/lib/i18n.ts` translates, unknown reasons show Rust's English text.
+Reordering sends one `move_characteristics`, also while numbering is locked: Rust refuses it with
+`numbering_locked` and the table explains the lock.
 
 To check scrolling with a large list in `tauri dev`:
 
