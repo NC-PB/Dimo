@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use dimo_core::Sha256Hex;
 
+use crate::lock::LockOwner;
+
 /// Why a project could not be read, written or a drawing not imported.
 ///
 /// A failed read never changes the file on disk (NFR-REL-04).
@@ -97,6 +99,12 @@ pub enum ProjectError {
     /// never saved. Use `save_as`.
     #[error("the project has no file yet")]
     NoPath,
+    /// Another Dimo instance has the project open ([`crate::lock`]).
+    #[error("the project is open in another Dimo instance{}", holder.as_ref().map(|h| format!(" (user {})", h.user)).unwrap_or_default())]
+    InUse {
+        /// Who holds the lock, if the lock file could be read.
+        holder: Option<LockOwner>,
+    },
 }
 
 impl ProjectError {

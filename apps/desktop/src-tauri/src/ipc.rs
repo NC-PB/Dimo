@@ -3,14 +3,13 @@
 //! Every type here derives `specta::Type`, so its TypeScript twin is generated into
 //! `apps/desktop/src/lib/ipc/bindings.ts`. Never write those types by hand in the frontend.
 
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use dimo_pdf::ContentHash;
 use dimo_pdf::tiles::{self, TileKey, TileService};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tauri::{State, WebviewWindow};
+use tauri::State;
 use tauri_specta::Event;
 
 use crate::tiles::TileState;
@@ -104,6 +103,71 @@ pub enum CommandError {
         /// What is wrong.
         message: String,
     },
+    /// The action needs an open project.
+    #[error("no project is open")]
+    NoProject,
+    /// The open project has unsaved changes and the caller did not allow discarding them.
+    #[error("the project has unsaved changes")]
+    UnsavedChanges,
+    /// Another Dimo instance has the project open.
+    #[error("the project is open in another Dimo instance")]
+    InUse {
+        /// User name of the other instance, if known.
+        user: Option<String>,
+    },
+    /// The project was written by a newer Dimo (NFR-REL-04). The file is left untouched.
+    #[error("written by a newer version (schema {found}, supported {supported})")]
+    NewerVersion {
+        /// Schema version in the file.
+        found: u32,
+        /// Highest schema version this build reads.
+        supported: u32,
+    },
+    /// The project file could not be read or written.
+    #[error("project file: {message}")]
+    Project {
+        /// What went wrong.
+        message: String,
+    },
+    /// The document command was refused; the project is unchanged.
+    #[error("command refused: {message}")]
+    Rejected {
+        /// Why, for example "numbering is locked".
+        message: String,
+    },
+}
+
+impl From<dimo_io::project::ProjectError> for CommandError {
+    fn from(error: dimo_io::project::ProjectError) -> Self {
+        use dimo_io::project::ProjectError;
+        match error {
+            ProjectError::InUse { holder } => Self::InUse {
+                user: holder.map(|h| h.user),
+            },
+            ProjectError::NewerVersion { found, supported } => {
+                Self::NewerVersion { found, supported }
+            }
+            other => Self::Project {
+                message: other.to_string(),
+            },
+        }
+    }
+}
+
+impl From<dimo_core::CommandError> for CommandError {
+    fn from(error: dimo_core::CommandError) -> Self {
+        Self::Rejected {
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<dimo_pdf::PdfError> for CommandError {
+    fn from(error: dimo_pdf::PdfError) -> Self {
+        Self::InvalidDocument {
+            message: error.to_string(),
+        }
+    }
 }
 
 /// Size of one sheet in sheet units (PDF user units, 1/72 inch).
@@ -116,16 +180,34 @@ pub struct SheetInfo {
     pub height: f64,
 }
 
-/// An open document as the viewport needs it.
+/// The drawing of a project as the viewport needs it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub struct DocumentInfo {
     /// Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs.
     pub doc: String,
-    /// File name without the directory, shown in the toolbar. Empty if the path has none.
+    /// File name of the drawing without the directory.
     pub name: String,
     /// Sheets in order; the index is the `{sheet}` part of tile URLs.
     pub sheets: Vec<SheetInfo>,
+}
+
+impl DocumentInfo {
+    /// Describes a document opened by the tile service under the file name `name`.
+    pub fn of(doc: &dimo_pdf::Document, name: &str) -> Self {
+        Self {
+            doc: doc.content_hash().to_hex(),
+            name: name.to_owned(),
+            sheets: doc
+                .sheet_sizes()
+                .iter()
+                .map(|s| SheetInfo {
+                    width: s.width,
+                    height: s.height,
+                })
+                .collect(),
+        }
+    }
 }
 
 /// Address of one tile, the parts of `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`.
@@ -205,30 +287,6 @@ pub fn app_info(tiles: State<'_, TileState>) -> AppInfo {
     AppInfo::current(tiles.service().is_ok())
 }
 
-/// Lets the user pick a PDF in the native file dialog, then opens it for tile rendering.
-/// Returns `None` when the user cancels. Opening the same file again returns the same document.
-///
-/// The webview never names a path (NFR-SEC-01): the dialog runs in Rust and the path stays here.
-#[tauri::command]
-#[specta::specta]
-pub async fn open_document_dialog(
-    window: WebviewWindow,
-    tiles: State<'_, TileState>,
-) -> Result<Option<DocumentInfo>, CommandError> {
-    let service = tile_service(&tiles)?;
-    let picked = rfd::AsyncFileDialog::new()
-        .add_filter("PDF", &["pdf", "PDF"])
-        .set_parent(&window)
-        .pick_file()
-        .await;
-    match picked {
-        Some(file) => open_path(service, file.path().to_path_buf())
-            .await
-            .map(Some),
-        None => Ok(None),
-    }
-}
-
 /// The tile service, or [`CommandError::PdfiumUnavailable`].
 pub(crate) fn tile_service(tiles: &TileState) -> Result<Arc<TileService>, CommandError> {
     tiles
@@ -237,50 +295,6 @@ pub(crate) fn tile_service(tiles: &TileState) -> Result<Arc<TileService>, Comman
         .map_err(|message| CommandError::PdfiumUnavailable {
             message: message.to_owned(),
         })
-}
-
-/// Reads, hashes and opens a PDF file on the blocking pool and registers it with the tile
-/// service. Not a command: paths come from the file dialog or, in debug builds, from the
-/// environment (see `dev.rs`), never from the webview.
-pub(crate) async fn open_path(
-    service: Arc<TileService>,
-    path: PathBuf,
-) -> Result<DocumentInfo, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || open_path_blocking(&service, &path))
-        .await
-        .map_err(|e| CommandError::Io {
-            message: e.to_string(),
-        })?
-}
-
-/// Opens `path` with the tile service and describes the document. Blocks.
-pub fn open_path_blocking(
-    service: &TileService,
-    path: &Path,
-) -> Result<DocumentInfo, CommandError> {
-    let bytes = std::fs::read(path).map_err(|e| CommandError::Io {
-        message: format!("{}: {e}", path.display()),
-    })?;
-    let doc = service
-        .open_document(bytes)
-        .map_err(|e| CommandError::InvalidDocument {
-            message: e.to_string(),
-        })?;
-    Ok(DocumentInfo {
-        doc: doc.content_hash().to_hex(),
-        name: path
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default(),
-        sheets: doc
-            .sheet_sizes()
-            .iter()
-            .map(|s| SheetInfo {
-                width: s.width,
-                height: s.height,
-            })
-            .collect(),
-    })
 }
 
 /// Declares the tiles of a document the viewport still wants. Queued tile requests outside

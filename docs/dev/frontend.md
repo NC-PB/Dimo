@@ -19,6 +19,33 @@ Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no S
 - Pass/fail and status always use shape plus color, never color alone (NFR-UX-05, D-24).
 - Accessibility: semantic elements, labels on controls, focus visible.
 
+## Project state
+
+`src/lib/stores/project.svelte.ts` (`projectStore`) mirrors the open project. It is the only place
+that applies Rust's state:
+
+- `project-loaded` (and `project_state` at startup): full snapshot, or `null` when closed.
+  `session` increases with every load or close.
+- `project-patched`: a `Patch` with a `revision` that increases by one. A gap or a patch that does
+  not fit makes the store fetch the full state again.
+- `project-status-changed`: file name, modified, undo/redo and autosave state after save or an
+  autosave write.
+
+`projectStore.project` is replaced, never mutated (`$state.raw`). `applyChanges` in `patch.ts`
+gives new objects only to changed lists and items, so unchanged rows and balloons keep their
+identity for keyed lists and TanStack memoization.
+
+Reading: `characteristics`, `characteristicById`, `sheets` (current revision), `balloonsOnSheet(id)`,
+`status`, `canUndo`, `canRedo`. Changing: `execute(command)`, `undo()`, `redo()`. They run one after
+another in call order. When `execute` resolves the store already shows the change (the command
+result and the event carry the same revision; the first one applies), and the returned patch tells
+you what was created, for example the ID of a new characteristic to select. Several changes that
+must be one undo step go into one `batch` command. Selection, hover and tool state are view state
+and belong in their own stores, keyed by ID.
+
+New, open and window close ask about unsaved changes through `unsavedPrompt`
+(`UnsavedChangesDialog.svelte`); Rust refuses to drop changes unless the call says `discard`.
+
 ## Tauri capabilities
 
 Grant the webview only the commands it uses. No shell plugin, no fs plugin, no http plugin.

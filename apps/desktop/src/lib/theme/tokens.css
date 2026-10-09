@@ -12,6 +12,7 @@
   --dimo-accent: #1f6feb;
   --dimo-accent-text: #ffffff;
   --dimo-focus: #1f6feb;
+  --dimo-danger: #b42318;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +26,7 @@
     --dimo-accent: #4c8dff;
     --dimo-accent-text: #0b0d10;
     --dimo-focus: #79a8ff;
+    --dimo-danger: #ff8a80;
   }
 }
 
@@ -38,4 +40,5 @@
   --color-accent: var(--dimo-accent);
   --color-accent-text: var(--dimo-accent-text);
   --color-focus: var(--dimo-focus);
+  --color-danger: var(--dimo-danger);
 }

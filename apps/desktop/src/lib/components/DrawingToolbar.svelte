@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ProjectStatus from "$lib/components/ProjectStatus.svelte";
   import { m, shortcutLabel } from "$lib/i18n";
   import { shortcutKeys, type ShortcutAction } from "$lib/shortcuts";
   import { documentStore } from "$lib/stores/document.svelte";
@@ -32,20 +33,7 @@
   role="toolbar"
   aria-label={m.drawing_tools_label()}
 >
-  <button
-    type="button"
-    class={buttonClass}
-    title={hint("open")}
-    disabled={documentStore.busy}
-    onclick={() => void documentStore.openWithDialog()}
-  >
-    {m.open_drawing()}
-  </button>
-  {#if documentStore.current}
-    <span class="max-w-64 truncate text-sm text-text-muted" title={documentStore.current.name}>
-      {documentStore.current.name}
-    </span>
-  {/if}
+  <ProjectStatus />
 
   {#if documentStore.sheetCount > 1}
     <div class="ml-2 flex items-center gap-1" role="group" aria-label={m.sheet_switch_label()}>

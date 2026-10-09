@@ -2,10 +2,16 @@
   import { untrack } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
-  import { DUMMY_STYLE, dummyBalloons, leaderLine } from "$lib/dev/dummy-balloons";
-  import { commandErrorMessage, m } from "$lib/i18n";
+  import {
+    DUMMY_STYLE,
+    dummyBalloons,
+    leaderLine,
+    type DummyBalloon,
+  } from "$lib/dev/dummy-balloons";
+  import { m } from "$lib/i18n";
   import { commands, type TileRange } from "$lib/ipc/bindings";
   import { documentStore } from "$lib/stores/document.svelte";
+  import { projectStore } from "$lib/stores/project.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   import {
     backdropZoomFor,
@@ -147,11 +153,34 @@
         },
   );
 
-  const balloons = $derived(
-    DEV_TOOLS_ENABLED && devTools.balloons && sheet !== null
-      ? dummyBalloons(sheet, devTools.count, sheetIndex + 1, devTools.anchors)
-      : [],
-  );
+  /**
+   * Balloons of the project on this sheet, drawn in the plain D-24 look until the balloon
+   * styles of T1.6 are rendered. Numbers come from Rust.
+   */
+  const projectBalloons = $derived.by((): { key: string; balloon: DummyBalloon }[] => {
+    const sheetId = projectStore.sheets[sheetIndex]?.id;
+    if (sheetId === undefined) {
+      return [];
+    }
+    return projectStore.balloonsOnSheet(sheetId).map((b) => ({
+      key: b.id,
+      balloon: {
+        number: projectStore.characteristicById.get(b.characteristic)?.number ?? 0,
+        center: { x: b.position.x ?? 0, y: b.position.y ?? 0 },
+        anchor: { x: b.anchor.x ?? 0, y: b.anchor.y ?? 0 },
+      },
+    }));
+  });
+
+  const balloons = $derived([
+    ...projectBalloons,
+    ...(DEV_TOOLS_ENABLED && devTools.balloons && sheet !== null
+      ? dummyBalloons(sheet, devTools.count, sheetIndex + 1, devTools.anchors).map((b) => ({
+          key: `dummy-${String(b.number)}`,
+          balloon: b,
+        }))
+      : []),
+  ]);
 
   // Wheel and pinch zoom to the cursor. Added by hand because the listeners must not be passive.
   // A pinch arrives as wheel events with ctrlKey (Chromium, WebKit in Tauri) or, in Safari, as
@@ -252,20 +281,25 @@
 >
   {#if doc === null}
     <div class="flex h-full flex-col items-center justify-center gap-3 text-text-muted">
-      <p>{documentStore.busy ? m.opening_drawing() : m.sample_greeting()}</p>
-      {#if documentStore.error}
-        <p class="max-w-md text-center text-sm" role="alert">
-          {commandErrorMessage(documentStore.error)}
-        </p>
-      {/if}
-      <button
-        type="button"
-        class="rounded bg-accent px-3 py-1.5 text-sm text-accent-text disabled:opacity-50"
-        disabled={documentStore.busy}
-        onclick={() => void documentStore.openWithDialog()}
-      >
-        {m.open_drawing()}
-      </button>
+      <p>{projectStore.busy ? m.working() : m.sample_greeting()}</p>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="rounded bg-accent px-3 py-1.5 text-sm text-accent-text disabled:opacity-50"
+          disabled={projectStore.busy}
+          onclick={() => void projectStore.newProject()}
+        >
+          {m.new_project()}
+        </button>
+        <button
+          type="button"
+          class="rounded border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-raised disabled:opacity-50"
+          disabled={projectStore.busy}
+          onclick={() => void projectStore.open()}
+        >
+          {m.open_project()}
+        </button>
+      </div>
     </div>
   {:else}
     {#if sheetBox}
@@ -305,7 +339,7 @@
     {/each}
     <svg class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
       <g transform={matrix(shown)}>
-        {#each balloons as balloon (balloon.number)}
+        {#each balloons as { key, balloon } (key)}
           {@const leader = leaderLine(balloon)}
           {#if leader}
             <line
@@ -351,14 +385,6 @@
       onpointerup={onPointerUp}
       onpointercancel={onPointerUp}
     ></div>
-    {#if documentStore.error}
-      <p
-        class="absolute top-2 left-1/2 -translate-x-1/2 rounded border border-border bg-surface px-3 py-1 text-sm text-text"
-        role="alert"
-      >
-        {commandErrorMessage(documentStore.error)}
-      </p>
-    {/if}
   {/if}
 </main>
 

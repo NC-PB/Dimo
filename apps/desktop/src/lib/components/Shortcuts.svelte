@@ -3,6 +3,8 @@
   import { m, shortcutLabel } from "$lib/i18n";
   import { SHORTCUTS, formatCombo, matchShortcut, type ShortcutAction } from "$lib/shortcuts";
   import { documentStore } from "$lib/stores/document.svelte";
+  import { projectStore } from "$lib/stores/project.svelte";
+  import { unsavedPrompt } from "$lib/stores/prompt.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
 
   interface Props {
@@ -14,8 +16,23 @@
 
   function run(action: ShortcutAction): void {
     switch (action) {
-      case "open":
-        void documentStore.openWithDialog();
+      case "new_project":
+        void projectStore.newProject();
+        break;
+      case "open_project":
+        void projectStore.open();
+        break;
+      case "save_project":
+        void projectStore.save();
+        break;
+      case "save_project_as":
+        void projectStore.saveAs();
+        break;
+      case "undo":
+        void projectStore.undo();
+        break;
+      case "redo":
+        void projectStore.redo();
         break;
       case "zoom_in":
         viewport.zoomIn();
@@ -76,10 +93,16 @@
     if (!shortcut) {
       return;
     }
+    if (unsavedPrompt.open) {
+      return; // The question about unsaved changes has focus.
+    }
     if (open && shortcut.action !== "show_shortcuts") {
       return; // The dialog has focus; Escape closes it.
     }
-    if (isEditable(event.target) && shortcut.keys.every((k) => !k.mod)) {
+    if (
+      isEditable(event.target) &&
+      (shortcut.textEditing === true || shortcut.keys.every((k) => !k.mod))
+    ) {
       return;
     }
     if (shortcut.viewportOnly && !viewportOrNothingFocused(event.target)) {

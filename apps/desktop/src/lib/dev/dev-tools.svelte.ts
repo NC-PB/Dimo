@@ -5,6 +5,7 @@
 
 import { commands, type DevStartup } from "$lib/ipc/bindings";
 import type { DocumentStore } from "$lib/stores/document.svelte";
+import type { ProjectStore } from "$lib/stores/project.svelte";
 import type { ViewportStore } from "$lib/stores/viewport.svelte";
 import { ACTUAL_SIZE_SCALE, centerOn, type Point } from "$lib/viewport/view-math";
 import { runPanCheck, type FrameStats } from "./pan-check";
@@ -43,14 +44,19 @@ export class DevToolsStore {
 
   /**
    * Applies the startup settings from the `DIMO_DEV_*` environment variables of the Rust
-   * process: open a drawing, show balloons, run the pan check.
+   * process: open a drawing or project (and run the dev script), show balloons, run the pan
+   * check.
    */
-  async startup(documents: DocumentStore, viewport: ViewportStore): Promise<void> {
+  async startup(
+    projects: ProjectStore,
+    documents: DocumentStore,
+    viewport: ViewportStore,
+  ): Promise<void> {
     let startup: DevStartup;
     try {
       const result = await commands.devStartup();
       if (result.status === "error") {
-        documents.error = result.error;
+        projects.error = result.error;
         return;
       }
       startup = result.data;
@@ -62,12 +68,14 @@ export class DevToolsStore {
       this.balloons = true;
     }
     this.anchors = startup.anchors.map((p) => ({ x: p.x ?? 0, y: p.y ?? 0 }));
-    if (startup.document) {
-      documents.show(startup.document);
+    const opened = startup.project?.snapshot ?? null;
+    if (startup.project) {
+      // The events of the open and the script may still be on their way; this is the result.
+      projects.load(startup.project);
       documents.setSheet(startup.sheet);
     }
     const view = startup.view;
-    if (view && startup.document) {
+    if (view && opened) {
       // Wait until the viewport has fitted the new sheet, then replace the fit.
       await afterLayout();
       viewport.set(
@@ -78,7 +86,7 @@ export class DevToolsStore {
         ),
       );
     }
-    if (startup.pan_check && startup.document) {
+    if (startup.pan_check && opened) {
       // Let the first tiles arrive before measuring.
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await this.measurePan(viewport);
