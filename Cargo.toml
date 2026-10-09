@@ -31,6 +31,8 @@ png = { version = "=0.18.1" }
 sha2 = { version = "=0.10.9" }
 tempfile = { version = "=3.27.0" }
 tauri = { version = "=2.11.6", features = [] }
+# Native file dialog, called from Rust only (T0.8, NFR-SEC-01). GTK 3 backend on Linux like Tauri.
+rfd = { version = "=0.17.2", default-features = false, features = ["gtk3"] }
 tauri-build = { version = "=2.6.3", features = [] }
 boon = "=0.6.1"
 rust_decimal = { version = "=1.43.0", default-features = false, features = ["std"] }

@@ -3,11 +3,14 @@
 //! Every type here derives `specta::Type`, so its TypeScript twin is generated into
 //! `apps/desktop/src/lib/ipc/bindings.ts`. Never write those types by hand in the frontend.
 
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
 use dimo_pdf::ContentHash;
-use dimo_pdf::tiles::{self, TileKey};
+use dimo_pdf::tiles::{self, TileKey, TileService};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tauri::State;
+use tauri::{State, WebviewWindow};
 use tauri_specta::Event;
 
 use crate::tiles::TileState;
@@ -119,6 +122,8 @@ pub struct SheetInfo {
 pub struct DocumentInfo {
     /// Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs.
     pub doc: String,
+    /// File name without the directory, shown in the toolbar. Empty if the path has none.
+    pub name: String,
     /// Sheets in order; the index is the `{sheet}` part of tile URLs.
     pub sheets: Vec<SheetInfo>,
 }
@@ -200,40 +205,73 @@ pub fn app_info(tiles: State<'_, TileState>) -> AppInfo {
     AppInfo::current(tiles.service().is_ok())
 }
 
-/// Opens a PDF file and registers it for tile rendering. Opening the same file again returns
-/// the same document.
+/// Lets the user pick a PDF in the native file dialog, then opens it for tile rendering.
+/// Returns `None` when the user cancels. Opening the same file again returns the same document.
 ///
-/// Minimal entry point for T0.7. The file dialog command of T0.8 should replace it, so the
-/// webview never names arbitrary paths (NFR-SEC-01).
+/// The webview never names a path (NFR-SEC-01): the dialog runs in Rust and the path stays here.
 #[tauri::command]
 #[specta::specta]
-pub async fn open_document(
+pub async fn open_document_dialog(
+    window: WebviewWindow,
     tiles: State<'_, TileState>,
-    path: String,
-) -> Result<DocumentInfo, CommandError> {
-    let service = tiles
+) -> Result<Option<DocumentInfo>, CommandError> {
+    let service = tile_service(&tiles)?;
+    let picked = rfd::AsyncFileDialog::new()
+        .add_filter("PDF", &["pdf", "PDF"])
+        .set_parent(&window)
+        .pick_file()
+        .await;
+    match picked {
+        Some(file) => open_path(service, file.path().to_path_buf())
+            .await
+            .map(Some),
+        None => Ok(None),
+    }
+}
+
+/// The tile service, or [`CommandError::PdfiumUnavailable`].
+pub(crate) fn tile_service(tiles: &TileState) -> Result<Arc<TileService>, CommandError> {
+    tiles
         .service()
+        .map(Arc::clone)
         .map_err(|message| CommandError::PdfiumUnavailable {
             message: message.to_owned(),
+        })
+}
+
+/// Reads, hashes and opens a PDF file on the blocking pool and registers it with the tile
+/// service. Not a command: paths come from the file dialog or, in debug builds, from the
+/// environment (see `dev.rs`), never from the webview.
+pub(crate) async fn open_path(
+    service: Arc<TileService>,
+    path: PathBuf,
+) -> Result<DocumentInfo, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || open_path_blocking(&service, &path))
+        .await
+        .map_err(|e| CommandError::Io {
+            message: e.to_string(),
         })?
-        .clone();
-    // Reading, hashing and parsing block, so they run on the blocking pool.
-    let doc = tauri::async_runtime::spawn_blocking(move || {
-        let bytes = std::fs::read(&path).map_err(|e| CommandError::Io {
-            message: format!("{path}: {e}"),
+}
+
+/// Opens `path` with the tile service and describes the document. Blocks.
+pub fn open_path_blocking(
+    service: &TileService,
+    path: &Path,
+) -> Result<DocumentInfo, CommandError> {
+    let bytes = std::fs::read(path).map_err(|e| CommandError::Io {
+        message: format!("{}: {e}", path.display()),
+    })?;
+    let doc = service
+        .open_document(bytes)
+        .map_err(|e| CommandError::InvalidDocument {
+            message: e.to_string(),
         })?;
-        service
-            .open_document(bytes)
-            .map_err(|e| CommandError::InvalidDocument {
-                message: e.to_string(),
-            })
-    })
-    .await
-    .map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })??;
     Ok(DocumentInfo {
         doc: doc.content_hash().to_hex(),
+        name: path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default(),
         sheets: doc
             .sheet_sizes()
             .iter()

@@ -6,8 +6,10 @@
 fn main() {
     let manifest = tauri_build::AppManifest::new().commands(&[
         "app_info",
-        "open_document",
+        "open_document_dialog",
         "set_tile_interest",
+        "dev_startup",
+        "dev_report_frame_times",
     ]);
     if let Err(err) = tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest))
     {
