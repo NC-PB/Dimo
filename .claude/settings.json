@@ -1,5 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+  },
   "permissions": {
     "allow": [
       "Bash(cargo build:*)",
@@ -13,13 +16,6 @@
       "Bash(cargo metadata:*)",
       "Bash(cargo deny:*)",
       "Bash(cargo insta:*)",
-      "Bash(pnpm install:*)",
-      "Bash(pnpm -C apps/desktop check:*)",
-      "Bash(pnpm -C apps/desktop lint:*)",
-      "Bash(pnpm -C apps/desktop test:*)",
-      "Bash(pnpm -C apps/desktop tauri:*)",
-      "Bash(./scripts/check.sh:*)",
-      "Bash(./scripts/fetch-pdfium.sh:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -30,7 +26,43 @@
       "Bash(git branch:*)",
       "Bash(rg:*)",
       "Bash(jq:*)",
-      "Bash(shasum:*)"
+      "Bash(shasum:*)",
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(sed -n:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(df:*)",
+      "Bash(du:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(awk:*)",
+      "Bash(diff:*)",
+      "Bash(which:*)",
+      "Bash(pgrep:*)",
+      "Bash(echo:*)",
+      "Bash(printf:*)",
+      "Bash(test:*)",
+      "Bash(python3:*)",
+      "Bash(node scripts/:*)",
+      "Bash(./scripts/:*)",
+      "Bash(scripts/:*)",
+      "Bash(pnpm:*)",
+      "Bash(cargo update:*)",
+      "Bash(cargo doc:*)",
+      "Bash(git merge:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git worktree:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git blame:*)",
+      "Bash(git stash list:*)",
+      "Bash(git tag:*)",
+      "Bash(git fetch:*)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -53,7 +85,10 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh" }
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh"
+          }
         ]
       }
     ],
@@ -61,7 +96,10 @@
       {
         "matcher": "Edit|Write|MultiEdit|Bash",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.sh" }
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.sh"
+          }
         ]
       }
     ],
@@ -69,7 +107,10 @@
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh" }
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh"
+          }
         ]
       }
     ]
