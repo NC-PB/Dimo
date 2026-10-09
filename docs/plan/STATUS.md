@@ -39,7 +39,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.8 Sheet rotation, scale and units | todo | wave 4 |
 | T1.9 Export and settings views | todo | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
-| T1.11 Page cache on the render thread | in progress | |
+| T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -58,6 +58,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Render thread keeps the 4 most recently used loaded pages per document (about 10.5 MiB per dense A0 page), shared by tiles, text runs and sheet analysis; pages closed before their document, failed loads not cached | Page load (52 ms) dominated tile time; no `unsafe` needed because pdfium-render 0.9.4 pages do not borrow the document. Cap by bytes or 1 page for raster sheets if M4 measurements demand | T1.11, agent |
 | 2026-10-09 | Characteristic list export: 20 columns (No to Comment, see `docs/user/en/exports.md`), rows in number order, rejected characteristics skipped, non inspected kept with `Inspect = no`; enum values stable English identifiers, only headers and sheet name localized; CSV UTF-8 without BOM, comma, LF, stored decimal digits; XLSX numbers up to 15 significant digits as number cells with matching format, longer as text; fixed doc properties and ZIP times | FR-EXP-09, FR-EXP-11, D-32. **Owner: confirm** | T1.4, agent |
 | 2026-10-09 | CSV cells starting with `=`, `+`, `-`, `@` are not escaped (negative deviations start with `-`); user docs warn | Escaping would corrupt numeric values for CMM import | T1.4, agent |
 | 2026-10-09 | Ballooned PDF written through pdfium-render page objects (full rewrite, not incremental update), not lopdf (about 25 extra crates). Trailer `/ID` parts that PDFium fills from clock and random are replaced by SHA-256 based values of equal length; annotation dates come from the caller | FR-EXP-01, FR-EXP-11 deterministic output | T1.2, agent |
