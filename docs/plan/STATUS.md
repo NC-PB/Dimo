@@ -29,10 +29,10 @@ Single place for progress. Agents update this file at the end of every task.
 | Task | State | Notes |
 |---|---|---|
 | T1.0 M0 follow-ups | review | Owner: confirm pinch and wheel zoom feel in `pnpm dev` |
-| T1.1 Domain model and command engine | todo | wave 1 |
-| T1.2 Ballooned PDF writer | todo | wave 1 |
-| T1.3 Project file, autosave and recovery | todo | wave 2, after T1.1 |
-| T1.4 CSV and XLSX characteristic list | todo | wave 2, after T1.1 |
+| T1.1 Domain model and command engine | done | Owner: confirm "unlock renumbers" (D-23 is silent) |
+| T1.2 Ballooned PDF writer | in progress | wave 1 |
+| T1.3 Project file, autosave and recovery | in progress | wave 2 |
+| T1.4 CSV and XLSX characteristic list | in progress | wave 2 |
 | T1.5 Project session and IPC | todo | wave 3, after T1.1 and T1.3 |
 | T1.6 Balloon placement and editing | todo | wave 4 |
 | T1.7 Characteristic table | todo | wave 4 |
@@ -58,6 +58,9 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Numbering: unlocked always 1..n in placement order, unlocking renumbers immediately; locked adds get highest number ever used plus one, moves refused while locked; `number` is `u32` (sub-numbers need a migration in M2) | D-21, D-23. **Owner: confirm unlock behavior** | T1.1, agent |
+| 2026-10-09 | Limits derived from nominal plus deviations unless set directly; missing deviation clears derived limits; nominal implies a unit (degrees for angles, else sheet unit); hand placed characteristics start as kind `other`; new kinds counterbore, countersink, depth, material_process, other | FR-CHR-01, FR-CHR-02 | T1.1, agent |
+| 2026-10-09 | `Environment` trait provides UUIDs, clock (RFC 3339 `Timestamp`) and user name; tests use `FixedEnvironment`. `specta::Type` behind a `dimo-core` feature `specta` enabled only by src-tauri. Undo applies inverted changes, redo re-applies stored changes so IDs stay stable | Determinism (rule 11), core free of IPC concerns | T1.1, agent |
 | 2026-10-09 | Performance harness is a `dimo-pdf` example run by `scripts/perf.sh`, stress PDF from `dimo-synth --stress --sheets 50` written to `target/perf/`, never committed. `sheet_sizes` reads sizes without loading page content (open 1971 ms to 199 ms) | No criterion dependency needed; NFR-PERF-01 was missed before the fix | T0.9, agent |
 | 2026-10-09 | `render_region` pads left and top itself (shared with tiles), skipped only if the padded image would exceed the max render side. Wheel gain 0.002 per px, pinch gain 0.01 per px clamped at 40 px per event, constants in `ZOOM_TUNING`; Safari gesture events supported | PDFium glyph edge quirk; separate tuning for mouse and trackpad | T1.0, agent |
 | 2026-10-09 | File dialog via `rfd` called from Rust; temporary `open_document(path)` removed; only `allow-open-document-dialog` granted | No dialog or fs plugin in the webview (NFR-SEC-01) | T0.8, agent |
@@ -101,6 +104,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
 - 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
 - 2026-10-09: T0.8 merged, in review. Pitfall: tests use `env!("CARGO_MANIFEST_DIR")`, so a target dir shared with deleted worktrees can run stale test binaries with dead paths; touch the test files or rebuild when that happens. Disk below 1 GB free, T0.9 waits for space.
