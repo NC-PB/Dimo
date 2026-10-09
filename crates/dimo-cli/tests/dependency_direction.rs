@@ -84,7 +84,8 @@ fn package_key(line: &str) -> Option<String> {
 
 #[test]
 fn crate_dependencies_follow_rust_md() {
-    let crates_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let crates_dir =
+        Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default()).join("..");
     let allowed: BTreeMap<_, _> = ALLOWED.iter().copied().collect();
     let mut violations = Vec::new();
     let mut checked = 0;

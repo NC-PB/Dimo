@@ -17,7 +17,7 @@ use dimo_core::truth::{TruthFile, truth_schema_json};
 use sha2::{Digest, Sha256};
 
 fn repo_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+    Path::new(&std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default()).join("../..")
 }
 
 fn schema_path() -> PathBuf {

@@ -28,7 +28,7 @@ fn service() -> Option<TileService> {
 }
 
 fn corpus(name: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default())
         .join("../../../corpus/drawings")
         .join(name)
 }
