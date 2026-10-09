@@ -22,6 +22,8 @@
  * - `click`, `dblclick`, `drag`: pointer events on the drawing (`shift`, `mod`).
  * - `type`: sets the text of the focused field as typing would.
  * - `button`: clicks the button whose text is this label.
+ * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
+ * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
  * - `view`: zoom percent and the sheet point in the viewport center.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons and selection).
  */
@@ -48,6 +50,8 @@ export type UiStep =
   | ({ drag: [Pair, Pair] } & Mods)
   | { type: string }
   | { button: string }
+  | ({ row: number } & Mods)
+  | ({ balloon: number } & Mods)
   | { view: [number, number, number] }
   | { wait: number }
   | { mark: string }
@@ -128,7 +132,13 @@ function report(label: string): string {
     ? `${field.tagName.toLowerCase()}#${field.id} at ${String(Math.round(box?.x ?? 0))},${String(Math.round(box?.y ?? 0))}`
     : "none";
   const editor = document.getElementById("balloon-value") !== null;
-  return `${label}: ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)}, undo ${String(projectStore.canUndo)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
+  const chosen = [...selection.ids]
+    .map((id) => String(projectStore.characteristicById.get(id)?.number ?? "?"))
+    .join(",");
+  const rows = [...document.querySelectorAll('[role="row"][aria-selected="true"]')]
+    .map((r) => String(Number(r.getAttribute("aria-rowindex")) - 1))
+    .join(",");
+  return `${label}: ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -157,6 +167,35 @@ async function run(step: UiStep): Promise<void> {
       (b) => b.textContent.trim() === step.button,
     );
     button?.click();
+    await sleep(STEP_PAUSE_MS);
+  } else if ("balloon" in step) {
+    const b = projectStore.project?.balloons.find(
+      (x) => projectStore.characteristicById.get(x.characteristic)?.number === step.balloon,
+    );
+    if (b) {
+      const at: Pair = [b.position.x ?? 0, b.position.y ?? 0];
+      await press(at, at, step);
+    }
+  } else if ("row" in step) {
+    // Rows are in number order: number n is row index n + 1 (the header is row 1).
+    const cell = document.querySelector<HTMLElement>(
+      `[role="row"][aria-rowindex="${String(step.row + 1)}"] [data-col="2"]`,
+    );
+    const box = cell?.getBoundingClientRect();
+    cell?.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 2,
+        pointerType: "mouse",
+        isPrimary: true,
+        button: 0,
+        buttons: 1,
+        clientX: (box?.left ?? 0) + 4,
+        clientY: (box?.top ?? 0) + 4,
+        ...modifiers(step),
+      }),
+    );
     await sleep(STEP_PAUSE_MS);
   } else if ("view" in step) {
     const [percent, x, y] = step.view;
