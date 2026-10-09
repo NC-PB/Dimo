@@ -1,5 +1,32 @@
 # Exporte
 
+## Aus der App exportieren
+
+Öffne die Ansicht **Export** (Werkzeugleiste, oder Cmd+E auf macOS, Strg+E sonst). Jeder Export
+fragt, wo die Datei gespeichert wird, und läuft dann im Hintergrund; du kannst währenddessen
+weiterarbeiten. Unter dem Export erscheinen ein Fortschrittsbalken und danach der Dateiname.
+
+Optionen, die für das nächste Mal gespeichert werden:
+
+- **Spaltenüberschriften**: englische oder deutsche Überschriften in den CSV- und Excel-Dateien,
+  unabhängig von der Sprache der App.
+- **Ballons im PDF**: als Teil der Seite (Standard) oder als Anmerkungen, die PDF-Programme
+  ein- und ausblenden oder löschen können.
+- **Als freigegeben exportieren**: sperrt die Nummerierung vor dem Export. Für Zeichnungen, die
+  an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
+  werden nicht wieder vergeben und neue Merkmale erhalten die nächste freie Nummer. Die Sperre
+  steht im Änderungsprotokoll und lässt sich wie jede Änderung rückgängig machen (Cmd+Z direkt
+  nach dem Export oder später entsperren).
+
+## PDF mit Ballons
+
+Eine Kopie der Zeichnung mit den Ballons als Vektorgrafik. Die Originaldatei bleibt unverändert.
+Die Ballons sehen aus wie in der App: gleiche Form, Größe, Farben und Bezugslinien. Merkmale mit
+dem Status `rejected` erhalten im PDF keinen Ballon.
+
+Dasselbe Projekt ergibt dieselbe PDF-Datei, Byte für Byte. Bei Anmerkungen ist deren Datum der
+Zeitpunkt der letzten Änderung am Projekt, nicht der Zeitpunkt des Exports.
+
 ## Merkmalsliste (CSV und XLSX)
 
 Die Merkmalsliste enthält eine Zeile pro Merkmal, sortiert nach Ballonnummer. Sie ist für die
