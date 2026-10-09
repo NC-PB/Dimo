@@ -11,6 +11,7 @@ import {
   sheetToScreen,
   snapToDevicePixels,
   visibleSheetRect,
+  gestureZoomFactor,
   wheelZoomFactor,
   zoomAt,
   zoomPercent,
@@ -88,17 +89,47 @@ describe("zoom to cursor (FR-DOC-04)", () => {
 });
 
 describe("wheel zoom", () => {
+  const wheel = (deltaY: number, deltaMode = 0, ctrlKey = false) =>
+    wheelZoomFactor({ deltaY, deltaMode, ctrlKey }, 800);
+
   it("zooms in on wheel up and out on wheel down by the same factor", () => {
-    const up = wheelZoomFactor(-100, 0, 800);
-    const down = wheelZoomFactor(100, 0, 800);
+    const up = wheel(-100);
+    const down = wheel(100);
     expect(up).toBeGreaterThan(1);
     close(up * down, 1);
   });
 
   it("converts lines and pages to pixels and limits one event", () => {
-    close(wheelZoomFactor(-3, 1, 800), wheelZoomFactor(-48, 0, 800));
-    close(wheelZoomFactor(-1, 2, 800), wheelZoomFactor(-150, 0, 800));
-    close(wheelZoomFactor(-5000, 0, 800), wheelZoomFactor(-150, 0, 800));
+    close(wheel(-3, 1), wheel(-48));
+    close(wheel(-1, 2), wheel(-150));
+    close(wheel(-5000), wheel(-150));
+  });
+
+  it("zooms a pinch faster per pixel than a wheel and limits it separately", () => {
+    expect(wheel(-5, 0, true)).toBeGreaterThan(wheel(-5));
+    close(wheel(-5, 0, true) * wheel(5, 0, true), 1);
+    close(wheel(-5000, 0, true), wheel(-40, 0, true));
+  });
+
+  it("makes many small trackpad events add up like one large step", () => {
+    let product = 1;
+    for (let i = 0; i < 20; i++) {
+      product *= wheel(-2, 0, true);
+    }
+    close(product, wheel(-40, 0, true));
+  });
+
+  it("does nothing for a zero delta", () => {
+    close(wheel(0), 1);
+    close(wheel(0, 0, true), 1);
+  });
+});
+
+describe("gesture zoom", () => {
+  it("is the ratio of two gesture scales", () => {
+    close(gestureZoomFactor(1, 1.5), 1.5);
+    close(gestureZoomFactor(1.5, 1.2), 0.8);
+    close(gestureZoomFactor(0, 1.2), 1);
   });
 });
 

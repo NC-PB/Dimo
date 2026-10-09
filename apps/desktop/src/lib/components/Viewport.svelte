@@ -22,10 +22,9 @@
     snapToDevicePixels,
     visibleSheetRect,
     wheelZoomFactor,
+    gestureZoomFactor,
   } from "$lib/viewport/view-math";
 
-  /** Wheel events of a trackpad pinch (ctrl + wheel) carry small deltas. */
-  const PINCH_GAIN = 8;
   /** Tiles requested around the visible ones, so short pans show no empty tiles. */
   const PREFETCH_TILES = 1;
   /** Retries of a tile that came back empty, for example cancelled by an old interest. */
@@ -154,27 +153,57 @@
       : [],
   );
 
-  // Wheel zoom to the cursor. Added by hand because the listener must not be passive.
+  // Wheel and pinch zoom to the cursor. Added by hand because the listeners must not be passive.
+  // A pinch arrives as wheel events with ctrlKey (Chromium, WebKit in Tauri) or, in Safari, as
+  // gesture events. While a gesture runs its wheel events are ignored, so nothing zooms twice.
   $effect(() => {
     const el = element;
     if (!el) {
       return;
     }
+    const at = (event: { clientX: number; clientY: number }) => {
+      const rect = el.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    };
+    let gestureScale: number | null = null;
     const onWheel = (event: WheelEvent) => {
       if (doc === null) {
         return;
       }
       event.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const delta = event.ctrlKey ? event.deltaY * PINCH_GAIN : event.deltaY;
-      viewport.zoomBy(wheelZoomFactor(delta, event.deltaMode, rect.height), {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      });
+      if (gestureScale !== null && event.ctrlKey) {
+        return;
+      }
+      viewport.zoomBy(wheelZoomFactor(event, el.getBoundingClientRect().height), at(event));
+    };
+    // Safari gesture events are not in the DOM typings.
+    type GestureEvent = Event & { scale: number; clientX: number; clientY: number };
+    const onGestureStart = (event: Event) => {
+      event.preventDefault();
+      gestureScale = 1;
+    };
+    const onGestureChange = (event: Event) => {
+      event.preventDefault();
+      const gesture = event as GestureEvent;
+      if (doc === null || gestureScale === null) {
+        return;
+      }
+      viewport.zoomBy(gestureZoomFactor(gestureScale, gesture.scale), at(gesture));
+      gestureScale = gesture.scale;
+    };
+    const onGestureEnd = (event: Event) => {
+      event.preventDefault();
+      gestureScale = null;
     };
     el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("gesturestart", onGestureStart);
+    el.addEventListener("gesturechange", onGestureChange);
+    el.addEventListener("gestureend", onGestureEnd);
     return () => {
       el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("gesturestart", onGestureStart);
+      el.removeEventListener("gesturechange", onGestureChange);
+      el.removeEventListener("gestureend", onGestureEnd);
     };
   });
 
