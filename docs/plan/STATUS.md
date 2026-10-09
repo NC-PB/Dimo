@@ -31,9 +31,9 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.0 M0 follow-ups | review | Owner: confirm pinch and wheel zoom feel in `pnpm dev` |
 | T1.1 Domain model and command engine | done | Owner: confirm "unlock renumbers" (D-23 is silent) |
 | T1.2 Ballooned PDF writer | done | Owner: confirm Open Sans Bold and the flag shape |
-| T1.3 Project file, autosave and recovery | in progress | wave 2 |
+| T1.3 Project file, autosave and recovery | done | Owner: confirm uncompressed container |
 | T1.4 CSV and XLSX characteristic list | done | Owner: confirm columns, German headers, umlauts in CSV, whether non inspected rows are exported |
-| T1.5 Project session and IPC | todo | wave 3, after T1.1 and T1.3 |
+| T1.5 Project session and IPC | in progress | wave 3 |
 | T1.6 Balloon placement and editing | todo | wave 4 |
 | T1.7 Characteristic table | todo | wave 4 |
 | T1.8 Sheet rotation, scale and units | todo | wave 4 |
@@ -58,6 +58,9 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | `.dimo` container entries written uncompressed (manifest, project, audit, drawings in that order); ZIP time and manifest created/modified derived from the project, not the clock; deflated files from other tools still load; unknown entries ignored; read limits 1 GiB per drawing, 4 GiB total, 10,000 entries | Byte identical saves independent of compression library (FR-EXP-11 spirit), drawings are already compressed. **Owner: confirm** | T1.3, agent |
+| 2026-10-09 | Journal `<file>.journal` next to the project, one line per audit entry with its changes, replayed with `apply_change`; a journal that does not match the project moves to `.journal.stale` | NFR-REL-01, D-28 | T1.3, agent |
+| 2026-10-09 | One `zip` 8.6.0 for project files and XLSX (rust_xlsxwriter accepts ^8.3) | Merge of T1.3 and T1.4 | coordinator |
 | 2026-10-09 | Render thread keeps the 4 most recently used loaded pages per document (about 10.5 MiB per dense A0 page), shared by tiles, text runs and sheet analysis; pages closed before their document, failed loads not cached | Page load (52 ms) dominated tile time; no `unsafe` needed because pdfium-render 0.9.4 pages do not borrow the document. Cap by bytes or 1 page for raster sheets if M4 measurements demand | T1.11, agent |
 | 2026-10-09 | Characteristic list export: 20 columns (No to Comment, see `docs/user/en/exports.md`), rows in number order, rejected characteristics skipped, non inspected kept with `Inspect = no`; enum values stable English identifiers, only headers and sheet name localized; CSV UTF-8 without BOM, comma, LF, stored decimal digits; XLSX numbers up to 15 significant digits as number cells with matching format, longer as text; fixed doc properties and ZIP times | FR-EXP-09, FR-EXP-11, D-32. **Owner: confirm** | T1.4, agent |
 | 2026-10-09 | CSV cells starting with `=`, `+`, `-`, `@` are not escaped (negative deviations start with `-`); user docs warn | Escaping would corrupt numeric values for CMM import | T1.4, agent |
