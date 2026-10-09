@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { characteristic } from "$lib/stores/fixtures";
 import { COLUMNS, NO_UNIT, choiceOptions, displayText, fieldValue, rawText } from "./columns";
-import { lockExplanation, refusalDetail } from "./refusal";
+import { isNumberingLocked, lockExplanation, refusalDetail } from "./refusal";
 import { moveStep, moveToGap } from "./reorder";
 
 describe("table columns (T1.7, FR-CHR-02)", () => {
@@ -63,6 +63,7 @@ describe("table columns (T1.7, FR-CHR-02)", () => {
       value: "CMM",
     });
     expect(fieldValue("quantity", "4")).toEqual({ field: "quantity", value: 4 });
+    expect(fieldValue("quantity", " 12 ")).toEqual({ field: "quantity", value: 12 });
     expect(fieldValue("quantity", "")).toBeNull();
     expect(fieldValue("kind", "diameter")).toEqual({ field: "kind", value: "diameter" });
     expect(fieldValue("kind", "bogus")).toBeNull();
@@ -70,6 +71,21 @@ describe("table columns (T1.7, FR-CHR-02)", () => {
     expect(fieldValue("unit", NO_UNIT)).toEqual({ field: "unit", value: null });
     expect(fieldValue("unit", "in")).toEqual({ field: "unit", value: "in" });
     expect(fieldValue("number", "5")).toBeNull();
+  });
+
+  it("reads only plain digits as a quantity and leaves the refusal to Rust", () => {
+    // `1e3`, `0x10`, `1.0`, `-1`, `+2` and words are never turned into a number that Rust would
+    // accept. NaN is sent as `null`, which Rust refuses.
+    for (const text of ["1e3", "0x10", "1.0", "-1", "+2", "1_000", "abc", "1,5"]) {
+      const value = fieldValue("quantity", text);
+      expect(value?.field, text).toBe("quantity");
+      expect(Number.isNaN((value as { value: number }).value), text).toBe(true);
+    }
+    expect(JSON.stringify(fieldValue("quantity", "0x10"))).toBe(
+      '{"field":"quantity","value":null}',
+    );
+    // Zero is plain digits: Rust refuses it (`ZeroQuantity`).
+    expect(fieldValue("quantity", "0")).toEqual({ field: "quantity", value: 0 });
   });
 
   it("offers every kind, classification and unit", () => {
@@ -144,17 +160,73 @@ describe("reorder (T1.7, FR-BAL-06)", () => {
 });
 
 describe("refusals", () => {
-  it("shows Rust's reason without the Tauri prefix", () => {
+  const argument = (text: string) =>
+    ({
+      kind: "invalid_argument",
+      message: `invalid args \`command\` for command \`execute\`: ${text}`,
+    }) as const;
+
+  it("translates the reasons Rust gives for a refused command", () => {
     expect(
       refusalDetail({
-        kind: "invalid_argument",
-        message:
-          'invalid args `command` for command `execute`: invalid decimal string "1,5", expected digits',
+        kind: "rejected",
+        reason: "zero_quantity",
+        message: "quantity must be at least 1",
       }),
-    ).toBe('invalid decimal string "1,5", expected digits');
-    expect(refusalDetail({ kind: "rejected", message: "numbering is locked" })).toBe(
-      "numbering is locked",
+    ).toBe("The quantity must be at least 1.");
+    expect(
+      refusalDetail({
+        kind: "rejected",
+        reason: "numbering_locked",
+        message: "numbering is locked",
+      }),
+    ).toBe("Numbering is locked. Characteristics cannot be moved.");
+  });
+
+  it("falls back to Rust's text for reasons without a translation", () => {
+    expect(
+      refusalDetail({
+        kind: "rejected",
+        reason: "invalid_geometry",
+        message: "invalid geometry: x",
+      }),
+    ).toBe("invalid geometry: x");
+  });
+
+  it("explains a locked move with the lock when it is known", () => {
+    const lock = {
+      reason: "manual",
+      locked_at: "2026-10-09T10:00:00Z",
+      locked_by: "peter",
+      insert_policy: "next_free",
+      highest_number: 3,
+    } as const;
+    const error = {
+      kind: "rejected",
+      reason: "numbering_locked",
+      message: "numbering is locked",
+    } as const;
+    expect(isNumberingLocked(error)).toBe(true);
+    expect(refusalDetail(error, { lock })).toContain("locked by peter");
+    expect(isNumberingLocked({ kind: "no_project" })).toBe(false);
+  });
+
+  it("translates arguments Rust could not read by the kind of value typed", () => {
+    const error = argument('invalid decimal string "1,5", expected digits');
+    expect(refusalDetail(error, { input: "decimal" })).toContain("Not a valid number");
+    expect(refusalDetail(argument("invalid type: null, expected u32"), { input: "quantity" })).toBe(
+      "The quantity must be a whole number of at least 1.",
     );
+  });
+
+  it("shows Rust's own text, without the Tauri prefix, for unknown argument errors", () => {
+    expect(refusalDetail(argument('invalid decimal string "1,5", expected digits'))).toBe(
+      'invalid decimal string "1,5", expected digits',
+    );
+    // Not a Tauri argument error: never relabelled as a decimal.
+    expect(
+      refusalDetail({ kind: "invalid_argument", message: "bad document id" }, { input: "decimal" }),
+    ).toBe("bad document id");
   });
 
   it("explains a numbering lock with who and when", () => {

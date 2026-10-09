@@ -516,7 +516,9 @@ supported: number } |
 message: string } | 
 /**  The document command was refused; the project is unchanged. */
 { kind: "rejected"; 
-/**  Why, for example "numbering is locked". */
+/**  Machine readable reason, for the frontend to translate. */
+reason: RejectReason; 
+/**  Why, in English, for logs and bug reports. */
 message: string };
 
 /**  What a debug build should do at startup, read from the `DIMO_DEV_*` environment variables. */
@@ -866,6 +868,36 @@ export type ProjectStatusChanged = {
 	/**  The new state. */
 	status: ProjectStatus,
 };
+
+/**
+ *  Why a document command was refused: the variants of [`dimo_core::CommandError`] the user can
+ *  run into, without their details.
+ */
+export type RejectReason = 
+/**  A characteristic of the command does not exist. */
+"unknown_characteristic" | 
+/**  A balloon of the command does not exist. */
+"unknown_balloon" | 
+/**  A sheet of the command does not exist. */
+"unknown_sheet" | 
+/**  The command would change locked numbers (D-23). */
+"numbering_locked" | 
+/**  A position or region is not valid. */
+"invalid_geometry" | 
+/**  A balloon style size is not valid. */
+"invalid_style" | 
+/**  A sheet unit or scale is not valid. */
+"invalid_sheet_setting" | 
+/**  Characteristics cannot be moved before one of themselves. */
+"invalid_move_target" | 
+/**  Quantity 0. */
+"zero_quantity" | 
+/**  Undo without history. */
+"nothing_to_undo" | 
+/**  Redo without history. */
+"nothing_to_redo" | 
+/**  Internal inconsistency; a bug. */
+"internal";
 
 /**
  *  ID of a [`DrawingRevision`](crate::sheet::DrawingRevision).

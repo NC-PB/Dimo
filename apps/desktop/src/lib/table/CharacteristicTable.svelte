@@ -8,7 +8,7 @@
   import { untrack } from "svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { m } from "$lib/i18n";
-  import type { CharId, Characteristic, Command } from "$lib/ipc/bindings";
+  import type { CharId, Characteristic, Command, CommandError } from "$lib/ipc/bindings";
   import { isMacPlatform, matchShortcut } from "$lib/shortcuts";
   import { projectStore, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection, type SelectionStore } from "$lib/stores/selection.svelte";
@@ -17,13 +17,14 @@
   import {
     COLUMNS,
     REQUIREMENT_COLUMN,
+    type EditorKind,
     choiceOptions,
     displayText,
     fieldValue,
     isEditable,
     rawText,
   } from "./columns";
-  import { lockExplanation, refusalDetail } from "./refusal";
+  import { isNumberingLocked, lockExplanation, refusalDetail } from "./refusal";
   import { moveStep, moveToGap } from "./reorder";
   import { RowVirtualizer } from "./virtual.svelte";
 
@@ -172,11 +173,39 @@
     reveal(index, active.col);
   }
 
+  /**
+   * The selection as the table last set it (a copy), or `null`. The effect that follows
+   * selections made elsewhere skips a change that equals it, so the table's own clicks and keys
+   * (for example deselecting the active row with Ctrl+click) do not move the active cell or the
+   * scroll position.
+   */
+  let ownSelection: ReadonlySet<CharId> | null = null;
+
+  /**
+   * Changes the shared selection on behalf of the table (see {@link ownSelection}). `replace`
+   * selects `ids` with `primary` (default: the last one) as primary; `toggle` adds or removes
+   * each ID.
+   */
+  function choose(ids: Iterable<CharId>, mode: "replace" | "toggle", primary?: CharId | null) {
+    if (mode === "toggle") {
+      for (const id of ids) {
+        selected.toggle(id);
+      }
+    } else {
+      selected.select(ids, primary);
+    }
+    ownSelection = selected.ids;
+  }
+
+  function sameIds(a: ReadonlySet<CharId>, b: ReadonlySet<CharId>): boolean {
+    return a.size === b.size && [...a].every((id) => b.has(id));
+  }
+
   /** Selects the rows from the anchor to `index`. */
   function selectRange(index: number) {
     const from = anchor === null ? index : (indexById.get(anchor) ?? index);
     const [a, b] = from <= index ? [from, index] : [index, from];
-    selected.select(order.slice(a, b + 1), order[index] ?? null);
+    choose(order.slice(a, b + 1), "replace", order[index] ?? null);
   }
 
   /** Moves the active row to `index`, selecting it or extending the selection. */
@@ -191,22 +220,28 @@
       selectRange(target);
     } else {
       anchor = id;
-      selected.select([id]);
+      choose([id], "replace");
     }
   }
 
   /**
-   * Sends a command. Returns `null` on success, else Rust's reason, which the table shows itself
+   * Sends a command. Returns `null` on success, else Rust's refusal, which the table shows itself
    * (so the window wide error line does not repeat it).
    */
-  async function send(command: Command): Promise<string | null> {
+  async function send(command: Command): Promise<CommandError | null> {
     const patch = await project.execute(command);
     if (patch !== undefined) {
       return null;
     }
     const error = project.error;
     project.dismissError();
-    return error === null ? "" : refusalDetail(error);
+    return error ?? { kind: "invalid_argument", message: "" };
+  }
+
+  /** The line shown for a refused change of a value. */
+  function valueRefused(error: CommandError, editor?: EditorKind): string {
+    const input = editor === "decimal" || editor === "quantity" ? editor : undefined;
+    return m.table_value_refused({ message: refusalDetail(error, { input }) });
   }
 
   function startEdit(index: number, col: number, typed: string | null = null) {
@@ -217,9 +252,10 @@
     }
     setActive(index, col);
     if (!selected.has(c.id)) {
-      // The row being edited is selected, so the drawing rings its balloon. The request is the
-      // table's own: the effect below does not answer it.
+      // The row being edited is selected, so the drawing rings its balloon. Both the selection
+      // and the focus request are the table's own: the effects below do not answer them.
       selected.focus(c.id, "table");
+      ownSelection = selected.ids;
       handledFocus = selected.focusRequest?.seq ?? handledFocus;
     }
     if (column.editor === "check") {
@@ -271,7 +307,7 @@
       afterEdit(edit.id, edit.col, move);
     } else {
       editing = { ...edit, pending: false, error: true };
-      notice = m.table_value_refused({ message: refused });
+      notice = valueRefused(refused, column.editor);
     }
   }
 
@@ -320,7 +356,7 @@
       return;
     }
     const refused = await send({ type: "update_fields", ids: [edit.id], values: [field] });
-    notice = refused === null ? null : m.table_value_refused({ message: refused });
+    notice = refused === null ? null : valueRefused(refused);
   }
 
   function closeChoice() {
@@ -335,7 +371,7 @@
       ids: [c.id],
       values: [{ field: "inspect", value: !c.inspect }],
     });
-    notice = refused === null ? null : m.table_value_refused({ message: refused });
+    notice = refused === null ? null : valueRefused(refused);
   }
 
   /** IDs to move: the selection, or the active row if it is not selected. */
@@ -350,12 +386,15 @@
     if (command === null) {
       return;
     }
-    if (lock !== null) {
-      notice = lockExplanation(lock);
-      return;
-    }
+    // Rust decides: a move while numbering is locked is refused with `NumberingLocked`.
     const refused = await send(command);
-    notice = refused === null ? null : m.table_move_refused({ message: refused });
+    if (refused === null) {
+      notice = null;
+    } else if (isNumberingLocked(refused)) {
+      notice = refusalDetail(refused, { lock });
+    } else {
+      notice = m.table_move_refused({ message: refusalDetail(refused) });
+    }
     if (refused === null && active !== null) {
       const index = indexById.get(active.id);
       if (index !== undefined) {
@@ -372,13 +411,17 @@
     const index = activeRow;
     const col = active?.col ?? 0;
     if (shortcut === null) {
-      // Typing a character starts editing a text or number cell with that character.
-      const column = COLUMNS[col];
+      // A printable character belongs to the table while it has the focus: it starts editing a
+      // text or number cell with that character; on other cells it does nothing. Either way it
+      // must not reach the window shortcuts (`+`, `-`, `0` would zoom the drawing).
       const printable = event.key.length === 1 && !event.ctrlKey && !event.metaKey;
-      if (printable && index >= 0 && column && column.editor !== "check") {
-        if (column.editor !== "choice" && isEditable(column)) {
-          event.preventDefault();
-          startEdit(index, col, event.key);
+      if (printable) {
+        event.preventDefault();
+        const column = COLUMNS[col];
+        if (index >= 0 && column && column.editor !== "check" && column.editor !== "choice") {
+          if (isEditable(column)) {
+            startEdit(index, col, event.key);
+          }
         }
       }
       return;
@@ -420,7 +463,7 @@
         goToRow(order.length - 1, false);
         break;
       case "table_select_all":
-        selected.select(order, selected.primary);
+        choose(order, "replace", selected.primary);
         break;
       case "table_toggle": {
         const id = order[current];
@@ -429,7 +472,7 @@
         } else if (id !== undefined) {
           setActive(current, col);
           anchor = id;
-          selected.toggle(id);
+          choose([id], "toggle");
         }
         break;
       }
@@ -486,10 +529,10 @@
       selectRange(hit.index);
     } else if (toggle) {
       anchor = id;
-      selected.toggle(id);
+      choose([id], "toggle");
     } else {
       anchor = id;
-      selected.select([id]);
+      choose([id], "replace");
     }
   }
 
@@ -509,13 +552,9 @@
   function startDrag(event: PointerEvent, id: CharId) {
     event.preventDefault();
     focusGrid();
-    if (lock !== null) {
-      notice = lockExplanation(lock);
-      return;
-    }
     if (!selected.has(id)) {
       anchor = id;
-      selected.select([id]);
+      choose([id], "replace");
     }
     const index = indexById.get(id) ?? 0;
     active = { id, col: 0 };
@@ -566,6 +605,11 @@
   $effect(() => {
     const ids = selected.ids;
     untrack(() => {
+      const own = ownSelection;
+      ownSelection = null; // Consumed: a later equal selection from elsewhere is revealed again.
+      if (own !== null && sameIds(own, ids)) {
+        return;
+      }
       if (ids.size === 0) {
         return;
       }
@@ -617,19 +661,47 @@
     <h2 class="font-semibold text-text">{m.table_label()}</h2>
     <span class="shrink-0">{m.table_count({ count: String(rows.length) })}</span>
     <span
-      class="min-w-0 truncate"
+      class="flex min-w-0"
       class:flex-1={notice !== null}
       role="alert"
       title={notice ?? undefined}
     >
       {#if notice !== null}
-        <span class="text-danger"><span aria-hidden="true">⚠</span> {notice}</span>
+        <span class="flex min-w-0 items-center gap-1 text-danger">
+          <svg class="size-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M8 1.5 15 14H1L8 1.5Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+            <path d="M8 6.5v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <circle cx="8" cy="12" r="0.9" fill="currentColor" />
+          </svg>
+          <span class="truncate">{notice}</span>
+        </span>
       {/if}
     </span>
     {#if notice === null && lock !== null}
-      <span class="min-w-0 flex-1 truncate" title={lockExplanation(lock)}>
-        <span aria-hidden="true">🔒</span>
-        {lockExplanation(lock)}
+      <span class="flex min-w-0 flex-1 items-center gap-1" title={lockExplanation(lock)}>
+        <svg class="size-3.5 shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect
+            x="3"
+            y="7"
+            width="10"
+            height="7"
+            rx="1.5"
+            stroke="currentColor"
+            stroke-width="1.5"
+          />
+          <path
+            d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+        <span class="truncate">{lockExplanation(lock)}</span>
       </span>
     {/if}
   </header>

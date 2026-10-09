@@ -5,6 +5,7 @@ import type {
   Classification,
   CommandError,
   OpenNotice,
+  RejectReason,
   Unit,
 } from "./ipc/bindings";
 import { m } from "./paraglide/messages.js";
@@ -210,6 +211,32 @@ export function unitLabel(unit: Unit | null): string {
   }
 }
 
+/**
+ * Translated text for the reasons of a refused command that need one, `null` for the others
+ * (the caller then shows Rust's English message).
+ */
+export function rejectReasonText(reason: RejectReason): string | null {
+  switch (reason) {
+    case "numbering_locked":
+      return m.refusal_numbering_locked();
+    case "zero_quantity":
+      return m.refusal_zero_quantity();
+    case "invalid_move_target":
+      return m.refusal_invalid_move_target();
+    case "unknown_characteristic":
+      return m.refusal_unknown_characteristic();
+    case "unknown_balloon":
+    case "unknown_sheet":
+    case "invalid_geometry":
+    case "invalid_style":
+    case "invalid_sheet_setting":
+    case "nothing_to_undo":
+    case "nothing_to_redo":
+    case "internal":
+      return null;
+  }
+}
+
 /** Translated message for a failed command. */
 export function commandErrorMessage(error: CommandError): string {
   switch (error.kind) {
@@ -220,8 +247,9 @@ export function commandErrorMessage(error: CommandError): string {
     case "invalid_document":
       return m.open_error({ message: error.message });
     case "invalid_argument":
-    case "rejected":
       return m.error_rejected({ message: error.message });
+    case "rejected":
+      return m.error_rejected({ message: rejectReasonText(error.reason) ?? error.message });
     case "no_project":
       return m.error_no_project();
     case "unsaved_changes":

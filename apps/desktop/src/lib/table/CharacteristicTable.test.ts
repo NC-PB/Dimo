@@ -174,7 +174,7 @@ describe("characteristic table (T1.7)", () => {
     });
   });
 
-  it("keeps the editor open and shows Rust's reason when a value is refused", async () => {
+  it("keeps the editor open and explains a refused decimal when a value is refused", async () => {
     const { rust, grid, project } = await render(3);
     rust.answer(() => ({
       status: "error",
@@ -196,7 +196,7 @@ describe("characteristic table (T1.7)", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await vi.waitFor(() => {
       expect(target.querySelector('[role="alert"]')?.textContent).toContain(
-        'invalid decimal string "1,5"',
+        "Not a valid number. Use digits with a point",
       );
     });
     expect(rust.commands[0]).toEqual({
@@ -245,13 +245,138 @@ describe("characteristic table (T1.7)", () => {
     });
   });
 
-  it("explains why rows cannot move while numbering is locked", async () => {
+  it("sends the move while numbering is locked and explains Rust's refusal", async () => {
     const { rust, grid } = await render(3, true);
+    rust.answer(() => ({
+      status: "error",
+      error: { kind: "rejected", reason: "numbering_locked", message: "numbering is locked" },
+    }));
     key(grid, { key: "ArrowDown" });
     key(grid, { key: "ArrowDown", altKey: true });
+    await vi.waitFor(() => {
+      expect(target.querySelector('[role="alert"]')?.textContent).toContain("locked by peter");
+    });
+    expect(rust.commands).toEqual([{ type: "move_characteristics", ids: ["c1"], before: "c3" }]);
+  });
+
+  it("lets a dragged row drop while numbering is locked and shows the refusal", async () => {
+    const { rust, grid } = await render(5, true);
+    rust.answer(() => ({
+      status: "error",
+      error: { kind: "rejected", reason: "numbering_locked", message: "numbering is locked" },
+    }));
+    const handle = target.querySelector<HTMLElement>('[data-row="3"] [data-handle]');
+    const body = target.querySelectorAll<HTMLElement>('[role="rowgroup"]')[1];
+    if (!handle || !body) {
+      throw new Error("no handle");
+    }
+    vi.spyOn(body, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 100, 1200, 140));
+    grid.setPointerCapture = () => undefined;
+    handle.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 1, clientY: 205 }),
+    );
+    flushSync();
+    grid.dispatchEvent(
+      new PointerEvent("pointerup", { bubbles: true, button: 0, pointerId: 1, clientY: 129 }),
+    );
+    await vi.waitFor(() => {
+      expect(rust.commands).toEqual([{ type: "move_characteristics", ids: ["c4"], before: "c2" }]);
+    });
+    await vi.waitFor(() => {
+      expect(target.querySelector('[role="alert"]')?.textContent).toContain("locked by peter");
+    });
+  });
+
+  it("shows an unlocked-state refusal of a move in the UI language", async () => {
+    const { rust, grid } = await render(3);
+    rust.answer(() => ({
+      status: "error",
+      error: {
+        kind: "rejected",
+        reason: "invalid_move_target",
+        message: "cannot move characteristics before one of themselves",
+      },
+    }));
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown", altKey: true });
+    await vi.waitFor(() => {
+      expect(target.querySelector('[role="alert"]')?.textContent).toContain(
+        "Not moved: Characteristics cannot be moved before one of themselves.",
+      );
+    });
+  });
+
+  it("keeps the active cell when the table deselects its own active row", async () => {
+    const { grid, selected } = await render(20);
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown", shiftKey: true });
+    expect([...selected.ids]).toEqual(["c2", "c3"]);
+    // Space on the active row (c3) deselects it. The selection effect must not treat this as a
+    // selection made elsewhere and jump to the first selected row (c2).
+    key(grid, { key: " " });
     await tick();
-    expect(rust.commands).toEqual([]);
-    expect(target.querySelector('[role="alert"]')?.textContent).toContain("locked by peter");
+    flushSync();
+    expect([...selected.ids]).toEqual(["c2"]);
+    const activeRow = target.querySelector(".cell.active")?.closest("[data-row]");
+    expect(activeRow?.getAttribute("aria-rowindex")).toBe("4");
+  });
+
+  it("keeps the active cell when Ctrl+click deselects the active row", async () => {
+    const { grid, selected } = await render(20);
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown", shiftKey: true });
+    const cell = target.querySelector<HTMLElement>('[data-row="2"] [data-col="2"]');
+    if (!cell) {
+      throw new Error("no cell");
+    }
+    cell.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        ctrlKey: true,
+        metaKey: true,
+      }),
+    );
+    await tick();
+    flushSync();
+    expect([...selected.ids]).toEqual(["c2"]);
+    const activeRow = target.querySelector(".cell.active")?.closest("[data-row]");
+    expect(activeRow?.getAttribute("aria-rowindex")).toBe("4");
+  });
+
+  it("still follows a selection made elsewhere after the table changed it", async () => {
+    const { grid, selected } = await render(1000);
+    key(grid, { key: "ArrowDown" });
+    await tick();
+    selected.select(["c700"]);
+    flushSync();
+    expect(grid.scrollTop).toBeGreaterThan(600 * ROW_HEIGHT);
+  });
+
+  it("keeps printable keys on non-text cells from reaching the window shortcuts", async () => {
+    const { grid } = await render(3);
+    key(grid, { key: "ArrowDown" });
+    // Column 0 is the number: not editable.
+    const plus = new KeyboardEvent("keydown", { key: "+", bubbles: true, cancelable: true });
+    grid.dispatchEvent(plus);
+    expect(plus.defaultPrevented).toBe(true);
+    expect(target.querySelector("input.editor")).toBeNull();
+    // A choice cell (kind) is not opened by typing either, but the key is consumed.
+    key(grid, { key: "ArrowRight" });
+    const minus = new KeyboardEvent("keydown", { key: "-", bubbles: true, cancelable: true });
+    grid.dispatchEvent(minus);
+    expect(minus.defaultPrevented).toBe(true);
+    // Ctrl/Cmd combinations are not consumed.
+    const combo = new KeyboardEvent("keydown", {
+      key: "0",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    grid.dispatchEvent(combo);
+    expect(combo.defaultPrevented).toBe(false);
   });
 
   it("follows the shared selection and opens the requirement for a focus request", async () => {

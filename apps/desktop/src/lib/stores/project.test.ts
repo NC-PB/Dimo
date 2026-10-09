@@ -65,7 +65,11 @@ class FakeRust implements ProjectCommands {
     if (!step) {
       return Promise.resolve({
         status: "error" as const,
-        error: { kind: "rejected", message: "nothing scripted" } as CommandError,
+        error: {
+          kind: "rejected",
+          reason: "internal",
+          message: "nothing scripted",
+        } as CommandError,
       });
     }
     this.revision += 1;
@@ -337,7 +341,11 @@ describe("project store (T1.5)", () => {
   it("keeps the error of a refused command", async () => {
     const { store } = await connected();
     expect(await store.execute(ADD)).toBeUndefined();
-    expect(store.error).toEqual({ kind: "rejected", message: "nothing scripted" });
+    expect(store.error).toEqual({
+      kind: "rejected",
+      reason: "internal",
+      message: "nothing scripted",
+    });
     store.dismissError();
     expect(store.error).toBeNull();
   });
