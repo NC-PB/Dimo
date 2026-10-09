@@ -9,6 +9,13 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+dimo-core.workspace = true
+rust_decimal.workspace = true
+thiserror.workspace = true
+winnow.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
 
 [lints]
 workspace = true

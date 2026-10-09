@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 2c800778461a64c9d1b0f735966528da9b6e017f35629106e58fde99f028c3e2 # shrinks to c = Callout { quantity: None, kind: Chamfer { angle: Some(Number { value: 0, form: Decimal }) }, nominal: Number { value: 0, form: Decimal }, fit: None, tolerance: None, suffixes: [], reference: false, basic: false, unit: Some(Mm) }
