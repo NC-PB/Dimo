@@ -55,6 +55,8 @@ Selected balloons get a thick orange ring and a small square handle at the end o
   select and move only that one. The leader ends stay on the drawing.
 - Drag the square handle at the end of a leader to point the leader somewhere else.
 - One drag is one undo step, however many balloons it moves.
+- With the keyboard: Shift and an arrow key move the selected balloons 1 mm (on the printed
+  sheet) in that direction on screen. Each press is one undo step. The arrow keys alone pan.
 
 ## Change the style
 

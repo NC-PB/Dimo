@@ -59,6 +59,9 @@ Ende ihrer Bezugslinie.
 - Ziehe den quadratischen Griff am Ende einer Bezugslinie, um sie auf eine andere Stelle zeigen
   zu lassen.
 - Ein Ziehen ist ein Rückgängig-Schritt, egal wie viele Ballons es verschiebt.
+- Mit der Tastatur: Shift und eine Pfeiltaste verschieben die ausgewählten Ballons um 1 mm (auf
+  dem gedruckten Blatt) in diese Richtung auf dem Bildschirm. Jeder Druck ist ein
+  Rückgängig-Schritt. Die Pfeiltasten allein verschieben die Ansicht.
 
 ## Stil ändern
 

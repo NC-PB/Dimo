@@ -77,6 +77,9 @@ describe("shortcut map (D-52)", () => {
     expect(matchShortcut(key("a"), true)).toBeNull();
     expect(matchShortcut(key("s"), true)?.action).toBe("restyle");
     expect(matchShortcut(key("s", { meta: true }), true)?.action).toBe("save_project");
+    expect(matchShortcut(key("ArrowLeft"), true)?.action).toBe("pan_left");
+    expect(matchShortcut(key("ArrowLeft", { shift: true }), true)?.action).toBe("nudge_left");
+    expect(shortcutKeys("nudge_down", false)).toBe("Shift+↓");
     expect(shortcutKeys("select_all", true)).toBe("⌘A");
     expect(shortcutKeys("cancel", false)).toBe("Esc");
   });

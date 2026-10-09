@@ -1,66 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type {
-  Command,
-  CommandError,
-  Patch,
-  ProjectLoaded,
-  ProjectPatched,
-} from "$lib/ipc/bindings";
-import { BalloonToolsStore } from "$lib/stores/balloon-tools.svelte";
-import {
-  SHEET_ID,
-  addChanges,
-  balloon,
-  characteristic,
-  emptyProject,
-  loaded,
-  status,
-} from "$lib/stores/fixtures";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
-import { SelectionStore } from "$lib/stores/selection.svelte";
+import { SHEET_ID, addChanges } from "$lib/stores/fixtures";
+import { twoBalloons } from "./balloon-fixtures";
 import { BalloonGestures, upRight, type PointerInput } from "./gestures.svelte";
 import type { ViewTransform } from "./view-math";
 
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
-const ok = <T>(data: T): Promise<Result<T>> => Promise.resolve({ status: "ok", data });
-
-/** Records commands and answers each with the patch the test prepared. */
-class FakeCommands implements ProjectCommands {
-  commands: Command[] = [];
-  revision = 0;
-  reply: Patch = { changes: [] };
-  projectState = () => ok<ProjectLoaded>(loaded(1));
-  newProject = () => ok(true);
-  openProject = () => ok(true);
-  saveProject = () => ok(true);
-  saveProjectAs = () => ok(true);
-  confirmClose = () => ok(null);
-  undo = () => ok(this.#patched());
-  redo = () => ok(this.#patched());
-  execute = (command: Command) => {
-    this.commands.push(command);
-    return ok(this.#patched());
-  };
-
-  #patched(): ProjectPatched {
-    this.revision += 1;
-    return { session: 1, revision: this.revision, patch: this.reply, status: status() };
-  }
-}
-
-/** Two balloons: `b-a` centered at (100, 100) with anchor (60, 140), `b-b` at (200, 100). */
+/** Two balloons, see `twoBalloons`, with gestures on an 800 x 600 sheet. */
 function setup(view: ViewTransform = { scale: 1, tx: 0, ty: 0, rotation: 0 }) {
-  const api = new FakeCommands();
-  const project = new ProjectStore(api);
-  const p = emptyProject();
-  p.characteristics = [characteristic("a", 1), characteristic("b", 2)];
-  p.balloons = [
-    { ...balloon("b-a", "a"), position: { x: 100, y: 100 }, anchor: { x: 60, y: 140 } },
-    { ...balloon("b-b", "b"), position: { x: 200, y: 100 }, anchor: { x: 240, y: 140 } },
-  ];
-  project.load(loaded(1, p));
-  const selection = new SelectionStore();
-  const tools = new BalloonToolsStore(project, selection, () => SHEET_ID);
+  const { api, project, selection, tools } = twoBalloons();
   const pans: [number, number][] = [];
   const gestures = new BalloonGestures({
     project,
@@ -233,6 +179,16 @@ describe("balloon gestures (T1.6)", () => {
       size: { width: 40, height: 20 },
       angle: 0,
     });
+  });
+
+  it("place tool: a drag along one axis has no area and places like a click", async () => {
+    const { gestures, tools, api } = setup();
+    tools.setTool("place");
+    api.reply = { changes: addChanges("c", 3, 2) };
+    await drag(gestures, [400, 300], [460, 300]);
+    const command = api.commands[0];
+    expect(command?.type === "add_characteristic" && command.region).toBeNull();
+    expect(command?.type === "add_characteristic" && command.anchor).toEqual({ x: 400, y: 300 });
   });
 
   it("knows which sheet direction is up and right on screen", () => {

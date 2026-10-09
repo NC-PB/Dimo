@@ -365,7 +365,11 @@ export class BalloonGestures {
         }
         const size =
           resolveStyle(project.settings.balloon_style, NO_OVERRIDE).sizeMm * UNITS_PER_MM;
-        const region = g.kind === "region" ? rectFrom(g.start, g.end) : null;
+        // A drag along one axis has no area: Rust refuses an empty region, so it is a click.
+        const minSide = DRAG_THRESHOLD_PX * this.#perPx();
+        const dragged = g.kind === "region" ? rectFrom(g.start, g.end) : null;
+        const region =
+          dragged && dragged.width >= minSide && dragged.height >= minSide ? dragged : null;
         const placement = placeBalloon(region ?? g.start, sheet, size, upRight(d.view()));
         await d.tools.place(placement, region);
         return;

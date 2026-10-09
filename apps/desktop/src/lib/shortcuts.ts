@@ -21,6 +21,10 @@ export type ShortcutAction =
   | "pan_down"
   | "previous_sheet"
   | "next_sheet"
+  | "nudge_left"
+  | "nudge_right"
+  | "nudge_up"
+  | "nudge_down"
   | "select_tool"
   | "place_tool"
   | "edit_value"
@@ -71,12 +75,16 @@ export const SHORTCUTS: readonly Shortcut[] = [
   // Shift tells the direction, so the keys work on every keyboard layout (FR-DOC-05).
   { action: "rotate_right", keys: [{ key: "r", shift: false }] },
   { action: "rotate_left", keys: [{ key: "r", shift: true }] },
-  { action: "pan_left", keys: [{ key: "ArrowLeft" }], viewportOnly: true },
-  { action: "pan_right", keys: [{ key: "ArrowRight" }], viewportOnly: true },
-  { action: "pan_up", keys: [{ key: "ArrowUp" }], viewportOnly: true },
-  { action: "pan_down", keys: [{ key: "ArrowDown" }], viewportOnly: true },
+  { action: "pan_left", keys: [{ key: "ArrowLeft", shift: false }], viewportOnly: true },
+  { action: "pan_right", keys: [{ key: "ArrowRight", shift: false }], viewportOnly: true },
+  { action: "pan_up", keys: [{ key: "ArrowUp", shift: false }], viewportOnly: true },
+  { action: "pan_down", keys: [{ key: "ArrowDown", shift: false }], viewportOnly: true },
   { action: "previous_sheet", keys: [{ key: "PageUp" }] },
   { action: "next_sheet", keys: [{ key: "PageDown" }] },
+  { action: "nudge_left", keys: [{ key: "ArrowLeft", shift: true }], viewportOnly: true },
+  { action: "nudge_right", keys: [{ key: "ArrowRight", shift: true }], viewportOnly: true },
+  { action: "nudge_up", keys: [{ key: "ArrowUp", shift: true }], viewportOnly: true },
+  { action: "nudge_down", keys: [{ key: "ArrowDown", shift: true }], viewportOnly: true },
   { action: "select_tool", keys: [{ key: "v" }] },
   { action: "place_tool", keys: [{ key: "b" }] },
   { action: "edit_value", keys: [{ key: "Enter" }], viewportOnly: true },

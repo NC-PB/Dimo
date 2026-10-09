@@ -73,6 +73,14 @@
       case "next_sheet":
         documentStore.nextSheet();
         break;
+      case "nudge_left":
+        return balloonTools.nudge(-1, 0, viewport.view);
+      case "nudge_right":
+        return balloonTools.nudge(1, 0, viewport.view);
+      case "nudge_up":
+        return balloonTools.nudge(0, -1, viewport.view);
+      case "nudge_down":
+        return balloonTools.nudge(0, 1, viewport.view);
       case "select_tool":
         balloonTools.setTool("select");
         break;
@@ -151,7 +159,7 @@
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
     <Dialog.Content
-      class="fixed top-1/2 left-1/2 z-50 w-96 max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded border border-border bg-surface p-4 text-text shadow-lg"
+      class="fixed top-1/2 left-1/2 z-50 max-h-[90vh] w-96 max-w-[90vw] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded border border-border bg-surface p-4 text-text shadow-lg"
     >
       <Dialog.Title class="mb-3 text-base font-semibold">{m.shortcuts_title()}</Dialog.Title>
       <table class="w-full text-sm">

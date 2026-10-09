@@ -15,11 +15,15 @@ import type {
   Patch,
   SheetId,
 } from "$lib/ipc/bindings";
-import type { Placement } from "$lib/viewport/balloons";
-import type { Rect } from "$lib/viewport/view-math";
+import { frozenSet } from "$lib/sets";
+import { UNITS_PER_MM, groupMoves, type Placement } from "$lib/viewport/balloons";
+import { screenToSheet, type Rect, type ViewTransform } from "$lib/viewport/view-math";
 import { documentStore } from "./document.svelte";
 import { projectStore, type ProjectStore } from "./project.svelte";
 import { selection, type SelectionStore } from "./selection.svelte";
+
+/** Distance of one keyboard move of balloons, in mm on the printed sheet. */
+export const NUDGE_MM = 1;
 
 /** Select: click, drag and box select balloons. Place: click or drag on the drawing to add one. */
 export type Tool = "select" | "place";
@@ -153,6 +157,32 @@ export class BalloonToolsStore {
     if (moves.length > 0) {
       await this.#project.execute({ type: "move_balloons", moves });
     }
+  }
+
+  /**
+   * Moves the selected balloons on the shown sheet one step in a screen direction (`dx`, `dy`
+   * are -1, 0 or 1), the keyboard way to move balloons (NFR-UX-01). One undo step per press.
+   * Returns false if nothing is selected on this sheet.
+   */
+  nudge(dx: number, dy: number, view: ViewTransform): boolean {
+    const chars = this.#selection.ids;
+    const placed = this.sheetBalloons
+      .filter((b) => chars.has(b.characteristic))
+      .map((b) => ({
+        id: b.id,
+        position: { x: b.position.x ?? 0, y: b.position.y ?? 0 },
+        anchor: { x: b.anchor.x ?? 0, y: b.anchor.y ?? 0 },
+      }));
+    if (placed.length === 0) {
+      return false;
+    }
+    // The screen direction in sheet space, also on a rotated sheet.
+    const origin = screenToSheet(view, { x: 0, y: 0 });
+    const to = screenToSheet(view, { x: dx, y: dy });
+    const step = NUDGE_MM * UNITS_PER_MM * view.scale;
+    const delta = { x: (to.x - origin.x) * step, y: (to.y - origin.y) * step };
+    void this.move(groupMoves(placed, frozenSet(placed.map((b) => b.id)), delta));
+    return true;
   }
 
   /** Deletes the selected characteristics with their balloons (FR-BAL-12). */
