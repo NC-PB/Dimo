@@ -46,10 +46,10 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 | Task | State | Notes |
 |---|---|---|
-| T2.1 Callout parser | todo | Wave 1 |
-| T2.2 Tolerance table format and ISO 2768-1 | todo | Wave 1, tables stay draft (D-43) |
-| T2.3 ISO 286 fit tables | todo | Wave 1, tables stay draft (D-43) |
-| T2.4 Data model version 2 | todo | Wave 1 |
+| T2.1 Callout parser | in progress | Wave 1 |
+| T2.2 Tolerance table format and ISO 2768-1 | review | Format, loader, schema, release gate (`scripts/check-table-status.sh`, CI job "tolerance tables (D-43)"). Owner: verify `iso-2768-1.toml` (D-43) |
+| T2.3 ISO 286 fit tables | review | 514 fit vectors pass; synth `FITS` and corpus truth fits match the table. Owner: verify `iso-286.toml` (D-43) |
+| T2.4 Data model version 2 | todo | Wave 1, held until the owner confirms M2 decisions 1 to 4 |
 | T2.5 Tolerance engine | todo | Wave 2 |
 | T2.6 Box select with PDF text | todo | Wave 2 |
 | T2.7 Numbering strategies | todo | Wave 2 |
@@ -63,7 +63,7 @@ States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (re
 
 | Item | Since |
 |---|---|
-| Tolerance tables to verify against Tabellenbuch (D-43) | from M2 |
+| Tolerance tables to verify against Tabellenbuch (D-43): `data/tolerances/iso-2768-1.toml` (ISO 2768-1:1989 tables 1 to 3: linear 8 ranges 0.5 to 4000 mm f/m/c/v, broken edges 3 ranges, angular by shorter leg in minutes of arc; all range bounds) and `data/tolerances/iso-286.toml` (ISO 286-1:2010, table numbers in `source` to confirm: IT01 to IT18 up to 500 mm, shaft es a to h, shaft ei j, k, m to zc with intermediate steps, hole J6 to J8, K, M, N up to and above IT8, delta IT3 to IT8, M6 special case -9 µm at 250 to 315 mm, rule choices js/JS odd IT, classes not used up to 1 mm, K above IT8 only up to 3 mm). Also both `.test.toml` files (`checked_by_owner`) | 2026-10-09 |
 | More corpus drawings, especially scans and outlined text (Q-10) | before M4 |
 | Trademark search Swissreg / EUIPO (Q-01) | before 0.1 |
 
@@ -74,6 +74,10 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Tolerance tables: one TOML format for general, fit and custom tables (`data/tolerances/README.md`); angular values in minutes of arc (`value_unit = "arcmin"`, 20' has no exact decimal in degrees); ISO 286 grade rules in code (`fit.rs`), all numbers in data; hole deviations stored explicitly, a test checks they mirror the shafts; CD, EF, FG not included; reported range of a fit is the step of the standard; user tables read by `dimo-tolerance::load_dir`, a missing folder means none | FR-TOL-02, FR-TOL-04, FR-TOL-07, D-43 | T2.2/T2.3, agent |
+| 2026-10-09 | ISO 286 rule choices: js/JS for IT7 to IT11 reduce an odd µm IT value by 1 µm first; classes not used up to 1 mm (IT14 to IT18, a, b, A, B, N above IT8) have no value there; K above IT8 only up to 3 mm. **Owner: confirm** | Standard footnotes | T2.3, agent |
+| 2026-10-09 | D-43 release gate: `scripts/check-table-status.sh` fails with `DIMO_RELEASE=1` or `GITHUB_REF_TYPE=tag` while a shipped table is draft, warns otherwise; tested with fixtures in `scripts/fixtures/table-status/` | D-43 | T2.2, agent |
+| 2026-10-09 | `toml` =1.1.6 (parser only, already in the lock through Tauri) for table files | No new crate version | T2.2, agent |
 | 2026-10-09 | M2 plan: zones and views defined by hand (detection is M4); general tolerance as a project setting (title block reading is M4); derivations stored structured, explanations rendered in the UI language; custom tables copied into the project container; typed values parsed like box selections; basic dimensions recognized only from a tight closed rectangle, reference from parentheses | Spec leaves these open for M2 (D-21 needs zones before FR-DOC-06). **Owner: confirm** (decisions 1 to 6 in M2.md) | coordinator |
 | 2026-10-09 | Windows test executables get the Common Controls v6 manifest through `rustc-link-arg-tests` in src-tauri `build.rs` (`windows-test-manifest.xml`) | tauri-build embeds it only into the app executable | coordinator |
 | 2026-10-09 | End to end: `scripts/e2e-smoke.sh` drives the real debug app through the dev UI script (main flow, reopen, crash recovery) and checks the written files; replaces WebdriverIO on macOS (WKWebView has no WebDriver). New dev hooks `DIMO_DEV_SAVE_AS`, `DIMO_DEV_HOME`; `bindings.ts` is written only when its content changes | Test the real app where tauri-driver cannot | T1.10, agent |
@@ -146,6 +150,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: T2.2 and T2.3 merged (tolerance table format, ISO 2768-1 and ISO 286 drafts). Tables wait for the owner's Tabellenbuch check.
 - 2026-10-09: M2 plan drafted (`docs/plan/M2.md`): 10 tasks in 3 waves, 6 decisions for the owner to confirm.
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
