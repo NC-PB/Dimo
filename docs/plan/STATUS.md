@@ -35,7 +35,7 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.4 CSV and XLSX characteristic list | done | Owner: confirm columns, German headers, umlauts in CSV, whether non inspected rows are exported |
 | T1.5 Project session and IPC | done | Owner: check the unsaved changes prompt on window close and quit in the native window |
 | T1.6 Balloon placement and editing | in progress | wave 4 |
-| T1.7 Characteristic table | in progress | wave 4 |
+| T1.7 Characteristic table | review | 1000 rows: mean 17.2 ms, p95 21 ms, max 33 ms per frame. Review fixes running (T1.7a); viewport side after T1.6. Owner: German kind names (Flachsenkung, Kegelsenkung, Fahnenhinweis) |
 | T1.8 Sheet rotation, scale and units | done | Owner: glance at German strings; shortcuts R and Shift+R |
 | T1.9 Export and settings views | todo | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
@@ -58,6 +58,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Characteristic table: ARIA grid in a resizable bottom panel, fixed 28 px rows, TanStack Table 9.2.4 plus virtual-core 3.17.11; edits send typed text as `update_fields`, Rust validates decimals and its error is shown; edits apply to the active row only | NFR-UX, rule 2 | T1.7, agent |
+| 2026-10-09 | Shared selection store `stores/selection.svelte.ts` (`ids`, `select(ids, mode)`, `clear`, `has`, `focus`/`focusRequest`) used by table and viewport | One selection for table and drawing | coordinator |
 | 2026-10-09 | Sheet rotation rotates the view transform (one matrix for tiles and overlay), not the rendered tiles; tile cache stays valid, Rust unchanged. Rotating keeps zoom and center, fit on first show; scale as exact ratio with presets and custom; shortcuts R and Shift+R | Rule 4: stored geometry stays in sheet space | T1.8, agent |
 | 2026-10-09 | IPC: `project_state`, `new_project`, `open_project`, `save_project`, `save_project_as`, `confirm_close` (each with `discard` where data could be lost), `execute(Command)`, `undo`, `redo`; events `project-loaded`, `project-patched` (with revision), `project-status-changed`, `close-requested`. Rust refuses to drop unsaved changes unless `discard` is true | Rust owns the document (ADR 0001); one patch path into the frontend | T1.5, agent |
 | 2026-10-09 | Frontend `projectStore`: `$state.raw` project replaced per patch, unchanged items keep identity, revision gap triggers a full reload; selection lives in separate view stores | One place applies patches (frontend.md) | T1.5, agent |
