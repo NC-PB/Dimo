@@ -28,6 +28,8 @@ insta = { version = "=1.48.0" }
 pdfium-render = { version = "=0.9.4", default-features = false, features = ["pdfium_7881"] }
 # Tile encoding (T0.7), pure Rust PNG with fdeflate.
 png = { version = "=0.18.1" }
+# Flate compression of the stress PDF (T0.9). Already in the tree through png.
+miniz_oxide = { version = "=0.8.9" }
 sha2 = { version = "=0.10.9" }
 tempfile = { version = "=3.27.0" }
 tauri = { version = "=2.11.6", features = [] }

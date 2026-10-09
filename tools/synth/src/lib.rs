@@ -42,6 +42,10 @@ pub const SHEET_HEIGHT: f64 = 595.0;
 
 const MAIN_SIZE: f64 = 10.0;
 const DEV_SIZE: f64 = 7.0;
+mod stress;
+
+pub use stress::{STRESS_SHEET_HEIGHT, STRESS_SHEET_WIDTH, generate_stress};
+
 const MAX_COUNT: usize = 15;
 const COLUMNS: usize = 3;
 const MARGIN: f64 = 40.0;
