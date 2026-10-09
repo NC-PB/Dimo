@@ -59,6 +59,10 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.zoom_out();
     case "fit":
       return m.fit_sheet();
+    case "rotate_left":
+      return m.rotate_left();
+    case "rotate_right":
+      return m.rotate_right();
     case "pan_left":
       return m.pan_left();
     case "pan_right":

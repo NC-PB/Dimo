@@ -44,6 +44,15 @@ describe("shortcut map (D-52)", () => {
     expect(matchShortcut(key("+", { alt: true }), false)).toBeNull();
   });
 
+  it("rotates right with R and left with Shift+R (FR-DOC-05)", () => {
+    expect(matchShortcut(key("r"), true)?.action).toBe("rotate_right");
+    expect(matchShortcut(key("R", { shift: true }), false)?.action).toBe("rotate_left");
+    expect(matchShortcut(key("r", { meta: true }), true)).toBeNull();
+    expect(shortcutKeys("rotate_left", false)).toBe("Shift+R");
+    expect(shortcutKeys("rotate_left", true)).toBe("⇧R");
+    expect(shortcutKeys("rotate_right", false)).toBe("R");
+  });
+
   it("tells undo from redo and save from save as by Shift", () => {
     expect(matchShortcut(key("z", { meta: true }), true)?.action).toBe("undo");
     expect(matchShortcut(key("Z", { meta: true, shift: true }), true)?.action).toBe("redo");

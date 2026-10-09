@@ -4,9 +4,11 @@ import {
   constrainPan,
   fitSheet,
   panBy,
+  rotateView,
   zoomAt,
   type Point,
   type Size,
+  type ViewRotation,
   type ViewTransform,
 } from "$lib/viewport/view-math";
 
@@ -29,9 +31,22 @@ export class ViewportStore {
     this.view = this.sheet ? constrainPan(view, this.sheet, this.size) : view;
   }
 
+  /** Fits the sheet, as turned by the current rotation, into the viewport. */
   fit(): void {
     if (this.sheet) {
-      this.view = fitSheet(this.sheet, this.size);
+      this.view = fitSheet(this.sheet, this.size, this.view.rotation);
+    }
+  }
+
+  /** Rotation of the view in degrees (FR-DOC-05). Follows the rotation stored on the sheet. */
+  get rotation(): ViewRotation {
+    return this.view.rotation;
+  }
+
+  /** Turns the view; the sheet point at the center of the viewport stays at the center. */
+  setRotation(rotation: ViewRotation): void {
+    if (rotation !== this.view.rotation) {
+      this.set(rotateView(this.view, rotation, this.size));
     }
   }
 
