@@ -236,8 +236,13 @@ export function fieldValue(id: ColumnId, text: string): FieldValue | null {
     }
     case "quantity": {
       const value = text.trim();
-      // A non-integer reaches Rust as a number it refuses; `NaN` as `null`, also refused.
-      return value === "" ? null : { field: "quantity", value: Number(value) };
+      if (value === "") {
+        return null;
+      }
+      // Only plain digits are read as a number. Anything else (`1e3`, `0x10`, `1.0`, `-1`,
+      // `abc`) goes to Rust as `NaN`, which is sent as `null`; Rust refuses it. A range check
+      // (zero, above u32) is Rust's too.
+      return { field: "quantity", value: /^\d+$/.test(value) ? Number(value) : Number.NaN };
     }
     case "kind":
       return isKind(text) ? { field: "kind", value: text } : null;

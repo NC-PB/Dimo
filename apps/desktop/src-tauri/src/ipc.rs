@@ -132,9 +132,63 @@ pub enum CommandError {
     /// The document command was refused; the project is unchanged.
     #[error("command refused: {message}")]
     Rejected {
-        /// Why, for example "numbering is locked".
+        /// Machine readable reason, for the frontend to translate.
+        reason: RejectReason,
+        /// Why, in English, for logs and bug reports.
         message: String,
     },
+}
+
+/// Why a document command was refused: the variants of [`dimo_core::CommandError`] the user can
+/// run into, without their details.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum RejectReason {
+    /// A characteristic of the command does not exist.
+    UnknownCharacteristic,
+    /// A balloon of the command does not exist.
+    UnknownBalloon,
+    /// A sheet of the command does not exist.
+    UnknownSheet,
+    /// The command would change locked numbers (D-23).
+    NumberingLocked,
+    /// A position or region is not valid.
+    InvalidGeometry,
+    /// A balloon style size is not valid.
+    InvalidStyle,
+    /// A sheet unit or scale is not valid.
+    InvalidSheetSetting,
+    /// Characteristics cannot be moved before one of themselves.
+    InvalidMoveTarget,
+    /// Quantity 0.
+    ZeroQuantity,
+    /// Undo without history.
+    NothingToUndo,
+    /// Redo without history.
+    NothingToRedo,
+    /// Internal inconsistency; a bug.
+    Internal,
+}
+
+impl From<&dimo_core::CommandError> for RejectReason {
+    fn from(error: &dimo_core::CommandError) -> Self {
+        use dimo_core::CommandError as E;
+        use dimo_core::FieldError;
+        match error {
+            E::UnknownCharacteristic(_) => Self::UnknownCharacteristic,
+            E::UnknownBalloon(_) => Self::UnknownBalloon,
+            E::UnknownSheet(_) => Self::UnknownSheet,
+            E::NumberingLocked => Self::NumberingLocked,
+            E::InvalidGeometry(_) => Self::InvalidGeometry,
+            E::InvalidStyle => Self::InvalidStyle,
+            E::InvalidSheetSetting(_) => Self::InvalidSheetSetting,
+            E::InvalidMoveTarget => Self::InvalidMoveTarget,
+            E::Field(FieldError::ZeroQuantity) => Self::ZeroQuantity,
+            E::NothingToUndo => Self::NothingToUndo,
+            E::NothingToRedo => Self::NothingToRedo,
+            E::Change(_) => Self::Internal,
+        }
+    }
 }
 
 impl From<dimo_io::project::ProjectError> for CommandError {
@@ -157,6 +211,7 @@ impl From<dimo_io::project::ProjectError> for CommandError {
 impl From<dimo_core::CommandError> for CommandError {
     fn from(error: dimo_core::CommandError) -> Self {
         Self::Rejected {
+            reason: RejectReason::from(&error),
             message: error.to_string(),
         }
     }
@@ -333,6 +388,31 @@ mod tests {
         );
         assert!(info.pdfium_available);
         assert!(!AppInfo::current(false).pdfium_available);
+    }
+
+    #[test]
+    fn refused_commands_carry_a_machine_readable_reason() {
+        let locked = CommandError::from(dimo_core::CommandError::NumberingLocked);
+        assert_eq!(
+            locked,
+            CommandError::Rejected {
+                reason: RejectReason::NumberingLocked,
+                message: "numbering is locked".to_owned(),
+            }
+        );
+        let json = serde_json::to_value(&locked).unwrap();
+        assert_eq!(json["kind"], "rejected");
+        assert_eq!(json["reason"], "numbering_locked");
+        let zero = CommandError::from(dimo_core::CommandError::Field(
+            dimo_core::FieldError::ZeroQuantity,
+        ));
+        assert!(matches!(
+            zero,
+            CommandError::Rejected {
+                reason: RejectReason::ZeroQuantity,
+                ..
+            }
+        ));
     }
 
     #[test]

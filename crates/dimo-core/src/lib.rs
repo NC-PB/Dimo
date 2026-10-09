@@ -24,8 +24,8 @@ pub mod truth;
 
 pub use balloon::{Balloon, BalloonShape, BalloonStyle, BalloonStyleOverride, Color};
 pub use characteristic::{
-    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, FieldValue,
-    Inspection, Origin, SourceRegion, TextSource, ToleranceRule, Unit,
+    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, FieldError,
+    FieldValue, Inspection, Origin, SourceRegion, TextSource, ToleranceRule, Unit,
 };
 pub use command::{BalloonMove, Command, CommandError};
 pub use document::{AuditAction, AuditEntry, Document};
