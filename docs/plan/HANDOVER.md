@@ -10,7 +10,7 @@ decisions; this file explains where things stand, how the work was organized and
 |---|---|
 | M0 Foundations | All tasks implemented. CI green on macOS, Windows, Ubuntu (run 37987569387). NFR-PERF-01 to 03 met on the owner's Mac ([perf](../perf/M0.md)). Waits for owner reviews |
 | M1 Manual ballooning MVP | All tasks implemented ([plan](M1.md)). End to end smoke test passes (`./scripts/e2e-smoke.sh`). Waits for the owner's manual test and exit criterion |
-| M2 Assisted capture | Not planned yet. Next step: draft `docs/plan/M2.md` |
+| M2 Assisted capture | Planned in [M2.md](M2.md), 10 tasks in 3 waves. Waits for the owner to confirm the plan decisions |
 
 What the app does today (`pnpm dev` from the repository root): new project from a PDF drawing,
 place balloons by click or box (B), type values, edit everything in the characteristic table,
@@ -111,7 +111,7 @@ cargo run -p dimo-synth -- --seed 7 --count 6   # synthetic drawing plus truth f
 
 1. Push the local commits (`git push origin main`) and watch CI.
 2. Owner works through "Waiting for the owner" above; record outcomes in STATUS.md.
-3. Draft `docs/plan/M2.md` (box select with PDF text, callout parser in `dimo-notation`, tolerance
+3. ~~Draft `docs/plan/M2.md`~~ (done, owner to confirm its decisions 1 to 6) (box select with PDF text, callout parser in `dimo-notation`, tolerance
    engine and tables in `dimo-tolerance` and `data/tolerances/`, explanations, numbering
    strategies) from the roadmap, FR-TOL-*, FR-BAL-04/05/07, FR-CHR-08 and spec 08. Tolerance tables
    are drafts until the owner verifies them (rule 7, D-43; use the `tolerance-table` skill).

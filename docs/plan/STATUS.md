@@ -6,7 +6,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 ## Current
 
 - Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) implemented, waiting for owner review and exit criterion
-- Next: **owner review of M0 and M1** (manual test, exit criterion, open "Owner: confirm" decisions), then plan M2
+- Next: **owner review of M0 and M1** (manual test, exit criterion, open "Owner: confirm" decisions) and of the M2 plan ([plan](M2.md), decisions 1 to 6); then M2 wave 1 (T2.1 to T2.4)
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -42,6 +42,21 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T1.10 User guide and exit check | review | Smoke test passes (`scripts/e2e-smoke.sh`). Owner: run `docs/dev/manual-test-m1.md` and the exit criterion `docs/perf/M1-exit.md` |
 | T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
 
+## Tasks M2
+
+| Task | State | Notes |
+|---|---|---|
+| T2.1 Callout parser | todo | Wave 1 |
+| T2.2 Tolerance table format and ISO 2768-1 | todo | Wave 1, tables stay draft (D-43) |
+| T2.3 ISO 286 fit tables | todo | Wave 1, tables stay draft (D-43) |
+| T2.4 Data model version 2 | todo | Wave 1 |
+| T2.5 Tolerance engine | todo | Wave 2 |
+| T2.6 Box select with PDF text | todo | Wave 2 |
+| T2.7 Numbering strategies | todo | Wave 2 |
+| T2.8 Tolerance UI, explanations and history | todo | Wave 3 |
+| T2.9 Evaluation and exit criterion | todo | Wave 3, needs the owner's truth file review |
+| T2.10 User guide | todo | Wave 3 |
+
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
 ## Waiting for the owner
@@ -59,6 +74,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | M2 plan: zones and views defined by hand (detection is M4); general tolerance as a project setting (title block reading is M4); derivations stored structured, explanations rendered in the UI language; custom tables copied into the project container; typed values parsed like box selections; basic dimensions recognized only from a tight closed rectangle, reference from parentheses | Spec leaves these open for M2 (D-21 needs zones before FR-DOC-06). **Owner: confirm** (decisions 1 to 6 in M2.md) | coordinator |
 | 2026-10-09 | Windows test executables get the Common Controls v6 manifest through `rustc-link-arg-tests` in src-tauri `build.rs` (`windows-test-manifest.xml`) | tauri-build embeds it only into the app executable | coordinator |
 | 2026-10-09 | End to end: `scripts/e2e-smoke.sh` drives the real debug app through the dev UI script (main flow, reopen, crash recovery) and checks the written files; replaces WebdriverIO on macOS (WKWebView has no WebDriver). New dev hooks `DIMO_DEV_SAVE_AS`, `DIMO_DEV_HOME`; `bindings.ts` is written only when its content changes | Test the real app where tauri-driver cannot | T1.10, agent |
 | 2026-10-09 | Exports run as background jobs (`export_project` returns a job id, `JobProgress` then `JobFinished`), written to a temp file and renamed; "export as issued" locks numbering as an undoable command in the same step as the snapshot; annotation dates from `ProjectSession::modified()`; rejected characteristics left out of PDF, CSV and XLSX; export options remembered per user | FR-EXP-01, FR-EXP-09, FR-EXP-11, D-23, D-33. **Owner: confirm** | T1.9, agent |
@@ -130,6 +146,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: M2 plan drafted (`docs/plan/M2.md`): 10 tasks in 3 waves, 6 decisions for the owner to confirm.
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
 - 2026-10-09: First CI runs on GitHub: macOS green, Windows (unused import in a unix only test) and Ubuntu (text run split with a substitute font) failed; both fixed in a120848. Windows test executables then failed to start (STATUS_ENTRYPOINT_NOT_FOUND, Common Controls v6 manifest missing); fixed in abe16d5 by embedding the manifest for test targets. First fully green run: 37987569387 on 8a29001. One unexplained local failure of the three `dimo-io` export snapshot tests during a full check, not reproducible in 8 later runs; watch in CI.
