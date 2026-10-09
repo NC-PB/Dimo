@@ -52,6 +52,8 @@ serde_json = "=1.0.151"
 thiserror = "=2.0.21"
 # Tolerance table files (T2.2, D-43). Already in the tree through Tauri; parser only, no writer.
 toml = { version = "=1.1.6", default-features = false, features = ["std", "serde", "parse"] }
+# Callout grammar (T2.1, spec 06). Already in the tree through the toml crates of Tauri.
+winnow = { version = "=1.0.4", default-features = false, features = ["std", "ascii"] }
 # Typed IPC (NFR-MNT-03). Only release candidates exist; tauri-specta pins specta exactly.
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-serde = "=0.0.12"
