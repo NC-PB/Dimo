@@ -1,8 +1,9 @@
 /* Design tokens (D-51). The only place where colors are defined.
-   Light is the default, dark follows the operating system. */
+   Light on :root, dark on :root[data-theme="dark"]. `theme.ts` sets data-theme from the
+   theme setting (system, light, dark) and follows the operating system for "system". */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --dimo-bg: #f6f7f9;
   --dimo-surface: #ffffff;
   --dimo-surface-raised: #eef0f3;
@@ -13,6 +14,7 @@
   --dimo-accent-text: #ffffff;
   --dimo-focus: #1f6feb;
   --dimo-danger: #b42318;
+  --dimo-success: #1a7f37;
   /* Overlay on the drawing. The sheet stays white in both themes, so these do not change. */
   --dimo-balloon-selected: #e8590c;
   --dimo-balloon-selected-fill: rgb(232 89 12 / 0.08);
@@ -21,19 +23,19 @@
   --dimo-balloon-rejected: #6b7280;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --dimo-bg: #121417;
-    --dimo-surface: #1a1d21;
-    --dimo-surface-raised: #24282d;
-    --dimo-border: #353b42;
-    --dimo-text: #e6e9ed;
-    --dimo-text-muted: #9aa3ad;
-    --dimo-accent: #4c8dff;
-    --dimo-accent-text: #0b0d10;
-    --dimo-focus: #79a8ff;
-    --dimo-danger: #ff8a80;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --dimo-bg: #121417;
+  --dimo-surface: #1a1d21;
+  --dimo-surface-raised: #24282d;
+  --dimo-border: #353b42;
+  --dimo-text: #e6e9ed;
+  --dimo-text-muted: #9aa3ad;
+  --dimo-accent: #4c8dff;
+  --dimo-accent-text: #0b0d10;
+  --dimo-focus: #79a8ff;
+  --dimo-danger: #ff8a80;
+  --dimo-success: #6fdd8b;
 }
 
 @theme inline {
@@ -47,4 +49,5 @@
   --color-accent-text: var(--dimo-accent-text);
   --color-focus: var(--dimo-focus);
   --color-danger: var(--dimo-danger);
+  --color-success: var(--dimo-success);
 }

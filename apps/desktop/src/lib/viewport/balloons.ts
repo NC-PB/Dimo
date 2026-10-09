@@ -8,31 +8,27 @@
  * the flag is the box with its left end cut to a point (cut length `height / 2`, at most
  * `width / 2`). The leader runs from where the ray from the center to the anchor leaves the
  * shape, and is left out when the anchor lies inside.
+ *
+ * Balloon sizes follow the layout rule of `dimo_core::BalloonMetrics` with the numbers of the
+ * generated `BALLOON_METRICS`, the same values the ballooned PDF uses. `balloons.test.ts`
+ * checks `balloonGeometry` against sizes computed by Rust (`balloon-layout.fixture.json`).
  */
 
-import type {
-  BalloonMove,
-  BalloonShape,
-  BalloonStyle,
-  BalloonStyleOverride,
+import {
+  BALLOON_METRICS,
+  type BalloonMove,
+  type BalloonShape,
+  type BalloonStyle,
+  type BalloonStyleOverride,
 } from "$lib/ipc/bindings";
 import type { Point, Rect, Size } from "./view-math";
 
-/** Sheet units per millimeter (1 unit = 1/72 inch). Same as `dimo_core::UNITS_PER_MM`. */
-export const UNITS_PER_MM = 72 / 25.4;
+/** Sheet units per millimeter (1 unit = 1/72 inch), from Rust (`dimo_core::UNITS_PER_MM`). */
+export const UNITS_PER_MM = BALLOON_METRICS.units_per_mm;
 
 /** D-24 defaults, used when a style value is missing. */
 export const DEFAULT_SIZE_MM = 7;
 export const DEFAULT_OUTLINE_MM = 0.35;
-
-/** Font size of one or two digits, as a share of the balloon height. */
-const FONT_SHARE = 0.5;
-/** Average advance of a digit of the bold balloon font, in em (Open Sans Bold: 0.572). */
-const DIGIT_EM = 0.6;
-/** Share of the circle diameter that long numbers may fill before the font shrinks. */
-const CIRCLE_TEXT_SHARE = 0.78;
-/** Free space left and right of the text in a rectangle or flag, as a share of the height. */
-const BOX_PADDING_SHARE = 0.25;
 
 /** A balloon style with every value present. */
 export interface ResolvedStyle {
@@ -74,41 +70,47 @@ export interface BalloonGeometry {
   fontSize: number;
 }
 
-/** Estimated width of `text` in the bold balloon font at `fontSize`. */
-export function textWidth(text: string, fontSize: number): number {
+/** Estimated width of `text` in em (`BalloonMetrics::text_width_em`). */
+export function textWidthEm(text: string): number {
   let ems = 0;
   for (const c of text) {
-    ems += c === "." || c === "," ? 0.3 : DIGIT_EM;
+    ems += c === "." || c === "," ? BALLOON_METRICS.narrow_em : BALLOON_METRICS.digit_em;
   }
-  return ems * fontSize;
+  return ems;
 }
 
 /**
- * Geometry of a balloon showing `text` at `center`. The height is the style size. A circle
- * keeps its diameter and shrinks the font for long numbers; a rectangle or flag grows wider
- * instead, so the number keeps its size.
+ * Geometry of a balloon showing `text` at `center` (`BalloonMetrics::layout` in Rust). The
+ * height is the style size. A circle keeps its diameter and shrinks the font for long numbers;
+ * a rectangle or flag grows wider instead, so the number keeps its size.
  */
 export function balloonGeometry(
   style: ResolvedStyle,
   text: string,
   center: Point,
 ): BalloonGeometry {
-  const height = style.sizeMm * UNITS_PER_MM;
-  const stroke = style.outlineMm * UNITS_PER_MM;
-  let fontSize = height * FONT_SHARE;
-  let width = height;
-  const tw = textWidth(text, fontSize);
-  if (style.shape === "circle") {
-    const room = height * CIRCLE_TEXT_SHARE;
-    if (tw > room) {
-      fontSize *= room / tw;
+  const k = BALLOON_METRICS;
+  const height = style.sizeMm * k.units_per_mm;
+  const stroke = style.outlineMm * k.units_per_mm;
+  let fontSize = height * k.font_share;
+  const textWidth = textWidthEm(text) * fontSize;
+  const padded = textWidth + 2 * k.box_padding_share * height;
+  let width: number;
+  switch (style.shape) {
+    case "circle": {
+      const room = height * k.circle_text_share;
+      if (textWidth > room) {
+        fontSize *= room / textWidth;
+      }
+      width = height;
+      break;
     }
-  } else {
-    const padded = tw + 2 * height * BOX_PADDING_SHARE;
-    width =
-      style.shape === "flag"
-        ? Math.max(height * 1.5, padded + height / 2)
-        : Math.max(height, padded);
+    case "rectangle":
+      width = Math.max(height, padded);
+      break;
+    case "flag":
+      width = Math.max(height * k.flag_min_width_share, padded + height * k.flag_point_share);
+      break;
   }
   return { shape: style.shape, center, width, height, stroke, fontSize };
 }

@@ -623,6 +623,23 @@ mod tests {
     }
 
     #[test]
+    fn layout_metrics_never_underestimate_the_font() {
+        // The shared balloon layout (D-24) estimates text widths; the real glyphs must fit.
+        let font = bundled();
+        let em = |c: char| {
+            f64::from(font.advance(font.glyph(c).unwrap())) / f64::from(font.units_per_em())
+        };
+        let metrics = dimo_core::BALLOON_METRICS;
+        // Balloon texts are characteristic numbers: digits, later with `.` sub-numbers.
+        for c in '0'..='9' {
+            assert!(em(c) <= metrics.digit_em, "{c:?}: {}", em(c));
+        }
+        for c in ['.', ','] {
+            assert!(em(c) <= metrics.narrow_em, "{c:?}: {}", em(c));
+        }
+    }
+
+    #[test]
     fn subset_keeps_metrics_outlines_and_cmap() {
         let font = bundled();
         let set = chars("0123456789.");

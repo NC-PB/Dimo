@@ -93,7 +93,7 @@ pub(crate) fn emit<R: Runtime, E: Event + Serialize + Clone>(app: &AppHandle<R>,
 }
 
 /// Runs `work` on the blocking pool with the session locked.
-async fn with_session<T: Send + 'static>(
+pub(crate) async fn with_session<T: Send + 'static>(
     app: AppHandle,
     work: impl FnOnce(&AppHandle, &mut AppSession) -> Result<T, CommandError> + Send + 'static,
 ) -> Result<T, CommandError> {
@@ -297,7 +297,7 @@ pub async fn redo(app: AppHandle) -> Result<ProjectPatched, CommandError> {
     with_session(app, |app, session| Ok(emit_patched(app, session.redo()?))).await
 }
 
-fn emit_patched(app: &AppHandle, patched: ProjectPatched) -> ProjectPatched {
+pub(crate) fn emit_patched(app: &AppHandle, patched: ProjectPatched) -> ProjectPatched {
     if !patched.patch.is_empty() {
         emit(app, &patched);
     }

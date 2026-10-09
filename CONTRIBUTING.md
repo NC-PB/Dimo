@@ -27,6 +27,11 @@ git commit -s -m "feat(dimo-notation): parse stacked deviations"
 
 Run `./scripts/check.sh` before opening a pull request. See [docs/dev/](docs/dev/) for conventions.
 
+## Translations
+
+New UI languages are welcome. [docs/dev/translations.md](docs/dev/translations.md) lists the
+files to add and the checks to run.
+
 ## Test drawings
 
 Only drawings you created yourself or that carry an explicit permissive license. Every file needs an

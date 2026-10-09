@@ -17,6 +17,7 @@ import {
   type ResolvedStyle,
 } from "./balloons";
 import { NO_OVERRIDE } from "$lib/stores/balloon-tools.svelte";
+import layoutFixture from "./balloon-layout.fixture.json";
 
 const D24: BalloonStyle = {
   shape: "circle",
@@ -71,6 +72,35 @@ describe("balloon style (D-24)", () => {
     const flag = balloonGeometry(style("flag"), "1", { x: 0, y: 0 });
     expect(flag.width).toBeGreaterThanOrEqual(flag.height * 1.5);
   });
+});
+
+interface LayoutCase {
+  style: BalloonStyle;
+  text: string;
+  layout: { width: number; height: number; stroke: number; font_size: number };
+}
+
+describe("one balloon layout for viewport and ballooned PDF (D-24)", () => {
+  // Written by the Rust test `balloon_layout` from `BalloonStyle::layout`, which the PDF
+  // export uses.
+  const cases = layoutFixture as LayoutCase[];
+
+  it("has cases for every shape", () => {
+    expect(new Set(cases.map((c) => c.style.shape))).toEqual(
+      new Set(["circle", "rectangle", "flag"]),
+    );
+  });
+
+  it.each(cases.map((c) => [c.style.shape, c.style.size_mm, c.text, c] as const))(
+    "%s %s mm %s matches Rust",
+    (_shape, _size, _text, c) => {
+      const g = balloonGeometry(resolveStyle(c.style, NO_OVERRIDE), c.text, { x: 0, y: 0 });
+      expect(g.width).toBeCloseTo(c.layout.width, 9);
+      expect(g.height).toBeCloseTo(c.layout.height, 9);
+      expect(g.stroke).toBeCloseTo(c.layout.stroke, 9);
+      expect(g.fontSize).toBeCloseTo(c.layout.font_size, 9);
+    },
+  );
 });
 
 describe("shapes and leaders (as overlay.rs)", () => {

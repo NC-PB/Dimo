@@ -33,6 +33,9 @@ export type ShortcutAction =
   | "restyle"
   | "cancel"
   | "show_shortcuts"
+  | "show_drawing"
+  | "show_export"
+  | "show_settings"
   | "table_up"
   | "table_down"
   | "table_left"
@@ -81,14 +84,21 @@ export interface Shortcut {
   textEditing?: boolean;
   /** Where the shortcut acts; `global` when not given. */
   scope?: ShortcutScope;
+  /** Also acts outside the drawing view (export, settings). */
+  anyView?: boolean;
 }
 
 export const SHORTCUTS: readonly Shortcut[] = [
-  { action: "new_project", keys: [{ key: "n", mod: true }] },
-  { action: "open_project", keys: [{ key: "o", mod: true }] },
-  { action: "save_project", keys: [{ key: "s", mod: true, shift: false }] },
-  { action: "save_project_as", keys: [{ key: "s", mod: true, shift: true }] },
-  { action: "undo", keys: [{ key: "z", mod: true, shift: false }], textEditing: true },
+  { action: "new_project", keys: [{ key: "n", mod: true }], anyView: true },
+  { action: "open_project", keys: [{ key: "o", mod: true }], anyView: true },
+  { action: "save_project", keys: [{ key: "s", mod: true, shift: false }], anyView: true },
+  { action: "save_project_as", keys: [{ key: "s", mod: true, shift: true }], anyView: true },
+  {
+    action: "undo",
+    keys: [{ key: "z", mod: true, shift: false }],
+    textEditing: true,
+    anyView: true,
+  },
   {
     action: "redo",
     keys: [
@@ -96,7 +106,12 @@ export const SHORTCUTS: readonly Shortcut[] = [
       { key: "y", mod: true, shift: false },
     ],
     textEditing: true,
+    anyView: true,
   },
+  // Views (D-50).
+  { action: "show_drawing", keys: [{ key: "1", mod: true }], anyView: true },
+  { action: "show_export", keys: [{ key: "e", mod: true }], anyView: true },
+  { action: "show_settings", keys: [{ key: ",", mod: true }], anyView: true },
   { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }] },
   { action: "zoom_out", keys: [{ key: "-" }, { key: "_" }] },
   { action: "fit", keys: [{ key: "0" }] },
@@ -124,7 +139,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   { action: "restyle", keys: [{ key: "s", shift: false }] },
   { action: "cancel", keys: [{ key: "Escape" }] },
-  { action: "show_shortcuts", keys: [{ key: "?" }] },
+  { action: "show_shortcuts", keys: [{ key: "?" }], anyView: true },
   // Characteristic table (T1.7), active while the table has focus.
   { action: "table_up", keys: [{ key: "ArrowUp", shift: false }], scope: "table" },
   { action: "table_down", keys: [{ key: "ArrowDown", shift: false }], scope: "table" },

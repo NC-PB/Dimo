@@ -1,5 +1,31 @@
 # Exports
 
+## Exporting from the app
+
+Open the **Export** view (toolbar, or Cmd+E on macOS, Ctrl+E elsewhere). Each export asks where
+to save the file and then runs in the background; you can keep working meanwhile. A progress
+bar and then the saved file name appear below the export.
+
+Options, remembered for the next time:
+
+- **Column headers**: English or German headers in the CSV and Excel files, independent of the
+  language of the app.
+- **Balloons in the PDF**: as part of the page (default), or as annotations that PDF viewers can
+  show, hide or delete.
+- **Export as issued**: locks the numbering before exporting. Use it for drawings that go to a
+  customer. While locked, numbers never change, deleted numbers are not reused and new
+  characteristics get the next free number. The lock is recorded in the audit log and can be
+  undone like any other change (Cmd+Z right after the export, or unlock later).
+
+## Ballooned PDF
+
+A copy of the drawing with the balloons drawn in, as vector graphics. The original drawing file
+is not changed. Balloons look as in the app: same shape, size, colors and leader lines.
+Characteristics with the status `rejected` get no balloon in the PDF.
+
+The same project gives the same PDF file, byte for byte. In annotation mode the date of the
+annotations is the time of the last change of the project, not the time of the export.
+
 ## Characteristic list (CSV and XLSX)
 
 The characteristic list has one row per characteristic, in display number order. It is meant

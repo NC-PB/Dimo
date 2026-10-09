@@ -176,6 +176,11 @@ impl TileService {
         Ok(doc)
     }
 
+    /// The PDF engine the tiles render with, for other work such as writing a ballooned PDF.
+    pub fn engine(&self) -> &PdfEngine {
+        &self.shared.engine
+    }
+
     /// The open document with this content hash.
     pub fn document(&self, doc: &ContentHash) -> Option<Arc<Document>> {
         read(&self.shared.docs).get(doc).cloned()

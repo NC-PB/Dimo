@@ -167,6 +167,17 @@ pub struct ProjectStatusChanged {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type, Event)]
 pub struct CloseRequested;
 
+/// An immutable copy of what an export reads, so the job runs without the session.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExportSnapshot {
+    /// The project state when the export started.
+    pub project: Project,
+    /// Time of the last change of the project, for dates written into exports (FR-EXP-11).
+    pub modified: dimo_core::Timestamp,
+    /// The drawing file of the current revision, when the export needs it.
+    pub drawing: Option<Vec<u8>>,
+}
+
 /// A project that is open in the app.
 #[derive(Debug)]
 struct OpenProject {
@@ -311,16 +322,55 @@ impl AppSession {
     /// Suggested file name for "save as": the project file name, else the drawing name with the
     /// project extension.
     pub fn suggested_file_name(&self) -> String {
-        let Some(open) = &self.open else {
-            return format!("project.{}", dimo_io::project::EXTENSION);
-        };
-        if let Some(name) = open.path().and_then(Path::file_name) {
+        if let Some(name) = self
+            .open
+            .as_ref()
+            .and_then(OpenProject::path)
+            .and_then(Path::file_name)
+        {
             return name.to_string_lossy().into_owned();
         }
-        let stem = Path::new(&open.drawing.name)
+        format!("{}.{}", self.file_stem(), dimo_io::project::EXTENSION)
+    }
+
+    /// Base of suggested file names: the project file name, else the drawing name, without
+    /// the extension; `project` without either.
+    pub fn file_stem(&self) -> String {
+        let Some(open) = &self.open else {
+            return "project".to_owned();
+        };
+        let name = open.path().and_then(Path::file_name).map_or_else(
+            || open.drawing.name.clone(),
+            |n| n.to_string_lossy().into_owned(),
+        );
+        Path::new(&name)
             .file_stem()
-            .map_or_else(|| "project".into(), |s| s.to_string_lossy().into_owned());
-        format!("{stem}.{}", dimo_io::project::EXTENSION)
+            .map(|s| s.to_string_lossy().into_owned())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "project".to_owned())
+    }
+
+    /// What an export job needs: a copy of the project, its last change time and, if
+    /// `with_drawing`, the drawing file of the current revision.
+    pub fn export_snapshot(&self, with_drawing: bool) -> Result<ExportSnapshot, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        let drawing = if with_drawing {
+            Some(
+                open.project
+                    .current_drawing()
+                    .ok_or_else(|| CommandError::Project {
+                        message: "the drawing of the current revision is missing".to_owned(),
+                    })?
+                    .to_vec(),
+            )
+        } else {
+            None
+        };
+        Ok(ExportSnapshot {
+            project: open.project.project().clone(),
+            modified: open.project.modified(),
+            drawing,
+        })
     }
 
     fn owner(&mut self) -> LockOwner {

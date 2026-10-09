@@ -6,6 +6,7 @@ import type {
   CommandError,
   OpenNotice,
   RejectReason,
+  Theme,
   Unit,
 } from "./ipc/bindings";
 import { m } from "./paraglide/messages.js";
@@ -34,6 +35,18 @@ export function viewLabel(view: View): string {
       return m.view_export();
     case "settings":
       return m.view_settings();
+  }
+}
+
+/** Translated name of a theme setting (D-51). */
+export function themeLabel(theme: Theme): string {
+  switch (theme) {
+    case "system":
+      return m.theme_system();
+    case "light":
+      return m.theme_light();
+    case "dark":
+      return m.theme_dark();
   }
 }
 
@@ -108,6 +121,12 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.cancel_action();
     case "show_shortcuts":
       return m.show_shortcuts();
+    case "show_drawing":
+      return m.show_drawing();
+    case "show_export":
+      return m.show_export();
+    case "show_settings":
+      return m.show_settings();
     case "table_up":
       return m.table_up();
     case "table_down":
@@ -263,6 +282,8 @@ export function commandErrorMessage(error: CommandError): string {
       });
     case "project":
       return m.error_project({ message: error.message });
+    case "export":
+      return m.error_export({ message: error.message });
   }
 }
 

@@ -25,14 +25,19 @@
  * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
  * - `view`: zoom percent and the sheet point in the viewport center.
+ * - `show`: switches to a view (`drawing`, `export`, `settings`, ...).
+ * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text.
+ * - `check`: `[label, checked]` sets the check box inside the label that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons and selection).
  */
 
-import { commands } from "$lib/ipc/bindings";
+import { commands, type ExportFormat } from "$lib/ipc/bindings";
 import { isMacPlatform } from "$lib/shortcuts";
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
+import { EXPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
+import { view } from "$lib/stores/view.svelte";
 import { viewport } from "$lib/stores/viewport.svelte";
 import { ACTUAL_SIZE_SCALE, centerOn, sheetToScreen, type Point } from "$lib/viewport/view-math";
 
@@ -53,6 +58,9 @@ export type UiStep =
   | ({ row: number } & Mods)
   | ({ balloon: number } & Mods)
   | { view: [number, number, number] }
+  | { show: string }
+  | { select: [string, string] }
+  | { check: [string, boolean] }
   | { wait: number }
   | { mark: string }
   | { report: string };
@@ -118,6 +126,25 @@ async function press(from: Pair, to: Pair, m: Mods): Promise<void> {
   await sleep(STEP_PAUSE_MS);
 }
 
+/** The label element whose text starts with `text`. */
+function labelled(text: string): HTMLLabelElement | undefined {
+  return [...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith(text));
+}
+
+function exportState(format: ExportFormat): string {
+  const job = exportStore.job(format);
+  switch (job?.state) {
+    case undefined:
+      return `${format} -`;
+    case "running":
+      return `${format} running ${String(job.fraction)}`;
+    case "done":
+      return `${format} done ${job.fileName}`;
+    case "failed":
+      return `${format} failed ${job.error.kind}`;
+  }
+}
+
 function report(label: string): string {
   const project = projectStore.project;
   const balloons = (project?.balloons ?? []).map((b) => {
@@ -138,7 +165,9 @@ function report(label: string): string {
   const rows = [...document.querySelectorAll('[role="row"][aria-selected="true"]')]
     .map((r) => String(Number(r.getAttribute("aria-rowindex")) - 1))
     .join(",");
-  return `${label}: ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
+  const exports = EXPORT_FORMATS.map(exportState).join(", ");
+  const theme = document.documentElement.dataset.theme ?? "-";
+  return `${label}: view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -207,6 +236,22 @@ async function run(step: UiStep): Promise<void> {
         viewport.view.rotation,
       ),
     );
+    await sleep(STEP_PAUSE_MS);
+  } else if ("show" in step) {
+    view.set(step.show);
+    await sleep(STEP_PAUSE_MS);
+  } else if ("select" in step) {
+    const field = labelled(step.select[0])?.querySelector("select");
+    if (field) {
+      field.value = step.select[1];
+      field.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    await sleep(STEP_PAUSE_MS);
+  } else if ("check" in step) {
+    const box = labelled(step.check[0])?.querySelector<HTMLInputElement>("input[type=checkbox]");
+    if (box && box.checked !== step.check[1]) {
+      box.click();
+    }
     await sleep(STEP_PAUSE_MS);
   } else if ("wait" in step) {
     await sleep(step.wait);

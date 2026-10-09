@@ -13,6 +13,8 @@
 //! T1.2: [`PdfEngine::write_ballooned`] writes a copy of a PDF with balloons as vector page
 //! content or as annotations (FR-EXP-01, D-33), deterministic (FR-EXP-11). The primitives are
 //! in [`overlay`], the bundled number font and its subsetter in `font`.
+//! T1.9: [`project_overlay`] maps the balloons of a project to these primitives with the
+//! balloon layout rule shared with the viewport (`dimo_core::BALLOON_METRICS`).
 //!
 //! # Coordinates
 //!
@@ -54,6 +56,7 @@
 pub mod geometry;
 pub mod library;
 pub mod overlay;
+pub mod project_overlay;
 pub mod sheet_kind;
 pub mod text;
 pub mod tiles;
@@ -75,6 +78,7 @@ pub use overlay::{
     Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, Rgb, SheetBalloons,
     SheetPoint, Stroke,
 };
+pub use project_overlay::project_overlay;
 pub use raster::RgbaImage;
 pub use sheet_kind::{FontInfo, MIN_TEXT_CHARS, RASTER_COVERAGE, SheetAnalysis};
 pub use text::TextRun;

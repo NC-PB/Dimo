@@ -1,0 +1,182 @@
+[
+  {
+    "layout": {
+      "font_size": 9.921259842519685,
+      "height": 19.84251968503937,
+      "stroke": 0.9921259842519685,
+      "width": 19.84251968503937
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "circle",
+      "size_mm": 7.0,
+      "text_color": "#000000"
+    },
+    "text": "1"
+  },
+  {
+    "layout": {
+      "font_size": 9.921259842519685,
+      "height": 19.84251968503937,
+      "stroke": 0.9921259842519685,
+      "width": 19.84251968503937
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "circle",
+      "size_mm": 7.0,
+      "text_color": "#000000"
+    },
+    "text": "12"
+  },
+  {
+    "layout": {
+      "font_size": 6.448818897637795,
+      "height": 19.84251968503937,
+      "stroke": 0.9921259842519685,
+      "width": 19.84251968503937
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "circle",
+      "size_mm": 7.0,
+      "text_color": "#000000"
+    },
+    "text": "1234"
+  },
+  {
+    "layout": {
+      "font_size": 6.1417322834645685,
+      "height": 14.173228346456694,
+      "stroke": 0.7086614173228347,
+      "width": 14.173228346456694
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.25,
+      "shape": "circle",
+      "size_mm": 5.0,
+      "text_color": "#000000"
+    },
+    "text": "999"
+  },
+  {
+    "layout": {
+      "font_size": 7.3700787401574805,
+      "height": 19.84251968503937,
+      "stroke": 0.9921259842519685,
+      "width": 19.84251968503937
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "circle",
+      "size_mm": 7.0,
+      "text_color": "#000000"
+    },
+    "text": "12.1"
+  },
+  {
+    "layout": {
+      "font_size": 9.921259842519685,
+      "height": 19.84251968503937,
+      "stroke": 0.9921259842519685,
+      "width": 19.84251968503937
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "rectangle",
+      "size_mm": 7.0,
+      "text_color": "#000000"
+    },
+    "text": "1"
+  },
+  {
+    "layout": {
+      "font_size": 14.173228346456694,
+      "height": 28.34645669291339,
+      "stroke": 1.4173228346456694,
+      "width": 48.18897637795276
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.5,
+      "shape": "rectangle",
+      "size_mm": 10.0,
+      "text_color": "#000000"
+    },
+    "text": "1234"
+  },
+  {
+    "layout": {
+      "font_size": 9.921259842519685,
+      "height": 19.84251968503937,
+      "stroke": 0.9921259842519685,
+      "width": 29.763779527559056
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "flag",
+      "size_mm": 7.0,
+      "text_color": "#000000"
+    },
+    "text": "1"
+  },
+  {
+    "layout": {
+      "font_size": 11.338582677165356,
+      "height": 22.67716535433071,
+      "stroke": 0.9921259842519685,
+      "width": 43.08661417322835
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.35,
+      "shape": "flag",
+      "size_mm": 8.0,
+      "text_color": "#000000"
+    },
+    "text": "123"
+  },
+  {
+    "layout": {
+      "font_size": 17.007874015748033,
+      "height": 34.01574803149607,
+      "stroke": 1.984251968503937,
+      "width": 85.03937007874016
+    },
+    "style": {
+      "fill_color": "#FFFFFF",
+      "leader": true,
+      "outline_color": "#0057B8",
+      "outline_mm": 0.7,
+      "shape": "flag",
+      "size_mm": 12.0,
+      "text_color": "#000000"
+    },
+    "text": "12345"
+  }
+]

@@ -80,6 +80,28 @@ DIMO_DEV_OPEN=$PWD/corpus/drawings/test_drawing_1.pdf DIMO_DEV_SCRIPT=$PWD/targe
 The frame times of a scripted scroll are printed to the terminal ("0 balloons", the viewport size
 is the table's) and shown in the developer tools.
 
+## Views, settings and exports
+
+`App.svelte` switches the views of D-50 with `stores/view.svelte.ts`. The drawing view stays
+mounted (hidden) while Export or Settings is shown, so tiles, zoom and table scroll are kept;
+drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks the others).
+
+- Settings of the user (`stores/settings.svelte.ts`): theme, UI language, audit user name and
+  the last export options. Rust stores them in `settings.json` in the app config directory
+  (`src-tauri/src/settings.rs`). `main.ts` reads them before mounting, so the first render has
+  the stored language and theme. The theme sets `data-theme` on `<html>` (`theme/theme.ts`);
+  colors live only in `theme/tokens.css`.
+- Exports (`stores/export.svelte.ts`): `export_project` opens the save dialog in Rust and
+  returns a job ID; `job-progress` and `job-finished` events carry the progress and the result.
+  Events can arrive before the ID, so job states are kept by ID.
+- Balloon sizes: `viewport/balloons.ts` follows `dimo_core::BalloonMetrics` with the generated
+  `BALLOON_METRICS`. The Rust test `balloon_layout` writes `balloon-layout.fixture.json`, and
+  `balloons.test.ts` checks the viewport against it, so viewport and ballooned PDF agree.
+
+To check exports in `tauri dev` without the save dialog, set `DIMO_DEV_EXPORT_DIR=<dir>` (debug
+builds only) and click the export buttons, by hand or from a `DIMO_DEV_UI_SCRIPT`
+(steps `show`, `select`, `check`, `button`, see `src/lib/dev/ui-script.ts`).
+
 ## Tauri capabilities
 
 Grant the webview only the commands it uses. No shell plugin, no fs plugin, no http plugin.

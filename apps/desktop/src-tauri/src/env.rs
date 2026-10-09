@@ -58,7 +58,7 @@ impl Environment for DesktopEnvironment {
 }
 
 /// The login name from the environment: `USER` on macOS and Linux, `USERNAME` on Windows.
-fn os_user_name() -> String {
+pub fn os_user_name() -> String {
     ["USER", "USERNAME", "LOGNAME"]
         .iter()
         .filter_map(|name| std::env::var(name).ok())
