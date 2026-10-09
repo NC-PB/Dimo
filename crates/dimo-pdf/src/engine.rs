@@ -22,6 +22,41 @@ use crate::text::{TextRun, text_runs};
 /// 9933 x 14043 pixels, so this leaves headroom while bounding memory (1 GiB RGBA at most).
 pub const MAX_RENDER_SIDE: u32 = 16_384;
 
+/// Extra sheet units rendered left of and above every region, then cut off. 32 units (11 mm)
+/// cover glyphs of text up to about 10 mm high (ISO 3098 sizes up to 10). See
+/// [`Document::render_region`].
+const GLYPH_MARGIN_UNITS: f64 = 32.0;
+
+/// Largest render margin in pixels, so deep zoom levels render at most four times the pixels
+/// of a 512 pixel tile. At zoom 4 and 5 only glyphs wider than 512 pixels can still be affected.
+const MAX_MARGIN_PX: u32 = 512;
+
+/// Margin in whole pixels for a render at `zoom`.
+fn glyph_margin_px(zoom: f64) -> u32 {
+    let px = (GLYPH_MARGIN_UNITS * zoom)
+        .ceil()
+        .min(f64::from(MAX_MARGIN_PX));
+    // Between 0 and MAX_MARGIN_PX, so the cast cannot truncate.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let px = px as u32;
+    px
+}
+
+/// Copies the `width` x `height` pixels at `(left, top)`. The caller keeps the crop inside.
+fn crop(image: &RgbaImage, left: u32, top: u32, width: u32, height: u32) -> RgbaImage {
+    let stride = image.width() as usize * 4;
+    let mut out = Vec::with_capacity(width as usize * height as usize * 4);
+    for row in image
+        .as_bytes()
+        .chunks_exact(stride)
+        .skip(top as usize)
+        .take(height as usize)
+    {
+        out.extend_from_slice(&row[left as usize * 4..(left + width) as usize * 4]);
+    }
+    RgbaImage::from_raw(width, height, out).unwrap_or_else(|| image.clone())
+}
+
 /// The process wide engine. PDFium and the pdfium-render bindings are process global, so there
 /// is exactly one render thread per process.
 static ENGINE: Mutex<Option<PdfEngine>> = Mutex::new(None);
@@ -178,6 +213,15 @@ impl Document {
     /// Pixel `(0, 0)` has its top left corner at sheet point `(region.x, region.y)`, so tiles
     /// with whole pixel offsets at the same zoom fit together seamlessly. Parts of the region
     /// outside the sheet are white.
+    ///
+    /// PDFium (chromium/7881) misplaces anti-aliased glyphs that cross the left or top edge of
+    /// the target bitmap: such a glyph differed from a full sheet render by up to 131 of 255
+    /// levels at a tile edge of `test_drawing_1.pdf`. Right and bottom edges are not affected,
+    /// and the clip rectangle does not help. So the region is rendered with a margin left and
+    /// above, which moves the edge away from every glyph that starts at most
+    /// [`GLYPH_MARGIN_UNITS`] outside the region, and the margin is cut off again. The margin is
+    /// a whole number of pixels, so the pixel grid of the result is unchanged. It is skipped if
+    /// the padded image would exceed [`MAX_RENDER_SIDE`].
     pub fn render_region(
         &self,
         sheet: usize,
@@ -185,6 +229,28 @@ impl Document {
         zoom: f64,
     ) -> Result<RgbaImage, PdfError> {
         self.sheet_size(sheet)?;
+        let (width, height) = output_size(region, zoom)?;
+        let margin = glyph_margin_px(zoom);
+        if width + margin > MAX_RENDER_SIDE || height + margin > MAX_RENDER_SIDE {
+            return self.render_raw(sheet, region, zoom);
+        }
+        let pad = f64::from(margin) / zoom;
+        let padded = SheetRect::new(
+            region.x - pad,
+            region.y - pad,
+            region.width + pad,
+            region.height + pad,
+        );
+        let image = self.render_raw(sheet, padded, zoom)?;
+        Ok(crop(&image, margin, margin, width, height))
+    }
+
+    fn render_raw(
+        &self,
+        sheet: usize,
+        region: SheetRect,
+        zoom: f64,
+    ) -> Result<RgbaImage, PdfError> {
         output_size(region, zoom)?;
         self.engine.call(|reply| Request::Render {
             doc: self.id,
@@ -450,5 +516,16 @@ mod tests {
         let bytes = vec![1, 2, 3, 4, 0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0];
         let img = to_packed_rgba(1, 2, bytes).unwrap();
         assert_eq!(img.as_bytes(), &[1, 2, 3, 4, 5, 6, 7, 8]);
+    }
+}
+
+#[cfg(test)]
+mod margin_tests {
+    use super::glyph_margin_px;
+
+    #[test]
+    fn glyph_margin_grows_with_zoom_up_to_a_tile() {
+        let margins: Vec<u32> = (-4..=5).map(|z| glyph_margin_px(2f64.powi(z))).collect();
+        assert_eq!(margins, vec![2, 4, 8, 16, 32, 64, 128, 256, 512, 512]);
     }
 }
