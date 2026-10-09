@@ -27,4 +27,21 @@ fn main() {
     {
         panic!("tauri build failed: {err:#}");
     }
+    embed_test_manifest();
+}
+
+/// Windows (MSVC) test executables get the Common Controls v6 manifest that tauri-build only
+/// embeds into the app executable; without it they fail to start with
+/// `STATUS_ENTRYPOINT_NOT_FOUND`. Applies to test targets only, so the app keeps its manifest.
+fn embed_test_manifest() {
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    if target_os != "windows" || target_env != "msvc" {
+        return;
+    }
+    let dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default();
+    let manifest = std::path::Path::new(&dir).join("windows-test-manifest.xml");
+    println!("cargo:rerun-if-changed={}", manifest.display());
+    println!("cargo:rustc-link-arg-tests=/MANIFEST:EMBED");
+    println!("cargo:rustc-link-arg-tests=/MANIFESTINPUT:{}", manifest.display());
 }
