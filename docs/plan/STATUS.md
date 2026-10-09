@@ -28,7 +28,7 @@ Single place for progress. Agents update this file at the end of every task.
 
 | Task | State | Notes |
 |---|---|---|
-| T1.0 M0 follow-ups | todo | wave 1 |
+| T1.0 M0 follow-ups | review | Owner: confirm pinch and wheel zoom feel in `pnpm dev` |
 | T1.1 Domain model and command engine | todo | wave 1 |
 | T1.2 Ballooned PDF writer | todo | wave 1 |
 | T1.3 Project file, autosave and recovery | todo | wave 2, after T1.1 |
@@ -57,6 +57,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | `render_region` pads left and top itself (shared with tiles), skipped only if the padded image would exceed the max render side. Wheel gain 0.002 per px, pinch gain 0.01 per px clamped at 40 px per event, constants in `ZOOM_TUNING`; Safari gesture events supported | PDFium glyph edge quirk; separate tuning for mouse and trackpad | T1.0, agent |
 | 2026-10-09 | File dialog via `rfd` called from Rust; temporary `open_document(path)` removed; only `allow-open-document-dialog` granted | No dialog or fs plugin in the webview (NFR-SEC-01) | T0.8, agent |
 | 2026-10-09 | Viewport: one view transform `screen = sheet * scale + t` snapped to device pixels; tile level is the coarsest one not upscaled; max zoom 16 px per sheet unit; backdrop layer plus one tile prefetch margin; one device pixel tile overlap against seams | Crisp at all zoom levels, single transform per layer | T0.8, agent |
 | 2026-10-09 | Dev only hooks in debug builds: `DIMO_DEV_OPEN`, `DIMO_DEV_SHEET`, `DIMO_DEV_BALLOONS`, `DIMO_DEV_ANCHORS`, `DIMO_DEV_VIEW`, `DIMO_DEV_PAN_CHECK`; `dev_report_frame_times` | Lets agents verify the native window without clicking; no effect in release builds | T0.8, agent |
