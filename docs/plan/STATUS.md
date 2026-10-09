@@ -5,7 +5,7 @@ Single place for progress. Agents update this file at the end of every task.
 ## Current
 
 - Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) started
-- Next tasks: M1 wave 1 in parallel: **T1.0 M0 follow-ups**, **T1.1 Domain model and commands**, **T1.2 Ballooned PDF writer**, **T0.9 Performance harness**
+- Next tasks: wave 5, **T1.9 Export and settings views**, then **T1.10 User guide and exit check**
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -34,10 +34,10 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.3 Project file, autosave and recovery | done | Owner: confirm uncompressed container |
 | T1.4 CSV and XLSX characteristic list | done | Owner: confirm columns, German headers, umlauts in CSV, whether non inspected rows are exported |
 | T1.5 Project session and IPC | done | Owner: check the unsaved changes prompt on window close and quit in the native window |
-| T1.6 Balloon placement and editing | in progress | wave 4 |
-| T1.7 Characteristic table | review | 1000 rows: mean 17.2 ms, p95 21 ms, max 33 ms per frame. Review fixes running (T1.7a); viewport side after T1.6. Owner: German kind names (Flachsenkung, Kegelsenkung, Fahnenhinweis) |
+| T1.6 Balloon placement and editing | done | Owner: shortcuts V, B, S, Shift+arrows; value field fills requirement text only |
+| T1.7 Characteristic table | done | 1000 rows: mean 17.2 ms, p95 21 ms. Review fixes merged (T1.7a). Owner: German kind names (Flachsenkung, Kegelsenkung, Fahnenhinweis) |
 | T1.8 Sheet rotation, scale and units | done | Owner: glance at German strings; shortcuts R and Shift+R |
-| T1.9 Export and settings views | todo | wave 5 |
+| T1.9 Export and settings views | in progress | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
 | T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
 
@@ -58,6 +58,9 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | Balloon tools: Select (V), Place (B), style popover (S), Shift+arrows nudge 1 mm; click placement stores no source region, drag placement stores an oriented box; balloon placed one balloon height up and right on screen; value field fills `requirement_text` only; balloon size and font rule in `viewport/balloons.ts` (to be moved to one place with the export, T1.9) | FR-BAL-01, FR-BAL-02, FR-BAL-12, FR-CHR-09. **Owner: confirm shortcuts** | T1.6, agent |
+| 2026-10-09 | Selection store from T1.6 (`focus(id, from)`); the view named in `from` takes keyboard focus, others only scroll; a viewport focus request only activates the table cell. While the table has focus only Cmd/Ctrl shortcuts and `?` reach the window | Avoid focus theft and key clashes between table and drawing | merge T1.6/T1.7 |
+| 2026-10-09 | Rust refusals carry `RejectReason` (12 kinds), translated in the frontend (`refusal_*`); argument parse errors from Tauri are translated by the kind of value typed; unknown errors show Rust's text | FR-SET-04, every visible string through Paraglide | T1.7a, agent |
 | 2026-10-09 | Characteristic table: ARIA grid in a resizable bottom panel, fixed 28 px rows, TanStack Table 9.2.4 plus virtual-core 3.17.11; edits send typed text as `update_fields`, Rust validates decimals and its error is shown; edits apply to the active row only | NFR-UX, rule 2 | T1.7, agent |
 | 2026-10-09 | Shared selection store `stores/selection.svelte.ts` (`ids`, `select(ids, mode)`, `clear`, `has`, `focus`/`focusRequest`) used by table and viewport | One selection for table and drawing | coordinator |
 | 2026-10-09 | Sheet rotation rotates the view transform (one matrix for tiles and overlay), not the rendered tiles; tile cache stays valid, Rust unchanged. Rotating keeps zoom and center, fit on first show; scale as exact ratio with presets and custom; shortcuts R and Shift+R | Rule 4: stored geometry stays in sheet space | T1.8, agent |
@@ -123,6 +126,7 @@ Short entries, newest first: date, task, what changed, anything the next session
 
 - 2026-10-09: T1.0 and T1.1 merged; wave 2 (T1.3, T1.4) started.
 - 2026-10-09: T0.9 done, results in `docs/perf/M0.md`. All M0 tasks implemented; M0 closes when the owner finishes the open reviews.
+- 2026-10-09: Wave 4 merged (T1.6, T1.7, T1.7a, T1.8): balloons can be placed, edited and listed in the app. Disk ran full twice; the shared `target/` reaches about 30 GB, clear `target/debug/incremental` after each wave.
 - 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
 - 2026-10-09: T0.8 merged, in review. Pitfall: tests use `env!("CARGO_MANIFEST_DIR")`, so a target dir shared with deleted worktrees can run stale test binaries with dead paths; touch the test files or rebuild when that happens. Disk below 1 GB free, T0.9 waits for space.
 - 2026-10-09: T0.7 done and merged. Wave 2 complete. Disk nearly full (about 2 GB free); merged worktrees removed.
