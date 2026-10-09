@@ -1,20 +1,18 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import BalloonEditor from "$lib/components/BalloonEditor.svelte";
+  import BalloonLayer from "$lib/components/BalloonLayer.svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
-  import {
-    DUMMY_STYLE,
-    dummyBalloons,
-    leaderLine,
-    type DummyBalloon,
-  } from "$lib/dev/dummy-balloons";
+  import { DUMMY_STYLE, dummyBalloons, leaderLine } from "$lib/dev/dummy-balloons";
   import { m } from "$lib/i18n";
   import { commands, type TileRange } from "$lib/ipc/bindings";
+  import { balloonTools } from "$lib/stores/balloon-tools.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { selection } from "$lib/stores/selection.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
-  import { isMacPlatform } from "$lib/shortcuts";
+  import { balloonGestures, type PointerInput } from "$lib/viewport/gestures.svelte";
   import {
     backdropZoomFor,
     fullTileRange,
@@ -25,16 +23,17 @@
     tileZoomFor,
     zoomScale,
   } from "$lib/viewport/tiles";
+  import { revealPlan, viewAfterSwitch } from "$lib/viewport/reveal";
   import {
     centerOn,
     matrix,
     sheetScreenRect,
-    screenToSheet,
     snapToDevicePixels,
     viewRotation,
     visibleSheetRect,
     wheelZoomFactor,
     gestureZoomFactor,
+    type Point,
   } from "$lib/viewport/view-math";
 
   /** Tiles requested around the visible ones, so short pans show no empty tiles. */
@@ -68,16 +67,64 @@
     });
   });
 
-  // Fit when a document or sheet is shown for the first time and the viewport has a size.
+  /**
+   * A balloon to show once the sheet switch of a reveal has happened: its sheet index, center
+   * in sheet space and the zoom before the switch.
+   */
+  let pendingReveal: { sheet: number; center: Point; scale: number } | null = null;
+
+  // Fit when a document or sheet is shown for the first time and the viewport has a size. A
+  // sheet switched to for a reveal shows the balloon instead.
   let fittedFor = "";
   $effect(() => {
     const key = doc === null ? "" : `${doc}/${String(sheetIndex)}`;
     if (key !== "" && key !== fittedFor && viewport.size.width > 0 && viewport.size.height > 0) {
       fittedFor = key;
       untrack(() => {
-        viewport.fit();
+        const reveal = pendingReveal;
+        pendingReveal = null;
+        if (reveal !== null && reveal.sheet === sheetIndex && viewport.sheet !== null) {
+          viewport.set(
+            viewAfterSwitch(
+              reveal.center,
+              reveal.scale,
+              viewport.sheet,
+              viewport.size,
+              viewport.view.rotation,
+            ),
+          );
+        } else {
+          viewport.fit();
+        }
       });
     }
+  });
+
+  // A characteristic selected elsewhere (the table): show its sheet, and its balloon if it is
+  // out of view (T1.7). Group selections do not move the view, see `revealPlan`.
+  $effect(() => {
+    const ids = selection.ids;
+    untrack(() => {
+      if (viewport.size.width <= 0) {
+        return;
+      }
+      const plan = revealPlan(
+        ids,
+        projectStore.project?.balloons ?? [],
+        projectStore.sheets,
+        documentStore.sheet,
+        visibleSheetRect(viewport.view, viewport.size),
+      );
+      if (plan.kind === "switch") {
+        // The fit effect above shows the balloon once the new sheet is set up.
+        pendingReveal = { sheet: plan.sheet, center: plan.center, scale: viewport.view.scale };
+        documentStore.setSheet(plan.sheet);
+      } else if (plan.kind === "center") {
+        viewport.set(
+          centerOn(plan.center, viewport.view.scale, viewport.size, viewport.view.rotation),
+        );
+      }
+    });
   });
 
   /** Tile ranges the view needs: the backdrop of the whole sheet and the visible tiles. */
@@ -161,87 +208,23 @@
   /** The sheet outline in screen space (turned with the view), under the tiles. */
   const sheetBox = $derived(sheet === null ? null : sheetScreenRect(shown, sheet));
 
-  /**
-   * Balloons of the project on this sheet, drawn in the plain D-24 look until the balloon
-   * styles of T1.6 are rendered. Numbers come from Rust.
-   */
-  const projectBalloons = $derived.by(
-    (): { key: string; balloon: DummyBalloon; characteristic?: string }[] => {
-      const sheetId = projectStore.sheets[sheetIndex]?.id;
-      if (sheetId === undefined) {
-        return [];
-      }
-      return projectStore.balloonsOnSheet(sheetId).map((b) => ({
-        key: b.id,
-        characteristic: b.characteristic,
-        balloon: {
-          number: projectStore.characteristicById.get(b.characteristic)?.number ?? 0,
-          center: { x: b.position.x ?? 0, y: b.position.y ?? 0 },
-          anchor: { x: b.anchor.x ?? 0, y: b.anchor.y ?? 0 },
-        },
-      }));
-    },
-  );
-
-  // Selection shared with the characteristic table (T1.7). Minimal until T1.6 brings the balloon
-  // tools: a click on a balloon selects its characteristic, a click elsewhere clears.
-  /** Pointer travel in CSS px below which a press and release count as a click, not a pan. */
-  const CLICK_SLOP = 4;
-
-  /** The characteristic of the top most project balloon under a screen point, if any. */
-  function characteristicAt(screen: { x: number; y: number }): string | null {
-    const p = screenToSheet(shown, screen);
-    for (let i = projectBalloons.length - 1; i >= 0; i--) {
-      const entry = projectBalloons[i];
-      if (entry?.characteristic === undefined) {
-        continue;
-      }
-      const { center } = entry.balloon;
-      if (Math.hypot(p.x - center.x, p.y - center.y) <= DUMMY_STYLE.radius) {
-        return entry.characteristic;
-      }
-    }
-    return null;
-  }
-
-  // A characteristic selected in the table: show its sheet, and its balloon if it is out of
-  // view. Only when the selection has exactly one balloon, so group selections do not jump.
-  $effect(() => {
-    const ids = selection.ids;
-    untrack(() => {
-      const balloons = projectStore.project?.balloons.filter((b) => ids.has(b.characteristic));
-      const only = balloons?.length === 1 ? balloons[0] : undefined;
-      if (only === undefined) {
-        return;
-      }
-      const index = projectStore.sheets.findIndex((s) => s.id === only.sheet);
-      if (index >= 0 && index !== documentStore.sheet) {
-        documentStore.setSheet(index);
-        return;
-      }
-      const center = { x: only.position.x ?? 0, y: only.position.y ?? 0 };
-      const area = visibleSheetRect(viewport.view, viewport.size);
-      const inside =
-        center.x >= area.x &&
-        center.y >= area.y &&
-        center.x <= area.x + area.width &&
-        center.y <= area.y + area.height;
-      if (!inside && viewport.size.width > 0) {
-        viewport.set(centerOn(center, viewport.view.scale, viewport.size));
-      }
-    });
-  });
-
-  const balloons = $derived([
-    ...projectBalloons,
-    ...(DEV_TOOLS_ENABLED && devTools.balloons && sheet !== null
+  /** Dummy balloons of the performance check (development only, T0.8). */
+  const dummies = $derived(
+    DEV_TOOLS_ENABLED && devTools.balloons && sheet !== null
       ? dummyBalloons(sheet, devTools.count, sheetIndex + 1, devTools.anchors).map((b) => ({
           key: `dummy-${String(b.number)}`,
           balloon: b,
-          characteristic: undefined,
         }))
-      : []),
-  ]);
+      : [],
+  );
+
+  // Selected characteristics that were deleted (also by undo) leave the selection.
+  $effect(() => {
+    const exists = projectStore.characteristicById;
+    untrack(() => {
+      selection.retain((id) => exists.has(id));
+    });
+  });
 
   // Wheel and pinch zoom to the cursor. Added by hand because the listeners must not be passive.
   // A pinch arrives as wheel events with ctrlKey (Chromium, WebKit in Tauri) or, in Safari, as
@@ -297,60 +280,97 @@
     };
   });
 
-  let drag: { pointer: number; x: number; y: number; travel: number } | null = null;
-  let dragging = $state(false);
-
-  function onPointerDown(event: PointerEvent) {
-    // Left or middle button pans.
-    if (doc === null || (event.button !== 0 && event.button !== 1)) {
-      return;
-    }
-    event.preventDefault();
-    element?.focus({ preventScroll: true });
-    element?.setPointerCapture(event.pointerId);
-    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY, travel: 0 };
-    dragging = true;
-  }
-
-  function onPointerMove(event: PointerEvent) {
-    if (drag?.pointer !== event.pointerId) {
-      return;
-    }
-    const dx = event.clientX - drag.x;
-    const dy = event.clientY - drag.y;
-    viewport.panBy(dx, dy);
-    drag = {
-      pointer: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      travel: drag.travel + Math.hypot(dx, dy),
+  /** Pointer position relative to the viewport element. */
+  function pointerInput(event: PointerEvent): PointerInput {
+    const rect = element?.getBoundingClientRect();
+    return {
+      pointerId: event.pointerId,
+      button: event.button,
+      shiftKey: event.shiftKey,
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+      x: event.clientX - (rect?.left ?? 0),
+      y: event.clientY - (rect?.top ?? 0),
+      timeStamp: event.timeStamp,
     };
   }
 
-  function onPointerUp(event: PointerEvent) {
-    if (drag?.pointer === event.pointerId) {
-      const click = event.type === "pointerup" && event.button === 0 && drag.travel < CLICK_SLOP;
-      drag = null;
-      dragging = false;
-      if (click && element) {
-        const rect = element.getBoundingClientRect();
-        const id = characteristicAt({ x: event.clientX - rect.left, y: event.clientY - rect.top });
-        const toggle = event.shiftKey || (isMacPlatform() ? event.metaKey : event.ctrlKey);
-        if (id === null) {
-          if (!toggle) {
-            selection.clear();
-          }
-        } else {
-          selection.select([id], toggle ? "toggle" : "replace");
-        }
+  // Pointer gestures (T1.6): select, move, place, box select and pan, see `gestures.svelte.ts`.
+  function onPointerDown(event: PointerEvent) {
+    if (doc === null) {
+      return;
+    }
+    element?.focus({ preventScroll: true });
+    if (balloonGestures.down(pointerInput(event))) {
+      event.preventDefault();
+      try {
+        element?.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic events of the dev UI script have no active pointer to capture.
       }
     }
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    balloonGestures.move(pointerInput(event));
+  }
+
+  function onPointerUp(event: PointerEvent) {
+    void balloonGestures.up(pointerInput(event));
+  }
+
+  function onPointerCancel() {
+    balloonGestures.cancel();
+  }
+
+  /** Space held: the left button pans in every tool. Not while typing in a field. */
+  function onSpace(event: KeyboardEvent, down: boolean) {
+    const target = event.target;
+    const typing =
+      target instanceof HTMLElement &&
+      (target.isContentEditable || target.closest("input, select, textarea, button") !== null);
+    // A Space the table used (toggling a row) does not arm panning.
+    if (event.key === " " && (!down || (!typing && !event.defaultPrevented))) {
+      balloonGestures.spaceHeld = down;
+      if (down && target === element) {
+        event.preventDefault();
+      }
+    }
+  }
+
+  const cursor = $derived.by(() => {
+    if (balloonGestures.panning) {
+      return "grabbing";
+    }
+    if (balloonGestures.gesture?.kind === "move" || balloonGestures.hover === "balloon") {
+      return "move";
+    }
+    if (balloonGestures.hover === "anchor" || balloonGestures.gesture?.kind === "anchor") {
+      return "crosshair";
+    }
+    if (balloonGestures.spaceHeld) {
+      return "grab";
+    }
+    return balloonTools.tool === "place" ? "crosshair" : "default";
+  });
+
+  function focusDrawing() {
+    element?.focus({ preventScroll: true });
   }
 </script>
 
 <svelte:window
   onresize={() => {
     devicePixelRatio = window.devicePixelRatio || 1;
+  }}
+  onkeydown={(e) => {
+    onSpace(e, true);
+  }}
+  onkeyup={(e) => {
+    onSpace(e, false);
+  }}
+  onblur={() => {
+    balloonGestures.spaceHeld = false;
   }}
 />
 
@@ -418,49 +438,40 @@
         {/each}
       </div>
     {/each}
-    <svg class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-      <g transform={matrix(shown)}>
-        {#each balloons as { key, balloon, characteristic } (key)}
-          {@const leader = leaderLine(balloon)}
-          {@const isSelected = characteristic !== undefined && selection.has(characteristic)}
-          {#if isSelected}
-            <!-- Selected: a wide ring around the balloon, shape as well as color. -->
+    {#if dummies.length > 0}
+      <svg class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+        <g transform={matrix(shown)}>
+          {#each dummies as { key, balloon } (key)}
+            {@const leader = leaderLine(balloon)}
+            {#if leader}
+              <line
+                x1={leader.from.x}
+                y1={leader.from.y}
+                x2={leader.to.x}
+                y2={leader.to.y}
+                stroke={DUMMY_STYLE.color}
+                stroke-width={DUMMY_STYLE.stroke}
+              />
+            {/if}
             <circle
-              class="balloon-selected"
               cx={balloon.center.x}
               cy={balloon.center.y}
-              r={DUMMY_STYLE.radius * 1.5}
-              fill="none"
-              stroke-width={DUMMY_STYLE.stroke * 3}
-            />
-          {/if}
-          {#if leader}
-            <line
-              x1={leader.from.x}
-              y1={leader.from.y}
-              x2={leader.to.x}
-              y2={leader.to.y}
+              r={DUMMY_STYLE.radius}
+              fill="#ffffff"
               stroke={DUMMY_STYLE.color}
               stroke-width={DUMMY_STYLE.stroke}
             />
-          {/if}
-          <circle
-            cx={balloon.center.x}
-            cy={balloon.center.y}
-            r={DUMMY_STYLE.radius}
-            fill="#ffffff"
-            stroke={DUMMY_STYLE.color}
-            stroke-width={DUMMY_STYLE.stroke}
-          />
-          <text
-            x={balloon.center.x}
-            y={balloon.center.y}
-            font-size={DUMMY_STYLE.fontSize}
-            class="balloon-number">{balloon.number}</text
-          >
-        {/each}
-      </g>
-    </svg>
+            <text
+              x={balloon.center.x}
+              y={balloon.center.y}
+              font-size={DUMMY_STYLE.fontSize}
+              class="balloon-number">{balloon.number}</text
+            >
+          {/each}
+        </g>
+      </svg>
+    {/if}
+    <BalloonLayer view={shown} />
     <!-- The drawing surface on top of all layers: drag to pan, wheel to zoom, keys from the
          shortcut map. Focusable so keyboard users reach it (NFR-UX-01); "application" is the
          ARIA role for such a surface, but Svelte does not count it as interactive. -->
@@ -468,16 +479,19 @@
     <div
       bind:this={element}
       class="surface absolute inset-0 touch-none select-none"
-      class:cursor-grab={!dragging}
-      class:cursor-grabbing={dragging}
+      style:cursor
       role="application"
       aria-label={m.viewport_label()}
       tabindex="0"
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
-      onpointercancel={onPointerUp}
+      onpointercancel={onPointerCancel}
+      ondblclick={(e) => {
+        e.preventDefault();
+      }}
     ></div>
+    <BalloonEditor view={shown} onDone={focusDrawing} />
   {/if}
 </main>
 
@@ -509,10 +523,6 @@
 
   .tile.loaded {
     visibility: visible;
-  }
-
-  .balloon-selected {
-    stroke: var(--dimo-accent);
   }
 
   .balloon-number {

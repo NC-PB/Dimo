@@ -107,6 +107,8 @@
   let active = $state<{ id: CharId; col: number } | null>(null);
   /** Start of a Shift range selection. */
   let anchor: CharId | null = null;
+  /** `seq` of the last focus request the table answered or raised itself. */
+  let handledFocus = 0;
 
   /** The cell being edited. `error`: Rust refused the last attempt. */
   let editing = $state<{
@@ -179,10 +181,20 @@
    */
   let ownSelection: ReadonlySet<CharId> | null = null;
 
-  /** Changes the shared selection on behalf of the table (see {@link ownSelection}). */
-  function choose(ids: Iterable<CharId>, mode: "replace" | "toggle") {
-    selected.select(ids, mode);
-    ownSelection = new Set(selected.ids);
+  /**
+   * Changes the shared selection on behalf of the table (see {@link ownSelection}). `replace`
+   * selects `ids` with `primary` (default: the last one) as primary; `toggle` adds or removes
+   * each ID.
+   */
+  function choose(ids: Iterable<CharId>, mode: "replace" | "toggle", primary?: CharId | null) {
+    if (mode === "toggle") {
+      for (const id of ids) {
+        selected.toggle(id);
+      }
+    } else {
+      selected.select(ids, primary);
+    }
+    ownSelection = selected.ids;
   }
 
   function sameIds(a: ReadonlySet<CharId>, b: ReadonlySet<CharId>): boolean {
@@ -193,7 +205,7 @@
   function selectRange(index: number) {
     const from = anchor === null ? index : (indexById.get(anchor) ?? index);
     const [a, b] = from <= index ? [from, index] : [index, from];
-    choose(order.slice(a, b + 1), "replace");
+    choose(order.slice(a, b + 1), "replace", order[index] ?? null);
   }
 
   /** Moves the active row to `index`, selecting it or extending the selection. */
@@ -239,6 +251,13 @@
       return;
     }
     setActive(index, col);
+    if (!selected.has(c.id)) {
+      // The row being edited is selected, so the drawing rings its balloon. Both the selection
+      // and the focus request are the table's own: the effects below do not answer them.
+      selected.focus(c.id, "table");
+      ownSelection = selected.ids;
+      handledFocus = selected.focusRequest?.seq ?? handledFocus;
+    }
     if (column.editor === "check") {
       void toggleInspect(c);
       return;
@@ -444,7 +463,7 @@
         goToRow(order.length - 1, false);
         break;
       case "table_select_all":
-        choose(order, "replace");
+        choose(order, "replace", selected.primary);
         break;
       case "table_toggle": {
         const id = order[current];
@@ -608,9 +627,10 @@
     });
   });
 
-  // "Edit this characteristic" (for example right after placing a balloon): focus its
-  // requirement cell for typing.
-  let handledFocus = 0;
+  // "Edit this characteristic". From the drawing (a balloon was just placed, or Enter on a
+  // balloon): the drawing's value editor has the keyboard, so the table only makes the row's
+  // requirement cell active and scrolls it into view. From the table: open the requirement
+  // editor here. `focus` has already selected the characteristic.
   $effect(() => {
     const request = selected.focusRequest;
     untrack(() => {
@@ -622,11 +642,12 @@
       if (index === undefined) {
         return;
       }
-      if (!selected.has(request.id)) {
-        anchor = request.id;
-        choose([request.id], "replace");
+      anchor = request.id;
+      if (request.from === "table") {
+        startEdit(index, REQUIREMENT_COLUMN);
+      } else {
+        setActive(index, REQUIREMENT_COLUMN);
       }
-      startEdit(index, REQUIREMENT_COLUMN);
     });
   });
 </script>

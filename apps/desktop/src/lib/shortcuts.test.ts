@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SHORTCUTS, formatCombo, matchShortcut, shortcutKeys } from "./shortcuts";
+import { SHORTCUTS, formatCombo, matchShortcut, shortcutKeys, worksInTable } from "./shortcuts";
 
 const key = (
   k: string,
@@ -66,6 +66,24 @@ describe("shortcut map (D-52)", () => {
     expect(matchShortcut(key("?", { shift: true }), true)?.action).toBe("show_shortcuts");
   });
 
+  it("maps the balloon tools (T1.6)", () => {
+    expect(matchShortcut(key("b"), true)?.action).toBe("place_tool");
+    expect(matchShortcut(key("v"), false)?.action).toBe("select_tool");
+    expect(matchShortcut(key("Enter"), true)?.action).toBe("edit_value");
+    expect(matchShortcut(key("Delete"), false)?.action).toBe("delete_selection");
+    expect(matchShortcut(key("Backspace"), true)?.action).toBe("delete_selection");
+    expect(matchShortcut(key("Escape"), true)?.action).toBe("cancel");
+    expect(matchShortcut(key("a", { meta: true }), true)?.action).toBe("select_all");
+    expect(matchShortcut(key("a"), true)).toBeNull();
+    expect(matchShortcut(key("s"), true)?.action).toBe("restyle");
+    expect(matchShortcut(key("s", { meta: true }), true)?.action).toBe("save_project");
+    expect(matchShortcut(key("ArrowLeft"), true)?.action).toBe("pan_left");
+    expect(matchShortcut(key("ArrowLeft", { shift: true }), true)?.action).toBe("nudge_left");
+    expect(shortcutKeys("nudge_down", false)).toBe("Shift+↓");
+    expect(shortcutKeys("select_all", true)).toBe("⌘A");
+    expect(shortcutKeys("cancel", false)).toBe("Esc");
+  });
+
   it("formats keys for the platform", () => {
     expect(formatCombo({ key: "o", mod: true }, true)).toBe("⌘O");
     expect(formatCombo({ key: "o", mod: true }, false)).toBe("Ctrl+O");
@@ -90,9 +108,23 @@ describe("shortcut map (D-52)", () => {
     expect(matchShortcut(key("a", { ctrl: true }), false, "table")?.action).toBe(
       "table_select_all",
     );
-    expect(matchShortcut(key("Enter"), true)).toBeNull();
+    expect(matchShortcut(key("Enter"), true)?.viewportOnly).toBe(true);
     expect(matchShortcut(key("Enter"), true, "table")?.action).toBe("table_edit");
     expect(matchShortcut(key("+"), true, "table")).toBeNull();
+  });
+
+  it("lets only Cmd/Ctrl shortcuts and the cheat sheet act from the table", () => {
+    const action = (k: ReturnType<typeof key>) => {
+      const shortcut = matchShortcut(k, true);
+      return shortcut !== null && worksInTable(shortcut);
+    };
+    expect(action(key("s", { meta: true }))).toBe(true);
+    expect(action(key("z", { meta: true }))).toBe(true);
+    expect(action(key("?", { shift: true }))).toBe(true);
+    for (const single of ["r", "v", "b", "s", "+", "0", "PageDown", "Escape", "Delete"]) {
+      expect(action(key(single))).toBe(false);
+    }
+    expect(action(key("r", { shift: true }))).toBe(false);
   });
 
   it("formats Alt and Shift without a modifier", () => {

@@ -25,8 +25,10 @@ Numbers are shown with exactly the digits stored, so `90.0` stays `90.0`.
 
 ## Selecting
 
-Selecting a row highlights its balloon on the drawing, and clicking a balloon selects its row.
-If the balloon is on another sheet, that sheet is shown.
+Selecting a row puts a thick ring around its balloon on the drawing, and clicking a balloon
+selects its row and scrolls it into view. If the balloon is on another sheet, that sheet is shown
+with the balloon in the middle; a balloon outside the visible part of the drawing is moved into
+the middle as well.
 
 - Click a row to select it. ⌘ click (Ctrl click) adds or removes a row, Shift click selects a
   range.
@@ -54,4 +56,7 @@ line above the table shows who locked the numbering and when.
 
 ## Keyboard
 
-The keyboard shortcut list (`?`) has a section for the table.
+The keyboard shortcut list (`?`) has a section for the table. While the table has the focus,
+the arrow keys, Enter, Escape, Space and ⌘A (Ctrl+A) act on the table, and single letter keys such
+as R, B or S never act on the drawing. Shortcuts with ⌘ (Ctrl), such as save and undo, work
+everywhere.

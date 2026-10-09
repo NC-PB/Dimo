@@ -18,6 +18,7 @@ fn main() {
         "redo",
         "dev_startup",
         "dev_report_frame_times",
+        "dev_log",
     ]);
     if let Err(err) = tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest))
     {

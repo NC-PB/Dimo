@@ -26,8 +26,10 @@ Zahlen erscheinen mit genau den gespeicherten Stellen, `90.0` bleibt `90.0`.
 
 ## Auswählen
 
-Eine ausgewählte Zeile hebt ihren Ballon auf der Zeichnung hervor, und ein Klick auf einen Ballon
-wählt seine Zeile aus. Liegt der Ballon auf einem anderen Blatt, wird dieses Blatt gezeigt.
+Eine ausgewählte Zeile legt einen dicken Ring um ihren Ballon auf der Zeichnung, und ein Klick auf
+einen Ballon wählt seine Zeile aus und rollt sie ins Bild. Liegt der Ballon auf einem anderen
+Blatt, wird dieses Blatt mit dem Ballon in der Mitte gezeigt; ein Ballon außerhalb des sichtbaren
+Teils der Zeichnung wird ebenfalls in die Mitte geholt.
 
 - Klicke eine Zeile, um sie auszuwählen. ⌘ Klick (Strg Klick) fügt eine Zeile hinzu oder entfernt
   sie, Umschalt Klick wählt einen Bereich.
@@ -57,4 +59,7 @@ hat.
 
 ## Tastatur
 
-Die Liste der Tastenkürzel (`?`) hat einen Abschnitt für die Tabelle.
+Die Liste der Tastenkürzel (`?`) hat einen Abschnitt für die Tabelle. Solange die Tabelle den
+Fokus hat, wirken Pfeiltasten, Eingabe, Escape, Leertaste und ⌘A (Strg+A) in der Tabelle, und
+einzelne Buchstabentasten wie R, B oder S wirken nie auf die Zeichnung. Kürzel mit ⌘ (Strg), zum
+Beispiel Sichern und Rückgängig, wirken überall.

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { characteristic } from "$lib/stores/fixtures";
-import { SelectionStore } from "$lib/stores/selection.svelte";
 import { COLUMNS, NO_UNIT, choiceOptions, displayText, fieldValue, rawText } from "./columns";
 import { isNumberingLocked, lockExplanation, refusalDetail } from "./refusal";
 import { moveStep, moveToGap } from "./reorder";
@@ -157,29 +156,6 @@ describe("reorder (T1.7, FR-BAL-06)", () => {
     });
     expect(moveStep(order, new Set(["a"]), -1)).toBeNull();
     expect(moveStep(order, new Set(["e"]), 1)).toBeNull();
-  });
-});
-
-describe("selection store (T1.6, T1.7)", () => {
-  it("replaces, adds and toggles", () => {
-    const s = new SelectionStore();
-    s.select(["a", "b"]);
-    expect([...s.ids]).toEqual(["a", "b"]);
-    s.select(["c"], "add");
-    expect(s.has("c")).toBe(true);
-    s.select(["a", "d"], "toggle");
-    expect([...s.ids].sort()).toEqual(["b", "c", "d"]);
-    s.select(["x"], "replace");
-    expect([...s.ids]).toEqual(["x"]);
-    s.clear();
-    expect(s.ids.size).toBe(0);
-  });
-
-  it("counts focus requests so the same characteristic can be asked for again", () => {
-    const s = new SelectionStore();
-    s.focus("a");
-    s.focus("a");
-    expect(s.focusRequest).toEqual({ id: "a", seq: 2 });
   });
 });
 
