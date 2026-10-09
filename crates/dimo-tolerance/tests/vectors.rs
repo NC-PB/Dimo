@@ -21,6 +21,8 @@ struct VectorFile {
     table: String,
     #[serde(default)]
     general: Vec<GeneralVector>,
+    #[serde(default)]
+    fit: Vec<FitVector>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -33,6 +35,28 @@ struct GeneralVector {
     value: String,
     derived_by: String,
     checked_by_owner: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FitVector {
+    fit: String,
+    nominal: String,
+    /// Expected upper deviation in mm, or `-` for no value.
+    upper: String,
+    /// Expected lower deviation in mm, or `-` for no value.
+    lower: String,
+    derived_by: String,
+    checked_by_owner: bool,
+    #[serde(default)]
+    note: Option<String>,
+}
+
+fn normalized(text: &str) -> String {
+    if text == "-" {
+        return text.to_owned();
+    }
+    parse_decimal(text).unwrap().normalize().to_string()
 }
 
 fn vector_files() -> Vec<(String, VectorFile)> {
@@ -98,15 +122,49 @@ fn general_vectors_pass() {
             let got = table
                 .general(v.applies_to, &v.class, size)
                 .map_or_else(|_| "-".to_owned(), |g| g.value.normalize().to_string());
-            let want = if v.value == "-" {
-                "-".to_owned()
-            } else {
-                parse_decimal(&v.value).unwrap().normalize().to_string()
-            };
+            let want = normalized(&v.value);
             if got != want {
                 failures.push(format!(
                     "{name}: {:?} {} at {}: expected {want}, got {got}",
                     v.applies_to, v.class, v.size
+                ));
+            }
+        }
+    }
+    assert!(count > 0);
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+#[test]
+fn fit_vectors_pass() {
+    // FR-TOL-04: ISO fits expanded to limits, including range bounds and special cases.
+    let set = TableSet::shipped().unwrap();
+    let mut failures = Vec::new();
+    let mut count = 0;
+    for (name, file) in vector_files() {
+        let table = set.get(&file.table).unwrap();
+        for v in &file.fit {
+            count += 1;
+            assert!(
+                matches!(v.derived_by.as_str(), "agent" | "owner"),
+                "{name}: derived_by must be agent or owner"
+            );
+            let _ = (v.checked_by_owner, &v.note);
+            let nominal = parse_decimal(&v.nominal).unwrap();
+            let got = table.fit_limits(&v.fit, nominal).map_or_else(
+                |_| ("-".to_owned(), "-".to_owned()),
+                |l| {
+                    (
+                        l.upper.normalize().to_string(),
+                        l.lower.normalize().to_string(),
+                    )
+                },
+            );
+            let want = (normalized(&v.upper), normalized(&v.lower));
+            if got != want {
+                failures.push(format!(
+                    "{name}: {} at {}: expected {want:?}, got {got:?}",
+                    v.fit, v.nominal
                 ));
             }
         }

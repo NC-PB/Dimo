@@ -21,10 +21,16 @@ pub struct ShippedTable {
 
 /// All shipped tables. A new table file in `data/tolerances/` must be added here; a test
 /// checks that the list matches the folder.
-pub const SHIPPED: &[ShippedTable] = &[ShippedTable {
-    file_name: "iso-2768-1.toml",
-    text: include_str!("../../../data/tolerances/iso-2768-1.toml"),
-}];
+pub const SHIPPED: &[ShippedTable] = &[
+    ShippedTable {
+        file_name: "iso-2768-1.toml",
+        text: include_str!("../../../data/tolerances/iso-2768-1.toml"),
+    },
+    ShippedTable {
+        file_name: "iso-286.toml",
+        text: include_str!("../../../data/tolerances/iso-286.toml"),
+    },
+];
 
 /// Origin prefix of shipped tables in error messages and [`Table::origin`].
 pub const SHIPPED_ORIGIN: &str = "shipped:";

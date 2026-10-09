@@ -58,23 +58,22 @@ impl Range {
         above_min && below_max
     }
 
-    /// Whether this range lies completely inside `outer`.
-    pub fn is_within(&self, outer: &Range) -> bool {
-        let min_ok = match (outer.min, self.min) {
-            (None, _) => true,
-            (Some(_), None) => false,
-            (Some(o), Some(s)) => {
-                s.value > o.value || (s.value == o.value && (o.inclusive || !s.inclusive))
-            }
+    /// The sizes that lie in both ranges. Both ranges must overlap.
+    #[must_use]
+    pub fn intersect(&self, other: &Range) -> Range {
+        // For equal values an exclusive bound is the stricter one.
+        let pick = |a: Option<Bound>, b: Option<Bound>, larger: bool| match (a, b) {
+            (None, x) | (x, None) => x,
+            (Some(a), Some(b)) if a.value == b.value => Some(Bound {
+                value: a.value,
+                inclusive: a.inclusive && b.inclusive,
+            }),
+            (Some(a), Some(b)) => Some(if (a.value > b.value) == larger { a } else { b }),
         };
-        let max_ok = match (outer.max, self.max) {
-            (None, _) => true,
-            (Some(_), None) => false,
-            (Some(o), Some(s)) => {
-                s.value < o.value || (s.value == o.value && (o.inclusive || !s.inclusive))
-            }
-        };
-        min_ok && max_ok
+        Range {
+            min: pick(self.min, other.min, true),
+            max: pick(self.max, other.max, false),
+        }
     }
 
     fn of_row(row: &Row) -> Self {
@@ -240,7 +239,7 @@ impl TablePart {
         self.ranges.iter().position(|r| r.contains(size))
     }
 
-    /// The value of `column` for `size`.
+    /// The value of `column` for `size`, with the range of the row that covers the size.
     pub fn lookup(
         &self,
         table: &str,
@@ -272,6 +271,38 @@ impl TablePart {
                 range,
             }),
         }
+    }
+
+    /// Like [`TablePart::lookup`], but the range is widened over the neighbouring rows that hold
+    /// the same value in this column. Parts that share one row grid for many columns (the
+    /// fundamental deviations of ISO 286) then report the step in which the value is constant.
+    pub fn lookup_span(
+        &self,
+        table: &str,
+        column: &str,
+        size: Decimal,
+    ) -> Result<CellValue, LookupError> {
+        let found = self.lookup(table, column, size)?;
+        // lookup succeeded, so the column and the row exist.
+        let (Some(col), Some(row)) = (self.column(column), self.row_for(size)) else {
+            return Ok(found);
+        };
+        let same = |r: usize| self.part.rows[r].values[col].0 == Some(found.value);
+        let mut first = row;
+        while first > 0 && same(first - 1) {
+            first -= 1;
+        }
+        let mut last = row;
+        while last + 1 < self.part.rows.len() && same(last + 1) {
+            last += 1;
+        }
+        Ok(CellValue {
+            value: found.value,
+            range: Range {
+                min: self.ranges[first].min,
+                max: self.ranges[last].max,
+            },
+        })
     }
 }
 
@@ -679,29 +710,28 @@ mod tests {
     }
 
     #[test]
-    fn within_compares_bounds() {
-        let outer = Range {
-            min: Some(Bound {
-                value: d("10"),
-                inclusive: false,
-            }),
-            max: Some(Bound {
-                value: d("18"),
-                inclusive: true,
-            }),
+    fn intersection_keeps_the_stricter_bound() {
+        let b = |v: &str, inclusive| {
+            Some(Bound {
+                value: d(v),
+                inclusive,
+            })
         };
-        let inner = Range {
-            min: Some(Bound {
-                value: d("10"),
-                inclusive: false,
-            }),
-            max: Some(Bound {
-                value: d("14"),
-                inclusive: true,
-            }),
+        let a = Range {
+            min: b("10", false),
+            max: b("18", true),
         };
-        assert!(inner.is_within(&outer));
-        assert!(!outer.is_within(&inner));
+        let c = Range {
+            min: None,
+            max: b("14", true),
+        };
+        let both = a.intersect(&c);
+        assert_eq!(both.to_string(), "over 10 up to and including 14");
+        let open = Range {
+            min: b("10", true),
+            max: None,
+        };
+        assert_eq!(a.intersect(&open), a);
     }
 
     #[test]

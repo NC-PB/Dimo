@@ -7,6 +7,7 @@ same format (FR-TOL-07).
 | File | Table | Status |
 |---|---|---|
 | `iso-2768-1.toml` | ISO 2768-1:1989 general tolerances, tables 1, 2 and 3 | draft |
+| `iso-286.toml` | ISO 286-1:2010 standard tolerance grades IT01 to IT18 and fundamental deviations up to 500 mm | draft |
 
 ## Verification (D-43)
 
@@ -81,6 +82,36 @@ hold no `symmetric` part.
 Angular values are in minutes of arc (`value_unit = "arcmin"`, 60 is one degree), because values
 such as 20' have no exact decimal in degrees.
 
+### Fit tables (ISO 286, FR-TOL-04)
+
+A fit table (`kind = "fit"`) has one `standard_tolerance` part, one `delta` part, four
+`fundamental_deviation` parts (shaft upper, shaft lower, hole upper, hole lower) and optionally
+one `override` part. Values are in mm, converted from the micrometres of the standard. The
+fundamental deviation parts share one row grid with the intermediate steps of the standard, so
+columns without intermediate steps repeat their value; a split row at 1 mm marks the classes
+that the standard does not use up to 1 mm.
+
+The engine combines the values with the rules of the ISO system
+(`crates/dimo-tolerance/src/fit.rs`). Column names of the fundamental deviation parts:
+
+| Part | Columns | Meaning |
+|---|---|---|
+| shaft, upper | `a` to `h` | es; ei = es - IT |
+| shaft, lower | `j5`, `j6`, `j7`, `j8` | ei of j for that grade |
+| shaft, lower | `k` | ei of k for IT4 to IT7 |
+| shaft, lower | `k_other` | ei of k for the other grades |
+| shaft, lower | `m` to `zc` | ei; es = ei + IT |
+| hole, lower | `A` to `H` | EI; ES = EI + IT |
+| hole, upper | `J6`, `J7`, `J8` | ES of J for that grade |
+| hole, upper | `K`, `M`, `N` | ES for grades up to IT8 before adding delta |
+| hole, upper | `K_above_IT8`, `M_above_IT8`, `N_above_IT8` | ES for grades above IT8 |
+| hole, upper | `P` to `ZC` | ES for grades above IT7; delta is added up to IT7 |
+
+js and JS have no column: their deviations are +IT/2 and -IT/2, where for IT7 to IT11 an odd
+number of micrometres is first reduced by one. `override` columns name a tolerance class and
+replace its fundamental deviation in the given range (M6 from 250 to 315 mm). `CD`, `EF` and `FG`
+are not included.
+
 ### Custom tables (FR-TOL-07)
 
 A company table uses `kind = "custom"`, any id that is not taken, and `symmetric` parts. Name the
@@ -91,7 +122,7 @@ project that uses a custom table stores a copy, so it opens with the same limits
 ## Test vectors
 
 Each table has a test vector file `<id>.test.toml` next to it. `cargo test -p dimo-tolerance`
-runs every vector.
+runs every vector. General tables use `general` vectors, fit tables `fit` vectors.
 
 ```toml
 table = "iso-2768-1"
@@ -101,7 +132,15 @@ general = [
 ]
 ```
 
-- `value = "-"` expects no value (size outside the table or no value defined).
+```toml
+table = "iso-286"
+fit = [
+  { fit = "H7", nominal = "30", upper = "0.021", lower = "0", derived_by = "agent", checked_by_owner = false, note = "corpus truth c03" },
+]
+```
+
+- `value = "-"` (or `upper = "-"`, `lower = "-"`) expects no value (size outside the table or
+  no value defined). `upper` and `lower` are deviations in mm. `note` is optional.
 - Vectors cover every range bound: on the bound and just above it.
 - `derived_by = "agent"` marks vectors written by the agent. The owner sets
   `checked_by_owner = true` per vector after comparing it with the printed table.
