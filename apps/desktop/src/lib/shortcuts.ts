@@ -21,17 +21,41 @@ export type ShortcutAction =
   | "pan_down"
   | "previous_sheet"
   | "next_sheet"
-  | "show_shortcuts";
+  | "show_shortcuts"
+  | "table_up"
+  | "table_down"
+  | "table_left"
+  | "table_right"
+  | "table_first_column"
+  | "table_last_column"
+  | "table_first_row"
+  | "table_last_row"
+  | "table_extend_up"
+  | "table_extend_down"
+  | "table_select_all"
+  | "table_toggle"
+  | "table_edit"
+  | "table_cancel"
+  | "table_move_up"
+  | "table_move_down";
+
+/**
+ * Where a shortcut acts. `global` shortcuts are handled by the window (`Shortcuts.svelte`),
+ * `table` shortcuts only while the characteristic table has focus (T1.7).
+ */
+export type ShortcutScope = "global" | "table";
 
 /**
  * One key combination. `key` is compared with `KeyboardEvent.key` (letters case insensitive).
  * `mod` is Cmd on macOS and Ctrl elsewhere. Shift is compared only when `shift` is given,
  * because symbols like `+` and `?` need Shift on some keyboard layouts and not on others.
+ * `alt` is Option on macOS and Alt elsewhere; it must match exactly.
  */
 export interface KeyCombo {
   key: string;
   mod?: boolean;
   shift?: boolean;
+  alt?: boolean;
 }
 
 export interface Shortcut {
@@ -42,6 +66,8 @@ export interface Shortcut {
   viewportOnly?: boolean;
   /** In a text field the key keeps its text editing meaning (undo typing, not the project). */
   textEditing?: boolean;
+  /** Where the shortcut acts; `global` when not given. */
+  scope?: ShortcutScope;
 }
 
 export const SHORTCUTS: readonly Shortcut[] = [
@@ -71,6 +97,37 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: "previous_sheet", keys: [{ key: "PageUp" }] },
   { action: "next_sheet", keys: [{ key: "PageDown" }] },
   { action: "show_shortcuts", keys: [{ key: "?" }] },
+  // Characteristic table (T1.7), active while the table has focus.
+  { action: "table_up", keys: [{ key: "ArrowUp", shift: false }], scope: "table" },
+  { action: "table_down", keys: [{ key: "ArrowDown", shift: false }], scope: "table" },
+  { action: "table_left", keys: [{ key: "ArrowLeft" }], scope: "table" },
+  { action: "table_right", keys: [{ key: "ArrowRight" }], scope: "table" },
+  { action: "table_first_column", keys: [{ key: "Home" }], scope: "table" },
+  { action: "table_last_column", keys: [{ key: "End" }], scope: "table" },
+  {
+    action: "table_first_row",
+    keys: [
+      { key: "ArrowUp", mod: true },
+      { key: "Home", mod: true },
+    ],
+    scope: "table",
+  },
+  {
+    action: "table_last_row",
+    keys: [
+      { key: "ArrowDown", mod: true },
+      { key: "End", mod: true },
+    ],
+    scope: "table",
+  },
+  { action: "table_extend_up", keys: [{ key: "ArrowUp", shift: true }], scope: "table" },
+  { action: "table_extend_down", keys: [{ key: "ArrowDown", shift: true }], scope: "table" },
+  { action: "table_select_all", keys: [{ key: "a", mod: true }], scope: "table" },
+  { action: "table_toggle", keys: [{ key: " " }], scope: "table" },
+  { action: "table_edit", keys: [{ key: "Enter" }, { key: "F2" }], scope: "table" },
+  { action: "table_cancel", keys: [{ key: "Escape" }], scope: "table" },
+  { action: "table_move_up", keys: [{ key: "ArrowUp", alt: true }], scope: "table" },
+  { action: "table_move_down", keys: [{ key: "ArrowDown", alt: true }], scope: "table" },
 ];
 
 /** The parts of a keyboard event the matcher needs. */
@@ -89,7 +146,11 @@ export function isMacPlatform(): boolean {
 function matches(combo: KeyCombo, input: KeyInput, mac: boolean): boolean {
   const modPressed = mac ? input.metaKey : input.ctrlKey;
   const otherModPressed = mac ? input.ctrlKey : input.metaKey;
-  if (input.altKey || otherModPressed || modPressed !== (combo.mod ?? false)) {
+  if (
+    input.altKey !== (combo.alt ?? false) ||
+    otherModPressed ||
+    modPressed !== (combo.mod ?? false)
+  ) {
     return false;
   }
   if (combo.shift !== undefined && input.shiftKey !== combo.shift) {
@@ -100,9 +161,17 @@ function matches(combo: KeyCombo, input: KeyInput, mac: boolean): boolean {
     : input.key === combo.key;
 }
 
-/** The shortcut a key press triggers, or `null`. */
-export function matchShortcut(input: KeyInput, mac: boolean = isMacPlatform()): Shortcut | null {
-  return SHORTCUTS.find((s) => s.keys.some((combo) => matches(combo, input, mac))) ?? null;
+/** The shortcut of `scope` a key press triggers, or `null`. */
+export function matchShortcut(
+  input: KeyInput,
+  mac: boolean = isMacPlatform(),
+  scope: ShortcutScope = "global",
+): Shortcut | null {
+  return (
+    SHORTCUTS.find(
+      (s) => (s.scope ?? "global") === scope && s.keys.some((combo) => matches(combo, input, mac)),
+    ) ?? null
+  );
 }
 
 const KEY_NAMES: Record<string, string> = {
@@ -112,19 +181,19 @@ const KEY_NAMES: Record<string, string> = {
   ArrowDown: "↓",
   PageUp: "PgUp",
   PageDown: "PgDn",
+  " ": "Space",
+  Escape: "Esc",
 };
 
 /** Display text of a key combination, for example `⌘O` on macOS and `Ctrl+O` elsewhere. */
 export function formatCombo(combo: KeyCombo, mac: boolean = isMacPlatform()): string {
   const key =
     KEY_NAMES[combo.key] ?? (combo.key.length === 1 ? combo.key.toUpperCase() : combo.key);
-  if (!combo.mod) {
-    return combo.shift ? (mac ? `⇧${key}` : `Shift+${key}`) : key;
+  if (mac) {
+    return `${combo.alt ? "⌥" : ""}${combo.shift ? "⇧" : ""}${combo.mod ? "⌘" : ""}${key}`;
   }
-  if (combo.shift) {
-    return mac ? `⇧⌘${key}` : `Ctrl+Shift+${key}`;
-  }
-  return mac ? `⌘${key}` : `Ctrl+${key}`;
+  const parts = [combo.mod ? "Ctrl" : "", combo.alt ? "Alt" : "", combo.shift ? "Shift" : ""];
+  return [...parts.filter((p) => p !== ""), key].join("+");
 }
 
 /** Display text of the main combination of an action. */

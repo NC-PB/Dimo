@@ -12,7 +12,9 @@
   import { commands, type TileRange } from "$lib/ipc/bindings";
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
+  import { selection } from "$lib/stores/selection.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
+  import { isMacPlatform } from "$lib/shortcuts";
   import {
     backdropZoomFor,
     fullTileRange,
@@ -24,8 +26,10 @@
     zoomScale,
   } from "$lib/viewport/tiles";
   import {
+    centerOn,
     matrix,
     sheetScreenRect,
+    screenToSheet,
     snapToDevicePixels,
     viewRotation,
     visibleSheetRect,
@@ -161,19 +165,71 @@
    * Balloons of the project on this sheet, drawn in the plain D-24 look until the balloon
    * styles of T1.6 are rendered. Numbers come from Rust.
    */
-  const projectBalloons = $derived.by((): { key: string; balloon: DummyBalloon }[] => {
-    const sheetId = projectStore.sheets[sheetIndex]?.id;
-    if (sheetId === undefined) {
-      return [];
+  const projectBalloons = $derived.by(
+    (): { key: string; balloon: DummyBalloon; characteristic?: string }[] => {
+      const sheetId = projectStore.sheets[sheetIndex]?.id;
+      if (sheetId === undefined) {
+        return [];
+      }
+      return projectStore.balloonsOnSheet(sheetId).map((b) => ({
+        key: b.id,
+        characteristic: b.characteristic,
+        balloon: {
+          number: projectStore.characteristicById.get(b.characteristic)?.number ?? 0,
+          center: { x: b.position.x ?? 0, y: b.position.y ?? 0 },
+          anchor: { x: b.anchor.x ?? 0, y: b.anchor.y ?? 0 },
+        },
+      }));
+    },
+  );
+
+  // Selection shared with the characteristic table (T1.7). Minimal until T1.6 brings the balloon
+  // tools: a click on a balloon selects its characteristic, a click elsewhere clears.
+  /** Pointer travel in CSS px below which a press and release count as a click, not a pan. */
+  const CLICK_SLOP = 4;
+
+  /** The characteristic of the top most project balloon under a screen point, if any. */
+  function characteristicAt(screen: { x: number; y: number }): string | null {
+    const p = screenToSheet(shown, screen);
+    for (let i = projectBalloons.length - 1; i >= 0; i--) {
+      const entry = projectBalloons[i];
+      if (entry?.characteristic === undefined) {
+        continue;
+      }
+      const { center } = entry.balloon;
+      if (Math.hypot(p.x - center.x, p.y - center.y) <= DUMMY_STYLE.radius) {
+        return entry.characteristic;
+      }
     }
-    return projectStore.balloonsOnSheet(sheetId).map((b) => ({
-      key: b.id,
-      balloon: {
-        number: projectStore.characteristicById.get(b.characteristic)?.number ?? 0,
-        center: { x: b.position.x ?? 0, y: b.position.y ?? 0 },
-        anchor: { x: b.anchor.x ?? 0, y: b.anchor.y ?? 0 },
-      },
-    }));
+    return null;
+  }
+
+  // A characteristic selected in the table: show its sheet, and its balloon if it is out of
+  // view. Only when the selection has exactly one balloon, so group selections do not jump.
+  $effect(() => {
+    const ids = selection.ids;
+    untrack(() => {
+      const balloons = projectStore.project?.balloons.filter((b) => ids.has(b.characteristic));
+      const only = balloons?.length === 1 ? balloons[0] : undefined;
+      if (only === undefined) {
+        return;
+      }
+      const index = projectStore.sheets.findIndex((s) => s.id === only.sheet);
+      if (index >= 0 && index !== documentStore.sheet) {
+        documentStore.setSheet(index);
+        return;
+      }
+      const center = { x: only.position.x ?? 0, y: only.position.y ?? 0 };
+      const area = visibleSheetRect(viewport.view, viewport.size);
+      const inside =
+        center.x >= area.x &&
+        center.y >= area.y &&
+        center.x <= area.x + area.width &&
+        center.y <= area.y + area.height;
+      if (!inside && viewport.size.width > 0) {
+        viewport.set(centerOn(center, viewport.view.scale, viewport.size));
+      }
+    });
   });
 
   const balloons = $derived([
@@ -182,6 +238,7 @@
       ? dummyBalloons(sheet, devTools.count, sheetIndex + 1, devTools.anchors).map((b) => ({
           key: `dummy-${String(b.number)}`,
           balloon: b,
+          characteristic: undefined,
         }))
       : []),
   ]);
@@ -240,7 +297,7 @@
     };
   });
 
-  let drag: { pointer: number; x: number; y: number } | null = null;
+  let drag: { pointer: number; x: number; y: number; travel: number } | null = null;
   let dragging = $state(false);
 
   function onPointerDown(event: PointerEvent) {
@@ -251,7 +308,7 @@
     event.preventDefault();
     element?.focus({ preventScroll: true });
     element?.setPointerCapture(event.pointerId);
-    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY };
+    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY, travel: 0 };
     dragging = true;
   }
 
@@ -259,14 +316,34 @@
     if (drag?.pointer !== event.pointerId) {
       return;
     }
-    viewport.panBy(event.clientX - drag.x, event.clientY - drag.y);
-    drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY };
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    viewport.panBy(dx, dy);
+    drag = {
+      pointer: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      travel: drag.travel + Math.hypot(dx, dy),
+    };
   }
 
   function onPointerUp(event: PointerEvent) {
     if (drag?.pointer === event.pointerId) {
+      const click = event.type === "pointerup" && event.button === 0 && drag.travel < CLICK_SLOP;
       drag = null;
       dragging = false;
+      if (click && element) {
+        const rect = element.getBoundingClientRect();
+        const id = characteristicAt({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+        const toggle = event.shiftKey || (isMacPlatform() ? event.metaKey : event.ctrlKey);
+        if (id === null) {
+          if (!toggle) {
+            selection.clear();
+          }
+        } else {
+          selection.select([id], toggle ? "toggle" : "replace");
+        }
+      }
     }
   }
 </script>
@@ -343,8 +420,20 @@
     {/each}
     <svg class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
       <g transform={matrix(shown)}>
-        {#each balloons as { key, balloon } (key)}
+        {#each balloons as { key, balloon, characteristic } (key)}
           {@const leader = leaderLine(balloon)}
+          {@const isSelected = characteristic !== undefined && selection.has(characteristic)}
+          {#if isSelected}
+            <!-- Selected: a wide ring around the balloon, shape as well as color. -->
+            <circle
+              class="balloon-selected"
+              cx={balloon.center.x}
+              cy={balloon.center.y}
+              r={DUMMY_STYLE.radius * 1.5}
+              fill="none"
+              stroke-width={DUMMY_STYLE.stroke * 3}
+            />
+          {/if}
           {#if leader}
             <line
               x1={leader.from.x}
@@ -420,6 +509,10 @@
 
   .tile.loaded {
     visibility: visible;
+  }
+
+  .balloon-selected {
+    stroke: var(--dimo-accent);
   }
 
   .balloon-number {

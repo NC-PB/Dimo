@@ -54,6 +54,18 @@ export type UnsavedChoice = "save" | "discard" | "cancel";
 const NO_BALLOONS: readonly Balloon[] = [];
 
 /**
+ * The error of a failed command as a `CommandError`. Tauri reports arguments Rust could not read,
+ * for example a malformed decimal string in `update_fields`, as plain text rather than as the
+ * command's error type; such text becomes an `invalid_argument` error.
+ */
+export function asCommandError(error: unknown): CommandError {
+  if (typeof error === "object" && error !== null && "kind" in error) {
+    return error as CommandError;
+  }
+  return { kind: "invalid_argument", message: String(error) };
+}
+
+/**
  * The open project as the frontend sees it (T1.5). Rust owns the document (ADR 0001): this store
  * only mirrors it. It is the one place where Rust's snapshots and patches are applied
  * ({@link ProjectStore.load}, {@link ProjectStore.applyPatched}); components read from it and
@@ -246,7 +258,7 @@ export class ProjectStore {
     try {
       const result = await action();
       if (result.status === "error") {
-        this.error = result.error;
+        this.error = asCommandError(result.error);
         return undefined;
       }
       this.error = null;

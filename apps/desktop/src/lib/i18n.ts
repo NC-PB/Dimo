@@ -1,4 +1,12 @@
-import type { Autosave, BuildProfile, CommandError, OpenNotice } from "./ipc/bindings";
+import type {
+  Autosave,
+  BuildProfile,
+  CharacteristicKind,
+  Classification,
+  CommandError,
+  OpenNotice,
+  Unit,
+} from "./ipc/bindings";
 import { m } from "./paraglide/messages.js";
 import { getLocale, locales, setLocale, type Locale } from "./paraglide/runtime.js";
 import type { ShortcutAction } from "./shortcuts";
@@ -77,6 +85,106 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.next_sheet();
     case "show_shortcuts":
       return m.show_shortcuts();
+    case "table_up":
+      return m.table_up();
+    case "table_down":
+      return m.table_down();
+    case "table_left":
+      return m.table_left();
+    case "table_right":
+      return m.table_right();
+    case "table_first_column":
+      return m.table_first_column();
+    case "table_last_column":
+      return m.table_last_column();
+    case "table_first_row":
+      return m.table_first_row();
+    case "table_last_row":
+      return m.table_last_row();
+    case "table_extend_up":
+      return m.table_extend_up();
+    case "table_extend_down":
+      return m.table_extend_down();
+    case "table_select_all":
+      return m.table_select_all();
+    case "table_toggle":
+      return m.table_toggle();
+    case "table_edit":
+      return m.table_edit();
+    case "table_cancel":
+      return m.table_cancel();
+    case "table_move_up":
+      return m.table_move_up();
+    case "table_move_down":
+      return m.table_move_down();
+  }
+}
+
+/** Translated name of a characteristic kind (FR-CHR-01). */
+export function kindLabel(kind: CharacteristicKind): string {
+  switch (kind) {
+    case "linear":
+      return m.kind_linear();
+    case "diameter":
+      return m.kind_diameter();
+    case "radius":
+      return m.kind_radius();
+    case "spherical_radius":
+      return m.kind_spherical_radius();
+    case "angle":
+      return m.kind_angle();
+    case "chamfer":
+      return m.kind_chamfer();
+    case "thread":
+      return m.kind_thread();
+    case "counterbore":
+      return m.kind_counterbore();
+    case "countersink":
+      return m.kind_countersink();
+    case "depth":
+      return m.kind_depth();
+    case "surface_texture":
+      return m.kind_surface_texture();
+    case "geometric":
+      return m.kind_geometric();
+    case "note":
+      return m.kind_note();
+    case "flag_note":
+      return m.kind_flag_note();
+    case "material_process":
+      return m.kind_material_process();
+    case "other":
+      return m.kind_other();
+  }
+}
+
+/** Translated name of a classification (FR-CHR-02, D-26). */
+export function classificationLabel(classification: Classification): string {
+  switch (classification) {
+    case "critical":
+      return m.class_critical();
+    case "major":
+      return m.class_major();
+    case "minor":
+      return m.class_minor();
+    case "key":
+      return m.class_key();
+    case "none":
+      return m.class_none();
+  }
+}
+
+/** Display text of a unit; `null` is "none". */
+export function unitLabel(unit: Unit | null): string {
+  switch (unit) {
+    case "mm":
+      return m.unit_mm();
+    case "in":
+      return m.unit_in();
+    case "deg":
+      return m.unit_deg();
+    case null:
+      return m.unit_none();
   }
 }
 

@@ -22,7 +22,7 @@ describe("shortcut map (D-52)", () => {
     const combos = SHORTCUTS.flatMap((s) =>
       s.keys.map(
         (k) =>
-          `${k.mod ? "mod+" : ""}${k.shift === undefined ? "" : `shift=${String(k.shift)}+`}${k.key.toLowerCase()}`,
+          `${s.scope ?? "global"}:${k.mod ? "mod+" : ""}${k.alt ? "alt+" : ""}${k.shift === undefined ? "" : `shift=${String(k.shift)}+`}${k.key.toLowerCase()}`,
       ),
     );
     expect(new Set(combos).size).toBe(combos.length);
@@ -73,5 +73,33 @@ describe("shortcut map (D-52)", () => {
     expect(shortcutKeys("next_sheet", false)).toBe("PgDn");
     expect(shortcutKeys("redo", true)).toBe("⇧⌘Z");
     expect(shortcutKeys("save_project_as", false)).toBe("Ctrl+Shift+S");
+  });
+
+  it("keeps table keys inside the table", () => {
+    expect(matchShortcut(key("ArrowUp"), true)?.action).toBe("pan_up");
+    expect(matchShortcut(key("ArrowUp"), true, "table")?.action).toBe("table_up");
+    expect(matchShortcut(key("ArrowUp", { shift: true }), true, "table")?.action).toBe(
+      "table_extend_up",
+    );
+    expect(matchShortcut(key("ArrowDown", { alt: true }), true, "table")?.action).toBe(
+      "table_move_down",
+    );
+    expect(matchShortcut(key("ArrowDown", { meta: true }), true, "table")?.action).toBe(
+      "table_last_row",
+    );
+    expect(matchShortcut(key("a", { ctrl: true }), false, "table")?.action).toBe(
+      "table_select_all",
+    );
+    expect(matchShortcut(key("Enter"), true)).toBeNull();
+    expect(matchShortcut(key("Enter"), true, "table")?.action).toBe("table_edit");
+    expect(matchShortcut(key("+"), true, "table")).toBeNull();
+  });
+
+  it("formats Alt and Shift without a modifier", () => {
+    expect(shortcutKeys("table_move_up", true)).toBe("⌥↑");
+    expect(shortcutKeys("table_move_up", false)).toBe("Alt+↑");
+    expect(shortcutKeys("table_extend_down", true)).toBe("⇧↓");
+    expect(shortcutKeys("table_extend_down", false)).toBe("Shift+↓");
+    expect(shortcutKeys("table_toggle", false)).toBe("Space");
   });
 });

@@ -325,6 +325,15 @@ describe("project store (T1.5)", () => {
     });
   });
 
+  it("turns argument errors reported as text into command errors", async () => {
+    const { rust, store } = await connected();
+    const message = 'invalid args `command` for command `execute`: invalid decimal string "1,5"';
+    rust.execute = () =>
+      Promise.resolve({ status: "error" as const, error: message as unknown as CommandError });
+    expect(await store.execute(ADD)).toBeUndefined();
+    expect(store.error).toEqual({ kind: "invalid_argument", message });
+  });
+
   it("keeps the error of a refused command", async () => {
     const { store } = await connected();
     expect(await store.execute(ADD)).toBeUndefined();

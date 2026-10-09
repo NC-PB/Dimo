@@ -126,7 +126,7 @@
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
     <Dialog.Content
-      class="fixed top-1/2 left-1/2 z-50 w-96 max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded border border-border bg-surface p-4 text-text shadow-lg"
+      class="fixed top-1/2 left-1/2 z-50 max-h-[85vh] w-96 max-w-[90vw] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded border border-border bg-surface p-4 text-text shadow-lg"
     >
       <Dialog.Title class="mb-3 text-base font-semibold">{m.shortcuts_title()}</Dialog.Title>
       <table class="w-full text-sm">
@@ -137,7 +137,14 @@
           </tr>
         </thead>
         <tbody>
-          {#each SHORTCUTS as shortcut (shortcut.action)}
+          {#each SHORTCUTS as shortcut, i (shortcut.action)}
+            {#if shortcut.scope === "table" && SHORTCUTS[i - 1]?.scope !== "table"}
+              <tr>
+                <th colspan="2" scope="colgroup" class="pt-3 pb-1 text-left font-semibold">
+                  {m.table_shortcuts_title()}
+                </th>
+              </tr>
+            {/if}
             <tr class="border-t border-border">
               <td class="py-1 pr-4">{shortcutLabel(shortcut.action)}</td>
               <td class="py-1 text-right">
