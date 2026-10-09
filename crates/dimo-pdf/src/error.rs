@@ -54,6 +54,18 @@ pub enum PdfError {
     #[error("text extraction failed: {0}")]
     Text(String),
 
+    /// A balloon overlay contains values that cannot be drawn (T1.2).
+    #[error("invalid balloon overlay: {0}")]
+    InvalidOverlay(String),
+
+    /// The bundled balloon font cannot be read or lacks a character (T1.2).
+    #[error("balloon font: {0}")]
+    Font(String),
+
+    /// PDFium reported an error while adding balloons or saving the ballooned PDF (T1.2).
+    #[error("writing the ballooned PDF failed: {0}")]
+    Write(String),
+
     /// The render thread is gone (it panicked or could not start). Nothing more can be rendered
     /// in this process.
     #[error("PDFium render thread is not running")]

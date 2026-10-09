@@ -897,6 +897,7 @@ version = "0.0.0"
 name = "dimo-pdf"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "dimo-core",
  "insta",
  "pdfium-render",
