@@ -1,0 +1,1043 @@
+{
+  "$defs": {
+    "Balloon": {
+      "description": "A balloon on a sheet that marks a characteristic (data model `Balloon`).",
+      "properties": {
+        "anchor": {
+          "$ref": "#/$defs/Point",
+          "description": "End of the leader line in sheet space, on the feature."
+        },
+        "characteristic": {
+          "$ref": "#/$defs/CharId",
+          "description": "The characteristic this balloon marks. The number shown is the characteristic number."
+        },
+        "id": {
+          "$ref": "#/$defs/BalloonId",
+          "description": "Stable ID."
+        },
+        "position": {
+          "$ref": "#/$defs/Point",
+          "description": "Center of the balloon in sheet space."
+        },
+        "sheet": {
+          "$ref": "#/$defs/SheetId",
+          "description": "Sheet the balloon is drawn on."
+        },
+        "style": {
+          "$ref": "#/$defs/BalloonStyleOverride",
+          "description": "Deviations from the project default style."
+        }
+      },
+      "required": [
+        "id",
+        "characteristic",
+        "sheet",
+        "position",
+        "anchor",
+        "style"
+      ],
+      "type": "object"
+    },
+    "BalloonId": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "BalloonShape": {
+      "description": "Outline shape of a balloon.",
+      "oneOf": [
+        {
+          "const": "circle",
+          "description": "Circle (D-24 default).",
+          "type": "string"
+        },
+        {
+          "const": "flag",
+          "description": "Flag: a rectangle with a pointed side.",
+          "type": "string"
+        },
+        {
+          "const": "rectangle",
+          "description": "Rectangle.",
+          "type": "string"
+        }
+      ]
+    },
+    "BalloonStyle": {
+      "description": "How balloons are drawn (D-24). The project holds one default, balloons may override parts.\n\nSizes are millimeters on the sheet printed at its nominal paper size; multiply by\n[`UNITS_PER_MM`] for sheet units. Because they live in sheet space they scale with the sheet.",
+      "properties": {
+        "fill_color": {
+          "$ref": "#/$defs/Color",
+          "description": "Fill color."
+        },
+        "leader": {
+          "description": "Whether a leader line is drawn from the balloon to its anchor.",
+          "type": "boolean"
+        },
+        "outline_color": {
+          "$ref": "#/$defs/Color",
+          "description": "Outline and leader color."
+        },
+        "outline_mm": {
+          "description": "Outline width in mm.",
+          "format": "double",
+          "type": "number"
+        },
+        "shape": {
+          "$ref": "#/$defs/BalloonShape",
+          "description": "Outline shape."
+        },
+        "size_mm": {
+          "description": "Diameter of a circle, height of a flag or rectangle, in mm.",
+          "format": "double",
+          "type": "number"
+        },
+        "text_color": {
+          "$ref": "#/$defs/Color",
+          "description": "Color of the number."
+        }
+      },
+      "required": [
+        "shape",
+        "size_mm",
+        "outline_mm",
+        "outline_color",
+        "fill_color",
+        "text_color",
+        "leader"
+      ],
+      "type": "object"
+    },
+    "BalloonStyleOverride": {
+      "description": "Per balloon deviations from the project default style. `null` means \"use the default\".",
+      "properties": {
+        "fill_color": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Color"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Fill color."
+        },
+        "leader": {
+          "description": "Leader line on or off.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "outline_color": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Color"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Outline and leader color."
+        },
+        "outline_mm": {
+          "description": "Outline width in mm.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BalloonShape"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Outline shape."
+        },
+        "size_mm": {
+          "description": "Size in mm.",
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "text_color": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Color"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Number color."
+        }
+      },
+      "type": "object"
+    },
+    "CharId": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "Characteristic": {
+      "description": "One inspectable characteristic (data model 07, FR-CHR-01, FR-CHR-02).\n\nOptional values are written as `null` in `project.json`, so every key is always present.",
+      "properties": {
+        "classification": {
+          "$ref": "#/$defs/Classification",
+          "description": "Importance class."
+        },
+        "comment": {
+          "description": "Free text.",
+          "type": "string"
+        },
+        "fit": {
+          "description": "Fit designation such as `H7`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/CharId",
+          "description": "Stable ID, never changes (FR-BAL-09)."
+        },
+        "inspect": {
+          "description": "False for reference and basic dimensions (D-25).",
+          "type": "boolean"
+        },
+        "inspection": {
+          "$ref": "#/$defs/Inspection",
+          "description": "How the characteristic is inspected."
+        },
+        "kind": {
+          "$ref": "#/$defs/CharacteristicKind",
+          "description": "What the characteristic describes."
+        },
+        "lower_dev": {
+          "description": "Lower deviation, kept for display.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lower_limit": {
+          "description": "Lower limit, always stored explicitly.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nominal": {
+          "description": "Nominal value.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "number": {
+          "description": "Display number, starting at 1. Follows the placement order while numbering is unlocked\n(D-21); kept when numbering is locked (D-23).",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "origin": {
+          "$ref": "#/$defs/Origin",
+          "description": "How the characteristic came into the project."
+        },
+        "quantity": {
+          "description": "Number of features the characteristic stands for, from `4X` or `2 PL` (D-22). At least 1.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "requirement_text": {
+          "description": "Text as it appears on the drawing.",
+          "type": "string"
+        },
+        "sources": {
+          "description": "Regions of the drawing the characteristic was read from (FR-CHR-09).",
+          "items": {
+            "$ref": "#/$defs/SourceRegion"
+          },
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/CharacteristicStatus",
+          "description": "Review state."
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Unit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Unit of nominal, deviations and limits."
+        },
+        "upper_dev": {
+          "description": "Upper deviation, kept for display.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "upper_limit": {
+          "description": "Upper limit, always stored explicitly.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "number",
+        "kind",
+        "requirement_text",
+        "nominal",
+        "upper_dev",
+        "lower_dev",
+        "upper_limit",
+        "lower_limit",
+        "quantity",
+        "classification",
+        "inspection",
+        "inspect",
+        "status",
+        "origin",
+        "sources",
+        "comment"
+      ],
+      "type": "object"
+    },
+    "CharacteristicKind": {
+      "description": "What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01).",
+      "oneOf": [
+        {
+          "const": "linear",
+          "description": "Linear size or distance.",
+          "type": "string"
+        },
+        {
+          "const": "diameter",
+          "description": "Diameter (`Ø`, `⌀`, `DIA`).",
+          "type": "string"
+        },
+        {
+          "const": "radius",
+          "description": "Radius (`R`).",
+          "type": "string"
+        },
+        {
+          "const": "spherical_radius",
+          "description": "Spherical radius (`SR`).",
+          "type": "string"
+        },
+        {
+          "const": "angle",
+          "description": "Angle.",
+          "type": "string"
+        },
+        {
+          "const": "chamfer",
+          "description": "Chamfer, e.g. `1x45°`.",
+          "type": "string"
+        },
+        {
+          "const": "thread",
+          "description": "Thread, e.g. `M8x1.25-6H`.",
+          "type": "string"
+        },
+        {
+          "const": "counterbore",
+          "description": "Counterbore.",
+          "type": "string"
+        },
+        {
+          "const": "countersink",
+          "description": "Countersink.",
+          "type": "string"
+        },
+        {
+          "const": "depth",
+          "description": "Depth of a hole or pocket.",
+          "type": "string"
+        },
+        {
+          "const": "surface_texture",
+          "description": "Surface texture requirement.",
+          "type": "string"
+        },
+        {
+          "const": "geometric",
+          "description": "Geometric tolerance (feature control frame).",
+          "type": "string"
+        },
+        {
+          "const": "note",
+          "description": "Text note with an inspectable requirement.",
+          "type": "string"
+        },
+        {
+          "const": "flag_note",
+          "description": "Flag note, linked from a flag symbol.",
+          "type": "string"
+        },
+        {
+          "const": "material_process",
+          "description": "Material or process requirement, e.g. hardness or coating.",
+          "type": "string"
+        },
+        {
+          "const": "other",
+          "description": "Anything else. Default for a characteristic placed by hand before its kind is known.",
+          "type": "string"
+        }
+      ]
+    },
+    "CharacteristicStatus": {
+      "description": "Review state of a characteristic (data model `status`).",
+      "oneOf": [
+        {
+          "const": "proposed",
+          "description": "Suggested by automation, not yet reviewed.",
+          "type": "string"
+        },
+        {
+          "const": "accepted",
+          "description": "Accepted by the user. Characteristics placed by hand start here.",
+          "type": "string"
+        },
+        {
+          "const": "verified",
+          "description": "Checked by a second look.",
+          "type": "string"
+        },
+        {
+          "const": "rejected",
+          "description": "Kept for traceability but not inspected.",
+          "type": "string"
+        }
+      ]
+    },
+    "Classification": {
+      "description": "Importance class of a characteristic (FR-CHR-02). Default `none` (D-26).",
+      "oneOf": [
+        {
+          "const": "critical",
+          "description": "Critical characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "major",
+          "description": "Major characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "minor",
+          "description": "Minor characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "key",
+          "description": "Key characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "none",
+          "description": "Not classified.",
+          "type": "string"
+        }
+      ]
+    },
+    "Color": {
+      "pattern": "^#[0-9A-F]{6}$",
+      "type": "string"
+    },
+    "DrawingRevision": {
+      "description": "One imported drawing file (data model `DrawingRevision`, FR-DOC-07).",
+      "properties": {
+        "file_name": {
+          "description": "File name at import, without directories.",
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/RevisionId",
+          "description": "Stable ID."
+        },
+        "imported_at": {
+          "$ref": "#/$defs/Timestamp",
+          "description": "When the file was imported."
+        },
+        "label": {
+          "description": "Revision label from the title block or the user, e.g. `B`. Empty if unknown.",
+          "type": "string"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256Hex",
+          "description": "SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`."
+        },
+        "sheets": {
+          "description": "Sheets in page order.",
+          "items": {
+            "$ref": "#/$defs/Sheet"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "file_name",
+        "sha256",
+        "imported_at",
+        "sheets"
+      ],
+      "type": "object"
+    },
+    "InsertPolicy": {
+      "description": "Number given to a characteristic added while numbering is locked (D-23).",
+      "oneOf": [
+        {
+          "const": "next_free",
+          "description": "One more than the highest number ever given since the lock. Deleted numbers are not\nreused, so an issued number never changes meaning.",
+          "type": "string"
+        }
+      ]
+    },
+    "Inspection": {
+      "description": "How a characteristic is inspected (FR-CHR-02). Empty text means not set.",
+      "properties": {
+        "frequency": {
+          "description": "Inspection frequency.",
+          "type": "string"
+        },
+        "gauge": {
+          "description": "Gauge or measuring instrument.",
+          "type": "string"
+        },
+        "method": {
+          "description": "Inspection method, e.g. `CMM` or `visual`.",
+          "type": "string"
+        },
+        "sampling": {
+          "description": "Sampling plan, e.g. `100%` or `5 per lot`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "method",
+        "gauge",
+        "sampling",
+        "frequency"
+      ],
+      "type": "object"
+    },
+    "LockReason": {
+      "description": "Why numbering was locked (FR-BAL-10).",
+      "oneOf": [
+        {
+          "const": "manual",
+          "description": "The user locked it.",
+          "type": "string"
+        },
+        {
+          "const": "issued_report",
+          "description": "A report was exported as issued (D-23).",
+          "type": "string"
+        }
+      ]
+    },
+    "Numbering": {
+      "description": "Numbering state of the project (D-21, D-23).\n\nUnlocked: numbers are always `1..=n` in placement order, and every add, delete or move\nrenumbers. Locked: numbers never change, deletions leave gaps, moves are refused and\nadded characteristics get the next free number.",
+      "properties": {
+        "lock": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NumberingLock"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The lock, if numbering is locked."
+        }
+      },
+      "type": "object"
+    },
+    "NumberingLock": {
+      "description": "State of a numbering lock (FR-BAL-10, D-23).",
+      "properties": {
+        "highest_number": {
+          "description": "Highest number given so far, including numbers of deleted characteristics.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "insert_policy": {
+          "$ref": "#/$defs/InsertPolicy",
+          "description": "How added characteristics are numbered while locked."
+        },
+        "locked_at": {
+          "$ref": "#/$defs/Timestamp",
+          "description": "When it was locked."
+        },
+        "locked_by": {
+          "description": "Who locked it (D-27).",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/LockReason",
+          "description": "Why the numbering was locked."
+        }
+      },
+      "required": [
+        "reason",
+        "locked_at",
+        "locked_by",
+        "insert_policy",
+        "highest_number"
+      ],
+      "type": "object"
+    },
+    "OrientedBox": {
+      "additionalProperties": false,
+      "description": "Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).",
+      "properties": {
+        "angle": {
+          "description": "Rotation in degrees, counterclockwise as seen on the sheet, in the range (-180, 180].\n`0` is text read left to right, `90` is text read bottom to top.",
+          "format": "double",
+          "type": "number"
+        },
+        "center": {
+          "$ref": "#/$defs/Point",
+          "description": "Center of the box."
+        },
+        "size": {
+          "$ref": "#/$defs/Size",
+          "description": "Size of the box before rotation."
+        }
+      },
+      "required": [
+        "center",
+        "size",
+        "angle"
+      ],
+      "type": "object"
+    },
+    "Origin": {
+      "description": "How a characteristic came into the project (data model `origin`).",
+      "oneOf": [
+        {
+          "const": "manual",
+          "description": "Placed by hand.",
+          "type": "string"
+        },
+        {
+          "const": "box_select",
+          "description": "Read from a box the user drew (M2).",
+          "type": "string"
+        },
+        {
+          "const": "auto_detect",
+          "description": "Accepted from automatic detection (M4).",
+          "type": "string"
+        },
+        {
+          "const": "carried_over",
+          "description": "Carried over from an earlier drawing revision (M6).",
+          "type": "string"
+        }
+      ]
+    },
+    "Point": {
+      "additionalProperties": false,
+      "description": "A point in sheet space.",
+      "properties": {
+        "x": {
+          "description": "Distance from the left sheet edge in PDF user units.",
+          "format": "double",
+          "type": "number"
+        },
+        "y": {
+          "description": "Distance from the top sheet edge in PDF user units.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ProjectInfo": {
+      "description": "Descriptive data of the inspected part. Empty text means not set.",
+      "properties": {
+        "customer": {
+          "description": "Customer.",
+          "type": "string"
+        },
+        "order_reference": {
+          "description": "Order or purchase reference.",
+          "type": "string"
+        },
+        "part_name": {
+          "description": "Part name.",
+          "type": "string"
+        },
+        "part_number": {
+          "description": "Part number.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "part_number",
+        "part_name",
+        "customer",
+        "order_reference"
+      ],
+      "type": "object"
+    },
+    "ProjectSettings": {
+      "description": "Project wide settings.",
+      "properties": {
+        "balloon_style": {
+          "$ref": "#/$defs/BalloonStyle",
+          "description": "Default balloon style (D-24)."
+        }
+      },
+      "required": [
+        "balloon_style"
+      ],
+      "type": "object"
+    },
+    "RevisionId": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "Rotation": {
+      "description": "Clockwise rotation used to view a sheet, in 90 degree steps (FR-DOC-05).\n\nOnly the view rotates. Stored geometry stays in unrotated sheet space (rule 4).",
+      "oneOf": [
+        {
+          "const": "deg0",
+          "description": "Not rotated.",
+          "type": "string"
+        },
+        {
+          "const": "deg90",
+          "description": "90 degrees clockwise.",
+          "type": "string"
+        },
+        {
+          "const": "deg180",
+          "description": "180 degrees.",
+          "type": "string"
+        },
+        {
+          "const": "deg270",
+          "description": "270 degrees clockwise (90 counterclockwise).",
+          "type": "string"
+        }
+      ]
+    },
+    "Scale": {
+      "description": "Drawing scale as printed in the title block, e.g. `1:2` (FR-DOC-05).",
+      "properties": {
+        "actual": {
+          "description": "Corresponding length on the part. At least 1.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "drawing": {
+          "description": "Length on the drawing. At least 1.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "drawing",
+        "actual"
+      ],
+      "type": "object"
+    },
+    "Sha256Hex": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "Sheet": {
+      "description": "One sheet (PDF page) of a drawing revision.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SheetId",
+          "description": "Stable ID."
+        },
+        "index": {
+          "description": "Zero based page index in the PDF.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/SheetKind",
+          "description": "How the text is stored."
+        },
+        "raster_dpi": {
+          "description": "Resolution of raster sheets.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "rotation": {
+          "$ref": "#/$defs/Rotation",
+          "description": "View rotation."
+        },
+        "scale": {
+          "$ref": "#/$defs/Scale",
+          "description": "Drawing scale."
+        },
+        "size": {
+          "$ref": "#/$defs/Size",
+          "description": "Size in PDF user units, unrotated."
+        },
+        "unit": {
+          "$ref": "#/$defs/Unit",
+          "description": "Length unit of the dimensions on this sheet, `mm` or `in`. Default `mm` (D-20: never\ninferred from the sheet size)."
+        }
+      },
+      "required": [
+        "id",
+        "index",
+        "size",
+        "rotation",
+        "kind",
+        "unit",
+        "scale"
+      ],
+      "type": "object"
+    },
+    "SheetId": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "SheetKind": {
+      "description": "How the text of a sheet is stored, which decides the recognition path (FR-DOC-03).",
+      "oneOf": [
+        {
+          "const": "vector_text",
+          "description": "PDF text objects cover the dimension text.",
+          "type": "string"
+        },
+        {
+          "const": "vector_outlined",
+          "description": "Text was exported as curves.",
+          "type": "string"
+        },
+        {
+          "const": "raster",
+          "description": "Scanned or image only.",
+          "type": "string"
+        }
+      ]
+    },
+    "Size": {
+      "additionalProperties": false,
+      "description": "A width and height in PDF user units.",
+      "properties": {
+        "height": {
+          "description": "Vertical extent; for an oriented box, along its own y axis before rotation.",
+          "format": "double",
+          "type": "number"
+        },
+        "width": {
+          "description": "Horizontal extent; for an oriented box, along its own x axis before rotation.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "type": "object"
+    },
+    "SourceRegion": {
+      "description": "The region of a sheet a characteristic was read from (FR-CHR-09).",
+      "properties": {
+        "raw_text": {
+          "description": "Raw recognized text, if any text was read.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "region": {
+          "$ref": "#/$defs/OrientedBox",
+          "description": "Oriented box in sheet space."
+        },
+        "sheet": {
+          "$ref": "#/$defs/SheetId",
+          "description": "Sheet that holds the region."
+        },
+        "text_source": {
+          "$ref": "#/$defs/TextSource",
+          "description": "Where the text came from."
+        }
+      },
+      "required": [
+        "sheet",
+        "region",
+        "text_source"
+      ],
+      "type": "object"
+    },
+    "TextSource": {
+      "description": "Where the text of a source region came from (data model `SourceRegion`).",
+      "oneOf": [
+        {
+          "description": "Region drawn by the user; no text was read.",
+          "properties": {
+            "type": {
+              "const": "manual",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Text objects of the PDF.",
+          "properties": {
+            "type": {
+              "const": "pdf_text",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Optical character recognition.",
+          "properties": {
+            "engine": {
+              "description": "OCR engine name.",
+              "type": "string"
+            },
+            "model_version": {
+              "description": "Model version of the engine.",
+              "type": "string"
+            },
+            "type": {
+              "const": "ocr",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "engine",
+            "model_version"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Timestamp": {
+      "description": "RFC 3339 UTC timestamp, e.g. \"2026-10-09T14:03:21.250Z\".",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
+      "type": "string"
+    },
+    "Unit": {
+      "description": "Unit of a nominal value and its limits.",
+      "oneOf": [
+        {
+          "const": "mm",
+          "description": "Millimeter.",
+          "type": "string"
+        },
+        {
+          "const": "in",
+          "description": "Inch.",
+          "type": "string"
+        },
+        {
+          "const": "deg",
+          "description": "Degree of angle (decimal degrees).",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A Dimo project (data model `Project`).\n\nChange it only through [`Document::execute`](crate::document::Document::execute), so every\nchange is undoable and audited (ADR 0001, NFR-REL-02).",
+  "properties": {
+    "balloons": {
+      "description": "Balloons in placement order.",
+      "items": {
+        "$ref": "#/$defs/Balloon"
+      },
+      "type": "array"
+    },
+    "characteristics": {
+      "description": "Characteristics in placement order (D-21).",
+      "items": {
+        "$ref": "#/$defs/Characteristic"
+      },
+      "type": "array"
+    },
+    "current_revision": {
+      "$ref": "#/$defs/RevisionId",
+      "description": "The revision that is ballooned."
+    },
+    "info": {
+      "$ref": "#/$defs/ProjectInfo",
+      "description": "Part and order data."
+    },
+    "numbering": {
+      "$ref": "#/$defs/Numbering",
+      "description": "Numbering state."
+    },
+    "revisions": {
+      "description": "Imported drawing files, oldest first. Old revisions stay for traceability.",
+      "items": {
+        "$ref": "#/$defs/DrawingRevision"
+      },
+      "type": "array"
+    },
+    "settings": {
+      "$ref": "#/$defs/ProjectSettings",
+      "description": "Project settings."
+    }
+  },
+  "required": [
+    "info",
+    "revisions",
+    "current_revision",
+    "characteristics",
+    "balloons",
+    "numbering",
+    "settings"
+  ],
+  "title": "Project",
+  "type": "object"
+}

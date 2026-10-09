@@ -7,8 +7,8 @@
 | Command engine | `proptest` random command, undo and redo sequences against snapshots; numbering rules as tables | `dimo-core/tests/` |
 | Tolerance tables | table driven tests from `data/tolerances/*.test.toml` | `dimo-tolerance` |
 | Output formats (CSV, XLSX, PDF structure, project JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
-| Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` | `dimo-core/tests/` |
-| Project file migrations | one fixture per schema version | `dimo-io/tests/fixtures/` |
+| Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` (truth) or `-p dimo-io --test schema` (project) | `dimo-core/tests/`, `dimo-io/tests/` |
+| Project file migrations | one fixture per schema version in folder mode, never changed after release; new one with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations` | `dimo-io/tests/fixtures/v<n>/` |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
 | Frontend units | Vitest | `apps/desktop/src/**/*.test.ts` |
 | End to end | WebdriverIO with tauri-driver | `apps/desktop/e2e/`, from M1 |

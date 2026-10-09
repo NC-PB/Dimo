@@ -11,5 +11,12 @@ publish.workspace = true
 [dependencies]
 clap.workspace = true
 
+[dev-dependencies]
+# Import glue test: dimo-io may not depend on dimo-pdf, the CLI may use both (rust.md).
+dimo-core.workspace = true
+dimo-io.workspace = true
+dimo-pdf.workspace = true
+tempfile.workspace = true
+
 [lints]
 workspace = true

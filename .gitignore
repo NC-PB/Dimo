@@ -21,6 +21,7 @@ data/models/*.onnx
 coverage/
 *.profraw
 *.dimo.journal
+*.dimo.journal.stale
 
 # Claude Code personal files
 CLAUDE.local.md

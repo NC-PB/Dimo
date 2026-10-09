@@ -13,12 +13,18 @@ dimo-core.workspace = true
 csv.workspace = true
 rust_decimal.workspace = true
 rust_xlsxwriter.workspace = true
+serde.workspace = true
+# float_roundtrip: sheet geometry (f64) must load exactly as saved, or save, load, save differs.
+serde_json = { workspace = true, features = ["float_roundtrip"] }
+sha2.workspace = true
+tempfile.workspace = true
 thiserror.workspace = true
+zip.workspace = true
 
 [dev-dependencies]
+boon.workspace = true
 insta.workspace = true
-rust_decimal.workspace = true
-zip = { version = "=8.3.0", default-features = false, features = ["deflate"] }
+proptest.workspace = true
 
 [lints]
 workspace = true

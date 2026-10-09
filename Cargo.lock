@@ -861,6 +861,10 @@ name = "dimo-cli"
 version = "0.0.0"
 dependencies = [
  "clap",
+ "dimo-core",
+ "dimo-io",
+ "dimo-pdf",
+ "tempfile",
 ]
 
 [[package]]
@@ -913,11 +917,17 @@ dependencies = [
 name = "dimo-io"
 version = "0.0.0"
 dependencies = [
+ "boon",
  "csv",
  "dimo-core",
  "insta",
+ "proptest",
  "rust_decimal",
  "rust_xlsxwriter",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
  "thiserror 2.0.21",
  "zip",
 ]
@@ -5326,9 +5336,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "8.3.0"
+version = "8.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a243cfad17427fc077f529da5a95abe4e94fd2bfdb601611870a6557cc67657"
+checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
 dependencies = [
  "crc32fast",
  "flate2",

@@ -56,6 +56,8 @@ specta-serde = "=0.0.12"
 specta-typescript = "=0.0.12"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 tracing = { version = "=0.1.44" }
+# Project container (T1.3). Reads stored and deflated entries, writes stored only (deterministic).
+zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 # Stable IDs of the domain model (FR-BAL-09). No generator features: IDs come from a provider.
 uuid = { version = "=1.26.1", default-features = false, features = ["std", "serde"] }
 
