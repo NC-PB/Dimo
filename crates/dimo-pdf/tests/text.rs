@@ -377,9 +377,11 @@ fn identity_h_without_to_unicode_passes_codes_through() {
         ("/ToUnicode 7 0 R", "Z\u{2212}\u{D8}123456789"),
     ] {
         let doc = engine.open(identity_h_pdf(to_unicode, codes)).unwrap();
+        // Decoding is under test, not run merging: the font is not embedded, so glyph widths
+        // and with them the run splits depend on the substitute font of the platform.
         assert_eq!(
-            texts(&doc.text_runs(0).unwrap()),
-            [expected],
+            texts(&doc.text_runs(0).unwrap()).concat(),
+            expected,
             "{to_unicode}"
         );
         let analysis = doc.analyze_sheet(0).unwrap();

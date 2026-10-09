@@ -8,7 +8,7 @@ mod common;
 use std::fs;
 use std::io::{Cursor, Read as _, Write as _};
 
-use dimo_core::{Command, Document, Point, Project, Rotation, Scale, Sha256Hex, Unit};
+use dimo_core::{Command, Document, Point, Project, Rotation, Scale, Unit};
 use dimo_io::project::{
     APP_VERSION, Layout, Limits, ProjectError, ProjectFile, SCHEMA_VERSION, sha256,
 };
@@ -429,7 +429,7 @@ fn folder_mode_refuses_symlinks() {
     let dir = tempfile::tempdir().unwrap();
     let folder = dir.path().join("p");
     common::sample().save(&folder, Layout::Folder).unwrap();
-    let hash: Sha256Hex = sha256(common::DRAWING);
+    let hash: dimo_core::Sha256Hex = sha256(common::DRAWING);
     let drawing = folder.join(format!("drawings/{hash}.pdf"));
     let outside = dir.path().join("outside.pdf");
     fs::rename(&drawing, &outside).unwrap();
