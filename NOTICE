@@ -4,3 +4,7 @@ Copyright 2026 Peter Burgener and the Dimo contributors
 This product is licensed under the Apache License, Version 2.0.
 Third party components and their licenses are listed in the release notes
 and in THIRD_PARTY_LICENSES (generated at release time).
+
+This product bundles the font Open Sans Bold 1.10 (data/fonts/OpenSans-Bold.ttf),
+Digitized data copyright 2010-2011 Google Corporation, licensed under the Apache License,
+Version 2.0. See data/fonts/README.md.

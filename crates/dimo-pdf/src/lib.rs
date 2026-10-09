@@ -10,6 +10,10 @@
 //! characters are merged) and sheet classification from the page content
 //! ([`Document::analyze_sheet`], see [`SheetAnalysis`] for the rule).
 //!
+//! T1.2: [`PdfEngine::write_ballooned`] writes a copy of a PDF with balloons as vector page
+//! content or as annotations (FR-EXP-01, D-33), deterministic (FR-EXP-11). The primitives are
+//! in [`overlay`], the bundled number font and its subsetter in `font`.
+//!
 //! # Coordinates
 //!
 //! All geometry is in sheet space (AGENTS.md rule 4): PDF user units, origin at the top left of
@@ -44,20 +48,27 @@
 
 pub mod geometry;
 pub mod library;
+pub mod overlay;
 pub mod sheet_kind;
 pub mod text;
 pub mod tiles;
 
 mod engine;
 mod error;
+mod font;
 mod hash;
 mod page_space;
 mod raster;
+mod writer;
 
 pub use engine::{Document, MAX_RENDER_SIDE, PdfEngine};
 pub use error::PdfError;
 pub use geometry::{SheetRect, SheetSize};
 pub use hash::ContentHash;
+pub use overlay::{
+    Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, Rgb, SheetBalloons,
+    SheetPoint, Stroke,
+};
 pub use raster::RgbaImage;
 pub use sheet_kind::{FontInfo, MIN_TEXT_CHARS, RASTER_COVERAGE, SheetAnalysis};
 pub use text::TextRun;

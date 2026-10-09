@@ -14,9 +14,11 @@ use crate::PdfError;
 use crate::geometry::{SheetRect, SheetSize};
 use crate::hash::ContentHash;
 use crate::library::resolve_library_path;
+use crate::overlay::BalloonOverlay;
 use crate::raster::RgbaImage;
 use crate::sheet_kind::{SheetAnalysis, analyze_sheet};
 use crate::text::{TextRun, text_runs};
+use crate::writer::write_ballooned;
 
 /// Largest width or height of one rendered image in pixels. A0 at 300 dpi is about
 /// 9933 x 14043 pixels, so this leaves headroom while bounding memory (1 GiB RGBA at most).
@@ -88,6 +90,11 @@ enum Request {
         sheet: usize,
         reply: Reply<SheetAnalysis>,
     },
+    WriteBallooned {
+        original: Vec<u8>,
+        overlay: BalloonOverlay,
+        reply: Reply<Vec<u8>>,
+    },
 }
 
 /// Handle to the PDFium render thread. Cheap to clone, usable from any thread.
@@ -149,6 +156,23 @@ impl PdfEngine {
             hash,
             sheets,
             engine: self.clone(),
+        })
+    }
+
+    /// Writes a copy of the PDF `original` with the balloons of `overlay` added as vector
+    /// graphics (FR-EXP-01, D-33) and returns the new file. The original bytes are not changed;
+    /// documents open in this engine are not affected. Same input, same output bytes
+    /// (FR-EXP-11). See [`crate::overlay`] for the primitives.
+    pub fn write_ballooned(
+        &self,
+        original: Vec<u8>,
+        overlay: BalloonOverlay,
+    ) -> Result<Vec<u8>, PdfError> {
+        overlay.validate()?;
+        self.call(|reply| Request::WriteBallooned {
+            original,
+            overlay,
+            reply,
         })
     }
 
@@ -391,6 +415,13 @@ fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
             }
             Request::AnalyzeSheet { doc, sheet, reply } => {
                 let _ = reply.send(with_doc(&docs, doc, |d| analyze_sheet(d, sheet)));
+            }
+            Request::WriteBallooned {
+                original,
+                overlay,
+                reply,
+            } => {
+                let _ = reply.send(write_ballooned(pdfium, &original, &overlay));
             }
         }
     }

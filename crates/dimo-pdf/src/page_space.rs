@@ -54,6 +54,17 @@ impl PageToSheet {
         SheetRect::new(x0.min(x1), y0.min(y1), (x1 - x0).abs(), (y1 - y0).abs())
     }
 
+    /// The inverse of [`Self::point`] as a PDF matrix `[a b c d e f]`: sheet point `(x, y)`
+    /// maps to page point `(a x + c y + e, b x + d y + f)`. Used to write balloons (T1.2).
+    pub(crate) fn sheet_to_page(&self) -> [f64; 6] {
+        match self.quarter_turns {
+            0 => [1.0, 0.0, 0.0, -1.0, self.left, self.top],
+            1 => [0.0, 1.0, 1.0, 0.0, self.left, self.bottom],
+            2 => [-1.0, 0.0, 0.0, 1.0, self.right, self.bottom],
+            _ => [0.0, -1.0, -1.0, 0.0, self.right, self.top],
+        }
+    }
+
     /// Converts a counterclockwise angle in page space (degrees) to the counterclockwise angle
     /// seen on the sheet, normalized to `[0, 360)`.
     pub(crate) fn angle(&self, page_degrees: f64) -> f64 {
@@ -96,6 +107,19 @@ mod tests {
             let t = PageToSheet::new(BBOX, turns);
             assert_eq!(t.point(top_left.0, top_left.1), (0.0, 0.0), "{turns}");
             assert_eq!(t.point(bottom_right.0, bottom_right.1), size, "{turns}");
+        }
+    }
+
+    #[test]
+    fn sheet_to_page_inverts_point() {
+        for turns in 0..4 {
+            let to_sheet = PageToSheet::new(BBOX, turns);
+            let [xx, xy, yx, yy, tx, ty] = to_sheet.sheet_to_page();
+            for (x, y) in [(100.0, 50.0), (123.5, 700.25), (500.0, 750.0)] {
+                let (sx, sy) = to_sheet.point(x, y);
+                let page = (xx * sx + yx * sy + tx, xy * sx + yy * sy + ty);
+                assert_eq!(page, (x, y), "{turns}");
+            }
         }
     }
 

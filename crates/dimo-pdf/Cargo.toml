@@ -9,6 +9,7 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+chrono.workspace = true
 dimo-core.workspace = true
 pdfium-render.workspace = true
 png.workspace = true
