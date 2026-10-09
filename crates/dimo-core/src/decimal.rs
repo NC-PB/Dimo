@@ -62,13 +62,13 @@ impl From<Decimal> for OptionalDecimal {
 
 impl serde::Serialize for OptionalDecimal {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serde_str_option::serialize(&self.0, serializer)
+        serde_str_nullable::serialize(&self.0, serializer)
     }
 }
 
 impl<'de> serde::Deserialize<'de> for OptionalDecimal {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        serde_str_option::deserialize(deserializer).map(Self)
+        serde_str_nullable::deserialize(deserializer).map(Self)
     }
 }
 
@@ -112,11 +112,37 @@ pub fn decimal_option_schema(_: &mut SchemaGenerator) -> Schema {
     })
 }
 
-/// `#[serde(with = "crate::decimal::serde_str_option")]` for `Option<Decimal>` fields.
-/// `None` is written as `null`, and `null` or a decimal string are accepted.
-/// Combine with `#[serde(default, skip_serializing_if = "Option::is_none")]` so that an absent
-/// value is an absent key instead.
+/// `#[serde(with = "crate::decimal::serde_str_option")]` for `Option<Decimal>` fields whose
+/// absent value is an absent key: combine with
+/// `#[serde(default, skip_serializing_if = "Option::is_none")]`. A present key must be a
+/// decimal string; `null` is rejected (truth format).
 pub mod serde_str_option {
+    use rust_decimal::Decimal;
+    use serde::{Deserializer, Serializer};
+
+    /// Serialize `Some` as a decimal string, `None` as `null`.
+    pub fn serialize<S: Serializer>(
+        value: &Option<Decimal>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        match value {
+            Some(value) => super::serde_str::serialize(value, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize a present key as a strict decimal string.
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<Decimal>, D::Error> {
+        super::serde_str::deserialize(deserializer).map(Some)
+    }
+}
+
+/// `#[serde(with = "crate::decimal::serde_str_nullable")]` for `Option<Decimal>` fields that are
+/// always present: `None` is written as `null`, and `null` or a decimal string are accepted
+/// (project file and IPC, see [`decimal_option_schema`]).
+pub mod serde_str_nullable {
     use rust_decimal::Decimal;
     use serde::{Deserialize, Deserializer, Serializer};
 

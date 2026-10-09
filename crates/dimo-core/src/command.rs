@@ -282,10 +282,27 @@ fn index_u32(index: usize) -> u32 {
     u32::try_from(index).unwrap_or(u32::MAX)
 }
 
-/// Unit for a characteristic that has a nominal but no unit: degrees for angles, otherwise the
-/// unit of the sheet the characteristic sits on.
+/// Unit for a characteristic with a nominal: degrees for angles, otherwise the unit of the
+/// sheet the characteristic sits on. Filled when missing, and corrected when it contradicts the
+/// kind (an angle in mm, a size in degrees), for example after a kind change.
 fn fill_unit(project: &Project, c: &mut Characteristic, sheet: Option<SheetId>) {
-    if c.nominal.is_none() || c.unit.is_some() {
+    if c.nominal.is_none() {
+        return;
+    }
+    let length_kind = matches!(
+        c.kind,
+        CharacteristicKind::Linear
+            | CharacteristicKind::Diameter
+            | CharacteristicKind::Radius
+            | CharacteristicKind::SphericalRadius
+            | CharacteristicKind::Depth
+    );
+    let fits = match c.unit {
+        None => false,
+        Some(unit) if c.kind == CharacteristicKind::Angle => unit == Unit::Deg,
+        Some(unit) => !length_kind || unit.is_length(),
+    };
+    if fits {
         return;
     }
     c.unit = Some(if c.kind == CharacteristicKind::Angle {

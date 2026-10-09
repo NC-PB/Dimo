@@ -230,6 +230,17 @@ fn unit_defaults_to_degrees_for_angles_and_to_the_sheet_unit() {
     assert_eq!(p.characteristics[0].unit, Some(Unit::In));
     assert_eq!(p.characteristics[0].nominal.unwrap().to_string(), "0.250");
     assert_eq!(p.characteristics[1].unit, Some(Unit::Deg));
+
+    // A kind change corrects a unit that no longer fits.
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![ids[1]],
+            values: vec![FieldValue::Kind(CharacteristicKind::Linear)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    assert_eq!(doc.project().characteristics[1].unit, Some(Unit::In));
 }
 
 #[test]

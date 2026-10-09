@@ -3,8 +3,10 @@
 //! Scans the library sources for APIs that touch the outside world. Tests may use them;
 //! library code gets IDs, time and the user name from an `Environment`.
 
+#![allow(clippy::unwrap_used)] // Helpers of a test crate; rust.md allows unwrap in tests.
+
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const FORBIDDEN: &[&str] = &[
     "std::fs",
@@ -12,11 +14,12 @@ const FORBIDDEN: &[&str] = &[
     "std::process",
     "std::env",
     "std::thread",
-    "std::io::stdin",
+    "std::io",
     "SystemTime",
     "Instant::now",
     "new_v4",
     "new_v7",
+    "now_v7",
     "rand::",
     "println!",
     "eprintln!",
@@ -29,25 +32,42 @@ fn src_dir() -> PathBuf {
     PathBuf::from(manifest).join("src")
 }
 
+/// All `.rs` files below `dir`, recursively, sorted.
+fn rust_files(dir: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    for entry in fs::read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            files.extend(rust_files(&path));
+        } else if path.extension().is_some_and(|e| e == "rs") {
+            files.push(path);
+        }
+    }
+    files.sort();
+    files
+}
+
 #[test]
 fn library_sources_do_no_io() {
+    let files = rust_files(&src_dir());
+    assert!(
+        files.len() > 5,
+        "no sources found in {}",
+        src_dir().display()
+    );
     let mut violations = Vec::new();
-    let mut files = 0;
-    for entry in fs::read_dir(src_dir()).unwrap() {
-        let path = entry.unwrap().path();
-        if path.extension().is_none_or(|e| e != "rs") {
-            continue;
-        }
-        files += 1;
-        let text = fs::read_to_string(&path).unwrap();
-        // Unit test modules at the end of a file may do anything.
-        let library = text.split("#[cfg(test)]").next().unwrap_or_default();
+    for path in &files {
+        let text = fs::read_to_string(path).unwrap();
+        // The unit test module at the end of a file may do anything.
+        let library = text
+            .split("#[cfg(test)]\nmod tests")
+            .next()
+            .unwrap_or_default();
         for word in FORBIDDEN {
             if library.contains(word) {
                 violations.push(format!("{}: {word}", path.display()));
             }
         }
     }
-    assert!(files > 5, "no sources found in {}", src_dir().display());
     assert!(violations.is_empty(), "IO in dimo-core:\n{violations:#?}");
 }

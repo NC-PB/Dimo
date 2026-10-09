@@ -213,29 +213,29 @@ pub struct Characteristic {
     /// Text as it appears on the drawing.
     pub requirement_text: String,
     /// Nominal value.
-    #[serde(with = "crate::decimal::serde_str_option")]
+    #[serde(with = "crate::decimal::serde_str_nullable")]
     #[schemars(schema_with = "decimal_option_schema")]
     #[cfg_attr(feature = "specta", specta(type = Option<String>))]
     pub nominal: Option<Decimal>,
     /// Unit of nominal, deviations and limits.
     pub unit: Option<Unit>,
     /// Upper deviation, kept for display.
-    #[serde(with = "crate::decimal::serde_str_option")]
+    #[serde(with = "crate::decimal::serde_str_nullable")]
     #[schemars(schema_with = "decimal_option_schema")]
     #[cfg_attr(feature = "specta", specta(type = Option<String>))]
     pub upper_dev: Option<Decimal>,
     /// Lower deviation, kept for display.
-    #[serde(with = "crate::decimal::serde_str_option")]
+    #[serde(with = "crate::decimal::serde_str_nullable")]
     #[schemars(schema_with = "decimal_option_schema")]
     #[cfg_attr(feature = "specta", specta(type = Option<String>))]
     pub lower_dev: Option<Decimal>,
     /// Upper limit, always stored explicitly.
-    #[serde(with = "crate::decimal::serde_str_option")]
+    #[serde(with = "crate::decimal::serde_str_nullable")]
     #[schemars(schema_with = "decimal_option_schema")]
     #[cfg_attr(feature = "specta", specta(type = Option<String>))]
     pub upper_limit: Option<Decimal>,
     /// Lower limit, always stored explicitly.
-    #[serde(with = "crate::decimal::serde_str_option")]
+    #[serde(with = "crate::decimal::serde_str_nullable")]
     #[schemars(schema_with = "decimal_option_schema")]
     #[cfg_attr(feature = "specta", specta(type = Option<String>))]
     pub lower_limit: Option<Decimal>,
@@ -288,17 +288,20 @@ impl Characteristic {
 
     /// Sets field values in the given order (FR-CHR-02).
     ///
-    /// Limits follow the deviations: if the values change the nominal or a deviation but no
-    /// limit, and nominal and both deviations are present afterwards, the limits are set to
-    /// nominal plus deviation. Limits set explicitly are kept as given.
+    /// Limits follow the deviations when the values change the nominal or a deviation but no
+    /// limit: with nominal and both deviations present, the limits become nominal plus
+    /// deviation; with a deviation missing, limits derived from deviations are cleared, so no
+    /// stale limit stays. Limits set explicitly in the same values are kept as given, and
+    /// explicit limits of a characteristic without deviations survive nominal edits.
     pub fn set_values(&mut self, values: &[FieldValue]) -> Result<(), FieldError> {
+        let mut nominal_touched = false;
         let mut deviation_touched = false;
         let mut limit_touched = false;
         for value in values {
             match value {
                 FieldValue::Kind(kind) => self.kind = *kind,
                 FieldValue::RequirementText(text) => self.requirement_text = text.trim().into(),
-                FieldValue::Nominal(v) => (self.nominal, deviation_touched) = (v.0, true),
+                FieldValue::Nominal(v) => (self.nominal, nominal_touched) = (v.0, true),
                 FieldValue::Unit(unit) => self.unit = *unit,
                 FieldValue::UpperDev(v) => (self.upper_dev, deviation_touched) = (v.0, true),
                 FieldValue::LowerDev(v) => (self.lower_dev, deviation_touched) = (v.0, true),
@@ -323,13 +326,20 @@ impl Characteristic {
                 FieldValue::Comment(text) => self.comment.clone_from(text),
             }
         }
-        if deviation_touched
-            && !limit_touched
-            && let (Some(nominal), Some(upper), Some(lower)) =
-                (self.nominal, self.upper_dev, self.lower_dev)
-        {
-            self.upper_limit = nominal.checked_add(upper);
-            self.lower_limit = nominal.checked_add(lower);
+        if (nominal_touched || deviation_touched) && !limit_touched {
+            match (self.nominal, self.upper_dev, self.lower_dev) {
+                (Some(nominal), Some(upper), Some(lower)) => {
+                    self.upper_limit = nominal.checked_add(upper);
+                    self.lower_limit = nominal.checked_add(lower);
+                }
+                // Limits that came from deviations would be stale.
+                (_, upper, lower) if deviation_touched || upper.is_some() || lower.is_some() => {
+                    self.upper_limit = None;
+                    self.lower_limit = None;
+                }
+                // Only explicit limits, no deviations: keep them.
+                _ => {}
+            }
         }
         Ok(())
     }
@@ -417,6 +427,37 @@ mod tests {
             .unwrap();
         assert_eq!(c.upper_limit.unwrap().to_string(), "12.521");
         assert_eq!(c.lower_limit.unwrap().to_string(), "12.5");
+    }
+
+    /// Regression: clearing a deviation left limits that later nominal edits never updated.
+    #[test]
+    fn clearing_a_deviation_clears_derived_limits() {
+        let mut c = sample();
+        c.set_values(&[
+            FieldValue::Nominal(dec("30").into()),
+            FieldValue::UpperDev(dec("0.021").into()),
+            FieldValue::LowerDev(dec("0").into()),
+        ])
+        .unwrap();
+        c.set_values(&[FieldValue::UpperDev(None.into())]).unwrap();
+        assert_eq!((c.upper_limit, c.lower_limit), (None, None));
+        c.set_values(&[FieldValue::Nominal(dec("12.5").into())])
+            .unwrap();
+        assert_eq!((c.upper_limit, c.lower_limit), (None, None));
+    }
+
+    #[test]
+    fn explicit_limits_without_deviations_survive_nominal_edits() {
+        let mut c = sample();
+        c.set_values(&[
+            FieldValue::Nominal(dec("10").into()),
+            FieldValue::UpperLimit(dec("10.2").into()),
+            FieldValue::LowerLimit(dec("9.9").into()),
+        ])
+        .unwrap();
+        c.set_values(&[FieldValue::Nominal(dec("10.0").into())])
+            .unwrap();
+        assert_eq!((c.upper_limit, c.lower_limit), (dec("10.2"), dec("9.9")));
     }
 
     #[test]
