@@ -21,6 +21,17 @@ export type ShortcutAction =
   | "pan_down"
   | "previous_sheet"
   | "next_sheet"
+  | "nudge_left"
+  | "nudge_right"
+  | "nudge_up"
+  | "nudge_down"
+  | "select_tool"
+  | "place_tool"
+  | "edit_value"
+  | "select_all"
+  | "delete_selection"
+  | "restyle"
+  | "cancel"
   | "show_shortcuts"
   | "table_up"
   | "table_down"
@@ -41,7 +52,9 @@ export type ShortcutAction =
 
 /**
  * Where a shortcut acts. `global` shortcuts are handled by the window (`Shortcuts.svelte`),
- * `table` shortcuts only while the characteristic table has focus (T1.7).
+ * `table` shortcuts only while the characteristic table has focus (T1.7). Keys used in both
+ * scopes (arrows, Enter, Escape, Cmd+A) act on the table while it has focus; the window then
+ * leaves them alone.
  */
 export type ShortcutScope = "global" | "table";
 
@@ -90,12 +103,27 @@ export const SHORTCUTS: readonly Shortcut[] = [
   // Shift tells the direction, so the keys work on every keyboard layout (FR-DOC-05).
   { action: "rotate_right", keys: [{ key: "r", shift: false }] },
   { action: "rotate_left", keys: [{ key: "r", shift: true }] },
-  { action: "pan_left", keys: [{ key: "ArrowLeft" }], viewportOnly: true },
-  { action: "pan_right", keys: [{ key: "ArrowRight" }], viewportOnly: true },
-  { action: "pan_up", keys: [{ key: "ArrowUp" }], viewportOnly: true },
-  { action: "pan_down", keys: [{ key: "ArrowDown" }], viewportOnly: true },
+  { action: "pan_left", keys: [{ key: "ArrowLeft", shift: false }], viewportOnly: true },
+  { action: "pan_right", keys: [{ key: "ArrowRight", shift: false }], viewportOnly: true },
+  { action: "pan_up", keys: [{ key: "ArrowUp", shift: false }], viewportOnly: true },
+  { action: "pan_down", keys: [{ key: "ArrowDown", shift: false }], viewportOnly: true },
   { action: "previous_sheet", keys: [{ key: "PageUp" }] },
   { action: "next_sheet", keys: [{ key: "PageDown" }] },
+  { action: "nudge_left", keys: [{ key: "ArrowLeft", shift: true }], viewportOnly: true },
+  { action: "nudge_right", keys: [{ key: "ArrowRight", shift: true }], viewportOnly: true },
+  { action: "nudge_up", keys: [{ key: "ArrowUp", shift: true }], viewportOnly: true },
+  { action: "nudge_down", keys: [{ key: "ArrowDown", shift: true }], viewportOnly: true },
+  { action: "select_tool", keys: [{ key: "v" }] },
+  { action: "place_tool", keys: [{ key: "b" }] },
+  { action: "edit_value", keys: [{ key: "Enter" }], viewportOnly: true },
+  { action: "select_all", keys: [{ key: "a", mod: true }], textEditing: true },
+  {
+    action: "delete_selection",
+    keys: [{ key: "Delete" }, { key: "Backspace" }],
+    viewportOnly: true,
+  },
+  { action: "restyle", keys: [{ key: "s", shift: false }] },
+  { action: "cancel", keys: [{ key: "Escape" }] },
   { action: "show_shortcuts", keys: [{ key: "?" }] },
   // Characteristic table (T1.7), active while the table has focus.
   { action: "table_up", keys: [{ key: "ArrowUp", shift: false }], scope: "table" },
@@ -174,6 +202,18 @@ export function matchShortcut(
   );
 }
 
+/**
+ * Whether a window shortcut also acts while the characteristic table has focus: Cmd/Ctrl
+ * combinations (save, undo) and the cheat sheet. Single keys (R, V, B, S, zoom, PageUp) belong
+ * to the table there, so typing in a row never turns the sheet or switches the tool.
+ */
+export function worksInTable(shortcut: Shortcut): boolean {
+  return (
+    (shortcut.scope ?? "global") === "global" &&
+    (shortcut.action === "show_shortcuts" || shortcut.keys.every((k) => k.mod === true))
+  );
+}
+
 const KEY_NAMES: Record<string, string> = {
   ArrowLeft: "←",
   ArrowRight: "→",
@@ -182,6 +222,9 @@ const KEY_NAMES: Record<string, string> = {
   PageUp: "PgUp",
   PageDown: "PgDn",
   " ": "Space",
+  Enter: "↵",
+  Delete: "Del",
+  Backspace: "⌫",
   Escape: "Esc",
 };
 

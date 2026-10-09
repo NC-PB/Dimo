@@ -9,6 +9,7 @@ import type { ProjectStore } from "$lib/stores/project.svelte";
 import type { ViewportStore } from "$lib/stores/viewport.svelte";
 import { ACTUAL_SIZE_SCALE, centerOn, type Point } from "$lib/viewport/view-math";
 import { runPanCheck, runScrollCheck, type FrameStats } from "./pan-check";
+import { runUiScript } from "./ui-script";
 
 /** Resolves after two animation frames, when effects and layout of a change have run. */
 function afterLayout(): Promise<void> {
@@ -106,6 +107,11 @@ export class DevToolsStore {
     if (TABLE_CHECK && opened) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await this.measureTableScroll();
+    }
+    if (startup.ui_script !== null && opened) {
+      // Let the first tiles arrive, so captures show the drawing.
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await runUiScript(startup.ui_script);
     }
   }
 

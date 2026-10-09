@@ -17,6 +17,7 @@
     "allow-undo",
     "allow-redo",
     "allow-dev-startup",
-    "allow-dev-report-frame-times"
+    "allow-dev-report-frame-times",
+    "allow-dev-log"
   ]
 }

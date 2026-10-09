@@ -264,7 +264,7 @@ describe("characteristic table (T1.7)", () => {
     const row = target.querySelector('[role="row"][aria-rowindex="701"]');
     expect(row?.getAttribute("aria-selected")).toBe("true");
 
-    selected.focus("c3");
+    selected.focus("c3", "table");
     flushSync();
     grid.scrollTop = 0;
     grid.dispatchEvent(new Event("scroll"));
@@ -273,5 +273,31 @@ describe("characteristic table (T1.7)", () => {
     const input = target.querySelector<HTMLInputElement>("input.editor");
     expect(input?.value).toBe("R3");
     expect(input?.getAttribute("aria-label")).toBe("Requirement");
+  });
+
+  it("only shows the row for a focus request of the drawing, whose editor has the keys", async () => {
+    const { grid, selected } = await render(1000);
+    selected.focus("c800", "viewport");
+    flushSync();
+    expect(grid.scrollTop).toBeGreaterThan(700 * ROW_HEIGHT);
+    grid.dispatchEvent(new Event("scroll"));
+    flushSync();
+    expect([...selected.ids]).toEqual(["c800"]);
+    expect(target.querySelector("input.editor")).toBeNull();
+    expect(grid.getAttribute("aria-activedescendant")).toBe("ct-c800-requirement_text");
+  });
+
+  it("selects a row it starts to edit, so the drawing rings its balloon", async () => {
+    const { grid, selected } = await render(3);
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: " " });
+    expect(selected.isEmpty).toBe(true);
+    key(grid, { key: "ArrowRight" });
+    key(grid, { key: "ArrowRight" });
+    key(grid, { key: "x" });
+    expect([...selected.ids]).toEqual(["c2"]);
+    expect(selected.focusRequest?.from).toBe("table");
+    expect(target.querySelector<HTMLInputElement>("input.editor")?.value).toBe("x");
   });
 });

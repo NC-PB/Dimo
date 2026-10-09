@@ -44,7 +44,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             project::undo,
             project::redo,
             dev::dev_startup,
-            dev::dev_report_frame_times
+            dev::dev_report_frame_times,
+            dev::dev_log
         ])
         .events(collect_events![
             ipc::JobProgress,

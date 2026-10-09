@@ -49,7 +49,16 @@ New, open and window close ask about unsaved changes through `unsavedPrompt`
 ## Selection and the characteristic table
 
 `src/lib/stores/selection.svelte.ts` holds the selected characteristic IDs for the viewport and
-the table (`select(ids, mode)`, `clear()`, `has(id)`, `focus(id)` for "edit this one now").
+the table: `ids`, `primary`, `size`, `isEmpty`, `has(id)`; `select(ids, primary?)`, `add`,
+`remove`, `toggle`, `clear`, `retain(exists)`; `focus(id, from)` for "edit this one now". The
+view named in `from` (`"viewport"` or `"table"`) takes the keyboard focus, the other one only
+brings the item into view: after placing a balloon the viewport's value field has the keys and
+the table only makes the row active.
+
+The viewport follows a selection of exactly one characteristic (`viewport/reveal.ts`): it shows
+the balloon's sheet and centers the balloon when it is out of view or on another sheet. Group
+selections never move the view. While the table has focus, single key window shortcuts (R, V,
+B, S, zoom, PageUp) are ignored (`worksInTable` in `shortcuts.ts`); Cmd/Ctrl shortcuts still work.
 
 The table (`src/lib/table/`) uses TanStack Table for the column and row model and
 `@tanstack/virtual-core` (wrapped in `virtual.svelte.ts`) with one fixed row height. Cells send
