@@ -4,6 +4,7 @@
 |---|---|---|
 | Rust unit and integration | `cargo test` | next to the code, `tests/` per crate |
 | Parsers | `proptest` round trip (generate, print, parse) | `dimo-notation` |
+| Command engine | `proptest` random command, undo and redo sequences against snapshots; numbering rules as tables | `dimo-core/tests/` |
 | Tolerance tables | table driven tests from `data/tolerances/*.test.toml` | `dimo-tolerance` |
 | Output formats (CSV, XLSX, PDF structure, project JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
 | Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` | `dimo-core/tests/` |

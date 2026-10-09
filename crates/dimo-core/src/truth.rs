@@ -335,7 +335,7 @@ pub fn truth_schema_json() -> String {
     text
 }
 
-fn sort_keys(value: serde_json::Value) -> serde_json::Value {
+pub(crate) fn sort_keys(value: serde_json::Value) -> serde_json::Value {
     use serde_json::Value;
     match value {
         Value::Object(map) => {

@@ -12,6 +12,7 @@ publish.workspace = true
 tauri-build.workspace = true
 
 [dependencies]
+dimo-core = { workspace = true, features = ["specta"] }
 dimo-pdf.workspace = true
 rfd.workspace = true
 serde.workspace = true

@@ -37,6 +37,51 @@ pub fn decimal_schema(_: &mut SchemaGenerator) -> Schema {
     })
 }
 
+/// An optional exact decimal that serializes as a decimal string or `null`.
+///
+/// Used where a `#[serde(with)]` field attribute is not possible, such as the content of an
+/// adjacently tagged enum variant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[cfg_attr(feature = "specta", specta(transparent))]
+pub struct OptionalDecimal(
+    #[cfg_attr(feature = "specta", specta(type = Option<String>))] pub Option<Decimal>,
+);
+
+impl From<Option<Decimal>> for OptionalDecimal {
+    fn from(value: Option<Decimal>) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Decimal> for OptionalDecimal {
+    fn from(value: Decimal) -> Self {
+        Self(Some(value))
+    }
+}
+
+impl serde::Serialize for OptionalDecimal {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serde_str_nullable::serialize(&self.0, serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for OptionalDecimal {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        serde_str_nullable::deserialize(deserializer).map(Self)
+    }
+}
+
+impl schemars::JsonSchema for OptionalDecimal {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "OptionalDecimal".into()
+    }
+
+    fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+        decimal_option_schema(generator)
+    }
+}
+
 /// `#[serde(with = "crate::decimal::serde_str")]` for `Decimal` fields.
 pub mod serde_str {
     use rust_decimal::Decimal;
@@ -58,9 +103,19 @@ pub mod serde_str {
     }
 }
 
-/// `#[serde(with = "crate::decimal::serde_str_option")]` for `Option<Decimal>` fields.
-/// Combine with `#[serde(default, skip_serializing_if = "Option::is_none")]` so that an absent
-/// value is an absent key, not `null`.
+/// JSON schema of an optional decimal string: a decimal string or `null`.
+pub fn decimal_option_schema(_: &mut SchemaGenerator) -> Schema {
+    json_schema!({
+        "type": ["string", "null"],
+        "pattern": DECIMAL_PATTERN,
+        "description": "Exact decimal number as a string, e.g. \"30.0203\", or null if absent."
+    })
+}
+
+/// `#[serde(with = "crate::decimal::serde_str_option")]` for `Option<Decimal>` fields whose
+/// absent value is an absent key: combine with
+/// `#[serde(default, skip_serializing_if = "Option::is_none")]`. A present key must be a
+/// decimal string; `null` is rejected (truth format).
 pub mod serde_str_option {
     use rust_decimal::Decimal;
     use serde::{Deserializer, Serializer};
@@ -81,6 +136,35 @@ pub mod serde_str_option {
         deserializer: D,
     ) -> Result<Option<Decimal>, D::Error> {
         super::serde_str::deserialize(deserializer).map(Some)
+    }
+}
+
+/// `#[serde(with = "crate::decimal::serde_str_nullable")]` for `Option<Decimal>` fields that are
+/// always present: `None` is written as `null`, and `null` or a decimal string are accepted
+/// (project file and IPC, see [`decimal_option_schema`]).
+pub mod serde_str_nullable {
+    use rust_decimal::Decimal;
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    #[derive(Deserialize)]
+    struct Text(#[serde(with = "super::serde_str")] Decimal);
+
+    /// Serialize `Some` as a decimal string, `None` as `null`.
+    pub fn serialize<S: Serializer>(
+        value: &Option<Decimal>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        match value {
+            Some(value) => super::serde_str::serialize(value, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize `null` as `None` and a strict decimal string as `Some`.
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<Decimal>, D::Error> {
+        Ok(Option::<Text>::deserialize(deserializer)?.map(|text| text.0))
     }
 }
 

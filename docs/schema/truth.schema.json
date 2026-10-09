@@ -1,7 +1,7 @@
 {
   "$defs": {
     "CharacteristicKind": {
-      "description": "What a characteristic describes (data model `Characteristic.kind`).",
+      "description": "What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01).",
       "oneOf": [
         {
           "const": "linear",
@@ -39,6 +39,21 @@
           "type": "string"
         },
         {
+          "const": "counterbore",
+          "description": "Counterbore.",
+          "type": "string"
+        },
+        {
+          "const": "countersink",
+          "description": "Countersink.",
+          "type": "string"
+        },
+        {
+          "const": "depth",
+          "description": "Depth of a hole or pocket.",
+          "type": "string"
+        },
+        {
           "const": "surface_texture",
           "description": "Surface texture requirement.",
           "type": "string"
@@ -56,6 +71,16 @@
         {
           "const": "flag_note",
           "description": "Flag note, linked from a flag symbol.",
+          "type": "string"
+        },
+        {
+          "const": "material_process",
+          "description": "Material or process requirement, e.g. hardness or coating.",
+          "type": "string"
+        },
+        {
+          "const": "other",
+          "description": "Anything else. Default for a characteristic placed by hand before its kind is known.",
           "type": "string"
         }
       ]

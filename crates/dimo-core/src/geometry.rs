@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 /// A point in sheet space.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Point {
     /// Distance from the left sheet edge in PDF user units.
@@ -19,6 +20,7 @@ pub struct Point {
 
 /// A width and height in PDF user units.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct Size {
     /// Horizontal extent; for an oriented box, along its own x axis before rotation.
@@ -29,6 +31,7 @@ pub struct Size {
 
 /// Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub struct OrientedBox {
     /// Center of the box.
