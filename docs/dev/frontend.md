@@ -46,6 +46,27 @@ and belong in their own stores, keyed by ID.
 New, open and window close ask about unsaved changes through `unsavedPrompt`
 (`UnsavedChangesDialog.svelte`); Rust refuses to drop changes unless the call says `discard`.
 
+## Selection and the characteristic table
+
+`src/lib/stores/selection.svelte.ts` holds the selected characteristic IDs for the viewport and
+the table (`select(ids, mode)`, `clear()`, `has(id)`, `focus(id)` for "edit this one now").
+
+The table (`src/lib/table/`) uses TanStack Table for the column and row model and
+`@tanstack/virtual-core` (wrapped in `virtual.svelte.ts`) with one fixed row height. Cells send
+typed text as `update_fields`; decimals are never parsed in TypeScript, Rust's refusal is shown
+in the table's status line. Reordering sends one `move_characteristics`.
+
+To check scrolling with a large list in `tauri dev`:
+
+```sh
+node scripts/dev-characteristics.mjs 1000 target/dev/chars-1000.json
+DIMO_DEV_OPEN=$PWD/corpus/drawings/test_drawing_1.pdf DIMO_DEV_SCRIPT=$PWD/target/dev/chars-1000.json \
+  VITE_DIMO_DEV_TABLE_CHECK=1 pnpm -C apps/desktop tauri dev
+```
+
+The frame times of a scripted scroll are printed to the terminal ("0 balloons", the viewport size
+is the table's) and shown in the developer tools.
+
 ## Tauri capabilities
 
 Grant the webview only the commands it uses. No shell plugin, no fs plugin, no http plugin.

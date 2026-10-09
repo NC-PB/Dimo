@@ -19,6 +19,8 @@
   "dependencies": {
     "@inlang/paraglide-js": "2.25.4",
     "@internationalized/date": "3.12.4",
+    "@tanstack/svelte-table": "9.2.4",
+    "@tanstack/virtual-core": "3.17.11",
     "@tauri-apps/api": "2.11.1",
     "bits-ui": "2.19.3"
   },
@@ -32,6 +34,7 @@
     "eslint": "10.11.0",
     "eslint-plugin-svelte": "3.23.0",
     "globals": "17.12.0",
+    "happy-dom": "20.14.5",
     "prettier": "3.9.9",
     "prettier-plugin-svelte": "4.1.1",
     "svelte": "5.57.1",

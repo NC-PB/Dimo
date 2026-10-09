@@ -7,6 +7,7 @@
   import UnsavedChangesDialog from "$lib/components/UnsavedChangesDialog.svelte";
   import Viewport from "$lib/components/Viewport.svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
+  import TablePanel from "$lib/table/TablePanel.svelte";
   import { appInfo } from "$lib/stores/app-info.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
@@ -52,6 +53,7 @@
       />
       <ProjectMessages />
       <Viewport />
+      <TablePanel />
     </div>
     <SidePanel />
   </div>

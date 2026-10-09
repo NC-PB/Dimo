@@ -8,7 +8,7 @@ import type { DocumentStore } from "$lib/stores/document.svelte";
 import type { ProjectStore } from "$lib/stores/project.svelte";
 import type { ViewportStore } from "$lib/stores/viewport.svelte";
 import { ACTUAL_SIZE_SCALE, centerOn, type Point } from "$lib/viewport/view-math";
-import { runPanCheck, type FrameStats } from "./pan-check";
+import { runPanCheck, runScrollCheck, type FrameStats } from "./pan-check";
 
 /** Resolves after two animation frames, when effects and layout of a change have run. */
 function afterLayout(): Promise<void> {
@@ -23,6 +23,13 @@ function afterLayout(): Promise<void> {
 
 export const DEV_TOOLS_ENABLED = import.meta.env.DEV;
 
+/**
+ * `VITE_DIMO_DEV_TABLE_CHECK=1` in the environment of `pnpm tauri dev`: after the dev startup,
+ * scroll the characteristic table and report the frame times (T1.7). Read by Vite, so no Rust
+ * change is needed.
+ */
+const TABLE_CHECK = DEV_TOOLS_ENABLED && import.meta.env.VITE_DIMO_DEV_TABLE_CHECK === "1";
+
 /** Balloon count of NFR-PERF-02. */
 export const DEFAULT_BALLOON_COUNT = 500;
 
@@ -33,6 +40,10 @@ export class DevToolsStore {
   anchors = $state<Point[]>([]);
   running = $state(false);
   result = $state<FrameStats | null>(null);
+  /** Result of the last table scroll check. */
+  tableResult = $state<FrameStats | null>(null);
+  /** Scroll element of the characteristic table, set by the table while it is shown. */
+  tableScroller: HTMLElement | null = null;
 
   /** Number of dummy balloons on each sheet: one per anchor when anchors are set. */
   get shownCount(): number {
@@ -90,6 +101,40 @@ export class DevToolsStore {
       // Let the first tiles arrive before measuring.
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await this.measurePan(viewport);
+    }
+    if (TABLE_CHECK && opened) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await this.measureTableScroll();
+    }
+  }
+
+  /**
+   * Scrolls the characteristic table top to bottom and back and reports the frame times to the
+   * `tauri dev` terminal (the report says "0 balloons"; the viewport size is the table's).
+   */
+  async measureTableScroll(): Promise<void> {
+    const element = this.tableScroller;
+    if (this.running || element === null) {
+      return;
+    }
+    this.running = true;
+    this.tableResult = null;
+    try {
+      const stats = await runScrollCheck(element);
+      this.tableResult = stats;
+      await commands
+        .devReportFrameTimes({
+          balloons: 0,
+          frames: stats.frames,
+          mean_ms: stats.meanMs,
+          p95_ms: stats.p95Ms,
+          max_ms: stats.maxMs,
+          device_pixel_ratio: window.devicePixelRatio,
+          viewport: [element.clientWidth, element.clientHeight],
+        })
+        .catch(() => undefined);
+    } finally {
+      this.running = false;
     }
   }
 
