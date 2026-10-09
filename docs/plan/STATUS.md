@@ -33,10 +33,10 @@ Single place for progress. Agents update this file at the end of every task.
 | T1.2 Ballooned PDF writer | done | Owner: confirm Open Sans Bold and the flag shape |
 | T1.3 Project file, autosave and recovery | done | Owner: confirm uncompressed container |
 | T1.4 CSV and XLSX characteristic list | done | Owner: confirm columns, German headers, umlauts in CSV, whether non inspected rows are exported |
-| T1.5 Project session and IPC | in progress | wave 3 |
-| T1.6 Balloon placement and editing | todo | wave 4 |
-| T1.7 Characteristic table | todo | wave 4 |
-| T1.8 Sheet rotation, scale and units | todo | wave 4 |
+| T1.5 Project session and IPC | done | Owner: check the unsaved changes prompt on window close and quit in the native window |
+| T1.6 Balloon placement and editing | in progress | wave 4 |
+| T1.7 Characteristic table | in progress | wave 4 |
+| T1.8 Sheet rotation, scale and units | in progress | wave 4 |
 | T1.9 Export and settings views | todo | wave 5 |
 | T1.10 User guide and exit check | todo | wave 5 |
 | T1.11 Page cache on the render thread | done | Fast pan at 100 percent: max frame 32 ms to 18 ms. Raster sheets to measure in M4 |
@@ -58,6 +58,11 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-09 | IPC: `project_state`, `new_project`, `open_project`, `save_project`, `save_project_as`, `confirm_close` (each with `discard` where data could be lost), `execute(Command)`, `undo`, `redo`; events `project-loaded`, `project-patched` (with revision), `project-status-changed`, `close-requested`. Rust refuses to drop unsaved changes unless `discard` is true | Rust owns the document (ADR 0001); one patch path into the frontend | T1.5, agent |
+| 2026-10-09 | Frontend `projectStore`: `$state.raw` project replaced per patch, unchanged items keep identity, revision gap triggers a full reload; selection lives in separate view stores | One place applies patches (frontend.md) | T1.5, agent |
+| 2026-10-09 | Unsaved projects autosave to `<app data>/autosave/<uuid>.dimo` plus journal, restored at startup with a notice; instance lock is an OS file lock on `<project>.lock` (released by the OS on crash, stale lock files taken over) | NFR-REL-01 for never saved projects; no double editing. **Owner: confirm** | T1.5, agent |
+| 2026-10-09 | Shortcuts Cmd+N, Cmd+S, Shift+Cmd+S, Cmd+Z, Shift+Cmd+Z, Ctrl+Y | D-52. **Owner: confirm** | T1.5, agent |
+| 2026-10-09 | `vendor_library_path` searches upwards from the run time `CARGO_MANIFEST_DIR` before the compile time path | Shared build output across worktrees produced stale PDFium paths | coordinator |
 | 2026-10-09 | `.dimo` container entries written uncompressed (manifest, project, audit, drawings in that order); ZIP time and manifest created/modified derived from the project, not the clock; deflated files from other tools still load; unknown entries ignored; read limits 1 GiB per drawing, 4 GiB total, 10,000 entries | Byte identical saves independent of compression library (FR-EXP-11 spirit), drawings are already compressed. **Owner: confirm** | T1.3, agent |
 | 2026-10-09 | Journal `<file>.journal` next to the project, one line per audit entry with its changes, replayed with `apply_change`; a journal that does not match the project moves to `.journal.stale` | NFR-REL-01, D-28 | T1.3, agent |
 | 2026-10-09 | One `zip` 8.6.0 for project files and XLSX (rust_xlsxwriter accepts ^8.3) | Merge of T1.3 and T1.4 | coordinator |
