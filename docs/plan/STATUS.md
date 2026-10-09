@@ -4,8 +4,8 @@ Single place for progress. Agents update this file at the end of every task.
 
 ## Current
 
-- Milestone: **M0 Foundations** ([plan](M0.md))
-- Next task: **T0.9 Performance harness** (needs free disk space and measurements on the owner's Mac)
+- Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) started
+- Next tasks: M1 wave 1 in parallel: **T1.0 M0 follow-ups**, **T1.1 Domain model and commands**, **T1.2 Ballooned PDF writer**, **T0.9 Performance harness**
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -23,6 +23,22 @@ Single place for progress. Agents update this file at the end of every task.
 | T0.9 Performance harness | todo | |
 | T0.10 Corpus truth format | review | Owner: review `corpus/truth/test_drawing_1.truth.json`, see log 2026-10-09 |
 | T0.11 Synthetic generator (stretch) | done | `cargo run -p dimo-synth -- --seed N --count 6`. Owner: check fit table `FITS` in `tools/synth/src/lib.rs` (D-43) |
+
+## Tasks M1
+
+| Task | State | Notes |
+|---|---|---|
+| T1.0 M0 follow-ups | todo | wave 1 |
+| T1.1 Domain model and command engine | todo | wave 1 |
+| T1.2 Ballooned PDF writer | todo | wave 1 |
+| T1.3 Project file, autosave and recovery | todo | wave 2, after T1.1 |
+| T1.4 CSV and XLSX characteristic list | todo | wave 2, after T1.1 |
+| T1.5 Project session and IPC | todo | wave 3, after T1.1 and T1.3 |
+| T1.6 Balloon placement and editing | todo | wave 4 |
+| T1.7 Characteristic table | todo | wave 4 |
+| T1.8 Sheet rotation, scale and units | todo | wave 4 |
+| T1.9 Export and settings views | todo | wave 5 |
+| T1.10 User guide and exit check | todo | wave 5 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -82,6 +98,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-09: M1 plan drafted (`docs/plan/M1.md`), open M0 points carried over.
 - 2026-10-09: T0.8 merged, in review. Pitfall: tests use `env!("CARGO_MANIFEST_DIR")`, so a target dir shared with deleted worktrees can run stale test binaries with dead paths; touch the test files or rebuild when that happens. Disk below 1 GB free, T0.9 waits for space.
 - 2026-10-09: T0.7 done and merged. Wave 2 complete. Disk nearly full (about 2 GB free); merged worktrees removed.
 - 2026-10-09: T0.6 and T0.11 done and merged. PDFium treats a `/ToUnicode` name (Identity-H) as code = Unicode; correct for test_drawing_1 only because CIDs equal code points (details in corpus notes).
