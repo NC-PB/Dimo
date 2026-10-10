@@ -48,6 +48,9 @@ After an export as issued ([Exports](exports.md)) the numbering is locked. Numbe
 change: a new balloon gets the highest number ever used plus one, a deleted number is not used
 again, and rows cannot be moved.
 
+To number by zone, by view or by type, or to use sub-numbers for repeated features, see
+[Numbering strategies, zones and views](numbering.md).
+
 ## Select balloons
 
 | Action | Mouse | Key |

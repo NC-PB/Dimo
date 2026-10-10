@@ -50,6 +50,9 @@ Nach einem Export als freigegeben ([Exporte](exports.md)) ist die Nummerierung g
 Nummern ändern sich dann nie: Ein neuer Ballon erhält die höchste je vergebene Nummer plus eins,
 eine gelöschte Nummer wird nicht wieder verwendet, und Zeilen lassen sich nicht verschieben.
 
+Wie du nach Zone, Ansicht oder Art nummerierst oder Unternummern für wiederholte Elemente
+verwendest, steht unter [Nummerierungsstrategien, Zonen und Ansichten](numbering.md).
+
 ## Ballons auswählen
 
 | Aktion | Maus | Taste |

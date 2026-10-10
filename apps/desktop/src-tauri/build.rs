@@ -17,6 +17,7 @@ fn main() {
         "undo",
         "redo",
         "export_project",
+        "preview_numbering",
         "app_settings",
         "set_app_settings",
         "dev_startup",

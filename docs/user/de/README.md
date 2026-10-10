@@ -18,6 +18,7 @@ berechnet daraus die Grenzwerte.
 | [Eine Zeichnung ballonieren](ballooning.md) | Ballons setzen, auswählen, verschieben, gestalten und löschen |
 | [Merkmalstabelle](characteristics.md) | Werte, Auswahl, Bearbeiten, Reihenfolge ändern |
 | [Blätter: Drehung, Einheit und Maßstab](sheets.md) | Eigenschaften jedes Blatts |
+| [Nummerierungsstrategien, Zonen und Ansichten](numbering.md) | Nach Zone, Ansicht oder Art nummerieren, Vorschau, Unternummern, gesperrte Nummerierung |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen |
 | [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Ballonstil |

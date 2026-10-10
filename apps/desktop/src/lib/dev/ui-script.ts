@@ -28,6 +28,7 @@
  * - `show`: switches to a view (`drawing`, `export`, `settings`, ...).
  * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
  *   or the `<select>` whose `aria-label` starts with it.
+ * - `reveal`: scrolls the field inside the label that starts with this text into view.
  * - `check`: `[label, checked]` sets the check box (or turns on the radio button) inside the
  *   label that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons and selection).
@@ -36,7 +37,9 @@
 import { commands, type ExportFormat } from "$lib/ipc/bindings";
 import { isMacPlatform } from "$lib/shortcuts";
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
+import { documentStore } from "$lib/stores/document.svelte";
 import { EXPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
+import { numberingStore } from "$lib/stores/numbering.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
 import { view } from "$lib/stores/view.svelte";
@@ -64,6 +67,7 @@ export type UiStep =
   | { show: string }
   | { select: [string, string] }
   | { check: [string, boolean] }
+  | { reveal: string }
   | { wait: number }
   | { mark: string }
   | { report: string };
@@ -173,7 +177,17 @@ function report(label: string): string {
     .join(",");
   const exports = EXPORT_FORMATS.map(exportState).join(", ");
   const theme = document.documentElement.dataset.theme ?? "-";
-  return `${label}: view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
+  const ghosts = Object.entries(numberingStore.ghosts)
+    .map(
+      ([id, n]) => `${String(projectStore.characteristicById.get(id)?.number ?? "?")}>${n ?? "?"}`,
+    )
+    .join(" ");
+  const sheet = projectStore.sheets[documentStore.sheet];
+  const grid = sheet?.zone_grid;
+  const zones = grid
+    ? `${String(grid.column_labels.length)}x${String(grid.row_labels.length)}`
+    : "none";
+  return `${label}: view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -267,6 +281,9 @@ async function run(step: UiStep): Promise<void> {
       field.value = step.select[1];
       field.dispatchEvent(new Event("change", { bubbles: true }));
     }
+    await sleep(STEP_PAUSE_MS);
+  } else if ("reveal" in step) {
+    labelled(step.reveal)?.scrollIntoView({ block: "center" });
     await sleep(STEP_PAUSE_MS);
   } else if ("check" in step) {
     const box = labelled(step.check[0])?.querySelector<HTMLInputElement>(

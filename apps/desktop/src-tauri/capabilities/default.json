@@ -17,6 +17,7 @@
     "allow-undo",
     "allow-redo",
     "allow-export-project",
+    "allow-preview-numbering",
     "allow-app-settings",
     "allow-set-app-settings",
     "allow-dev-startup",

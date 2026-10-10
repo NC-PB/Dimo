@@ -2,7 +2,9 @@
 
 Jedes Blatt einer Zeichnung hat eine eigene Drehung, Einheit und einen eigenen Maßstab. Du stellst
 sie im Bereich **Blatteigenschaften** rechts ein. Jede Änderung lässt sich wie alle anderen
-Änderungen rückgängig machen und wiederherstellen.
+Änderungen rückgängig machen und wiederherstellen. Zonenraster und Ansichten eines Blatts legst du
+im selben Bereich fest; sie sind unter [Nummerierungsstrategien, Zonen und
+Ansichten](numbering.md) beschrieben.
 
 ## Drehung
 

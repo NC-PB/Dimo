@@ -2,6 +2,7 @@
   import { untrack } from "svelte";
   import BalloonEditor from "$lib/components/BalloonEditor.svelte";
   import BalloonLayer from "$lib/components/BalloonLayer.svelte";
+  import SheetOverlay from "$lib/components/SheetOverlay.svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { DUMMY_STYLE, dummyBalloons, leaderLine } from "$lib/dev/dummy-balloons";
@@ -472,6 +473,7 @@
       </svg>
     {/if}
     <BalloonLayer view={shown} />
+    <SheetOverlay view={shown} />
     <!-- The drawing surface on top of all layers: drag to pan, wheel to zoom, keys from the
          shortcut map. Focusable so keyboard users reach it (NFR-UX-01); "application" is the
          ARIA role for such a surface, but Svelte does not count it as interactive. -->

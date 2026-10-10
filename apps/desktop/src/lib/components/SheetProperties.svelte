@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ZonesAndViews from "$lib/components/ZonesAndViews.svelte";
   import { m, shortcutLabel } from "$lib/i18n";
   import type { Scale, Unit } from "$lib/ipc/bindings";
   import { shortcutKeys, type ShortcutAction } from "$lib/shortcuts";
@@ -187,5 +188,7 @@
         <p class="text-xs text-text-muted">{m.sheet_scale_hint()}</p>
       {/if}
     </fieldset>
+
+    <ZonesAndViews {sheet} />
   </section>
 {/if}

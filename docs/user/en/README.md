@@ -17,6 +17,7 @@ you enter those in the characteristic table, and Dimo works out the limits from 
 | [Ballooning a drawing](ballooning.md) | Place, select, move, style and delete balloons |
 | [Characteristic table](characteristics.md) | Values, selecting, editing, changing the order |
 | [Sheets: rotation, unit and scale](sheets.md) | Properties of every sheet |
+| [Numbering strategies, zones and views](numbering.md) | Number by zone, view or type, preview, sub-numbers, locked numbering |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
 | [Exports](exports.md) | Ballooned PDF, CSV and Excel list, issued drawings |
 | [Settings](settings.md) | Theme, language, user name, balloon style |
