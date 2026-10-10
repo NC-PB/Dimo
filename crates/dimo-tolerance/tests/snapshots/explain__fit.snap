@@ -3,5 +3,5 @@ source: crates/dimo-tolerance/tests/explain.rs
 expression: "both(\"Ø8 f7\", Cfg::None, Unit::Mm, None, None)"
 ---
 callout: Ø8 f7
-en: Fit f7 from table iso-286 version 1. Nominal 8 mm is in the range over 6 up to and including 10 mm, so -0.013 / -0.028 mm. The table is a draft and not verified yet.
-de: Passung f7 aus Tabelle iso-286 Version 1. Nennmaß 8 mm liegt im Bereich über 6 bis einschließlich 10 mm, daher -0,013 / -0,028 mm. Die Tabelle ist ein Entwurf und noch nicht geprüft.
+en: Fit f7 from table iso-286 version 2. Nominal 8 mm is in the range over 6 up to and including 10 mm, so -0.013 / -0.028 mm. The table is a draft and not verified yet.
+de: Passung f7 aus Tabelle iso-286 Version 2. Nennmaß 8 mm liegt im Bereich über 6 bis einschließlich 10 mm, daher -0,013 / -0,028 mm. Die Tabelle ist ein Entwurf und noch nicht geprüft.

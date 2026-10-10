@@ -3,15 +3,15 @@
 //! The values come from a fit table (`data/tolerances/iso-286.toml`); this module holds only
 //! the rules of the ISO system that combine them:
 //!
-//! - shafts a to h: es from the table, ei = es - IT;
+//! - shafts a to h (with cd, ef, fg): es from the table, ei = es - IT;
 //! - shafts j (by grade), k, m to zc: ei from the table, es = ei + IT; k uses column `k` for
 //!   IT4 to IT7 and `k_other` for all other grades;
-//! - holes A to H: EI from the table, ES = EI + IT;
+//! - holes A to H (with CD, EF, FG): EI from the table, ES = EI + IT;
 //! - holes J (by grade): ES from the table, EI = ES - IT;
 //! - holes K, M, N: up to IT8 ES = table value + delta, above IT8 the `*_above_IT8` column;
 //! - holes P to ZC: up to IT7 ES = table value + delta, above IT7 the table value;
-//! - js and JS: +IT/2 and -IT/2; for IT7 to IT11 an odd IT value in micrometres is first
-//!   reduced to the even value below;
+//! - js and JS: +IT/2 and -IT/2, exact (ISO 286-2:2010 gives half micrometres, e.g. JS7 from
+//!   18 to 30 mm is +-10.5 µm);
 //! - an `override` part replaces the fundamental deviation of one tolerance class in a range
 //!   (M6 from 250 to 315 mm);
 //! - a size exactly on a range bound belongs to the row whose bound is inclusive ("over 18 up to
@@ -82,9 +82,6 @@ pub enum FitError {
         grade: String,
     },
 }
-
-/// One micrometre in mm.
-const MICRON: Decimal = Decimal::from_parts(1, 0, 0, false, 3);
 
 impl Table {
     /// Expand a tolerance class such as `H7` at a nominal size in mm to its deviations
@@ -183,7 +180,7 @@ impl Table {
 
         let (upper, lower) = match fundamental {
             None => {
-                let half = js_half(it.value, grade);
+                let half = it.value / Decimal::TWO;
                 (half, -half)
             }
             Some((value, true)) => (value, value - it.value),
@@ -254,41 +251,11 @@ impl Table {
     }
 }
 
-/// Half the standard tolerance for js and JS. For IT7 to IT11 an odd number of micrometres is
-/// reduced to the even number below first, so the deviations stay whole micrometres.
-fn js_half(it: Decimal, grade: Grade) -> Decimal {
-    let microns = it / MICRON;
-    let odd = microns.fract().is_zero() && !(microns % Decimal::TWO).is_zero();
-    let it = if (7..=11).contains(&grade.number()) && odd {
-        it - MICRON
-    } else {
-        it
-    };
-    it / Decimal::TWO
-}
-
-/// Letters A to H (a to h), for which the table holds EI of holes and es of shafts.
+/// Letters A to H (a to h) with the intermediate CD, EF and FG, for which the table holds EI
+/// of holes and es of shafts.
 fn a_to_h(letter: &str) -> bool {
-    matches!(letter, "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::str::FromStr;
-
-    fn d(text: &str) -> Decimal {
-        Decimal::from_str(text).unwrap()
-    }
-
-    #[test]
-    fn js_half_rounds_odd_microns_for_it7_to_it11() {
-        let g = |n| Grade::it(n).unwrap();
-        assert_eq!(js_half(d("0.015"), g(7)), d("0.007"));
-        assert_eq!(js_half(d("0.021"), g(7)), d("0.010"));
-        assert_eq!(js_half(d("0.018"), g(7)), d("0.009"));
-        assert_eq!(js_half(d("0.009"), g(6)), d("0.0045"));
-        assert_eq!(js_half(d("0.025"), g(12)), d("0.0125"));
-        assert_eq!(js_half(d("0.0025"), g(7)), d("0.00125"));
-    }
+    matches!(
+        letter,
+        "A" | "B" | "C" | "CD" | "D" | "E" | "EF" | "F" | "FG" | "G" | "H"
+    )
 }
