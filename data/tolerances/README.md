@@ -7,7 +7,7 @@ same format (FR-TOL-07).
 | File | Table | Status |
 |---|---|---|
 | `iso-2768-1.toml` | ISO 2768-1:1989 general tolerances, tables 1, 2 and 3 | draft |
-| `iso-286.toml` | ISO 286-1:2010 standard tolerance grades IT01 to IT18 and fundamental deviations up to 500 mm | draft |
+| `iso-286.toml` | ISO 286-1:2010 standard tolerance grades IT01 to IT18 and fundamental deviations up to 3150 mm, limits cross-checked with ISO 286-2:2010 | draft |
 
 ## Verification (D-43)
 
@@ -96,21 +96,25 @@ The engine combines the values with the rules of the ISO system
 
 | Part | Columns | Meaning |
 |---|---|---|
-| shaft, upper | `a` to `h` | es; ei = es - IT |
+| shaft, upper | `a` to `h`, `cd`, `ef`, `fg` | es; ei = es - IT |
 | shaft, lower | `j5`, `j6`, `j7`, `j8` | ei of j for that grade |
 | shaft, lower | `k` | ei of k for IT4 to IT7 |
 | shaft, lower | `k_other` | ei of k for the other grades |
 | shaft, lower | `m` to `zc` | ei; es = ei + IT |
-| hole, lower | `A` to `H` | EI; ES = EI + IT |
+| hole, lower | `A` to `H`, `CD`, `EF`, `FG` | EI; ES = EI + IT |
 | hole, upper | `J6`, `J7`, `J8` | ES of J for that grade |
 | hole, upper | `K`, `M`, `N` | ES for grades up to IT8 before adding delta |
 | hole, upper | `K_above_IT8`, `M_above_IT8`, `N_above_IT8` | ES for grades above IT8 |
 | hole, upper | `P` to `ZC` | ES for grades above IT7; delta is added up to IT7 |
 
-js and JS have no column: their deviations are +IT/2 and -IT/2, where for IT7 to IT11 an odd
-number of micrometres is first reduced by one. `override` columns name a tolerance class and
-replace its fundamental deviation in the given range (M6 from 250 to 315 mm). `CD`, `EF` and `FG`
-are not included.
+js and JS have no column: their deviations are exactly +IT/2 and -IT/2, also when that gives
+half micrometres (ISO 286-2:2010). `override` columns name a tolerance class and replace its
+fundamental deviation in the given range (M6 from 250 to 315 mm). The intermediate deviations
+`CD`, `EF`, `FG` and `cd`, `ef`, `fg` are defined up to 50 mm.
+
+Above 500 mm the standard defines no IT01, IT0 and no delta values, and gives K, M, N and P to U
+without delta; the delta part therefore holds zero there. a to c, A to C, j, J, v to zc and V
+to ZC end at 500 mm.
 
 ### Custom tables (FR-TOL-07)
 

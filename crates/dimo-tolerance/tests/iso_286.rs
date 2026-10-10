@@ -23,7 +23,9 @@ fn iso_286() -> Table {
 fn sizes() -> Vec<Decimal> {
     let bounds = [
         "1", "3", "6", "10", "14", "18", "24", "30", "40", "50", "65", "80", "100", "120", "140",
-        "160", "180", "200", "225", "250", "280", "315", "355", "400", "450", "500",
+        "160", "180", "200", "225", "250", "280", "315", "355", "400", "450", "500", "560", "630",
+        "710", "800", "900", "1000", "1120", "1250", "1400", "1600", "1800", "2000", "2240",
+        "2500", "2800", "3150",
     ];
     let mut out = vec![d("0.5")];
     let mut prev = Decimal::ZERO;
@@ -47,12 +49,13 @@ fn grade(n: i8) -> Grade {
 
 #[test]
 fn delta_is_the_step_between_neighbouring_grades() {
-    // Above 3 mm, delta for ITn equals ITn minus IT(n-1); up to 3 mm it is zero.
+    // From 3 to 500 mm, delta for ITn equals ITn minus IT(n-1); up to 3 mm it is zero, and
+    // above 500 mm the standard gives K, M, N and P to U without delta, so it is zero too.
     let table = iso_286();
     for size in sizes() {
         for n in 3..=8 {
             let delta = value(&table, "delta", &grade(n).column(), size).unwrap();
-            let expected = if size <= d("3") {
+            let expected = if size <= d("3") || size > d("500") {
                 Decimal::ZERO
             } else {
                 let it = |g| value(&table, "standard_tolerance", &grade(g).column(), size).unwrap();
@@ -91,8 +94,8 @@ fn standard_tolerances_grow_with_grade_and_size() {
 fn hole_deviations_mirror_shaft_deviations() {
     let table = iso_286();
     for size in sizes() {
-        // A to H: EI = -es.
-        for letter in ["A", "B", "C", "D", "E", "F", "G", "H"] {
+        // A to H with CD, EF and FG: EI = -es.
+        for letter in ["A", "B", "C", "CD", "D", "E", "EF", "F", "FG", "G", "H"] {
             let shaft = value(&table, "shaft_upper", &letter.to_lowercase(), size);
             let hole = value(&table, "hole_lower", letter, size);
             assert_eq!(hole, shaft.map(|v| -v), "{letter} at {size}");
@@ -110,10 +113,8 @@ fn hole_deviations_mirror_shaft_deviations() {
 
 #[test]
 fn every_class_spans_its_standard_tolerance() {
-    // For every letter and grade the zone is IT wide, except js and JS with odd micrometres
-    // in IT7 to IT11, which are one micrometre narrower.
+    // For every letter and grade the zone is exactly IT wide, js and JS included.
     let table = iso_286();
-    let micron = d("0.001");
     let mut expanded = 0;
     for size in sizes() {
         for letter in LETTERS {
@@ -124,9 +125,8 @@ fn every_class_spans_its_standard_tolerance() {
                         Ok(l) => {
                             expanded += 1;
                             let width = l.upper - l.lower;
-                            let narrower = letter == "JS" && width == l.standard_tolerance - micron;
                             assert!(
-                                width == l.standard_tolerance || narrower,
+                                width == l.standard_tolerance,
                                 "{fit} at {size}: {} to {}",
                                 l.upper,
                                 l.lower
@@ -188,6 +188,11 @@ fn limits_and_explanation_data() {
     assert_eq!(small.range.to_string(), "up to and including 3");
     let a11 = table.fit_limits("a11", d("2")).unwrap();
     assert_eq!(a11.range.to_string(), "over 1 up to and including 3");
+    // js and JS are exactly +-IT/2, also for odd micrometres (ISO 286-2:2010).
+    let js7 = table.fit_limits("JS7", d("20")).unwrap();
+    assert_eq!((js7.upper, js7.lower), (d("0.0105"), d("-0.0105")));
+    let big = table.fit_limits("H7", d("3000")).unwrap();
+    assert_eq!(big.range.to_string(), "over 2500 up to and including 3150");
     let m6 = table.fit_limits("M6", d("300")).unwrap();
     assert_eq!((m6.upper, m6.delta), (d("-0.009"), None));
 }

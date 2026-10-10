@@ -4,11 +4,11 @@ use std::fmt;
 
 use crate::format::Feature;
 
-/// Deviation letters supported by the fit tables, in uppercase. `CD`, `EF` and `FG` (only used
-/// for small sizes) are not supported.
-pub const LETTERS: [&str; 25] = [
-    "A", "B", "C", "D", "E", "F", "G", "H", "J", "JS", "K", "M", "N", "P", "R", "S", "T", "U", "V",
-    "X", "Y", "Z", "ZA", "ZB", "ZC",
+/// Deviation letters supported by the fit tables, in uppercase, including the intermediate
+/// deviations `CD`, `EF` and `FG`.
+pub const LETTERS: [&str; 28] = [
+    "A", "B", "C", "CD", "D", "E", "EF", "F", "FG", "G", "H", "J", "JS", "K", "M", "N", "P", "R",
+    "S", "T", "U", "V", "X", "Y", "Z", "ZA", "ZB", "ZC",
 ];
 
 /// A standard tolerance grade. `IT01` is stored as -1, `IT0` as 0, `ITn` as n, so grades
@@ -143,13 +143,15 @@ mod tests {
 
     #[test]
     fn fits_parse_and_print() {
-        for text in ["H7", "h6", "js6", "JS7", "ZC11", "za8", "c10", "H01", "h0"] {
+        for text in [
+            "H7", "h6", "js6", "JS7", "ZC11", "za8", "c10", "H01", "h0", "cd6", "EF7", "fg5",
+        ] {
             assert_eq!(Fit::parse(text).unwrap().to_string(), text);
         }
         assert_eq!(Fit::parse("js6").unwrap().letter(), "JS");
         assert_eq!(Fit::parse("H7").unwrap().feature(), Feature::Hole);
         for bad in [
-            "", "H", "7", "Js6", "hH7", "I7", "W7", "H19", "H07", "cd6", "H7 ",
+            "", "H", "7", "Js6", "hH7", "I7", "W7", "H19", "H07", "Cd6", "H7 ",
         ] {
             assert_eq!(Fit::parse(bad), None, "{bad:?}");
         }

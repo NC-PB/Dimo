@@ -100,7 +100,7 @@ fn cases() -> Vec<Case> {
         Case { text: "R15 H7", cfg: Cfg::General, rule: R::Fit, nominal: "15", upper: Some("15.018"), lower: Some("15"), upper_dev: Some("0.018"), lower_dev: Some("0"), draft: true, ..BASE },
         // A fit that gives no limits stops the search: no general tolerance for it.
         Case { text: "Ø8 H7/g6", cfg: Cfg::General, nominal: "8", hints: &["unknown_fit"], notes: &[Note::FitPair], ..BASE },
-        Case { text: "Ø600 H7", cfg: Cfg::General, nominal: "600", hints: &["size_outside_table"], ..BASE },
+        Case { text: "Ø3200 H7", cfg: Cfg::General, nominal: "3200", hints: &["size_outside_table"], ..BASE },
         // Level 3, drawing rule (custom table assigned in the project).
         Case { text: "45", cfg: Cfg::DrawingRule, rule: R::DrawingRule, nominal: "45", upper: Some("45.05"), lower: Some("44.95"), upper_dev: Some("0.05"), lower_dev: Some("-0.05"), draft: true, ..BASE },
         Case { text: "45.25", cfg: Cfg::DrawingRule, rule: R::DrawingRule, nominal: "45.25", upper: Some("45.30"), lower: Some("45.20"), upper_dev: Some("0.05"), lower_dev: Some("-0.05"), draft: true, ..BASE },
@@ -370,7 +370,11 @@ fn context_refuses_settings_the_tables_cannot_serve() {
         }
     ));
     assert!(matches!(
-        with(|s| s.general.as_mut().unwrap().table.id = "iso-286".into()),
+        with(|s| {
+            let table = &mut s.general.as_mut().unwrap().table;
+            table.id = "iso-286".into();
+            table.version = 2;
+        }),
         ContextError::WrongKind { .. }
     ));
     assert!(matches!(
