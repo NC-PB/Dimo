@@ -2,9 +2,10 @@
  * Box select (T2.6, FR-REC-01, FR-REC-02, ADR 0006): the proposals read from a box drawn with
  * the place tool, shown in a card next to the box until the user accepts or discards them.
  *
- * View state only. Rust reads the PDF text, parses and interprets it (`propose_from_region`),
- * reads edited text again (`read_callout_text`), and accepting is one document command
- * (`accept_proposals`), so it is one undo step. Discarding changes nothing.
+ * View state only. Rust reads the PDF text, parses it and interprets it with the tolerance
+ * engine (`propose_from_region`), explains the limits in the UI language, reads edited text
+ * again (`read_callout_text`), and accepting is one document command (`accept_proposals`), so
+ * it is one undo step. Discarding changes nothing.
  */
 
 import {
@@ -12,12 +13,16 @@ import {
   type BalloonPlacement,
   type CharId,
   type CommandError,
+  type ExplainLanguage,
   type FieldValue,
+  type InterpreterNote,
   type OrientedBox,
   type Proposal,
+  type ProposalView,
   type SheetId,
   type TypedCallout,
 } from "$lib/ipc/bindings";
+import { getLocale } from "$lib/i18n";
 import type { Rect } from "$lib/viewport/view-math";
 import { projectStore, type ProjectStore } from "./project.svelte";
 import { selection, type SelectionStore } from "./selection.svelte";
@@ -30,8 +35,18 @@ export interface RecognitionCommands {
     sheet: SheetId,
     region: OrientedBox,
     placement: BalloonPlacement,
-  ): Promise<Result<Proposal[]>>;
-  readCalloutText(sheet: SheetId, text: string): Promise<Result<TypedCallout>>;
+    language: ExplainLanguage,
+  ): Promise<Result<ProposalView[]>>;
+  readCalloutText(
+    sheet: SheetId,
+    text: string,
+    language: ExplainLanguage,
+  ): Promise<Result<TypedCallout>>;
+}
+
+/** The language of explanations: the UI language. */
+export function explainLanguage(): ExplainLanguage {
+  return getLocale() === "de" ? "de" : "en";
 }
 
 /**
@@ -107,6 +122,10 @@ function apply(p: Proposal, value: FieldValue): void {
 export class BoxSelectStore {
   /** Proposals of the open card, empty when no card is open. */
   proposals = $state.raw<Proposal[]>([]);
+  /** Explanation of each proposal's limits in the UI language, from Rust (FR-TOL-08). */
+  explanations = $state.raw<(string | null)[]>([]);
+  /** What the tolerance engine could not decide, per proposal. Shown only, never stored. */
+  notes = $state.raw<InterpreterNote[][]>([]);
   /** The box the proposals were read from, in sheet space. */
   region = $state.raw<Rect | null>(null);
   /** True while Rust reads the box or edited text. */
@@ -140,14 +159,16 @@ export class BoxSelectStore {
     this.discard();
     this.busy = true;
     try {
-      const result = await this.#api.proposeFromRegion(sheet, box, placement);
+      const result = await this.#api.proposeFromRegion(sheet, box, placement, explainLanguage());
       if (result.status === "error" || result.data.length === 0) {
         return false;
       }
       this.#sheet = sheet;
       this.region = rect;
-      this.proposals = result.data;
-      this.#read = result.data.map((p) => p.requirement_text);
+      this.proposals = result.data.map((v) => v.proposal);
+      this.explanations = result.data.map((v) => v.explanation);
+      this.notes = result.data.map((v) => v.notes);
+      this.#read = this.proposals.map((p) => p.requirement_text);
       return true;
     } catch {
       return false;
@@ -169,12 +190,19 @@ export class BoxSelectStore {
       return;
     }
     const text = p.requirement_text;
-    const result = await this.#api.readCalloutText(sheet, text).catch(() => null);
-    if (result?.status !== "ok" || this.proposals[index]?.requirement_text !== text) {
+    const result = await this.#api
+      .readCalloutText(sheet, text, explainLanguage())
+      .catch(() => null);
+    const current = this.proposals[index];
+    if (result?.status !== "ok" || current?.requirement_text !== text) {
       return;
     }
     this.#read[index] = text;
-    this.edit(index, withReading(this.proposals[index], result.data));
+    this.edit(index, withReading(current, result.data));
+    this.explanations = this.explanations.map((e, i) =>
+      i === index ? result.data.explanation : e,
+    );
+    this.notes = this.notes.map((n, i) => (i === index ? result.data.notes : n));
   }
 
   /**
@@ -209,6 +237,8 @@ export class BoxSelectStore {
   /** Closes the card without changing the project. */
   discard(): void {
     this.proposals = [];
+    this.explanations = [];
+    this.notes = [];
     this.region = null;
     this.#sheet = null;
     this.#read = [];

@@ -20,7 +20,12 @@ import { commands } from "$lib/ipc/bindings";
 import { frozenSet } from "$lib/sets";
 import { UNITS_PER_MM, groupMoves, type Placement } from "$lib/viewport/balloons";
 import { screenToSheet, type Rect, type ViewTransform } from "$lib/viewport/view-math";
-import { boxSelect, type BoxSelectStore, type RecognitionCommands } from "./box-select.svelte";
+import {
+  boxSelect,
+  explainLanguage,
+  type BoxSelectStore,
+  type RecognitionCommands,
+} from "./box-select.svelte";
 import { documentStore } from "./document.svelte";
 import { projectStore, type ProjectStore } from "./project.svelte";
 import { selection, type SelectionStore } from "./selection.svelte";
@@ -181,7 +186,9 @@ export class BalloonToolsStore {
     let values: FieldValue[] = [{ field: "requirement_text", value: text }];
     const sheet = this.#sheet();
     if (this.#recognition && sheet !== undefined) {
-      const read = await this.#recognition.readCalloutText(sheet, text).catch(() => null);
+      const read = await this.#recognition
+        .readCalloutText(sheet, text, explainLanguage())
+        .catch(() => null);
       if (read?.status === "ok") {
         values = read.data.values;
       }

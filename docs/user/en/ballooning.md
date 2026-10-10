@@ -33,9 +33,11 @@ So the fastest way through a drawing by hand is: click, type, Enter, click, type
 
 Dimo reads the typed text like a dimension on the drawing: `Ø30 H7 +0.0203 -0` becomes kind
 **Diameter**, nominal `30`, fit `H7`, the deviations and the limits `30.0203` and `30`, with the
-rule **Explicit**. Text that is not a dimension, such as a note, is stored as requirement text only.
-Fit tables and general tolerances are not applied yet, so `Ø8 f7` alone gets no limits; enter
-them in the table ([Characteristic table](characteristics.md)).
+rule **Explicit**. `Ø8 f7` alone gets its limits from the ISO 286 fit table, with the rule **Fit
+table**. Values from a table that is still a draft are marked as such. A dimension without a
+tolerance gets **No tolerance defined**, because the project has no general tolerance yet; enter
+its limits in the table ([Characteristic table](characteristics.md)). Text that is not a
+dimension, such as a note, is stored as requirement text only.
 
 ## Box select
 
@@ -44,7 +46,10 @@ On a drawing with PDF text, Dimo reads the text for you.
 1. Press **B** and drag a box around the dimension text, including stacked tolerances.
    Rotated text, for example along a vertical dimension line, works the same way.
 2. A card opens next to the box. It shows what Dimo read: the requirement text, the kind, the
-   nominal value, the upper and lower limit and the rule that produced them.
+   nominal value, the upper and lower limit, the rule that produced them and an explanation of
+   the rule. Printed deviations always win; when they differ from the fit table, the
+   explanation says so. Notes point out what Dimo could not decide, for example an angle whose
+   shorter leg it does not know.
 3. Check the values. You can correct the requirement text (Dimo reads it again) and the kind.
 4. Press **Enter** or **Accept**. The balloon appears up and to the right of the box, like a
    placed balloon, with the values of the card. **Escape** or **Discard** closes the card

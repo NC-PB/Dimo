@@ -14,7 +14,7 @@ use dimo_core::geometry::{OrientedBox, Point, Size};
 use dimo_core::proposal::BalloonPlacement;
 use dimo_core::{Command, Environment as _, SheetId};
 use dimo_desktop::ipc::CommandError;
-use dimo_desktop::recognition::{propose, read_typed};
+use dimo_desktop::recognition::{ExplainLanguage, propose, read_typed};
 use dimo_desktop::session::AppSession;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
@@ -70,9 +70,9 @@ fn box_select_accept_undo_redo() {
     let target = session.recognition_target(sheet).unwrap();
 
     // Warm: the page is loaded once; then a box select is a region query on the cached page.
-    propose(&tiles, &target, sheet, C03, PLACEMENT).unwrap();
+    propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
     let started = Instant::now();
-    let proposals = propose(&tiles, &target, sheet, C03, PLACEMENT).unwrap();
+    let views = propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
     let took = started.elapsed();
     assert!(
         took < Duration::from_millis(50),
@@ -80,8 +80,24 @@ fn box_select_accept_undo_redo() {
     );
     eprintln!("box select on test_drawing_1: {took:?}");
 
-    assert_eq!(proposals.len(), 1);
+    assert_eq!(views.len(), 1);
+    // The tolerance engine explains the limits and finds the printed deviations differ from
+    // ISO 286 H7 (T2.5).
+    let explanation = views[0].explanation.clone().unwrap_or_default();
+    assert!(explanation.contains("H7"), "{explanation}");
+    let proposals: Vec<_> = views.into_iter().map(|v| v.proposal).collect();
     let p = &proposals[0];
+    assert!(
+        p.derivation
+            .as_ref()
+            .is_some_and(|d| d.hints.iter().any(|h| matches!(
+                h,
+                dimo_core::derivation::DerivationHint::FitDeviationsDiffer { .. }
+            ))),
+        "{:?}",
+        p.derivation
+    );
+    assert_eq!(p.engines[1].name, dimo_detect::TOLERANCE_ENGINE);
     assert_eq!(p.requirement_text, "Ø30 H7 +0.0203 -0");
     assert_eq!(p.upper_limit, Some(Decimal::new(300_203, 4)));
     assert_eq!(p.lower_limit, Some(Decimal::new(30, 0)));
@@ -121,9 +137,16 @@ fn box_select_accept_undo_redo() {
         ..C03
     };
     assert!(
-        propose(&tiles, &target, sheet, empty, PLACEMENT)
-            .unwrap()
-            .is_empty()
+        propose(
+            &tiles,
+            &target,
+            sheet,
+            empty,
+            PLACEMENT,
+            ExplainLanguage::En
+        )
+        .unwrap()
+        .is_empty()
     );
     // A region without area is refused.
     let flat = OrientedBox {
@@ -134,7 +157,7 @@ fn box_select_accept_undo_redo() {
         ..C03
     };
     assert!(matches!(
-        propose(&tiles, &target, sheet, flat, PLACEMENT),
+        propose(&tiles, &target, sheet, flat, PLACEMENT, ExplainLanguage::En),
         Err(CommandError::InvalidArgument { .. })
     ));
 }
@@ -149,12 +172,16 @@ fn typed_text_reads_like_box_select() {
         .unwrap();
     let sheet = session.project().unwrap().revisions[0].sheets[0].id;
     let target = session.recognition_target(sheet).unwrap();
-    let typed = read_typed(&target, "Ø30 H7 +0.0203 -0");
+    let typed = read_typed(&target, "Ø30 H7 +0.0203 -0", ExplainLanguage::De);
     assert_eq!(typed.parse_error, None);
+    assert!(
+        typed.explanation.as_deref().is_some_and(|e| !e.is_empty()),
+        "{typed:?}"
+    );
     assert!(typed.values.contains(&FieldValue::UpperLimit(
         Some(Decimal::new(300_203, 4)).into()
     )));
-    let note = read_typed(&target, "BREAK ALL SHARP EDGES");
+    let note = read_typed(&target, "BREAK ALL SHARP EDGES", ExplainLanguage::En);
     assert!(note.parse_error.is_some());
     assert_eq!(
         note.values,

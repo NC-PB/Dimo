@@ -62,16 +62,17 @@ export const commands = {
 	 */
 	exportProject: (request: ExportRequest) => typedError<number | null, CommandError>(__TAURI_INVOKE("export_project", { request })),
 	/**
-	 *  Box select: proposals for the text inside `region` of `sheet` (FR-REC-01, FR-REC-02).
-	 *  Changes nothing; accept them with the `accept_proposals` document command (ADR 0006).
-	 *  An empty list means the region holds no PDF text.
+	 *  Box select: proposals for the text inside `region` of `sheet` (FR-REC-01, FR-REC-02), with
+	 *  explanations in `language`. Changes nothing; accept them with the `accept_proposals`
+	 *  document command (ADR 0006). An empty list means the region holds no PDF text.
 	 */
-	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement) => typedError<Proposal[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement })),
+	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement, language: ExplainLanguage) => typedError<ProposalView[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement, language })),
 	/**
-	 *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5). Changes
-	 *  nothing; the frontend sets the returned values with one `update_fields` command.
+	 *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
+	 *  in `language`. Changes nothing; the frontend sets the returned values with one
+	 *  `update_fields` command.
 	 */
-	readCalloutText: (sheet: SheetId, text: string) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text })),
+	readCalloutText: (sheet: SheetId, text: string, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, language })),
 	/**  The settings of the user and the operating system user name. */
 	appSettings: () => __TAURI_INVOKE<SettingsView>("app_settings"),
 	/**
@@ -769,6 +770,13 @@ export type EngineVersion = {
 	version: string,
 };
 
+/**  Language of explanations, the UI language of the frontend. */
+export type ExplainLanguage = 
+/**  English. */
+"en" | 
+/**  German. */
+"de";
+
 /**  What to export. */
 export type ExportFormat = 
 /**  A copy of the drawing with the balloons (FR-EXP-01). */
@@ -887,6 +895,13 @@ export type Inspection = {
 	/**  Inspection frequency. */
 	frequency: string,
 };
+
+/**  Something the tolerance engine could not decide, shown with a proposal, never stored. */
+export type InterpreterNote = 
+/**  An angle whose shorter leg is unknown, so angular general tolerances cannot apply. */
+"shorter_leg_unknown" | 
+/**  A fit pair such as `H7/g6` names two features; no limits. */
+"fit_pair";
 
 /**  A background job ended. Event `job-finished`; sent once per job, after its last progress. */
 export type JobFinished = {
@@ -1241,6 +1256,16 @@ export type Proposal = {
 	engines?: EngineVersion[],
 };
 
+/**  A proposal of box select with what the card shows besides it. */
+export type ProposalView = {
+	/**  The proposal, to edit and accept. */
+	proposal: Proposal,
+	/**  Explanation of the limits in the requested language, `null` without a derivation. */
+	explanation: string | null,
+	/**  What the engine could not decide. */
+	notes: InterpreterNote[],
+};
+
 /**  One end of a size range, as in the table row (exact decimals, rule 5). */
 export type RangeBound = {
 	/**  The bound in the table's size unit. */
@@ -1567,7 +1592,7 @@ export type ToleranceSettings = {
 	custom_tables: CustomTable[],
 };
 
-/**  Values for text typed into the value field (M2 decision 5). */
+/**  Values for text typed into the value field or the card (M2 decision 5). */
 export type TypedCallout = {
 	/**
 	 *  Fields to set in one `update_fields` command: the requirement text, and when the text
@@ -1576,6 +1601,10 @@ export type TypedCallout = {
 	values: FieldValue[],
 	/**  Why the text could not be parsed; then `values` holds only the requirement text. */
 	parse_error: ParseIssue | null,
+	/**  Explanation of the limits in the requested language, `null` without a derivation. */
+	explanation: string | null,
+	/**  What the engine could not decide. */
+	notes: InterpreterNote[],
 };
 
 /**  Unit of a nominal value and its limits. */

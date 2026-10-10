@@ -5,6 +5,7 @@ import type {
   Classification,
   CommandError,
   DerivationRule,
+  InterpreterNote,
   OpenNotice,
   RejectReason,
   Theme,
@@ -222,6 +223,16 @@ export function ruleLabel(rule: DerivationRule | null): string {
       return m.rule_manual();
     case undefined:
       return m.rule_none();
+  }
+}
+
+/** Translated text of a tolerance engine note on a proposal (T2.6). */
+export function noteText(note: InterpreterNote): string {
+  switch (note) {
+    case "shorter_leg_unknown":
+      return m.note_shorter_leg_unknown();
+    case "fit_pair":
+      return m.note_fit_pair();
   }
 }
 

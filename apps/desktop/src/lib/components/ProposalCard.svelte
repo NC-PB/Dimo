@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
    * The proposal card of box select (T2.6, FR-REC-01, FR-REC-02, ADR 0006): next to the box the
-   * user drew, it shows what Rust read there. The requirement text and the kind can be edited;
+   * user drew, it shows what Rust read there, with the tolerance engine's explanation and notes. The requirement text and the kind can be edited;
    * edited text is read again by Rust. Enter accepts (one undo step), Esc discards.
    */
   import type { CharacteristicKind } from "$lib/ipc/bindings";
-  import { kindLabel, m, ruleLabel, unitLabel } from "$lib/i18n";
+  import { kindLabel, m, noteText, ruleLabel, unitLabel } from "$lib/i18n";
   import type { BoxSelectStore } from "$lib/stores/box-select.svelte";
   import { KINDS } from "$lib/table/columns";
   import { sheetToScreen, type ViewTransform } from "$lib/viewport/view-math";
@@ -17,11 +17,18 @@
     view: ViewTransform;
     /** Width of the viewport in CSS px, to choose the side of the box. */
     width: number;
+    /** Height of the viewport in CSS px, to keep the card inside it. */
+    height: number;
     /** Called when the card closes, to give the keyboard focus back to the drawing. */
     onDone: () => void;
   }
 
-  let { store, view, width, onDone }: Props = $props();
+  let { store, view, width, height, onDone }: Props = $props();
+
+  /** Space kept between the card and the viewport edge, in CSS px. */
+  const EDGE_PX = 4;
+  /** Measured height of the card. */
+  let cardHeight = $state(0);
 
   /** Space between the box and the card, in CSS px. */
   const GAP_PX = 10;
@@ -51,7 +58,8 @@
     const right = box.left + box.width + GAP_PX + CARD_WIDTH_PX <= width;
     return {
       x: right ? box.left + box.width + GAP_PX : Math.max(0, box.left - GAP_PX - CARD_WIDTH_PX),
-      y: Math.max(0, box.top),
+      // Next to the top of the box, moved up as far as needed to stay inside the viewport.
+      y: Math.max(EDGE_PX, Math.min(box.top, height - cardHeight - EDGE_PX)),
     };
   });
 
@@ -110,10 +118,12 @@
   ></div>
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <section
-    class="absolute z-20 flex flex-col gap-2 rounded border border-border bg-surface p-2 text-sm text-text shadow-lg"
+    class="absolute z-20 flex flex-col gap-2 overflow-y-auto rounded border border-border bg-surface p-2 text-sm text-text shadow-lg"
     style:left="{at.x}px"
     style:top="{at.y}px"
     style:width="{CARD_WIDTH_PX}px"
+    style:max-height="{Math.max(0, height - 2 * EDGE_PX)}px"
+    bind:clientHeight={cardHeight}
     aria-label={m.proposal_card_label()}
     onkeydown={onKeyDown}
   >
@@ -180,9 +190,17 @@
             <dd class="tabular-nums" data-field="lower_limit">{value(proposal.lower_limit)}</dd>
             <dt class="text-text-muted">{m.proposal_rule()}</dt>
             <dd data-field="rule">{ruleLabel(proposal.derivation?.rule ?? null)}</dd>
-            <dt class="text-text-muted">{m.proposal_explanation()}</dt>
-            <dd class="text-text-muted">{m.proposal_explanation_pending()}</dd>
+            {#if store.explanations[index]}
+              <dt class="text-text-muted">{m.proposal_explanation()}</dt>
+              <dd data-field="explanation">{store.explanations[index]}</dd>
+            {/if}
           </dl>
+          {#each store.notes[index] ?? [] as note (note)}
+            <p class="text-xs" role="note">
+              <span aria-hidden="true">⚠</span>
+              {noteText(note)}
+            </p>
+          {/each}
           {#if !proposal.inspect}
             <p class="text-xs" role="note">
               <span aria-hidden="true">◇</span>

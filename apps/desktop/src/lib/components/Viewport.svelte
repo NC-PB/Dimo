@@ -498,6 +498,7 @@
       store={boxSelect}
       view={shown}
       width={viewport.size.width}
+      height={viewport.size.height}
       onDone={focusDrawing}
     />
   {/if}

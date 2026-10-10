@@ -6,9 +6,11 @@ for inspection. Everything stays on your computer.
 
 This version is for **assisted ballooning**: you drag a box around a dimension and Dimo reads its
 PDF text, or you click a feature and type the value as it is printed. Dimo reads nominal value,
-fit and written tolerances from the text, and takes care of numbering, the list, saving and the
-exports. Dimo does not search the drawing by itself yet, and it does not apply fit tables or
-general tolerances yet; you enter those limits in the characteristic table.
+fit and written tolerances from the text, works out the limits (written tolerances first, then
+the ISO 286 fit table), explains where they come from, and takes care of numbering, the list,
+saving and the exports. Dimo does not search the drawing by itself yet. A general tolerance for
+the project cannot be chosen in this version, so a dimension without tolerance is marked "No
+tolerance defined"; enter its limits in the characteristic table.
 
 ## Pages
 
@@ -126,6 +128,6 @@ start. Details: [Settings](settings.md).
 
 - Open the project later with **Open project** (⌘O) and carry on. Every change you made is recorded
   in the change log inside the project.
-- Not yet in this version: searching the drawing automatically, fit tables and general
-  tolerances, inspection results and reports. The **Review** and **Measure** views show a note that they
+- Not yet in this version: searching the drawing automatically, choosing a general tolerance,
+  inspection results and reports. The **Review** and **Measure** views show a note that they
   come in a later version.

@@ -5,12 +5,15 @@ import ProposalCard from "$lib/components/ProposalCard.svelte";
 import type {
   BalloonPlacement,
   CommandError,
+  ExplainLanguage,
   OrientedBox,
   Proposal,
+  ProposalView,
   SheetId,
   TypedCallout,
 } from "$lib/ipc/bindings";
 import { FakeCommands } from "$lib/viewport/balloon-fixtures";
+import type { Placement } from "$lib/viewport/balloons";
 import { BalloonToolsStore } from "./balloon-tools.svelte";
 import { BoxSelectStore, withReading, type RecognitionCommands } from "./box-select.svelte";
 import { SHEET_ID, characteristic, emptyProject, loaded } from "./fixtures";
@@ -26,7 +29,7 @@ const BOX: OrientedBox = {
   size: { width: 90, height: 28 },
   angle: 0,
 };
-const PLACEMENT: BalloonPlacement = {
+const PLACEMENT: Placement = {
   position: { x: 660, y: 125 },
   anchor: { x: 640, y: 145 },
 };
@@ -69,10 +72,23 @@ class FakeRecognition implements RecognitionCommands {
       { field: "lower_limit", value: "24.9" },
     ],
     parse_error: null,
+    explanation: "Tolerance written on the drawing.",
+    notes: [],
   });
-  proposeFromRegion = (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement) => {
-    expect([sheet, region, placement]).toEqual([SHEET_ID, BOX, PLACEMENT]);
-    return ok(this.proposals);
+  proposeFromRegion = (
+    sheet: SheetId,
+    region: OrientedBox,
+    placement: BalloonPlacement,
+    language: ExplainLanguage,
+  ) => {
+    expect([sheet, region, placement, language]).toEqual([SHEET_ID, BOX, PLACEMENT, "en"]);
+    return ok<ProposalView[]>(
+      this.proposals.map((proposal) => ({
+        proposal,
+        explanation: "Printed deviations differ from ISO 286 H7.",
+        notes: ["fit_pair"],
+      })),
+    );
   };
   readCalloutText = (_sheet: SheetId, text: string) => {
     this.reads.push(text);
@@ -155,6 +171,8 @@ describe("box select (T2.6, FR-REC-01, ADR 0006)", () => {
     const next = withReading(proposal(), {
       values: [{ field: "requirement_text", value: "SEE NOTE" }],
       parse_error: { position: 0, expected: "dimension" },
+      explanation: null,
+      notes: [],
     });
     expect(next.requirement_text).toBe("SEE NOTE");
     expect([next.nominal, next.upper_limit, next.lower_limit, next.derivation]).toEqual([
@@ -203,6 +221,7 @@ describe("proposal card", () => {
         store: s.store,
         view: { scale: 1, tx: 0, ty: 0, rotation: 0 },
         width: 1600,
+        height: 900,
         onDone: () => {
           done += 1;
         },
@@ -225,6 +244,8 @@ describe("proposal card", () => {
     expect(field("upper_limit")).toBe("30.0203");
     expect(field("lower_limit")).toBe("30");
     expect(field("rule")).toBe("Explicit (on the drawing)");
+    expect(field("explanation")).toBe("Printed deviations differ from ISO 286 H7.");
+    expect(target.textContent).toContain("Fit pair");
   });
 
   it("Enter accepts and Esc discards", async () => {
@@ -236,7 +257,9 @@ describe("proposal card", () => {
       expect(first.done()).toBe(1);
     });
     expect(first.api.commands[0]?.type).toBe("accept_proposals");
-    void unmount(card!);
+    if (card) {
+      void unmount(card);
+    }
     card = null;
 
     const second = await shown();

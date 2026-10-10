@@ -756,11 +756,25 @@ impl AppSession {
             .ok_or_else(|| CommandError::InvalidArgument {
                 message: format!("sheet {sheet} is not a sheet of the current drawing"),
             })?;
+        let custom_tables = project
+            .settings
+            .tolerance
+            .custom_tables
+            .iter()
+            .filter_map(|t| {
+                let bytes = open.project.table(&t.sha256)?;
+                Some((
+                    t.table.id.clone(),
+                    String::from_utf8_lossy(bytes).into_owned(),
+                ))
+            })
+            .collect();
         Ok(RecognitionTarget {
             drawing: open.hash,
             page: usize::try_from(found.index).unwrap_or(usize::MAX),
             unit: found.unit,
             settings: project.settings.clone(),
+            custom_tables,
         })
     }
 }
@@ -776,6 +790,8 @@ pub struct RecognitionTarget {
     pub unit: dimo_core::Unit,
     /// Project settings, for the tolerance engine.
     pub settings: dimo_core::ProjectSettings,
+    /// Custom tolerance tables stored in the project as (id, file text) (M2 decision 4).
+    pub custom_tables: Vec<(String, String)>,
 }
 
 /// True if both paths name the same existing file or folder.

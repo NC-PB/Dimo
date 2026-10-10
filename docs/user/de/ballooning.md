@@ -35,8 +35,10 @@ Von Hand geht es am schnellsten so: klicken, tippen, Enter, klicken, tippen, Ent
 Dimo liest den getippten Text wie ein Maß auf der Zeichnung: `Ø30 H7 +0.0203 -0` ergibt die Art
 **Durchmesser**, das Nennmaß `30`, die Passung `H7`, die Abmaße und die Grenzwerte `30.0203` und
 `30` mit der Regel **Explizit**. Text, der kein Maß ist, etwa ein Hinweis, wird nur als
-Anforderung gespeichert. Passungstabellen und Allgemeintoleranzen werden noch nicht angewendet,
-`Ø8 f7` allein erhält also keine Grenzwerte; diese trägst du in der Tabelle ein
+Anforderung gespeichert. `Ø8 f7` allein erhält seine Grenzwerte aus der Passungstabelle nach
+ISO 286 mit der Regel **Passungstabelle**. Werte aus einer Tabelle, die noch ein Entwurf ist,
+werden so markiert. Ein Maß ohne Toleranz erhält **Keine Toleranz festgelegt**, weil das Projekt
+noch keine Allgemeintoleranz hat; seine Grenzwerte trägst du in der Tabelle ein
 ([Merkmalstabelle](characteristics.md)).
 
 ## Rahmenauswahl
@@ -46,8 +48,10 @@ Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
 1. Drücke **B** und ziehe einen Rahmen um den Maßtext, gestapelte Toleranzen eingeschlossen.
    Gedrehter Text, etwa entlang einer senkrechten Maßlinie, geht genauso.
 2. Neben dem Rahmen öffnet sich eine Karte. Sie zeigt, was Dimo gelesen hat: den
-   Anforderungstext, die Art, das Nennmaß, die obere und die untere Grenze und die Regel, aus der
-   sie stammen.
+   Anforderungstext, die Art, das Nennmaß, die obere und die untere Grenze, die Regel, aus der
+   sie stammen, und eine Erklärung dazu. Aufgedruckte Abmaße gelten immer; weichen sie von der
+   Passungstabelle ab, sagt die Erklärung das. Hinweise nennen, was Dimo nicht entscheiden
+   konnte, etwa einen Winkel, dessen kürzeren Schenkel es nicht kennt.
 3. Prüfe die Werte. Den Anforderungstext (Dimo liest ihn erneut) und die Art kannst du
    korrigieren.
 4. Drücke **Enter** oder **Übernehmen**. Der Ballon erscheint rechts oberhalb des Rahmens wie ein
