@@ -50,7 +50,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.2 Tolerance table format and ISO 2768-1 | review | Format, loader, schema, release gate (`scripts/check-table-status.sh`, CI job "tolerance tables (D-43)"). Owner: verify `iso-2768-1.toml` (D-43) |
 | T2.3 ISO 286 fit tables | review | 514 fit vectors pass; synth `FITS` and corpus truth fits match the table. Owner: verify `iso-286.toml` (D-43) |
 | T2.4 Data model version 2 | done | Schema version 2 with migration; `DisplayNumber`, `ToleranceDerivation`, numbering and tolerance settings, zone grid, views, `Proposal`, `AcceptProposals`, history query. Sub-numbers as separate characteristics (owner confirmed) |
-| T2.5 Tolerance engine | in progress | Wave 2 |
+| T2.5 Tolerance engine | done | `interpret`, `ToleranceContext::for_project`, `explain` (en, de). All truth limits reproduced on draft tables. Owner: confirm rounding and fit rules (decision log 2026-10-10) |
 | T2.6 Box select with PDF text | in progress | Wave 2 |
 | T2.7 Numbering strategies | in progress | Wave 2 |
 | T2.8 Tolerance UI, explanations and history | todo | Wave 3 |
@@ -74,6 +74,10 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-10 | Tolerance engine precedence details: a fit always ends the search (unexpandable fit, pair `H7/g6`, size outside table give `no_tolerance_defined` plus hint, never a general tolerance); a table not covering the size adds `size_outside_table` and the search continues; general from a custom table is rule `custom_table`; fit table is `iso-286` if present; explicit limits never set the draft flag. **Owner: confirm** | FR-TOL-01, D-43 | T2.5, agent |
+| 2026-10-10 | Rounding: converted nominal half away from zero, converted limits rounded inward to the settings places (never wider), deviations = limits minus nominal; arcmin to degrees rounded toward zero to 6 places (20' = ±0.333333°); fit difference compared exactly in mm, in inch after converting and rounding to the written places. **Owner: confirm** | FR-TOL-09 | T2.5, agent |
+| 2026-10-10 | Reference, basic and threads get rule `no_tolerance_defined` without limits; radii, spherical radii and chamfer legs use the ISO 2768-1 `radius_chamfer` part, lengths, diameters and depths `linear`; angular general tolerance needs the shorter leg (`Measures`), without it no limits plus a proposal note; decimal place rules only for lengths written as decimals; limit dimension keeps the first written value as nominal; German explanations use decimal comma and "Zoll" | FR-TOL-02, FR-TOL-06, FR-TOL-08, D-25 | T2.5, agent |
+| 2026-10-10 | Angle without shorter leg and fit pair are proposal notes (`Note`), not stored hints; storing them needs two new `DerivationHint` variants and a schema change | Kept schema version 2 | T2.5, agent |
 | 2026-10-10 | Data model v2: display number stored as canonical text (`12`, `12.1`, `12A`), ordered 12 < 12A < 12.1 < 12.1A < 13; placement order kept equal to number order; insert policy moved from the lock to `settings.numbering.insert_when_locked`; the lock records numbers given while locked so deleted ones are never reused; locked inserts anchor on `insert_after` (else the highest number), sub_number 12 to 12.1, letter_suffix 12 to 12A, fallback next_free when empty | FR-BAL-07, FR-BAL-11, D-22, D-23 | T2.4, agent |
 | 2026-10-10 | Multi-instance sub-numbers are separate characteristics with `DisplayNumber` sub-numbers; no balloon sub-index (spec 07). One characteristic with several balloons would need schema v3. Owner confirmed 2026-10-10 | Simplest model | T2.4, agent |
 | 2026-10-10 | Migration 1 to 2: strategy `manual` for migrated projects (keeps order), `sheet_zone` for new ones (D-21); v1 limits get derivation `manual`; leftover v1 journals are set aside as stale, not replayed | D-21, NFR-REL-01 | T2.4, agent |
@@ -160,6 +164,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-10: T2.5 merged (tolerance engine), check green. T2.6 must replace its fallback interpreter with `dimo_tolerance::interpret` when merged.
 - 2026-10-10: T2.4 merged (data model v2), check and smoke test green on main. Follow-ups carried into T2.5, T2.6, T2.8 in M2.md. Wave 1 complete.
 - 2026-10-10: T2.1 merged (callout parser). Wave 1 done except T2.4, held for the owner's confirmation of M2 decisions 1 to 4.
 - 2026-10-09: T2.2 and T2.3 merged (tolerance table format, ISO 2768-1 and ISO 286 drafts). Tables wait for the owner's Tabellenbuch check.
