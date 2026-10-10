@@ -20,6 +20,7 @@ fn main() {
         "propose_from_region",
         "read_callout_text",
         "preview_numbering",
+        "zone_grid_form",
         "app_settings",
         "set_app_settings",
         "dev_startup",

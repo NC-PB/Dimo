@@ -1,5 +1,18 @@
-import type { Command, Patch, Project, Sheet, SheetView } from "$lib/ipc/bindings";
-import { defaultGrid, isDrawn, rectBetween, viewsCommand, zoneGridCommand } from "$lib/zone-grid";
+import {
+  commands,
+  type Command,
+  type Patch,
+  type Project,
+  type Sheet,
+  type SheetView,
+} from "$lib/ipc/bindings";
+import {
+  isDrawn,
+  rectBetween,
+  viewsCommand,
+  zoneGridCommand,
+  type ZoneGridApi,
+} from "$lib/zone-grid";
 import type { Point } from "$lib/viewport/view-math";
 import { documentStore } from "./document.svelte";
 import { projectStore } from "./project.svelte";
@@ -26,13 +39,21 @@ export class SheetRegionsStore {
 
   readonly #project: RegionProject;
   readonly #sheetIndex: () => number;
+  readonly #zones: ZoneGridApi;
 
+  /**
+   * @param project the open project
+   * @param sheetIndex index of the shown sheet
+   * @param zones the zone grid query of Rust, for the default grid (T2.7a)
+   */
   constructor(
     project: RegionProject = projectStore,
     sheetIndex: () => number = () => documentStore.sheet,
+    zones: ZoneGridApi = commands,
   ) {
     this.#project = project;
     this.#sheetIndex = sheetIndex;
+    this.#zones = zones;
   }
 
   /** The sheet on screen. */
@@ -64,8 +85,8 @@ export class SheetRegionsStore {
   }
 
   /**
-   * Ends the drag: a zone frame keeps the labels of the current grid (or gets the default ones),
-   * a view is added after the others. Too small rectangles are ignored. The tool stops.
+   * Ends the drag: a zone frame keeps the labels of the current grid (or gets the default ones
+   * from Rust), a view is added after the others. Too small rectangles are ignored. The tool stops.
    */
   async finish(at: Point): Promise<Patch | undefined> {
     const drag = this.drag;
@@ -83,10 +104,7 @@ export class SheetRegionsStore {
     if (tool === "zone_frame") {
       const grid =
         sheet.zone_grid ??
-        defaultGrid({
-          width: sheet.size.width ?? 0,
-          height: sheet.size.height ?? 0,
-        });
+        (await this.#zones.zoneGridForm({ type: "default", size: sheet.size })).grid;
       return this.#project.execute(zoneGridCommand(sheet, { ...grid, frame: rect }));
     }
     const view: SheetView = { label: "", rect };

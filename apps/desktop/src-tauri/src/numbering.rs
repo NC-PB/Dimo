@@ -1,8 +1,11 @@
 //! Numbering preview of the main window (T2.7, FR-BAL-05). The rules live in
 //! [`dimo_core::numbering`]; applying a strategy is the document command `apply_numbering`,
 //! sent through [`crate::project::execute`].
+//!
+//! The zone grid editor asks [`zone_grid_form`] for default grids and axis labels; the rules
+//! live in [`dimo_core::zones`] (T2.7a, rule 2).
 
-use dimo_core::{NumberingPreview, NumberingStrategy};
+use dimo_core::{NumberingPreview, NumberingStrategy, ZoneGridEdit, ZoneGridForm};
 use tauri::AppHandle;
 
 use crate::ipc::CommandError;
@@ -27,6 +30,18 @@ pub async fn preview_numbering(
     strategy: NumberingStrategy,
 ) -> Result<NumberingPreview, CommandError> {
     with_session(app, move |_, session| preview(session, strategy)).await
+}
+
+/// A default zone grid, or a grid with one axis relabelled, and the label scheme of each axis
+/// (T2.7a, D-21). Changes nothing; the editor stores the grid with `set_zone_grid`.
+#[tauri::command]
+#[specta::specta]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "Tauri commands take arguments by value"
+)]
+pub fn zone_grid_form(edit: ZoneGridEdit) -> ZoneGridForm {
+    dimo_core::zone_grid_form(edit)
 }
 
 #[cfg(test)]

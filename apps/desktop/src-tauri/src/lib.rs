@@ -51,6 +51,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             recognition::propose_from_region,
             recognition::read_callout_text,
             numbering::preview_numbering,
+            numbering::zone_grid_form,
             settings::app_settings,
             settings::set_app_settings,
             dev::dev_startup,
