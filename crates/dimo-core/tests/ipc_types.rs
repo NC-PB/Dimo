@@ -27,6 +27,7 @@ fn domain_types_export_to_typescript() {
         "export type Change =",
         "export type CharId = string",
         "nominal: string | null",
+        "number: string",
         "export type Timestamp = string",
         "export type Color = string",
         "\"field\": \"nominal\"",

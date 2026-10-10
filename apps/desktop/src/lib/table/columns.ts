@@ -106,7 +106,7 @@ export function isEditable(column: ColumnSpec): boolean {
 export function rawText(c: Characteristic, id: ColumnId): string {
   switch (id) {
     case "number":
-      return String(c.number);
+      return c.number;
     case "kind":
       return c.kind;
     case "requirement_text":

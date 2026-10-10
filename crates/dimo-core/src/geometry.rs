@@ -29,6 +29,36 @@ pub struct Size {
     pub height: f64,
 }
 
+/// Axis aligned rectangle in sheet space, for example a drawing frame or a view (M2 decision 1).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub struct Rect {
+    /// Top left corner.
+    pub origin: Point,
+    /// Width and height.
+    pub size: Size,
+}
+
+impl Rect {
+    /// True if the origin is finite and both sides are finite and positive.
+    pub fn is_valid(&self) -> bool {
+        let positive = |v: f64| v.is_finite() && v > 0.0;
+        self.origin.x.is_finite()
+            && self.origin.y.is_finite()
+            && positive(self.size.width)
+            && positive(self.size.height)
+    }
+
+    /// The center point.
+    pub fn center(&self) -> Point {
+        Point {
+            x: self.origin.x + self.size.width / 2.0,
+            y: self.origin.y + self.size.height / 2.0,
+        }
+    }
+}
+
 /// Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]

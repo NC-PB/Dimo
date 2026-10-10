@@ -92,6 +92,24 @@ pub enum ProjectError {
         /// The hash of the bytes.
         actual: Sha256Hex,
     },
+    /// The tolerance settings list a custom table that is not in the project (M2 decision 4).
+    #[error("custom tolerance table {0} is missing from the project")]
+    MissingTable(String),
+    /// A stored custom table does not have the SHA-256 the settings expect.
+    #[error(
+        "custom tolerance table {id} was changed: expected {expected}, the bytes hash to {actual}"
+    )]
+    TableHashMismatch {
+        /// Table id.
+        id: String,
+        /// The hash the settings expect.
+        expected: Sha256Hex,
+        /// The hash of the stored bytes.
+        actual: Sha256Hex,
+    },
+    /// A custom table id is not a valid file name or appears twice.
+    #[error("invalid or duplicate custom tolerance table id {0:?}")]
+    InvalidTable(String),
     /// The data handed to the drawing import is not usable.
     #[error("cannot import the drawing: {0}")]
     InvalidDrawing(String),

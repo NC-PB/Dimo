@@ -162,8 +162,10 @@ pub enum RejectReason {
     InvalidGeometry,
     /// A balloon style size is not valid.
     InvalidStyle,
-    /// A sheet unit or scale is not valid.
+    /// A sheet unit, scale, zone grid or view is not valid.
     InvalidSheetSetting,
+    /// Project settings break their rules, e.g. tolerance or numbering settings.
+    InvalidProjectSetting,
     /// Characteristics cannot be moved before one of themselves.
     InvalidMoveTarget,
     /// Quantity 0.
@@ -188,6 +190,7 @@ impl From<&dimo_core::CommandError> for RejectReason {
             E::InvalidGeometry(_) => Self::InvalidGeometry,
             E::InvalidStyle => Self::InvalidStyle,
             E::InvalidSheetSetting(_) => Self::InvalidSheetSetting,
+            E::InvalidProjectSetting(_) => Self::InvalidProjectSetting,
             E::InvalidMoveTarget => Self::InvalidMoveTarget,
             E::Field(FieldError::ZeroQuantity) => Self::ZeroQuantity,
             E::NothingToUndo => Self::NothingToUndo,

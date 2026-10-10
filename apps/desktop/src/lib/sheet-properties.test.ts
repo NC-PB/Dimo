@@ -56,6 +56,8 @@ function sheet(id: string, rotation: Sheet["rotation"] = "deg0"): Sheet {
     raster_dpi: null,
     unit: "mm",
     scale: { drawing: 1, actual: 1 },
+    zone_grid: null,
+    views: [],
   };
 }
 

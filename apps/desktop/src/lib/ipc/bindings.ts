@@ -174,6 +174,14 @@ export type BalloonMove = {
 	anchor: Point | null,
 };
 
+/**  Where the balloon of an accepted proposal goes. */
+export type BalloonPlacement = {
+	/**  Balloon center in sheet space. */
+	position: Point,
+	/**  Leader anchor on the feature in sheet space. */
+	anchor: Point,
+};
+
 /**  Outline shape of a balloon. */
 export type BalloonShape = 
 /**  Circle (D-24 default). */
@@ -316,10 +324,11 @@ export type Characteristic = {
 	/**  Stable ID, never changes (FR-BAL-09). */
 	id: CharId,
 	/**
-	 *  Display number, starting at 1. Follows the placement order while numbering is unlocked
-	 *  (D-21); kept when numbering is locked (D-23).
+	 *  Display number such as `12`, `12.1` or `12A`. Follows the placement order while
+	 *  numbering is unlocked (D-21); kept when numbering is locked, where added characteristics
+	 *  are numbered by the insert policy (D-23, FR-BAL-11).
 	 */
-	number: number,
+	number: string,
 	/**  What the characteristic describes. */
 	kind: CharacteristicKind,
 	/**  Text as it appears on the drawing. */
@@ -338,6 +347,11 @@ export type Characteristic = {
 	lower_limit: string | null,
 	/**  Fit designation such as `H7`. */
 	fit: string | null,
+	/**
+	 *  Which rule produced the limits (FR-TOL-08). `null` if no rule was recorded, e.g. for a
+	 *  characteristic without values.
+	 */
+	derivation: ToleranceDerivation | null,
 	/**  Number of features the characteristic stands for, from `4X` or `2 PL` (D-22). At least 1. */
 	quantity: number,
 	/**  Importance class. */
@@ -427,8 +441,9 @@ export type Color = string;
 /**  A change the user asks for. Every command is undoable as one step. */
 export type Command = 
 /**
- *  Adds a characteristic with one balloon at the end of the placement order (FR-BAL-01).
- *  Numbered by placement order, or with the next free number when locked (D-21, D-23).
+ *  Adds a characteristic with one balloon (FR-BAL-01). Unlocked: at the end of the
+ *  placement order, numbered by it (D-21). Locked: numbered by the insert policy and placed
+ *  in number order (D-23, FR-BAL-11).
  */
 { type: "add_characteristic"; 
 /**  Sheet the balloon and region are on. */
@@ -440,7 +455,22 @@ anchor: Point;
 /**  Region the user drew around the callout, if any (FR-CHR-09). */
 region: OrientedBox | null; 
 /**  Initial field values. */
-values: FieldValue[] } | 
+values: FieldValue[]; 
+/**
+ *  Anchor of the sub-number and letter insert policies while locked: the new number
+ *  follows this characteristic. `null` uses the highest number. Not used while unlocked
+ *  and by the next free policy, but it must name an existing characteristic.
+ */
+insert_after: CharId | null } | 
+/**
+ *  Turns proposals into accepted characteristics with one balloon each, as one undo step
+ *  (ADR 0006, FR-REC-02). Numbered like [`Command::AddCharacteristic`], in the given order.
+ */
+{ type: "accept_proposals"; 
+/**  Proposals to accept, possibly edited by the user. */
+proposals: Proposal[]; 
+/**  Anchor of the locked insert policies, as for [`Command::AddCharacteristic`]. */
+insert_after: CharId | null } | 
 /**  Sets field values on one or more characteristics (FR-CHR-02). */
 { type: "update_fields"; 
 /**  Characteristics to change. */
@@ -487,6 +517,32 @@ rotation: Rotation | null;
 unit: Unit | null; 
 /**  New scale. */
 scale: Scale | null } | 
+/**  Sets or removes the zone grid of a sheet (M2 decision 1, D-21). */
+{ type: "set_zone_grid"; 
+/**  The sheet. */
+sheet: SheetId; 
+/**  New grid; `null` removes it. */
+grid: ZoneGrid | null } | 
+/**  Replaces the view rectangles of a sheet (M2 decision 1). */
+{ type: "set_views"; 
+/**  The sheet. */
+sheet: SheetId; 
+/**  All views of the sheet, in order. */
+views: SheetView[] } | 
+/**
+ *  Sets the numbering strategy, multi-instance numbering and locked insert policy
+ *  (FR-BAL-04, FR-BAL-07, FR-BAL-11). Numbers do not change.
+ */
+{ type: "set_numbering_settings"; 
+/**  New settings. */
+settings: NumberingSettings } | 
+/**
+ *  Sets the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). Limits
+ *  of existing characteristics do not change.
+ */
+{ type: "set_tolerance_settings"; 
+/**  New settings. */
+settings: ToleranceSettings } | 
 /**  Locks numbering (FR-BAL-10). No change if already locked. */
 { type: "lock_numbering"; 
 /**  Why. */
@@ -552,6 +608,86 @@ message: string } |
 reason: RejectReason; 
 /**  Why, in English, for logs and bug reports. */
 message: string };
+
+/**
+ *  A custom tolerance table stored in the project container as `tolerances/<id>.toml`
+ *  (FR-TOL-07, M2 decision 4).
+ */
+export type CustomTable = {
+	/**  Table id and version as in the file. */
+	table: TableRef,
+	/**  SHA-256 of the stored file, checked when the project is opened. */
+	sha256: Sha256Hex,
+};
+
+/**  Decimal place rule: a nominal written with `places` decimals gets `±tolerance` (FR-TOL-06). */
+export type DecimalPlaceRule = {
+	/**  Decimal places of the nominal, 0 to 10. */
+	places: number,
+	/**  Symmetric tolerance, positive. */
+	tolerance: string,
+};
+
+/**
+ *  A remark on a derivation that the user should see, without changing the limits (spec 08
+ *  stage 7).
+ */
+export type DerivationHint = 
+/**  The printed deviations differ from the fit table. The printed ones were kept. */
+{ hint: "fit_deviations_differ"; 
+/**  The fit as written. */
+fit: string; 
+/**  Upper deviation of the fit table. */
+table_upper_dev: string | null; 
+/**  Lower deviation of the fit table. */
+table_lower_dev: string | null } | 
+/**  The fit is not in the fit table; no limits from it. */
+{ hint: "unknown_fit"; 
+/**  The fit as written. */
+fit: string } | 
+/**  The size is outside the ranges of the table that would apply. */
+{ hint: "size_outside_table"; 
+/**  The table. */
+table: TableRef } | 
+/**  Reference dimension, not toleranced and not inspected by default (D-25, FR-CHR-08). */
+{ hint: "reference_dimension" } | 
+/**  Basic (theoretically exact) dimension, not inspected by default (D-25, FR-CHR-08). */
+{ hint: "basic_dimension" };
+
+/**  The rule that produced the limits, with its parameters (FR-TOL-01 precedence, FR-TOL-08). */
+export type DerivationRule = 
+/**  Tolerance written on the callout: deviations, `±`, limits, `MIN` or `MAX`. */
+{ rule: "explicit" } | 
+/**  Fit designation expanded with a fit table (FR-TOL-04). */
+{ rule: "fit"; 
+/**  The fit table, e.g. `iso-286`. */
+table: TableRef; 
+/**  The designation as written, e.g. `H7` or `H7/g6`. */
+fit: string; 
+/**  Size step of the table the nominal lies in. */
+range: SizeRange | null } | 
+/**  Drawing specific rule, such as a custom table assigned to the project as drawing rule. */
+{ rule: "drawing_rule"; 
+/**  Where the value came from. */
+lookup: TableLookup } | 
+/**  General tolerance standard by size range, e.g. ISO 2768-m (FR-TOL-02). */
+{ rule: "general"; 
+/**  Where the value came from. */
+lookup: TableLookup } | 
+/**  Decimal place rule, e.g. `X.XX ±0.05` (FR-TOL-06). */
+{ rule: "decimal_rule"; 
+/**  Decimal places of the nominal as written. */
+places: number; 
+/**  Symmetric tolerance of the rule. */
+tolerance: string } | 
+/**  General tolerance from a custom table of the user (FR-TOL-07). */
+{ rule: "custom_table"; 
+/**  Where the value came from. */
+lookup: TableLookup } | 
+/**  No tolerance on the callout and no general rule: no limits, flagged for review. */
+{ rule: "no_tolerance_defined" } | 
+/**  Limits typed or edited by hand. Never re-interpreted automatically. */
+{ rule: "manual" };
 
 /**  What a debug build should do at startup, read from the `DIMO_DEV_*` environment variables. */
 export type DevStartup = {
@@ -681,7 +817,9 @@ export type FieldValue =
 /**  Review state. */
 { field: "status"; value: CharacteristicStatus } | 
 /**  Comment. */
-{ field: "comment"; value: string };
+{ field: "comment"; value: string } | 
+/**  Which rule produced the limits (FR-TOL-08), set together with the limits it explains. */
+{ field: "derivation"; value: ToleranceDerivation | null };
 
 /**  Frame times measured by the viewport during a scripted pan (NFR-PERF-02). */
 export type FrameTimeReport = {
@@ -701,13 +839,20 @@ export type FrameTimeReport = {
 	viewport: [(number | null), (number | null)],
 };
 
-/**  Number given to a characteristic added while numbering is locked (D-23). */
-export type InsertPolicy = 
 /**
- *  One more than the highest number ever given since the lock. Deleted numbers are not
- *  reused, so an issued number never changes meaning.
+ *  Number given to a characteristic added while numbering is locked (FR-BAL-11, D-23).
+ * 
+ *  Sub-numbers and letters follow the characteristic the new one is inserted after (the
+ *  anchor). Numbers given while locked are never given again, even after a delete, so an issued
+ *  number never changes meaning.
  */
-"next_free";
+export type InsertPolicy = 
+/**  One more than the highest base number ever given: after `12` comes `13` (default). */
+"next_free" | 
+/**  Next sub-number of the anchor's base number: after `12` comes `12.1`, then `12.2`. */
+"sub_number" | 
+/**  Next letter of the anchor's number: after `12` comes `12A`, then `12B`. */
+"letter_suffix";
 
 /**  How a characteristic is inspected (FR-CHR-02). Empty text means not set. */
 export type Inspection = {
@@ -760,12 +905,19 @@ export type LockReason =
 /**  A report was exported as issued (D-23). */
 "issued_report";
 
+/**  How a callout for several features (`4X`, `2 PL`) is numbered (FR-BAL-07, D-22). */
+export type MultiInstance = 
+/**  One balloon with the quantity (default, D-22). */
+"quantity" | 
+/**  One number per feature as sub-numbers, `5.1`, `5.2`. */
+"sub_number";
+
 /**
  *  Numbering state of the project (D-21, D-23).
  * 
  *  Unlocked: numbers are always `1..=n` in placement order, and every add, delete or move
- *  renumbers. Locked: numbers never change, deletions leave gaps, moves are refused and
- *  added characteristics get the next free number.
+ *  renumbers. Locked: numbers never change, deletions leave gaps, moves are refused and added
+ *  characteristics are numbered by [`NumberingSettings::insert_when_locked`].
  */
 export type Numbering = {
 	/**  The lock, if numbering is locked. */
@@ -780,11 +932,43 @@ export type NumberingLock = {
 	locked_at: Timestamp,
 	/**  Who locked it (D-27). */
 	locked_by: string,
-	/**  How added characteristics are numbered while locked. */
-	insert_policy: InsertPolicy,
-	/**  Highest number given so far, including numbers of deleted characteristics. */
+	/**  Highest base number given so far, including numbers of deleted characteristics. */
 	highest_number: number,
+	/**
+	 *  Sub-numbered and lettered numbers given while locked, including those of deleted
+	 *  characteristics, sorted (FR-BAL-11).
+	 */
+	given: string[],
 };
+
+/**  Numbering settings of a project (FR-BAL-04, FR-BAL-07, FR-BAL-11). */
+export type NumberingSettings = {
+	/**  Numbering strategy (D-21). */
+	strategy: NumberingStrategy,
+	/**  Numbering of multi-instance callouts (D-22). */
+	multi_instance: MultiInstance,
+	/**  How characteristics added while numbering is locked are numbered (D-23). */
+	insert_when_locked: InsertPolicy,
+};
+
+/**
+ *  Order in which characteristics are numbered (FR-BAL-04, D-21). Stored as a setting here;
+ *  the strategies are applied by the numbering command of T2.7.
+ */
+export type NumberingStrategy = 
+/**
+ *  Sheet, then zone, then reading order inside the zone (top to bottom, left to right).
+ *  Without a zone grid, reading order on the sheet. Default for new projects (D-21).
+ */
+"sheet_zone" | 
+/**  View by view, reading order inside each view. */
+"view" | 
+/**  View by view, clockwise around the view center starting at 12 o'clock. */
+"view_clockwise" | 
+/**  Grouped by characteristic kind. */
+"kind" | 
+/**  The current placement order; the user reorders by hand. */
+"manual";
 
 /**  What opening a project found worth telling the user. */
 export type OpenNotice = {
@@ -831,6 +1015,26 @@ export type Origin =
 "auto_detect" | 
 /**  Carried over from an earlier drawing revision (M6). */
 "carried_over";
+
+/**  Something the parser assumed that the user should check (spec 08 stage 6). */
+export type ParseHint = 
+/**
+ *  The unit inch was read from the notation (fraction or no leading zero), not from an
+ *  explicit unit marker (D-20).
+ */
+"inch_from_notation" | 
+/**  Tolerance lines stacked above each other were joined. */
+"stacked_lines_joined" | 
+/**  A decimal comma was read as decimal point. */
+"decimal_comma";
+
+/**  A callout text that could not be parsed (spec 08 stage 6). */
+export type ParseIssue = {
+	/**  Byte position in the raw text where parsing stopped. */
+	position: number,
+	/**  What the parser expected there, in English. */
+	expected: string,
+};
 
 /**  What one command, undo or redo changed. Sent to the frontend after every command. */
 export type Patch = {
@@ -917,6 +1121,10 @@ export type ProjectPatched = {
 export type ProjectSettings = {
 	/**  Default balloon style (D-24). */
 	balloon_style: BalloonStyle,
+	/**  How characteristics are numbered (D-21, D-22, D-23). */
+	numbering: NumberingSettings,
+	/**  Tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). */
+	tolerance: ToleranceSettings,
 };
 
 /**  Everything the frontend shows of an open project. */
@@ -957,6 +1165,66 @@ export type ProjectStatusChanged = {
 };
 
 /**
+ *  A suggested characteristic (data model `Proposal`, ADR 0006): characteristic fields plus
+ *  source region, origin, balloon placement and parse hints.
+ * 
+ *  The frontend may change the fields before accepting, like any typed value. Limits are stored
+ *  as proposed, they are not derived again from nominal and deviations.
+ */
+export type Proposal = {
+	/**  What the characteristic describes. */
+	kind: CharacteristicKind,
+	/**  Text as read from the drawing. */
+	requirement_text: string,
+	/**  Nominal value. */
+	nominal: string | null,
+	/**  Unit of nominal, deviations and limits. */
+	unit: Unit | null,
+	/**  Upper deviation. */
+	upper_dev: string | null,
+	/**  Lower deviation. */
+	lower_dev: string | null,
+	/**  Upper limit. */
+	upper_limit: string | null,
+	/**  Lower limit. */
+	lower_limit: string | null,
+	/**  Fit designation such as `H7`. */
+	fit: string | null,
+	/**  Which rule produced the limits (FR-TOL-08). */
+	derivation: ToleranceDerivation | null,
+	/**  Number of features, from `4X` or `2 PL`. At least 1. */
+	quantity: number,
+	/**  False for reference and basic dimensions (D-25, FR-CHR-08). */
+	inspect: boolean,
+	/**  Region and text the proposal was read from (FR-CHR-09). */
+	source: SourceRegion,
+	/**  How the proposal was made, e.g. `box_select`. */
+	origin: Origin,
+	/**  Where the balloon goes when accepted. */
+	placement: BalloonPlacement,
+	/**  Why the text could not be parsed, if it could not. Such a proposal has no limits. */
+	parse_error: ParseIssue | null,
+	/**  Assumptions of the parser to check. */
+	parse_hints: ParseHint[],
+};
+
+/**  One end of a size range, as in the table row (exact decimals, rule 5). */
+export type RangeBound = {
+	/**  The bound in the table's size unit. */
+	value: string,
+	/**  Whether the bound belongs to the range. */
+	inclusive: boolean,
+};
+
+/**  Axis aligned rectangle in sheet space, for example a drawing frame or a view (M2 decision 1). */
+export type Rect = {
+	/**  Top left corner. */
+	origin: Point,
+	/**  Width and height. */
+	size: Size,
+};
+
+/**
  *  Why a document command was refused: the variants of [`dimo_core::CommandError`] the user can
  *  run into, without their details.
  */
@@ -973,8 +1241,10 @@ export type RejectReason =
 "invalid_geometry" | 
 /**  A balloon style size is not valid. */
 "invalid_style" | 
-/**  A sheet unit or scale is not valid. */
+/**  A sheet unit, scale, zone grid or view is not valid. */
 "invalid_sheet_setting" | 
+/**  Project settings break their rules, e.g. tolerance or numbering settings. */
+"invalid_project_setting" | 
 /**  Characteristics cannot be moved before one of themselves. */
 "invalid_move_target" | 
 /**  Quantity 0. */
@@ -1055,6 +1325,10 @@ export type Sheet = {
 	unit: Unit,
 	/**  Drawing scale. */
 	scale: Scale,
+	/**  Zone grid of the drawing frame, defined by hand in M2 (M2 decision 1, D-21). */
+	zone_grid: ZoneGrid | null,
+	/**  Views drawn by hand, in the order the user drew them (M2 decision 1). */
+	views: SheetView[],
 };
 
 /**
@@ -1089,12 +1363,28 @@ export type SheetPoint = {
 	y: number | null,
 };
 
+/**  A view of the drawing, drawn by hand as a rectangle (M2 decision 1, FR-BAL-04 "per view"). */
+export type SheetView = {
+	/**  Name as printed, e.g. `A-A` or `Detail B`. Empty if none. */
+	label: string,
+	/**  Rectangle around the view, in sheet space. */
+	rect: Rect,
+};
+
 /**  A width and height in PDF user units. */
 export type Size = {
 	/**  Horizontal extent; for an oriented box, along its own x axis before rotation. */
 	width: number | null,
 	/**  Vertical extent; for an oriented box, along its own y axis before rotation. */
 	height: number | null,
+};
+
+/**  The size range of the table row a value came from, e.g. "over 30 up to and including 120". */
+export type SizeRange = {
+	/**  Lower bound; `null` means the range starts above zero. */
+	min: RangeBound | null,
+	/**  Upper bound; `null` means the range is open ended. */
+	max: RangeBound | null,
 };
 
 /**  The region of a sheet a characteristic was read from (FR-CHR-09). */
@@ -1107,6 +1397,37 @@ export type SourceRegion = {
 	text_source: TextSource,
 	/**  Raw recognized text, if any text was read. */
 	raw_text: string | null,
+};
+
+/**  A range table and its class column, e.g. ISO 2768-1 class `m` (FR-TOL-02, M2 decision 2). */
+export type TableClass = {
+	/**  The table, shipped or custom. */
+	table: TableRef,
+	/**  The class column, e.g. `m`. */
+	class: string,
+};
+
+/**  A value read from a range table: which table, part, column and row (FR-TOL-02, FR-TOL-07). */
+export type TableLookup = {
+	/**  The table. */
+	table: TableRef,
+	/**  Part id in the table, e.g. `linear`, `radius_chamfer` or `angular`. */
+	part: string,
+	/**  Column, e.g. the tolerance class `m`. */
+	class: string,
+	/**  Range of the row that covers the size. */
+	range: SizeRange,
+};
+
+/**
+ *  A tolerance table by id and version (`data/tolerances/`, D-43). Shipped tables are referenced
+ *  this way; custom tables are also copied into the project (M2 decision 4).
+ */
+export type TableRef = {
+	/**  Table id, e.g. `iso-2768-1`. */
+	id: string,
+	/**  Table version. */
+	version: number,
 };
 
 /**  Where the text of a source region came from (data model `SourceRegion`). */
@@ -1175,6 +1496,44 @@ export type TileRange = {
  */
 export type Timestamp = string;
 
+/**
+ *  Which rule produced the limits of a characteristic and what the user should know about it
+ *  (data model `ToleranceDerivation`, FR-TOL-08). No free text: explanations are rendered from
+ *  this (M2 decision 3).
+ */
+export type ToleranceDerivation = {
+	/**  The rule and its parameters. */
+	rule: DerivationRule,
+	/**  True if a value came from a table with `status = "draft"`; the UI shows a badge (D-43). */
+	draft: boolean,
+	/**  Remarks for the user. */
+	hints: DerivationHint[],
+	/**  Unit conversion applied, if any. */
+	conversion: UnitConversion | null,
+};
+
+/**
+ *  Tolerance settings of a project (M2 decision 2, FR-TOL-01, FR-TOL-06, FR-TOL-09).
+ * 
+ *  New projects have no general tolerance, so untoleranced dimensions get "no tolerance
+ *  defined" until the user sets one.
+ */
+export type ToleranceSettings = {
+	/**  General tolerance standard and class (FR-TOL-02). */
+	general: TableClass | null,
+	/**
+	 *  Custom table of the project that applies as drawing specific rule, above the general
+	 *  tolerance (FR-TOL-01 level 3).
+	 */
+	drawing_rule: TableClass | null,
+	/**  Decimal place rules, sorted by places, at most one per number of places (FR-TOL-06). */
+	decimal_rules: DecimalPlaceRule[],
+	/**  Rounding of unit conversions (FR-TOL-09). */
+	unit_rounding: UnitRounding,
+	/**  Custom tables stored in the project, sorted by id, ids unique (M2 decision 4). */
+	custom_tables: CustomTable[],
+};
+
 /**  Unit of a nominal value and its limits. */
 export type Unit = 
 /**  Millimeter. */
@@ -1183,6 +1542,40 @@ export type Unit =
 "in" | 
 /**  Degree of angle (decimal degrees). */
 "deg";
+
+/**  A unit conversion applied to nominal and limits (FR-TOL-09). */
+export type UnitConversion = {
+	/**  Unit on the drawing. */
+	from: Unit,
+	/**  Unit stored in the characteristic. */
+	to: Unit,
+	/**  Decimal places the converted values were rounded to. */
+	places: number,
+};
+
+/**  Rounding of values converted between mm and inch (FR-TOL-09). */
+export type UnitRounding = {
+	/**  Decimal places of values converted to mm, 0 to 10. */
+	mm_places: number,
+	/**  Decimal places of values converted to inch, 0 to 10. */
+	inch_places: number,
+};
+
+/**
+ *  The zone grid of a drawing frame: equal columns and rows inside the frame rectangle, with
+ *  the labels printed on the frame (D-21 "sheet, then zone").
+ * 
+ *  Labels are listed left to right and top to bottom as they appear on the sheet, so grids
+ *  numbered from the right or lettered from the bottom are stored as printed.
+ */
+export type ZoneGrid = {
+	/**  Inner frame rectangle the zones divide, in sheet space. */
+	frame: Rect,
+	/**  Column labels, left to right, e.g. `1` to `8`. One per column, at least one. */
+	column_labels: string[],
+	/**  Row labels, top to bottom, e.g. `A` to `F`. One per row, at least one. */
+	row_labels: string[],
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

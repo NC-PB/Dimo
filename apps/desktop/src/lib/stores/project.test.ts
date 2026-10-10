@@ -138,6 +138,7 @@ const ADD: Command = {
   anchor: { x: 120, y: 110 },
   region: null,
   values: [],
+  insert_after: null,
 };
 
 async function connected(answer: UnsavedChoice = "cancel") {
@@ -172,7 +173,7 @@ describe("project store (T1.5)", () => {
     expect(store.revision).toBe(1);
     expect(store.characteristics.map((c) => c.id)).toEqual(["c1"]);
     expect(store.balloonsOnSheet(SHEET_ID).map((b) => b.id)).toEqual(["b-c1"]);
-    expect(store.characteristicById.get("c1")?.number).toBe(1);
+    expect(store.characteristicById.get("c1")?.number).toBe("1");
     expect(store.canUndo).toBe(true);
 
     await store.undo();

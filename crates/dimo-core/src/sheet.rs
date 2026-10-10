@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::characteristic::Unit;
 use crate::env::Timestamp;
-use crate::geometry::Size;
+use crate::geometry::{Rect, Size};
 use crate::id::{RevisionId, SheetId};
 
 /// How the text of a sheet is stored, which decides the recognition path (FR-DOC-03).
@@ -111,10 +111,14 @@ pub struct Sheet {
     pub unit: Unit,
     /// Drawing scale.
     pub scale: Scale,
+    /// Zone grid of the drawing frame, defined by hand in M2 (M2 decision 1, D-21).
+    pub zone_grid: Option<ZoneGrid>,
+    /// Views drawn by hand, in the order the user drew them (M2 decision 1).
+    pub views: Vec<SheetView>,
 }
 
 impl Sheet {
-    /// A sheet with default view settings: not rotated, unit mm, scale 1:1.
+    /// A sheet with default view settings: not rotated, unit mm, scale 1:1, no zones, no views.
     pub fn new(id: SheetId, index: u32, size: Size, kind: SheetKind) -> Self {
         Self {
             id,
@@ -125,7 +129,88 @@ impl Sheet {
             raster_dpi: None,
             unit: Unit::Mm,
             scale: Scale::FULL,
+            zone_grid: None,
+            views: Vec::new(),
         }
+    }
+}
+
+/// The zone grid of a drawing frame: equal columns and rows inside the frame rectangle, with
+/// the labels printed on the frame (D-21 "sheet, then zone").
+///
+/// Labels are listed left to right and top to bottom as they appear on the sheet, so grids
+/// numbered from the right or lettered from the bottom are stored as printed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub struct ZoneGrid {
+    /// Inner frame rectangle the zones divide, in sheet space.
+    pub frame: Rect,
+    /// Column labels, left to right, e.g. `1` to `8`. One per column, at least one.
+    pub column_labels: Vec<String>,
+    /// Row labels, top to bottom, e.g. `A` to `F`. One per row, at least one.
+    pub row_labels: Vec<String>,
+}
+
+impl ZoneGrid {
+    /// Most columns or rows a grid may have.
+    pub const MAX_DIVISIONS: usize = 100;
+
+    /// Number of columns.
+    pub fn columns(&self) -> usize {
+        self.column_labels.len()
+    }
+
+    /// Number of rows.
+    pub fn rows(&self) -> usize {
+        self.row_labels.len()
+    }
+
+    /// Checks the frame and the labels: 1 to 100 columns and rows, labels not empty and unique
+    /// per axis.
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if !self.frame.is_valid() {
+            return Err("zone frame needs a finite position and a positive size");
+        }
+        for labels in [&self.column_labels, &self.row_labels] {
+            if labels.is_empty() || labels.len() > Self::MAX_DIVISIONS {
+                return Err("a zone grid has 1 to 100 columns and rows");
+            }
+            if labels.iter().any(|l| l.trim().is_empty() || l.len() > 16) {
+                return Err("zone labels must not be empty or longer than 16 bytes");
+            }
+            let mut sorted: Vec<&String> = labels.iter().collect();
+            sorted.sort();
+            sorted.dedup();
+            if sorted.len() != labels.len() {
+                return Err("zone labels must be unique per axis");
+            }
+        }
+        Ok(())
+    }
+}
+
+/// A view of the drawing, drawn by hand as a rectangle (M2 decision 1, FR-BAL-04 "per view").
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub struct SheetView {
+    /// Name as printed, e.g. `A-A` or `Detail B`. Empty if none.
+    pub label: String,
+    /// Rectangle around the view, in sheet space.
+    pub rect: Rect,
+}
+
+impl SheetView {
+    /// Checks the rectangle.
+    pub fn validate(&self) -> Result<(), &'static str> {
+        if !self.rect.is_valid() {
+            return Err("view rectangle needs a finite position and a positive size");
+        }
+        if self.label.len() > 256 {
+            return Err("view labels are at most 256 bytes");
+        }
+        Ok(())
     }
 }
 

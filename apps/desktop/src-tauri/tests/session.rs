@@ -60,6 +60,7 @@ fn add(session: &AppSession, text: &str) -> Command {
         anchor: Point { x: 237.5, y: 166.1 },
         region: None,
         values: vec![FieldValue::RequirementText(text.into())],
+        insert_after: None,
     }
 }
 
@@ -110,7 +111,7 @@ fn new_project_command_undo_redo_save_and_reopen() {
         }
         other => panic!("unexpected changes {other:?}"),
     };
-    assert_eq!(inserted.number, 1);
+    assert_eq!(inserted.number.to_string(), "1");
     assert!(patched.status.modified && patched.status.can_undo && !patched.status.can_redo);
     assert_eq!(patched.status.autosave, Autosave::Journaled);
     let journal = session.journal_path().unwrap();

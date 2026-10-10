@@ -144,7 +144,11 @@ impl Column {
         };
         let decimal = |d: Option<Decimal>| d.map_or(Cell::Empty, Cell::Decimal);
         match self {
-            Self::Number => Cell::Integer(c.number),
+            // Plain numbers stay number cells, so exports of plain numbering do not change.
+            Self::Number => c
+                .number
+                .as_plain()
+                .map_or_else(|| Cell::Text(c.number.to_string()), Cell::Integer),
             Self::Kind => Cell::Text(kind_id(c.kind).to_owned()),
             Self::Requirement => text(&c.requirement_text),
             Self::Nominal => decimal(c.nominal),

@@ -1,11 +1,7 @@
----
-source: crates/dimo-io/tests/container.rs
-expression: manifest
----
 {
   "format": "dimo-project",
   "schema_version": 2,
-  "app_version": "<app version>",
+  "app_version": "0.0.0",
   "created": "2026-03-01T08:00:00Z",
   "modified": "2026-03-01T08:09:59.999Z"
 }

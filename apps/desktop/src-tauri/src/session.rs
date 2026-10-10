@@ -675,6 +675,13 @@ impl AppSession {
     /// Executes a document command as one undo step and journals it (D-28).
     pub fn execute(&mut self, command: Command) -> Result<ProjectPatched, CommandError> {
         let open = self.open.as_mut().ok_or(CommandError::NoProject)?;
+        // M2 decision 4: a custom table must be stored before the settings list it.
+        if let Some(id) = open.project.missing_table(&command) {
+            return Err(CommandError::Rejected {
+                reason: crate::ipc::RejectReason::InvalidProjectSetting,
+                message: format!("custom tolerance table {id} is not stored in the project"),
+            });
+        }
         let patch = open
             .project
             .document_mut()

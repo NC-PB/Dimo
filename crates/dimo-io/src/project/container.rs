@@ -19,7 +19,9 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, DateTime, System, ZipArchive, ZipWriter};
 
 use super::error::ProjectError;
-use super::{AUDIT, DRAWINGS_DIR, MANIFEST, PROJECT};
+use dimo_core::project::is_table_id;
+
+use super::{AUDIT, DRAWINGS_DIR, MANIFEST, PROJECT, TOLERANCES_DIR};
 
 /// A named entry to write, in container order.
 pub(crate) type Entry<'a> = (String, Cow<'a, [u8]>);
@@ -37,6 +39,8 @@ pub struct Limits {
     pub max_audit: u64,
     /// Largest single drawing.
     pub max_drawing: u64,
+    /// Largest single custom tolerance table.
+    pub max_table: u64,
     /// Largest sum of all entries read.
     pub max_total: u64,
 }
@@ -52,6 +56,7 @@ impl Limits {
         max_project: 256 * MIB,
         max_audit: 1024 * MIB,
         max_drawing: 1024 * MIB,
+        max_table: 16 * MIB,
         max_total: 4096 * MIB,
     };
 }
@@ -69,6 +74,8 @@ pub(crate) struct RawEntries {
     pub project: Option<Vec<u8>>,
     pub audit: Option<Vec<u8>>,
     pub drawings: BTreeMap<Sha256Hex, Vec<u8>>,
+    /// Custom tolerance tables by table id (M2 decision 4).
+    pub tables: BTreeMap<String, Vec<u8>>,
 }
 
 /// What an entry name stands for.
@@ -77,6 +84,7 @@ enum Kind {
     Project,
     Audit,
     Drawing(Sha256Hex),
+    Table(String),
     Other,
 }
 
@@ -90,7 +98,15 @@ fn classify(name: &str) -> Kind {
             .and_then(|rest| rest.strip_prefix('/'))
             .and_then(|file| file.strip_suffix(".pdf"))
             .and_then(|hex| Sha256Hex::parse(hex).ok())
-            .map_or(Kind::Other, Kind::Drawing),
+            .map(Kind::Drawing)
+            .or_else(|| {
+                name.strip_prefix(TOLERANCES_DIR)
+                    .and_then(|rest| rest.strip_prefix('/'))
+                    .and_then(|file| file.strip_suffix(".toml"))
+                    .filter(|id| is_table_id(id))
+                    .map(|id| Kind::Table(id.to_owned()))
+            })
+            .unwrap_or(Kind::Other),
     }
 }
 
@@ -119,6 +135,12 @@ impl RawEntries {
                     Some(_) => Err(duplicate()),
                 };
             }
+            Kind::Table(id) => {
+                return match self.tables.insert(id, data) {
+                    None => Ok(()),
+                    Some(_) => Err(duplicate()),
+                };
+            }
             Kind::Other => return Ok(()),
         };
         if slot.replace(data).is_some() {
@@ -135,6 +157,7 @@ fn limit_of(name: &str, limits: &Limits) -> Option<u64> {
         Kind::Project => Some(limits.max_project),
         Kind::Audit => Some(limits.max_audit),
         Kind::Drawing(_) => Some(limits.max_drawing),
+        Kind::Table(_) => Some(limits.max_table),
         Kind::Other => None,
     }
 }
@@ -278,18 +301,32 @@ pub(crate) fn read_folder(dir: &Path, limits: &Limits) -> Result<RawEntries, Pro
             raw.insert(name, data)?;
         }
     }
-    let drawings = dir.join(DRAWINGS_DIR);
-    match fs::symlink_metadata(&drawings) {
+    for sub in [TOLERANCES_DIR, DRAWINGS_DIR] {
+        read_subfolder(dir, sub, limits, &mut raw, &mut total)?;
+    }
+    Ok(raw)
+}
+
+/// Reads the known entries of one subfolder of a project folder, if it exists.
+fn read_subfolder(
+    dir: &Path,
+    sub: &str,
+    limits: &Limits,
+    raw: &mut RawEntries,
+    total: &mut u64,
+) -> Result<(), ProjectError> {
+    let folder = dir.join(sub);
+    match fs::symlink_metadata(&folder) {
         Ok(meta) if meta.file_type().is_symlink() => {
-            return Err(ProjectError::Symlink(DRAWINGS_DIR.to_owned()));
+            return Err(ProjectError::Symlink(sub.to_owned()));
         }
         Ok(meta) if meta.is_dir() => {
-            let listing = fs::read_dir(&drawings).map_err(|e| ProjectError::io(&drawings, e))?;
+            let listing = fs::read_dir(&folder).map_err(|e| ProjectError::io(&folder, e))?;
             let mut names = Vec::new();
             for entry in listing {
-                let entry = entry.map_err(|e| ProjectError::io(&drawings, e))?;
+                let entry = entry.map_err(|e| ProjectError::io(&folder, e))?;
                 if let Some(file) = entry.file_name().to_str() {
-                    names.push(format!("{DRAWINGS_DIR}/{file}"));
+                    names.push(format!("{sub}/{file}"));
                 }
                 if names.len() > limits.max_entries {
                     return Err(ProjectError::TooManyEntries(limits.max_entries));
@@ -300,16 +337,16 @@ pub(crate) fn read_folder(dir: &Path, limits: &Limits) -> Result<RawEntries, Pro
                 if let Some(limit) = limit_of(&name, limits)
                     && let Some(data) = read_file(&dir.join(&name), &name, limit)?
                 {
-                    count(&mut total, data.len(), limits)?;
+                    count(total, data.len(), limits)?;
                     raw.insert(&name, data)?;
                 }
             }
         }
         Ok(_) => {}
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-        Err(e) => return Err(ProjectError::io(&drawings, e)),
+        Err(e) => return Err(ProjectError::io(&folder, e)),
     }
-    Ok(raw)
+    Ok(())
 }
 
 /// Replaces `path` with `data` atomically: a temporary file in the same folder, flushed to
@@ -327,23 +364,38 @@ pub(crate) fn write_atomic(path: &Path, data: &[u8]) -> Result<(), ProjectError>
     Ok(())
 }
 
-/// Writes entries into a project folder and removes drawings that are no longer part of it.
+/// Writes entries into a project folder and removes drawings and tables that are no longer
+/// part of it. The `tolerances` folder is only created for a project with custom tables.
 pub(crate) fn write_folder(dir: &Path, entries: &[Entry<'_>]) -> Result<(), ProjectError> {
     let drawings = dir.join(DRAWINGS_DIR);
     fs::create_dir_all(&drawings).map_err(|e| ProjectError::io(&drawings, e))?;
+    let tables = dir.join(TOLERANCES_DIR);
+    if entries
+        .iter()
+        .any(|(name, _)| matches!(classify(name), Kind::Table(_)))
+    {
+        fs::create_dir_all(&tables).map_err(|e| ProjectError::io(&tables, e))?;
+    }
     // Drawings first and the manifest last, so a folder with a new manifest is complete.
     for (name, data) in entries.iter().rev() {
         write_atomic(&dir.join(name), data)?;
     }
-    let listing = fs::read_dir(&drawings).map_err(|e| ProjectError::io(&drawings, e))?;
-    for entry in listing {
-        let entry = entry.map_err(|e| ProjectError::io(&drawings, e))?;
-        let Some(file) = entry.file_name().to_str().map(str::to_owned) else {
-            continue;
+    for (sub, folder) in [(DRAWINGS_DIR, &drawings), (TOLERANCES_DIR, &tables)] {
+        let listing = match fs::read_dir(folder) {
+            Ok(listing) => listing,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(ProjectError::io(folder, e)),
         };
-        let name = format!("{DRAWINGS_DIR}/{file}");
-        if matches!(classify(&name), Kind::Drawing(_)) && !entries.iter().any(|(n, _)| *n == name) {
-            fs::remove_file(entry.path()).map_err(|e| ProjectError::io(entry.path(), e))?;
+        for entry in listing {
+            let entry = entry.map_err(|e| ProjectError::io(folder, e))?;
+            let Some(file) = entry.file_name().to_str().map(str::to_owned) else {
+                continue;
+            };
+            let name = format!("{sub}/{file}");
+            let known = matches!(classify(&name), Kind::Drawing(_) | Kind::Table(_));
+            if known && !entries.iter().any(|(n, _)| *n == name) {
+                fs::remove_file(entry.path()).map_err(|e| ProjectError::io(entry.path(), e))?;
+            }
         }
     }
     Ok(())

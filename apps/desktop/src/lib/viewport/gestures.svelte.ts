@@ -140,7 +140,7 @@ export class BalloonGestures {
     return this.#d.tools.sheetBalloons.map((b: Balloon) => {
       const char = byId.get(b.characteristic);
       const style = resolveStyle(base, b.style);
-      const text = String(char?.number ?? "");
+      const text = char?.number ?? "";
       const position = { x: b.position.x ?? 0, y: b.position.y ?? 0 };
       return {
         id: b.id,

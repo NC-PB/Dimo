@@ -19,7 +19,9 @@
 
 use std::path::{Path, PathBuf};
 
-use dimo_core::{Document, Project, ProjectInfo, Sha256Hex, Timestamp};
+use dimo_core::{
+    CharId, Command, Document, HistoryEntry, Project, ProjectInfo, Sha256Hex, Timestamp,
+};
 
 use super::error::ProjectError;
 use super::import::ImportedDrawing;
@@ -159,6 +161,41 @@ impl ProjectSession {
     /// The saved audit log plus everything flushed since.
     pub fn audit(&self) -> &[dimo_core::AuditEntry] {
         &self.file.audit
+    }
+
+    /// Change history of one characteristic from the whole audit log, flushed or not
+    /// (FR-CHR-10).
+    pub fn characteristic_history(&self, id: CharId) -> Vec<HistoryEntry> {
+        let mut history = dimo_core::characteristic_history(&self.file.audit, id);
+        history.extend(dimo_core::characteristic_history(self.document.audit(), id));
+        history
+    }
+
+    /// Keeps a custom tolerance table file for the project and returns its hash. It is saved
+    /// once the tolerance settings list it (M2 decision 4); validate it with `dimo-tolerance`
+    /// first.
+    pub fn insert_table(&mut self, bytes: Vec<u8>) -> Sha256Hex {
+        self.file.insert_table(bytes)
+    }
+
+    /// The custom tolerance table file with this hash.
+    pub fn table(&self, hash: &Sha256Hex) -> Option<&[u8]> {
+        self.file.table(hash)
+    }
+
+    /// The id of a custom table that `command` would list in the tolerance settings without
+    /// its file in the project, `None` if all are present. Such a command must be refused,
+    /// otherwise the project could not be saved (M2 decision 4).
+    pub fn missing_table(&self, command: &Command) -> Option<String> {
+        match command {
+            Command::SetToleranceSettings { settings } => settings
+                .custom_tables
+                .iter()
+                .find(|t| self.file.table(&t.sha256).is_none())
+                .map(|t| t.table.id.clone()),
+            Command::Batch { commands } => commands.iter().find_map(|c| self.missing_table(c)),
+            _ => None,
+        }
     }
 
     /// The drawing file of the current revision, for exports.

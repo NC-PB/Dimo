@@ -14,9 +14,12 @@ mod common;
 
 use dimo_core::characteristic::FieldValue;
 use dimo_core::{
-    BalloonId, BalloonMove, BalloonShape, BalloonStyle, BalloonStyleOverride, CharId,
-    CharacteristicKind, Command, Document, FixedEnvironment, LockReason, OrientedBox, Point,
-    Project, Rotation, Scale, Size, Unit,
+    BalloonId, BalloonMove, BalloonPlacement, BalloonShape, BalloonStyle, BalloonStyleOverride,
+    CharId, CharacteristicKind, Command, DecimalPlaceRule, DerivationRule, Document,
+    FixedEnvironment, InsertPolicy, LockReason, MultiInstance, NumberingSettings,
+    NumberingStrategy, OrientedBox, Origin, ParseHint, Point, Project, Proposal, RangeBound, Rect,
+    Rotation, Scale, SheetView, Size, SizeRange, SourceRegion, TableClass, TableLookup, TableRef,
+    TextSource, ToleranceDerivation, ToleranceSettings, Unit, UnitRounding, ZoneGrid,
 };
 use proptest::prelude::*;
 use rust_decimal::Decimal;
@@ -30,6 +33,32 @@ enum Op {
         y: i16,
         region: bool,
         value: Option<Value>,
+        after: Option<usize>,
+    },
+    Accept {
+        sheet: usize,
+        count: usize,
+        x: i16,
+        after: Option<usize>,
+        valid: bool,
+    },
+    ZoneGrid {
+        sheet: usize,
+        columns: Option<u8>,
+    },
+    Views {
+        sheet: usize,
+        count: u8,
+    },
+    Numbering {
+        policy: u8,
+        strategy: u8,
+        sub_number: bool,
+    },
+    Tolerance {
+        class: Option<u8>,
+        places: Vec<u32>,
+        rounding: u32,
     },
     Update {
         picks: Vec<usize>,
@@ -80,6 +109,8 @@ enum Value {
     Kind(u8),
     Quantity(u32),
     Comment(u8),
+    /// A derivation set with explicit limits, as a re-interpretation would (FR-TOL-08).
+    Derivation(Option<u8>),
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +127,7 @@ fn value() -> impl Strategy<Value = Value> {
         any::<u8>().prop_map(Value::Kind),
         (0u32..5).prop_map(Value::Quantity),
         any::<u8>().prop_map(Value::Comment),
+        prop::option::of(0u8..4).prop_map(Value::Derivation),
     ]
 }
 
@@ -105,8 +137,18 @@ fn picks() -> impl Strategy<Value = Vec<usize>> {
 
 fn simple_op() -> impl Strategy<Value = Op> {
     prop_oneof![
-        4 => (0usize..2, any::<i16>(), any::<i16>(), any::<bool>(), prop::option::of(value()))
-            .prop_map(|(sheet, x, y, region, value)| Op::Add { sheet, x, y, region, value }),
+        4 => (0usize..2, any::<i16>(), any::<i16>(), any::<bool>(), prop::option::of(value()),
+              prop::option::of(0usize..8))
+            .prop_map(|(sheet, x, y, region, value, after)| Op::Add { sheet, x, y, region, value, after }),
+        2 => (0usize..2, 0usize..3, any::<i16>(), prop::option::of(0usize..8), prop::bool::weighted(0.9))
+            .prop_map(|(sheet, count, x, after, valid)| Op::Accept { sheet, count, x, after, valid }),
+        1 => (0usize..2, prop::option::of(0u8..4))
+            .prop_map(|(sheet, columns)| Op::ZoneGrid { sheet, columns }),
+        1 => (0usize..2, 0u8..3).prop_map(|(sheet, count)| Op::Views { sheet, count }),
+        1 => (0u8..3, 0u8..5, any::<bool>())
+            .prop_map(|(policy, strategy, sub_number)| Op::Numbering { policy, strategy, sub_number }),
+        1 => (prop::option::of(0u8..3), prop::collection::vec(0u32..4, 0..3), 0u32..12)
+            .prop_map(|(class, places, rounding)| Op::Tolerance { class, places, rounding }),
         3 => (picks(), value()).prop_map(|(picks, value)| Op::Update { picks, value }),
         2 => (picks(), any::<i16>(), any::<bool>())
             .prop_map(|(picks, dx, anchor)| Op::MoveBalloons { picks, dx, anchor }),
@@ -172,7 +214,109 @@ fn field_values(value: &Value) -> Vec<FieldValue> {
         })],
         Value::Quantity(q) => vec![FieldValue::Quantity(*q)],
         Value::Comment(c) => vec![FieldValue::Comment(format!("c{c}"))],
+        Value::Derivation(rule) => vec![
+            FieldValue::UpperLimit(Decimal::new(101, 1).into()),
+            FieldValue::LowerLimit(Decimal::new(99, 1).into()),
+            FieldValue::Derivation(rule.map(|r| {
+                let mut derivation = ToleranceDerivation::new(match r {
+                    0 => DerivationRule::Explicit,
+                    1 => DerivationRule::NoToleranceDefined,
+                    2 => DerivationRule::DecimalRule {
+                        places: 1,
+                        tolerance: Decimal::new(1, 1),
+                    },
+                    _ => DerivationRule::General {
+                        lookup: TableLookup {
+                            table: table_ref("iso-2768-1"),
+                            part: "linear".into(),
+                            class: "m".into(),
+                            range: SizeRange {
+                                min: None,
+                                max: Some(RangeBound {
+                                    value: Decimal::new(3, 0),
+                                    inclusive: true,
+                                }),
+                            },
+                        },
+                    },
+                });
+                derivation.draft = r % 2 == 0;
+                derivation
+            })),
+        ],
     }
+}
+
+fn table_ref(id: &str) -> TableRef {
+    TableRef {
+        id: id.into(),
+        version: 1,
+    }
+}
+
+fn rect(x: f64, width: f64) -> Rect {
+    Rect {
+        origin: Point { x, y: 10.0 },
+        size: Size {
+            width,
+            height: 100.0,
+        },
+    }
+}
+
+/// `count` proposals read from boxes on `sheet`; with `valid` false the last one has quantity 0
+/// and the whole accept is refused.
+fn proposals(project: &Project, sheet: usize, count: usize, x: i16, valid: bool) -> Vec<Proposal> {
+    let sheet = common::sheet(project, sheet);
+    (0..count)
+        .map(|i| {
+            let at = Point {
+                x: f64::from(x) / 4.0 + 30.0 * f64::from(u32::try_from(i).unwrap()),
+                y: 50.0,
+            };
+            Proposal {
+                kind: CharacteristicKind::Diameter,
+                requirement_text: format!(" Ø{i} H7 "),
+                nominal: Some(Decimal::new(i64::try_from(i).unwrap() + 8, 0)),
+                unit: None,
+                upper_dev: Some(Decimal::new(15, 3)),
+                lower_dev: Some(Decimal::ZERO),
+                upper_limit: Some(Decimal::new(8015, 3)),
+                lower_limit: Some(Decimal::new(8, 0)),
+                fit: Some("H7".into()),
+                derivation: Some(ToleranceDerivation::new(DerivationRule::Fit {
+                    table: table_ref("iso-286"),
+                    fit: "H7".into(),
+                    range: None,
+                })),
+                quantity: u32::from(valid || i + 1 < count),
+                inspect: i % 2 == 0,
+                source: SourceRegion {
+                    sheet,
+                    region: OrientedBox {
+                        center: at,
+                        size: Size {
+                            width: 20.0,
+                            height: 5.0,
+                        },
+                        angle: 90.0,
+                    },
+                    text_source: TextSource::PdfText,
+                    raw_text: Some(format!("Ø{i} H7")),
+                },
+                origin: Origin::BoxSelect,
+                placement: BalloonPlacement {
+                    position: Point {
+                        x: at.x + 10.0,
+                        y: at.y - 10.0,
+                    },
+                    anchor: at,
+                },
+                parse_error: None,
+                parse_hints: vec![ParseHint::StackedLinesJoined],
+            }
+        })
+        .collect()
 }
 
 #[allow(clippy::too_many_lines, reason = "one arm per operation")]
@@ -184,6 +328,7 @@ fn command(project: &Project, op: &Op) -> Command {
             y,
             region,
             value,
+            after,
         } => {
             let at = Point {
                 x: f64::from(*x) / 4.0,
@@ -205,8 +350,88 @@ fn command(project: &Project, op: &Op) -> Command {
                     angle: 0.0,
                 }),
                 values: value.as_ref().map(field_values).unwrap_or_default(),
+                insert_after: after.and_then(|a| chars(project, &[a]).first().copied()),
             }
         }
+        Op::Accept {
+            sheet,
+            count,
+            x,
+            after,
+            valid,
+        } => Command::AcceptProposals {
+            proposals: proposals(project, *sheet, *count, *x, *valid),
+            insert_after: after.and_then(|a| chars(project, &[a]).first().copied()),
+        },
+        Op::ZoneGrid { sheet, columns } => Command::SetZoneGrid {
+            sheet: common::sheet(project, *sheet),
+            // Zero columns is invalid and refused.
+            grid: columns.map(|n| ZoneGrid {
+                frame: rect(20.0, 800.0),
+                column_labels: (1..=n).map(|i| i.to_string()).collect(),
+                row_labels: vec!["A".into(), "B".into()],
+            }),
+        },
+        Op::Views { sheet, count } => Command::SetViews {
+            sheet: common::sheet(project, *sheet),
+            views: (0..*count)
+                .map(|i| SheetView {
+                    label: format!("V{i}"),
+                    rect: rect(f64::from(i) * 200.0, 150.0),
+                })
+                .collect(),
+        },
+        Op::Numbering {
+            policy,
+            strategy,
+            sub_number,
+        } => Command::SetNumberingSettings {
+            settings: NumberingSettings {
+                strategy: [
+                    NumberingStrategy::SheetZone,
+                    NumberingStrategy::View,
+                    NumberingStrategy::ViewClockwise,
+                    NumberingStrategy::Kind,
+                    NumberingStrategy::Manual,
+                ][usize::from(*strategy)],
+                multi_instance: if *sub_number {
+                    MultiInstance::SubNumber
+                } else {
+                    MultiInstance::Quantity
+                },
+                insert_when_locked: [
+                    InsertPolicy::NextFree,
+                    InsertPolicy::SubNumber,
+                    InsertPolicy::LetterSuffix,
+                ][usize::from(*policy)],
+            },
+        },
+        // Unsorted or duplicate places and rounding above 10 are refused.
+        Op::Tolerance {
+            class,
+            places,
+            rounding,
+        } => Command::SetToleranceSettings {
+            settings: ToleranceSettings {
+                general: class.map(|c| TableClass {
+                    table: table_ref("iso-2768-1"),
+                    class: ["f", "m", "c"][usize::from(c)].into(),
+                }),
+                drawing_rule: None,
+                decimal_rules: places
+                    .iter()
+                    .map(|p| DecimalPlaceRule {
+                        places: *p,
+                        tolerance: Decimal::new(5, *p + 1),
+                    })
+                    .collect(),
+                unit_rounding: UnitRounding {
+                    mm_places: *rounding,
+                    inch_places: 4,
+                },
+                custom_tables: Vec::new(),
+            },
+        },
         Op::Update { picks, value } => Command::UpdateFields {
             ids: chars(project, picks),
             values: field_values(value),

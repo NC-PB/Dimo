@@ -213,7 +213,7 @@ async function run(step: UiStep): Promise<void> {
     await sleep(STEP_PAUSE_MS);
   } else if ("balloon" in step) {
     const b = projectStore.project?.balloons.find(
-      (x) => projectStore.characteristicById.get(x.characteristic)?.number === step.balloon,
+      (x) => projectStore.characteristicById.get(x.characteristic)?.number === String(step.balloon),
     );
     if (b) {
       const at: Pair = [b.position.x ?? 0, b.position.y ?? 0];

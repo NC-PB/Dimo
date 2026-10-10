@@ -3,8 +3,8 @@
 #![allow(clippy::unwrap_used)] // Helpers of a test crate; rust.md allows unwrap in tests.
 
 use dimo_core::{
-    CharId, Command, DrawingRevision, Environment, FieldValue, FixedEnvironment, Point, Project,
-    ProjectInfo, RevisionId, Sha256Hex, Sheet, SheetId, SheetKind, Size, Timestamp,
+    CharId, Command, DisplayNumber, DrawingRevision, Environment, FieldValue, FixedEnvironment,
+    Point, Project, ProjectInfo, RevisionId, Sha256Hex, Sheet, SheetId, SheetKind, Size, Timestamp,
 };
 
 /// A project with one revision of two sheets (A3 landscape, A4 portrait), IDs from `env`.
@@ -56,6 +56,7 @@ pub fn add_at(project: &Project, x: f64, y: f64, values: Vec<FieldValue>) -> Com
         anchor: Point { x: x - 20.0, y },
         region: None,
         values,
+        insert_after: None,
     }
 }
 
@@ -65,26 +66,38 @@ pub fn order(project: &Project) -> Vec<CharId> {
 }
 
 /// Display numbers in placement order.
-pub fn numbers(project: &Project) -> Vec<u32> {
+pub fn numbers(project: &Project) -> Vec<DisplayNumber> {
     project.characteristics.iter().map(|c| c.number).collect()
 }
 
 /// Structural invariants that hold after every command, undo and redo.
 pub fn check_invariants(project: &Project) {
     let numbers = numbers(project);
-    if project.is_numbering_locked() {
-        let mut sorted = numbers.clone();
-        sorted.sort_unstable();
-        sorted.dedup();
-        assert_eq!(sorted.len(), numbers.len(), "duplicate numbers {numbers:?}");
-        let highest = project
-            .numbering
-            .lock
-            .as_ref()
-            .map_or(0, |l| l.highest_number);
-        assert!(numbers.iter().all(|n| *n >= 1 && *n <= highest));
+    if let Some(lock) = &project.numbering.lock {
+        // D-23: numbers are unique and the placement order is the number order.
+        assert!(
+            numbers.windows(2).all(|w| w[0] < w[1]),
+            "locked numbers ascend in placement order {numbers:?}"
+        );
+        assert!(
+            numbers
+                .iter()
+                .all(|n| n.base() >= 1 && n.base() <= lock.highest_number)
+        );
+        for n in &numbers {
+            if n.as_plain().is_none() {
+                assert!(lock.given.contains(n), "{n} given while locked is recorded");
+            }
+        }
+        assert!(
+            lock.given.windows(2).all(|w| w[0] < w[1]),
+            "given is sorted"
+        );
     } else {
-        let expected: Vec<u32> = (1..).take(numbers.len()).collect();
+        let expected: Vec<DisplayNumber> = (1..)
+            .take(numbers.len())
+            .map(DisplayNumber::plain)
+            .collect();
         assert_eq!(numbers, expected, "unlocked numbers follow placement order");
     }
     for c in &project.characteristics {
