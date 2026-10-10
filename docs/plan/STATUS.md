@@ -5,8 +5,8 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M2 Assisted capture** ([plan](M2.md)) in progress, waves 1 and 2 done; M0 and M1 implemented, waiting for owner reviews
-- Next: **M2 wave 3** (T2.7a, T2.8, T2.9, T2.10); owner: Tabellenbuch check of the tolerance tables and the truth file, M1 manual test and exit criterion, open "Owner: confirm" decisions
+- Milestone: **M2 Assisted capture** ([plan](M2.md)) in progress, waves 1 to 3 done except T2.10; M0 and M1 implemented, waiting for owner reviews
+- Next: **T2.10 user guide** and the owner's decision on angles under a general tolerance (T2.9); owner: Tabellenbuch check of the tolerance tables and the truth file, M1 manual test and exit criterion, open "Owner: confirm" decisions
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -53,9 +53,9 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.5 Tolerance engine | done | `interpret`, `ToleranceContext::for_project`, `explain` (en, de). All truth limits reproduced on draft tables. Owner: confirm rounding and fit rules (decision log 2026-10-10) |
 | T2.6 Box select with PDF text | done | Box tool proposal card (Enter accepts, Esc discards), typed callouts through the same Rust path, real engine wired (`src-tauri/src/recognition.rs`). Known bug: keystrokes typed right after a placing click can be lost before the value editor has focus (smoke test flaked once), fix after T2.7 merges |
 | T2.7 Numbering strategies | done | Strategies sheet/zone, view, clockwise per view, kind, manual; preview with ghost numbers; zone grid and view editors. Owner: confirm unlocked renumbering and sub-number grouping rules (decision log 2026-10-10) |
-| T2.7a Follow-ups from wave 2 | in progress | Wave 3: typed keys lost after a placing click, zone grid defaults into Rust, locked insert after selection |
-| T2.8 Tolerance UI, explanations and history | in progress | Wave 3 |
-| T2.9 Evaluation and exit criterion | in progress | Wave 3, needs the owner's truth file review |
+| T2.7a Follow-ups from wave 2 | done | Type-ahead kept after a placing click (editor and proposal card), zone grid defaults in `dimo-core::zones`, locked inserts after the selection. Owner: confirm insert after selection |
+| T2.8 Tolerance UI, explanations and history | done | Rule column and markers, detail panel with explanation and history, tolerance settings and custom table import (crash safe through the journal), re-interpret, Rule column in CSV and XLSX |
+| T2.9 Evaluation and exit criterion | review | `dimo-cli eval box-select`, CI gate. Common gated 623/623 (100 %), strict 580/623 (93.1 %): all misses are angles under a general tolerance (shorter leg unknown). Owner: decide the angle gap, review truth file and tables, confirm on a real drawing |
 | T2.10 User guide | todo | Wave 3 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
@@ -75,6 +75,13 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-10 | Evaluation: common callout categories as in M2.md T2.9; box = truth region grown 1.5 pt, axis aligned (0 and 90 degree text); compares kind, nominal, limits, rule and inspect; synth truth carries optional `tolerance_settings` (truth format stays 1), synth uses ISO 2768-1 m, angles with shorter legs 8 or 40 mm; synth `FITS` moved to `tools/synth/src/callout.rs` (24 entries incl. cd, ef, fg, CD8, EF8, FG7) | M2 exit criterion | T2.9, agent |
+| 2026-10-10 | Known gap: an angle under a general tolerance gets no limits in box select (shorter leg unknown); the gate grades it on that M2 behaviour, the strict row (93.1 %) wants limits. **Owner: decide** (accept for M2, shorter leg input on the card, or exclude from common) | ISO 2768-1 table 3 needs the shorter leg | T2.9, coordinator |
+| 2026-10-10 | Stacked limit dimension joined into one proposal: lines stacked along the reading direction, gap at most 0.5 of the smaller height, heights within 0.8, same decimals (at least one), upper larger, lower at least 0.8 of upper, a lower line with its own prefix stays separate. Replaces "two proposals (T2.9 to refine)" | FR-REC-02 | T2.9, agent |
+| 2026-10-10 | Type-ahead: from the placing click until the editor or proposal card takes over, characters, Backspace, Enter and Escape typed on the drawing are kept and handed over (Enter commits or accepts, Escape closes or discards); Cmd/Ctrl combinations are never kept, Alt is (Ø on macOS) | FR-BAL-02, NFR-UX-01 | T2.7a, agent |
+| 2026-10-10 | Zone grid defaults and label schemes in `dimo-core::zones`, query `zone_grid_form` (pure, takes the sheet size). Place and accept send `insert_after` = the primary selected characteristic, so a locked insert follows the selection (a new balloon is selected, so the next one follows it); replaces "locked inserts follow the highest number". **Owner: confirm** | Rule 2, FR-BAL-11 | T2.7a, agent |
+| 2026-10-10 | Custom table import: Rust reads the file (`import_tolerance_table`, dialog in Rust), checks it, an existing id is replaced and settings move to the new version, shipped ids refused; the table text is written into the journal (`{"table":{"sha256","text"}}`) before the entry that lists it and checked by hash on recovery | M2 decision 4, NFR-REL-01 | T2.8, agent |
+| 2026-10-10 | Re-interpret sets nominal, unit, deviations, limits, fit and rule (kind, quantity and inspect too if never read); skips hand entered limits and limits without a rule (older data); basic frame hint survives. Export Rule column uses stored rule ids, untranslated. Markers: dashed "Draft" box, circle with bar for no tolerance, triangle for hints, "(Ref)", framed "Basic"; new color token `--dimo-warning` | FR-TOL-08, FR-CHR-08, FR-EXP-09, D-43 | T2.8, agent |
 | 2026-10-10 | ISO 286 table cross-checked against ISO 286-1:2010 and ISO 286-2:2010 (all values up to 500 mm unchanged; about 6900 limit pairs of the limit deviation tables recomputed). Supersedes parts of the 2026-10-09 T2.3 entries: js/JS are exactly ±IT/2 (the odd µm reduction was an older edition rule; JS7 at 18 to 30 mm is ±0.0105); CD, EF, FG and cd, ef, fg added up to 50 mm; range extended to 3150 mm (table version 2); delta 0 above 500 mm; N above IT8 above 500 mm follows ISO 286-2; part source table numbers corrected. Other T2.3 rule choices confirmed. Status stays draft | D-43, FR-TOL-04 | coordinator, agent |
 | 2026-10-10 | Numbering strategies: a characteristic is placed by the leader anchor of its first balloon, else its first source region center, else last; sheets in page order; zones by position on screen (not label), point outside the frame counts for the nearest zone, no grid means reading order on the sheet; per view: views in drawing order, smallest containing view wins, points outside all views last; clockwise from 12 o'clock around the view center; by kind in `CharacteristicKind` order; ordering on the sheet as shown (rotation applied) | FR-BAL-04, D-21 | T2.7, agent |
 | 2026-10-10 | Reading order: sort by y, the topmost unassigned point opens a row, points at most one default balloon diameter (7 mm) below it join; inside a row x, then y, then current order | FR-BAL-04 | T2.7, agent |
@@ -174,6 +181,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-10: Wave 3 merged (T2.9, T2.7a, T2.8; four additive conflicts in the command list, capabilities and bindings). Check and two smoke runs green. Left in M2: T2.10 user guide, owner items for T2.9.
 - 2026-10-10: ISO 286 table cross-checked and corrected (js/JS rule, range to 3150 mm, CD/EF/FG), merged, check green.
 - 2026-10-10: T2.7 merged (numbering strategies) with six additive conflicts in shared desktop files (command list, capabilities, viewport, dev UI script; bindings regenerated) and one test fixed for the T2.6 proposal fields. Check and smoke test green. Wave 2 complete.
 - 2026-10-10: T2.6 merged (box select), check green; smoke test failed once (typed text of balloons 4 and 5 lost: editor not focused yet when typing started), passed on rerun. Parallel agents now get their own `CARGO_TARGET_DIR` (two worktrees building into one `target/` kept invalidating each other).
