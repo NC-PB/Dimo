@@ -19,8 +19,13 @@
  * ```
  *
  * - `key`: key down and up on the focused element (`mod`, `shift`, `alt` for modifiers).
- * - `click`, `dblclick`, `drag`: pointer events on the drawing (`shift`, `mod`).
- * - `type`: sets the text of the focused field as typing would.
+ * - `click`, `dblclick`, `drag`: pointer events on the drawing (`shift`, `mod`). With
+ *   `"pause": false` the next step starts right after the pointer is released.
+ * - `type`: waits for a text field to take the focus, then sets its text as typing would.
+ * - `keys`: types the characters one by one as key events on whatever has the focus, without
+ *   waiting for a field (`\n` is Enter). In a text field each character is inserted as a real
+ *   key would; on the drawing the key goes to its key handling (T2.7a, typing right after a
+ *   placing click).
  * - `button`: clicks the button whose text is this label.
  * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
@@ -55,12 +60,18 @@ interface Mods {
   alt?: boolean;
 }
 
+/** Pointer steps: whether to pause after the release (default true). */
+interface Pause {
+  pause?: boolean;
+}
+
 export type UiStep =
   | ({ key: string } & Mods)
-  | ({ click: Pair } & Mods)
+  | ({ click: Pair } & Mods & Pause)
   | ({ dblclick: Pair } & Mods)
-  | ({ drag: [Pair, Pair] } & Mods)
+  | ({ drag: [Pair, Pair] } & Mods & Pause)
   | { type: string }
+  | { keys: string }
   | { button: string }
   | ({ row: number } & Mods)
   | ({ balloon: number } & Mods)
@@ -74,6 +85,8 @@ export type UiStep =
   | { report: string };
 
 const STEP_PAUSE_MS = 120;
+/** Time between two keys of a `keys` step, a fast typist. */
+const KEY_GAP_MS = 8;
 const DRAG_STEPS = 6;
 /** Longest wait for a text field to take the focus before a `type` step. */
 const FIELD_WAIT_MS = 3000;
@@ -124,7 +137,7 @@ function pointer(type: string, at: Point, m: Mods, buttons: number): void {
   );
 }
 
-async function press(from: Pair, to: Pair, m: Mods): Promise<void> {
+async function press(from: Pair, to: Pair, m: Mods & Pause): Promise<void> {
   const a = client(from);
   const b = client(to);
   pointer("pointerdown", a, m, 1);
@@ -134,7 +147,29 @@ async function press(from: Pair, to: Pair, m: Mods): Promise<void> {
     await sleep(16);
   }
   pointer("pointerup", b, m, 0);
-  await sleep(STEP_PAUSE_MS);
+  if (m.pause !== false) {
+    await sleep(STEP_PAUSE_MS);
+  }
+}
+
+/**
+ * Types `text` key by key on the focused element. Synthetic key events do not insert text, so a
+ * character that reaches a text field unhandled is inserted here, as the browser would.
+ */
+async function typeKeys(text: string): Promise<void> {
+  for (const ch of text) {
+    const key = ch === "\n" ? "Enter" : ch;
+    const target = document.activeElement ?? document.body;
+    const init = { key, bubbles: true, cancelable: true };
+    const unhandled = target.dispatchEvent(new KeyboardEvent("keydown", init));
+    if (unhandled && key !== "Enter" && target instanceof HTMLInputElement) {
+      const end = target.value.length;
+      target.setRangeText(ch, target.selectionStart ?? end, target.selectionEnd ?? end, "end");
+      target.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    target.dispatchEvent(new KeyboardEvent("keyup", init));
+    await sleep(KEY_GAP_MS);
+  }
 }
 
 /** The label element whose text starts with `text`. */
@@ -226,6 +261,9 @@ async function run(step: UiStep): Promise<void> {
       field.value = step.type;
       field.dispatchEvent(new Event("input", { bubbles: true }));
     }
+    await sleep(STEP_PAUSE_MS);
+  } else if ("keys" in step) {
+    await typeKeys(step.keys);
     await sleep(STEP_PAUSE_MS);
   } else if ("button" in step) {
     const button = [...document.querySelectorAll<HTMLElement>("button")].find(

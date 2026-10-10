@@ -135,6 +135,17 @@ describe("box select (T2.6, FR-REC-01, ADR 0006)", () => {
     expect(store.open).toBe(false);
   });
 
+  it("accepts after the primary selection, so locked numbers follow it (FR-BAL-11)", async () => {
+    const { api, project, selection, store, tools } = setup();
+    const p = emptyProject();
+    p.characteristics = [characteristic("a", 1), characteristic("b", 2)];
+    project.load(loaded(1, p), true);
+    selection.select(["b", "a"]);
+    await tools.place(PLACEMENT, RECT);
+    await store.accept();
+    expect(api.commands).toMatchObject([{ type: "accept_proposals", insert_after: "a" }]);
+  });
+
   it("discards without a command", async () => {
     const { api, store, tools } = setup();
     await tools.place(PLACEMENT, RECT);
@@ -209,9 +220,15 @@ describe("proposal card", () => {
     document.body.innerHTML = "";
   });
 
-  async function shown() {
+  /** Places a box; `typing` types keys on the drawing while Rust still reads the box. */
+  async function shown(typing: string[] = []) {
     const s = setup();
-    await s.tools.place(PLACEMENT, RECT);
+    const placing = s.tools.place(PLACEMENT, RECT);
+    const kept = typing.map((k) =>
+      s.tools.typeAhead({ key: k, ctrlKey: false, metaKey: false, isComposing: false }),
+    );
+    expect(kept.every(Boolean)).toBe(true);
+    await placing;
     let done = 0;
     const target = document.createElement("div");
     document.body.append(target);
@@ -225,6 +242,7 @@ describe("proposal card", () => {
         onDone: () => {
           done += 1;
         },
+        takeTyped: () => s.tools.takeTyped("card"),
       },
     });
     flushSync();
@@ -246,6 +264,25 @@ describe("proposal card", () => {
     expect(field("rule")).toBe("Explicit (on the drawing)");
     expect(field("explanation")).toBe("Printed deviations differ from ISO 286 H7.");
     expect(target.textContent).toContain("Fit pair");
+  });
+
+  it("takes over keys typed before it opened: the text, then Enter accepts (T2.7a)", async () => {
+    const s = await shown([..."25±0.1", "Enter"]);
+    await vi.waitFor(() => {
+      expect(s.done()).toBe(1);
+    });
+    expect(s.recognition.reads).toEqual(["25±0.1"]);
+    const sent = s.api.commands[0];
+    expect(sent?.type === "accept_proposals" && sent.proposals[0]?.requirement_text).toBe("25±0.1");
+  });
+
+  it("takes over typed text without Enter and keeps the cursor at its end", async () => {
+    const { target, store } = await shown([..."25±0.2", "Backspace", "1"]);
+    const input = target.querySelector("input");
+    expect(input?.value).toBe("25±0.1");
+    expect(document.activeElement).toBe(input);
+    expect(input?.selectionStart).toBe(6);
+    expect(store.proposals[0]?.requirement_text).toBe("25±0.1");
   });
 
   it("Enter accepts and Esc discards", async () => {

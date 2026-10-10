@@ -207,7 +207,8 @@ export class BoxSelectStore {
 
   /**
    * Accepts every proposal of the card as one undoable command (ADR 0006) and selects the new
-   * characteristics. Edited text is read again first. Returns the new characteristic IDs.
+   * characteristics. Edited text is read again first. With numbering locked the new numbers
+   * follow the primary selected characteristic (FR-BAL-11). Returns the new characteristic IDs.
    */
   async accept(): Promise<CharId[]> {
     if (!this.open) {
@@ -218,10 +219,12 @@ export class BoxSelectStore {
     }
     const proposals = this.proposals;
     this.discard();
+    const primary = this.#selection.primary;
     const patch = await this.#project.execute({
       type: "accept_proposals",
       proposals,
-      insert_after: null,
+      insert_after:
+        primary !== null && this.#project.characteristicById.has(primary) ? primary : null,
     });
     const ids = (patch?.changes ?? []).flatMap((c) =>
       c.type === "characteristic_inserted" ? [c.characteristic.id] : [],

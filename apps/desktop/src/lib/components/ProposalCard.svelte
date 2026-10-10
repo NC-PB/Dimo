@@ -6,6 +6,8 @@
    */
   import type { CharacteristicKind } from "$lib/ipc/bindings";
   import { kindLabel, m, noteText, ruleLabel, unitLabel } from "$lib/i18n";
+  import { untrack } from "svelte";
+  import type { TypedAhead } from "$lib/stores/balloon-tools.svelte";
   import type { BoxSelectStore } from "$lib/stores/box-select.svelte";
   import { KINDS } from "$lib/table/columns";
   import { sheetToScreen, type ViewTransform } from "$lib/viewport/view-math";
@@ -21,9 +23,11 @@
     height: number;
     /** Called when the card closes, to give the keyboard focus back to the drawing. */
     onDone: () => void;
+    /** Keys typed on the drawing before the card opened, taken once (FR-BAL-02). */
+    takeTyped?: () => TypedAhead | null;
   }
 
-  let { store, view, width, height, onDone }: Props = $props();
+  let { store, view, width, height, onDone, takeTyped = () => null }: Props = $props();
 
   /** Space kept between the card and the viewport edge, in CSS px. */
   const EDGE_PX = 4;
@@ -67,14 +71,31 @@
   const inputs = $state<HTMLInputElement[]>([]);
   let focusedFor: unknown = null;
 
-  // A new card puts the cursor into the first requirement text, selected.
+  // A new card puts the cursor into the first requirement text, selected. Keys typed on the
+  // drawing while the box was read are taken over as if typed here: the text replaces the
+  // first requirement text, Enter accepts, Escape discards.
   $effect(() => {
     const shown = store.region;
     const first = inputs[0];
     if (shown !== null && shown !== focusedFor && first) {
       focusedFor = shown;
-      first.focus({ preventScroll: true });
-      first.select();
+      untrack(() => {
+        const ahead = takeTyped();
+        first.focus({ preventScroll: true });
+        if (ahead !== null && ahead.text !== "") {
+          store.edit(0, { requirement_text: ahead.text });
+          first.value = ahead.text;
+          first.setSelectionRange(ahead.text.length, ahead.text.length);
+        } else {
+          first.select();
+        }
+        if (ahead?.cancel) {
+          store.discard();
+          onDone();
+        } else if (ahead?.enter) {
+          void accept();
+        }
+      });
     }
     if (shown === null) {
       focusedFor = null;

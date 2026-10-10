@@ -47,6 +47,34 @@ export const NO_OVERRIDE: BalloonStyleOverride = {
   leader: null,
 };
 
+/**
+ * Keys typed on the drawing between a placing click and the moment the value editor or the
+ * proposal card has the keyboard focus (FR-BAL-02, NFR-UX-01). The editor or card that opens
+ * takes them over, as if they had been typed into it.
+ */
+export interface TypedAhead {
+  /** The characters typed, Backspace applied. */
+  text: string;
+  /** Enter was pressed: store the value (editor) or accept the proposals (card). */
+  enter: boolean;
+  /** Escape was pressed: close without storing (editor) or discard the proposals (card). */
+  cancel: boolean;
+}
+
+/** What `typeAhead` reads of a key event. */
+export type TypedKey = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "isComposing">;
+
+/**
+ * Whether a key types one character. Cmd and Ctrl combinations are shortcuts; Alt is not
+ * excluded because it types characters such as `Ø` on macOS.
+ */
+export function typesCharacter(event: TypedKey): boolean {
+  return [...event.key].length === 1 && !event.ctrlKey && !event.metaKey;
+}
+
+/** Who takes over keys typed ahead: the pending placement, the editor of a characteristic, the card. */
+type AheadTarget = { kind: "pending" } | { kind: "editor"; id: CharId } | { kind: "card" };
+
 /** The ID of the characteristic a patch inserted, if any. */
 export function insertedCharacteristic(patch: Patch | undefined): CharId | null {
   for (const change of patch?.changes ?? []) {
@@ -78,6 +106,8 @@ export class BalloonToolsStore {
   readonly #sheet: () => SheetId | undefined;
   readonly #boxSelect: BoxSelectStore | null;
   readonly #recognition: Pick<RecognitionCommands, "readCalloutText"> | null;
+  /** Keys typed while a placement is pending, until the editor or card takes them. */
+  #ahead: { typed: TypedAhead; target: AheadTarget } | null = null;
 
   /**
    * @param project the open project
@@ -125,6 +155,10 @@ export class BalloonToolsStore {
    * A dragged region is first read as box select (T2.6, FR-REC-01): if it holds PDF text, the
    * proposal card opens instead and nothing is added until the user accepts. Returns `null`
    * then.
+   *
+   * With numbering locked the new number follows the primary selected characteristic
+   * (FR-BAL-11, `insert_after`). Keys typed until the editor or card opens are kept, see
+   * `typeAhead`.
    */
   async place(placement: Placement, region: Rect | null): Promise<CharId | null> {
     const sheet = this.#sheet();
@@ -133,28 +167,115 @@ export class BalloonToolsStore {
     }
     // A new click or box replaces an open proposal card.
     this.#boxSelect?.discard();
-    if (region && this.#boxSelect) {
-      const box = regionBox(region);
-      if (await this.#boxSelect.select(sheet, region, box, placement)) {
-        this.editing = null;
-        return null;
+    const ahead = {
+      typed: { text: "", enter: false, cancel: false },
+      target: { kind: "pending" } as AheadTarget,
+    };
+    this.#ahead = ahead;
+    try {
+      if (region && this.#boxSelect) {
+        const box = regionBox(region);
+        if (await this.#boxSelect.select(sheet, region, box, placement)) {
+          this.editing = null;
+          ahead.target = { kind: "card" };
+          return null;
+        }
+      }
+      const patch = await this.#project.execute({
+        type: "add_characteristic",
+        sheet,
+        position: placement.position,
+        anchor: placement.anchor,
+        region: region ? regionBox(region) : null,
+        values: [],
+        insert_after: this.insertAfter(),
+      });
+      const id = insertedCharacteristic(patch);
+      if (id !== null) {
+        ahead.target = { kind: "editor", id };
+        this.#selection.focus(id, "viewport");
+        this.editing = id;
+      }
+      return id;
+    } finally {
+      // Nothing opened (no text, refused, failed): the keys typed meanwhile have no target.
+      if (this.#ahead === ahead && ahead.target.kind === "pending") {
+        this.#ahead = null;
       }
     }
-    const patch = await this.#project.execute({
-      type: "add_characteristic",
-      sheet,
-      position: placement.position,
-      anchor: placement.anchor,
-      region: region ? regionBox(region) : null,
-      values: [],
-      insert_after: null,
-    });
-    const id = insertedCharacteristic(patch);
-    if (id !== null) {
-      this.#selection.focus(id, "viewport");
-      this.editing = id;
+  }
+
+  /**
+   * The characteristic a new one follows when numbering is locked: the primary selection, if it
+   * still exists (FR-BAL-11). Rust ignores it while numbering is unlocked.
+   */
+  insertAfter(): CharId | null {
+    const id = this.#selection.primary;
+    return id !== null && this.#project.characteristicById.has(id) ? id : null;
+  }
+
+  /**
+   * A key pressed on the drawing. While a placement is pending (from the placing click until
+   * the value editor or proposal card took over) characters, Backspace, Enter and Escape are
+   * kept for the editor or card instead of acting as shortcuts, so nothing typed right after a
+   * click is lost (FR-BAL-02, NFR-UX-01). Returns whether the key was kept; the caller then
+   * prevents its default action and the shortcuts.
+   */
+  typeAhead(event: TypedKey): boolean {
+    const ahead = this.#ahead;
+    if (ahead === null || event.isComposing) {
+      return false;
     }
-    return id;
+    if (!this.#aheadAlive(ahead.target)) {
+      this.#ahead = null;
+      return false;
+    }
+    const typed = ahead.typed;
+    if (typed.enter || typed.cancel) {
+      return false; // Done typing: further keys act on the drawing again.
+    }
+    if (event.key === "Enter") {
+      typed.enter = true;
+    } else if (event.key === "Escape") {
+      typed.cancel = true;
+    } else if (event.key === "Backspace") {
+      typed.text = [...typed.text].slice(0, -1).join("");
+    } else if (typesCharacter(event)) {
+      typed.text += event.key;
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Hands the keys typed ahead to the editor of `id` or to the proposal card (`"card"`), once.
+   * Returns `null` if nothing was typed for it.
+   */
+  takeTyped(target: CharId | "card"): TypedAhead | null {
+    const ahead = this.#ahead;
+    if (ahead === null) {
+      return null;
+    }
+    const t = ahead.target;
+    const matches = target === "card" ? t.kind === "card" : t.kind === "editor" && t.id === target;
+    if (!matches) {
+      return null;
+    }
+    this.#ahead = null;
+    return ahead.typed;
+  }
+
+  /** Whether the editor or card the keys are kept for is still coming. */
+  #aheadAlive(target: AheadTarget): boolean {
+    switch (target.kind) {
+      case "pending":
+        return true;
+      case "editor":
+        return this.editing === target.id;
+      case "card":
+        return this.#boxSelect?.open ?? false;
+    }
   }
 
   /** Opens the value editor of the primary selected characteristic. */
@@ -171,6 +292,9 @@ export class BalloonToolsStore {
   /** Closes the value editor. */
   stopEditing(): void {
     this.editing = null;
+    if (this.#ahead?.target.kind === "editor") {
+      this.#ahead = null;
+    }
   }
 
   /**

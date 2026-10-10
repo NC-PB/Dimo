@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { m } from "$lib/i18n";
   import { balloonTools } from "$lib/stores/balloon-tools.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
@@ -52,13 +53,33 @@
   let input = $state<HTMLInputElement | null>(null);
   let shownFor: string | null = null;
 
-  // A new editor starts with the stored text, selected, so typing replaces it.
+  // A new editor starts with the stored text, selected, so typing replaces it. Keys typed on
+  // the drawing before it opened (right after the placing click) are taken over as if typed
+  // here: the text replaces the stored one, Enter stores it, Escape closes (FR-BAL-02).
   $effect(() => {
-    if (id !== null && id !== shownFor && input) {
-      shownFor = id;
-      text = characteristic?.requirement_text ?? "";
-      input.focus({ preventScroll: true });
-      input.select();
+    const field = input;
+    if (id !== null && id !== shownFor && field) {
+      const target = id;
+      shownFor = target;
+      untrack(() => {
+        const ahead = balloonTools.takeTyped(target);
+        const typed = ahead !== null && ahead.text !== "";
+        text = typed ? ahead.text : (characteristic?.requirement_text ?? "");
+        field.value = text;
+        field.focus({ preventScroll: true });
+        if (typed) {
+          field.setSelectionRange(text.length, text.length);
+        } else {
+          field.select();
+        }
+        if (ahead?.cancel) {
+          balloonTools.stopEditing();
+          onDone();
+        } else if (ahead?.enter) {
+          commit();
+          onDone();
+        }
+      });
     }
     if (id === null) {
       shownFor = null;

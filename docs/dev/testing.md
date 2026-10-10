@@ -60,7 +60,8 @@ It builds the app and the `text_runs` example, starts the Vite dev server (port 
 free, so stop `tauri dev` first), and runs the app three times. The window opens on screen and
 the test needs a desktop session. It is not part of `check.sh`.
 
-1. Main flow on `corpus/drawings/test_drawing_1.pdf`: place five balloons (one by dragging a box),
+1. Main flow on `corpus/drawings/test_drawing_1.pdf`: place five balloons (one by dragging a box,
+   two typed as key events right after the click without waiting for the value field),
    edit nominal, deviations and a comment in the table, move a row with Alt+Up, rotate the sheet,
    set scale 2:1 and unit inch, save as, export PDF, CSV and XLSX "as issued", save again.
    Checked from the files: the project (characteristics, exact digits, derived limits, balloons,

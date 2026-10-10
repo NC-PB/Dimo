@@ -3,7 +3,8 @@
 # drives it with the development hooks of `apps/desktop/src-tauri/src/dev.rs`:
 #
 #   1. Main flow: new project from the corpus drawing, place five balloons (two by box select,
-#      one of them accepted from the proposal card without typing, T2.6), edit values in the
+#      one of them accepted from the proposal card without typing, T2.6; two typed right after
+#      the click, before the value field has the focus, T2.7a), edit values in the
 #      table, reorder, rotate the sheet, set scale and unit, save as, export PDF, CSV and XLSX
 #      "as issued", save again. The results are checked from the files the app wrote.
 #   2. Reopen: the saved project opens again with the same balloons, rotation and numbering lock.
