@@ -7,10 +7,11 @@ for inspection. Everything stays on your computer.
 This version is for **assisted ballooning**: you drag a box around a dimension and Dimo reads its
 PDF text, or you click a feature and type the value as it is printed. Dimo reads nominal value,
 fit and written tolerances from the text, works out the limits (written tolerances first, then
-the ISO 286 fit table), explains where they come from, and takes care of numbering, the list,
-saving and the exports. Dimo does not search the drawing by itself yet. A general tolerance for
-the project cannot be chosen in this version, so a dimension without tolerance is marked "No
-tolerance defined"; enter its limits in the characteristic table.
+the ISO 286 fit table, then the general tolerance and the rules of the project), explains where
+they come from, and takes care of numbering, the list, saving and the exports. Dimo does not
+search the drawing by itself yet. Without a general tolerance in the project settings, a dimension
+without tolerance is marked "No tolerance defined"; choose one in **Settings** or enter its limits
+in the characteristic table.
 
 ## Pages
 
@@ -23,7 +24,8 @@ tolerance defined"; enter its limits in the characteristic table.
 | [Numbering strategies, zones and views](numbering.md) | Number by zone, view or type, preview, sub-numbers, locked numbering |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
 | [Exports](exports.md) | Ballooned PDF, CSV and Excel list, issued drawings |
-| [Settings](settings.md) | Theme, language, user name, balloon style |
+| [Tolerances](tolerances.md) | Rules, general tolerance, custom tables, explanations, draft tables, history |
+| [Settings](settings.md) | Theme, language, user name, balloon style, tolerances |
 | [Keyboard shortcuts](shortcuts.md) | Every key, for macOS and for Windows and Linux |
 
 Press **?** in the app at any time to see the keyboard shortcuts.
@@ -129,6 +131,6 @@ start. Details: [Settings](settings.md).
 
 - Open the project later with **Open project** (⌘O) and carry on. Every change you made is recorded
   in the change log inside the project.
-- Not yet in this version: searching the drawing automatically, choosing a general tolerance,
-  inspection results and reports. The **Review** and **Measure** views show a note that they
+- Not yet in this version: searching the drawing automatically, inspection results and
+  reports. The **Review** and **Measure** views show a note that they
   come in a later version.

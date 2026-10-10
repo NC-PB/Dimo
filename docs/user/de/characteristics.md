@@ -16,6 +16,7 @@ nutze ↑ und ↓).
 | Obere Grenze, Untere Grenze | Grenzwerte. Dimo berechnet sie aus Nennmaß und Abmaßen; du kannst sie auch eintippen |
 | Einheit | mm, in, ° oder keine. Ein Nennmaß ohne Einheit erhält die Einheit des Blatts (Grad bei Winkeln) |
 | Passung | Passungsangabe wie `H7` |
+| Regel | Die Regel, die die Grenzwerte ergab, mit Markierungen für Entwurfstabellen, fehlende Toleranz, Hinweise, Hilfsmaße und theoretisch genaue Maße. Nur lesbar; siehe [Toleranzen](tolerances.md) |
 | Anzahl | Anzahl der Elemente, für die das Merkmal steht, mindestens 1 |
 | Klasse | Kritisch, Hauptmerkmal, Nebenmerkmal, Schlüsselmerkmal, oder leer, wenn nicht klassifiziert |
 | Prüfmethode, Prüfmittel, Stichprobe, Häufigkeit | Wie das Merkmal geprüft wird, freier Text |

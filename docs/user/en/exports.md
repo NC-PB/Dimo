@@ -63,6 +63,7 @@ change with the language.
 | Lower limit | Untere Grenze | Lower limit, absolute value |
 | Unit | Einheit | `mm`, `in` or `deg` |
 | Fit | Passung | Fit designation such as `H7` |
+| Rule | Regel | Rule that gave the limits: `explicit`, `fit`, `drawing_rule`, `general`, `decimal_rule`, `custom_table`, `no_tolerance_defined` or `manual` (entered by hand); empty if none is recorded ([Tolerances](tolerances.md)) |
 | Quantity | Anzahl | Number of features the characteristic stands for, from the Qty column |
 | Classification | Klassifizierung | `critical`, `major`, `minor` or `key`; empty if not classified |
 | Inspection method | Prüfmethode | Free text |

@@ -94,6 +94,13 @@ drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks 
 - Exports (`stores/export.svelte.ts`): `export_project` opens the save dialog in Rust and
   returns a job ID; `job-progress` and `job-finished` events carry the progress and the result.
   Events can arrive before the ID, so job states are kept by ID.
+- Tolerances (`stores/tolerance.svelte.ts`, T2.8): `tolerance_tables` lists shipped and custom
+  tables with their classes and draft state, settings change with `set_tolerance_settings`,
+  `import_tolerance_table` opens the file dialog in Rust (`DIMO_DEV_IMPORT_TABLE` skips it in
+  debug builds), `reinterpret_characteristics` re-reads the selection as one undo step, and
+  `explain_characteristic` and `characteristic_history` feed the detail panel
+  (`CharacteristicDetail.svelte`). Markers of a derivation are drawn by `ToleranceBadges.svelte`
+  only, each with its own shape.
 - Balloon sizes: `viewport/balloons.ts` follows `dimo_core::BalloonMetrics` with the generated
   `BALLOON_METRICS`. The Rust test `balloon_layout` writes `balloon-layout.fixture.json`, and
   `balloons.test.ts` checks the viewport against it, so viewport and ballooned PDF agree.

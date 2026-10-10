@@ -37,9 +37,9 @@ Dimo liest den getippten Text wie ein Maß auf der Zeichnung: `Ø30 H7 +0.0203 -
 `30` mit der Regel **Explizit**. Text, der kein Maß ist, etwa ein Hinweis, wird nur als
 Anforderung gespeichert. `Ø8 f7` allein erhält seine Grenzwerte aus der Passungstabelle nach
 ISO 286 mit der Regel **Passungstabelle**. Werte aus einer Tabelle, die noch ein Entwurf ist,
-werden so markiert. Ein Maß ohne Toleranz erhält **Keine Toleranz festgelegt**, weil das Projekt
-noch keine Allgemeintoleranz hat; seine Grenzwerte trägst du in der Tabelle ein
-([Merkmalstabelle](characteristics.md)).
+werden so markiert. Ein Maß ohne Toleranz erhält seine Grenzwerte aus der Allgemeintoleranz oder
+den Regeln des Projekts; ohne sie erhält es **Keine Toleranz festgelegt**, und du trägst seine
+Grenzwerte in der Tabelle ein ([Toleranzen](tolerances.md), [Merkmalstabelle](characteristics.md)).
 
 ## Rahmenauswahl
 

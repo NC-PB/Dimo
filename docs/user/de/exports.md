@@ -64,6 +64,7 @@ Die Sprache der Spaltenüberschriften wählst du pro Export: Englisch oder Deuts
 | Untere Grenze | Lower limit | Unteres Grenzmaß, absolut |
 | Einheit | Unit | `mm`, `in` oder `deg` |
 | Passung | Fit | Passungskurzzeichen, z. B. `H7` |
+| Regel | Rule | Regel, die die Grenzmaße ergab: `explicit`, `fit`, `drawing_rule`, `general`, `decimal_rule`, `custom_table`, `no_tolerance_defined` oder `manual` (von Hand eingegeben); leer, wenn keine erfasst ist ([Toleranzen](tolerances.md)) |
 | Anzahl | Quantity | Anzahl der Elemente, für die das Merkmal steht, aus der Spalte Anzahl |
 | Klassifizierung | Classification | `critical`, `major`, `minor` oder `key`; leer ohne Klassifizierung |
 | Prüfmethode | Inspection method | Freitext |

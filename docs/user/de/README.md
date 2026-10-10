@@ -7,11 +7,12 @@ Prüfung. Alles bleibt auf deinem Computer.
 Diese Version ist für das **unterstützte Ballonieren**: Du ziehst einen Rahmen um ein Maß und Dimo
 liest seinen PDF-Text, oder du klickst ein Merkmal an und tippst den Wert so, wie er aufgedruckt
 ist. Dimo liest Nennmaß, Passung und aufgedruckte Toleranzen aus dem Text, bestimmt die
-Grenzwerte (zuerst aufgedruckte Toleranzen, dann die Passungstabelle nach ISO 286), erklärt, woher
-sie stammen, und übernimmt Nummerierung, Liste, Speichern und Exporte. Dimo durchsucht die
-Zeichnung noch nicht selbstständig. Eine Allgemeintoleranz für das Projekt lässt sich in dieser
-Version noch nicht wählen, ein Maß ohne Toleranz wird daher als "Keine Toleranz festgelegt"
-markiert; seine Grenzwerte trägst du in der Merkmalstabelle ein.
+Grenzwerte (zuerst aufgedruckte Toleranzen, dann die Passungstabelle nach ISO 286, dann
+Allgemeintoleranz und Regeln des Projekts), erklärt, woher sie stammen, und übernimmt
+Nummerierung, Liste, Speichern und Exporte. Dimo durchsucht die Zeichnung noch nicht
+selbstständig. Ohne Allgemeintoleranz in den Projekteinstellungen wird ein Maß ohne Toleranz als
+"Keine Toleranz festgelegt" markiert; wähle eine in den **Einstellungen** oder trage seine
+Grenzwerte in der Merkmalstabelle ein.
 
 ## Seiten
 
@@ -24,7 +25,8 @@ markiert; seine Grenzwerte trägst du in der Merkmalstabelle ein.
 | [Nummerierungsstrategien, Zonen und Ansichten](numbering.md) | Nach Zone, Ansicht oder Art nummerieren, Vorschau, Unternummern, gesperrte Nummerierung |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen |
-| [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Ballonstil |
+| [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
+| [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Ballonstil, Toleranzen |
 | [Tastenkürzel](shortcuts.md) | Alle Tasten für macOS sowie Windows und Linux |
 
 Drücke in der App jederzeit **?**, um die Tastenkürzel zu sehen.
@@ -143,6 +145,6 @@ wird. Die Einstellungen bleiben für den nächsten Start erhalten. Einzelheiten:
 
 - Öffne das Projekt später mit **Projekt öffnen** (⌘O) und mache weiter. Jede Änderung, die du
   gemacht hast, steht im Änderungsprotokoll im Projekt.
-- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung, Wahl einer
-  Allgemeintoleranz, Prüfergebnisse und Berichte. Die Ansichten **Prüfen** und **Messen** zeigen einen
+- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung, Prüfergebnisse und
+  Berichte. Die Ansichten **Prüfen** und **Messen** zeigen einen
   Hinweis, dass sie in einer späteren Version folgen.
