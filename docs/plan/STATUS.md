@@ -49,7 +49,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.1 Callout parser | done | `parse_callout`, `Callout`, canonical printer; 4 property tests at 10,000 cases. Owner: confirm inch heuristic and limit order (decision log 2026-10-10) |
 | T2.2 Tolerance table format and ISO 2768-1 | review | Format, loader, schema, release gate (`scripts/check-table-status.sh`, CI job "tolerance tables (D-43)"). Owner: verify `iso-2768-1.toml` (D-43) |
 | T2.3 ISO 286 fit tables | review | 514 fit vectors pass; synth `FITS` and corpus truth fits match the table. Owner: verify `iso-286.toml` (D-43) |
-| T2.4 Data model version 2 | in progress | Wave 1 |
+| T2.4 Data model version 2 | done | Schema version 2 with migration; `DisplayNumber`, `ToleranceDerivation`, numbering and tolerance settings, zone grid, views, `Proposal`, `AcceptProposals`, history query. Owner: confirm balloon sub-index choice (decision log 2026-10-10) |
 | T2.5 Tolerance engine | todo | Wave 2 |
 | T2.6 Box select with PDF text | todo | Wave 2 |
 | T2.7 Numbering strategies | todo | Wave 2 |
@@ -74,6 +74,12 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-10 | Data model v2: display number stored as canonical text (`12`, `12.1`, `12A`), ordered 12 < 12A < 12.1 < 12.1A < 13; placement order kept equal to number order; insert policy moved from the lock to `settings.numbering.insert_when_locked`; the lock records numbers given while locked so deleted ones are never reused; locked inserts anchor on `insert_after` (else the highest number), sub_number 12 to 12.1, letter_suffix 12 to 12A, fallback next_free when empty | FR-BAL-07, FR-BAL-11, D-22, D-23 | T2.4, agent |
+| 2026-10-10 | Multi-instance sub-numbers are separate characteristics with `DisplayNumber` sub-numbers; no balloon sub-index (spec 07). One characteristic with several balloons would need schema v3. **Owner: confirm** | Simplest model, decide before T2.7 | T2.4, agent |
+| 2026-10-10 | Migration 1 to 2: strategy `manual` for migrated projects (keeps order), `sheet_zone` for new ones (D-21); v1 limits get derivation `manual`; leftover v1 journals are set aside as stale, not replayed | D-21, NFR-REL-01 | T2.4, agent |
+| 2026-10-10 | `ToleranceDerivation {rule, draft, hints, conversion}` without free text; a hand edit of limits sets rule `manual`; reference and basic dimensions marked by derivation hints, no new field; default unit rounding 3 decimals mm, 4 inch; `drawing_rule` must name a project custom table | FR-TOL-08, FR-TOL-09, FR-CHR-08 | T2.4, agent |
+| 2026-10-10 | Custom tables stored raw as `tolerances/<id>.toml` after the audit log, checked by sha256 on load; dimo-io does not depend on dimo-tolerance; session refuses settings naming a table not stored first | M2 decision 4 | T2.4, agent |
+| 2026-10-10 | History source: commands naming the characteristic are manual, side effects (renumber) and non manual derivations are rule, accepted proposals are recognition. XLSX No column: plain numbers as number cells, others as text | FR-CHR-10, FR-EXP-09 | T2.4, agent |
 | 2026-10-10 | Callout parser: stacked lines joined by the caller with one space (main, upper, lower), as in the truth `requirement_text`; limit dimensions keep written order (`nominal` first, `Limits { other }` second), deviations stored as written, the engine decides which is upper. **Owner: confirm** | Keeps the parser free of tolerance logic | T2.1, agent |
 | 2026-10-10 | Inch notation (D-20): a `"`, `in` or `inch` marker, an inch fraction (power of two denominators 2 to 128), or a number without leading zero (`.250`) marks a callout as inch; `unit` is set only by an explicit marker. **Owner: confirm** the leading zero heuristic | D-20, no unit inference from sheet size | T2.1, agent |
 | 2026-10-10 | Callout parser forms: basic dimension in text as `[25]` (framed form left to T2.6), `42 REF` and `(42)` are reference; `4X 45°` reads as chamfer, so the canonical print writes an angle quantity as `N PL`; a second different unit marker is a parse error; counterbore, countersink, surface texture, inch threads, `DEEP`/`DP` and frames not parsed yet; `SØ` maps to kind diameter (core has no spherical diameter). **Owner: confirm** | Scope of T2.1 | T2.1, agent |
@@ -154,6 +160,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-10: T2.4 merged (data model v2), check and smoke test green on main. Follow-ups carried into T2.5, T2.6, T2.8 in M2.md. Wave 1 complete.
 - 2026-10-10: T2.1 merged (callout parser). Wave 1 done except T2.4, held for the owner's confirmation of M2 decisions 1 to 4.
 - 2026-10-09: T2.2 and T2.3 merged (tolerance table format, ISO 2768-1 and ISO 286 drafts). Tables wait for the owner's Tabellenbuch check.
 - 2026-10-09: M2 plan drafted (`docs/plan/M2.md`): 10 tasks in 3 waves, 6 decisions for the owner to confirm.
