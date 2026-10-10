@@ -53,6 +53,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.5 Tolerance engine | done | `interpret`, `ToleranceContext::for_project`, `explain` (en, de). All truth limits reproduced on draft tables. Owner: confirm rounding and fit rules (decision log 2026-10-10) |
 | T2.6 Box select with PDF text | done | Box tool proposal card (Enter accepts, Esc discards), typed callouts through the same Rust path, real engine wired (`src-tauri/src/recognition.rs`). Known bug: keystrokes typed right after a placing click can be lost before the value editor has focus (smoke test flaked once), fix after T2.7 merges |
 | T2.7 Numbering strategies | done | Strategies sheet/zone, view, clockwise per view, kind, manual; preview with ghost numbers; zone grid and view editors. Owner: confirm unlocked renumbering and sub-number grouping rules (decision log 2026-10-10) |
+| T2.7a Follow-ups from wave 2 | todo | Wave 3: typed keys lost after a placing click, zone grid defaults into Rust, locked insert after selection |
 | T2.8 Tolerance UI, explanations and history | todo | Wave 3 |
 | T2.9 Evaluation and exit criterion | todo | Wave 3, needs the owner's truth file review |
 | T2.10 User guide | todo | Wave 3 |
