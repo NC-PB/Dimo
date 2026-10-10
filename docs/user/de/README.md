@@ -46,11 +46,11 @@ zeigt das erste Blatt eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter
 in der Werkzeugleiste eine Blattauswahl.
 
 Das Projekt hat noch keine Datei. Die Werkzeugleiste zeigt "Unbenannt"; du speicherst es in
-Schritt 8, aber Dimo hält schon jetzt eine wiederherstellbare Kopie von allem, was du tust
+Schritt 9, aber Dimo hält schon jetzt eine wiederherstellbare Kopie von allem, was du tust
 ([Projekte](projects.md)).
 
 Liegt das Blatt quer, stelle jetzt Drehung, Einheit und Maßstab unter **Blatteigenschaften**
-rechts ein, wie in Schritt 7. Wer Einheit und Maßstab früh setzt, vergisst sie nicht.
+rechts ein, wie in Schritt 8. Wer Einheit und Maßstab früh setzt, vergisst sie nicht.
 
 ### 2. Sich umsehen
 
@@ -60,20 +60,34 @@ Fenster ein. Verschiebe die Zeichnung mit den Pfeiltasten, mit der mittleren Mau
 gedrückter Leertaste und Ziehen. Bild auf und Bild ab wechseln die Blätter. Einzelheiten:
 [Eine Zeichnung ansehen](drawing-view.md).
 
-### 3. Ballons setzen und Werte erfassen
+### 3. Die Allgemeintoleranz des Projekts wählen
+
+Die meisten Zeichnungen geben im Schriftfeld eine Allgemeintoleranz an, zum Beispiel
+ISO 2768-m. Dimo liest das Schriftfeld noch nicht, du sagst es ihm also einmal: Öffne die
+**Einstellungen** (⌘,), gehe zu **Toleranzen des Projekts**, wähle **ISO 2768-1** als
+**Allgemeintoleranz** und die Klasse aus der Zeichnung und kehre mit ⌘1 zur Zeichnung zurück.
+Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser Tabelle. Ohne Allgemeintoleranz
+wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat keine Grenzwerte. Die mit Dimo
+gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre Werte geprüft sind.
+Einzelheiten: [Toleranzen](tolerances.md).
+
+### 4. Ballons setzen und Werte erfassen
 
 1. Drücke **B** (das Werkzeug **Ballon setzen**).
-2. Ziehe einen Rahmen um den Maßtext. Eine Karte zeigt, was Dimo gelesen hat; **Enter**
+2. Ziehe einen Rahmen um den Maßtext. Eine Karte zeigt, was Dimo gelesen hat: Art, Nennmaß,
+   Grenzwerte, die Regel, aus der die Grenzwerte stammen, und eine Erklärung. **Enter**
    übernimmt sie. Oder klicke das Maß oder den Hinweis an, tippe den Wert so, wie er aufgedruckt
-   ist, zum Beispiel `Ø8 f7`, und drücke **Enter**.
+   ist, zum Beispiel `Ø8 f7`, und drücke **Enter**. Dimo liest getippten Text wie einen Rahmen.
 3. **Escape** verwirft eine Karte, die du nicht willst.
-4. Klicke das nächste Merkmal an.
+4. Ziehe oder klicke das nächste Merkmal an. Du kannst gleich nach dem Klick oder dem Rahmen
+   tippen.
 
 Die Ballons werden in der Reihenfolge des Setzens mit 1, 2, 3 nummeriert. Hast du dich vertan,
 drücke ⌘Z. Mit **V** wechselst du zurück zum Werkzeug **Auswählen**. Einzelheiten:
-[Eine Zeichnung ballonieren](ballooning.md).
+[Eine Zeichnung ballonieren](ballooning.md). Klicke einen Ballon oder eine Zeile, um Regel,
+Erklärung und Verlauf eines Merkmals in der Seitenleiste zu sehen ([Toleranzen](tolerances.md)).
 
-### 4. Die Werte in der Merkmalstabelle vervollständigen
+### 5. Die Werte in der Merkmalstabelle vervollständigen
 
 Die Tabelle unter der Zeichnung hat eine Zeile pro Ballon. Der gelesene oder getippte Text steht in
 der Spalte **Anforderung**, Art, Nennmaß, Passung und aufgedruckte Toleranzen sind schon
@@ -89,25 +103,31 @@ gespeichert und exportiert (`90.0` bleibt `90.0`). Einzelheiten:
 Klicke eine Zeile, um ihren Ballon in der Zeichnung zu sehen, und klicke einen Ballon, um seine
 Zeile zu sehen.
 
-### 5. Die Reihenfolge ändern
+### 6. Die Reihenfolge und die Nummerierung ändern
 
 Ziehe den Griff ⠿ einer Zeile, oder wähle Zeilen aus und drücke ⌥↑ oder ⌥↓. Alle Merkmale werden
 neu nummeriert, und die Ballons auf der Zeichnung folgen. Ein ⌘Z stellt alles wieder her.
 
-### 6. Die Ballons gestalten
+Um nach Zone, Ansicht oder Art zu nummerieren, nimm den Bereich **Nummerierung** in der
+Seitenleiste: Wähle eine Strategie, setze den Haken bei **Neue Nummern als Vorschau zeigen**, um das
+Ergebnis auf der Zeichnung und in der Tabelle zu sehen, und wähle **Nummerierung anwenden**.
+Zonenraster und Ansichten zeichnest du von Hand unter **Blatteigenschaften**. Einzelheiten:
+[Nummerierungsstrategien, Zonen und Ansichten](numbering.md).
+
+### 7. Die Ballons gestalten
 
 Wähle Ballons aus und drücke **S**: Form (Kreis, Fahne, Rechteck), Bezugslinie, Größe und Randfarbe.
 Der Stil des ganzen Projekts steht unter **Einstellungen**. Der Status wird neben der Farbe auch
 über die Form gezeigt. Einzelheiten: [Eine Zeichnung ballonieren](ballooning.md),
 [Einstellungen](settings.md).
 
-### 7. Drehung, Einheit und Maßstab des Blatts einstellen
+### 8. Drehung, Einheit und Maßstab des Blatts einstellen
 
 Unter **Blatteigenschaften** rechts: Drehe das Blatt in 90-Grad-Schritten (**R** und
 **Shift+R**), wähle Millimeter oder Zoll und den Maßstab aus dem Schriftfeld. Jedes Blatt hat
 eigene Werte. Einzelheiten: [Blätter](sheets.md).
 
-### 8. Speichern
+### 9. Speichern
 
 Wähle **Speichern** (⌘S). Da das Projekt noch keine Datei hat, fragt Dimo nach Name und Ort und
 schreibt eine `.dimo`-Datei, die die Zeichnung, die Merkmale, die Ballons und das Protokoll aller
@@ -120,13 +140,14 @@ gespeicherten Projekt) die Arbeit wieder her, mit einem Hinweis über der Zeichn
 des Fensters oder beim Anlegen oder Öffnen eines anderen Projekts mit ungespeicherten Änderungen
 fragt Dimo zuerst nach. Einzelheiten: [Projekte](projects.md).
 
-### 9. Exportieren
+### 10. Exportieren
 
 Öffne die Ansicht **Export** (⌘E).
 
 - **PDF mit Ballons**: die Zeichnung mit eingezeichneten Ballons. Die Originaldatei bleibt
   unverändert.
-- **Merkmalsliste (CSV)** und **(Excel)**: eine Zeile pro Merkmal, in Ballonreihenfolge.
+- **Merkmalsliste (CSV)** und **(Excel)**: eine Zeile pro Merkmal, in Ballonreihenfolge, mit der
+  Regel, die jedes Grenzmaß ergeben hat.
 
 Wähle die Sprache der Spaltenüberschriften und wie das PDF die Ballons enthält. Jeder Export fragt,
 wo die Datei gespeichert wird, und läuft im Hintergrund. Setze für eine Zeichnung, die an einen
@@ -134,12 +155,12 @@ Kunden geht, vorher das Häkchen bei **Als freigegeben exportieren**: Es sperrt 
 die Nummern ändern sich danach nie mehr, auch wenn du Merkmale hinzufügst oder löschst.
 Einzelheiten: [Exporte](exports.md).
 
-### 10. Einstellungen
+### 11. Einstellungen
 
 Unter **Einstellungen** (⌘,) wählst du das Farbschema (hell, dunkel oder wie das System), die
 Sprache der App und den Benutzernamen, der in das Änderungsprotokoll jedes Projekts geschrieben
-wird. Die Einstellungen bleiben für den nächsten Start erhalten. Einzelheiten:
-[Einstellungen](settings.md).
+wird. Die Einstellungen bleiben für den nächsten Start erhalten. Die Toleranzregeln des Projekts
+(Schritt 3) stehen in derselben Ansicht. Einzelheiten: [Einstellungen](settings.md).
 
 ### Wie es weitergeht
 

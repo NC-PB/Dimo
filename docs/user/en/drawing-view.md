@@ -42,9 +42,15 @@ view: balloons and their numbers stay upright and exports are not affected.
 
 ## Side panel
 
-- **Sheet properties**: rotation, unit and scale of the sheet on screen.
+- **Sheet properties**: rotation, unit and scale of the sheet on screen, its zone grid and its
+  views ([Sheets](sheets.md), [Numbering strategies, zones and views](numbering.md)).
+- **Numbering**: strategy, preview and apply, repeated features and the insert setting for locked
+  numbering ([Numbering strategies, zones and views](numbering.md)).
 - **Selection**: the values of the selected characteristic, or the list of selected
   characteristics. The panel only shows them; edit values in the table.
+- **Characteristic details**, for the selected characteristic: the tab **Tolerance** with rule,
+  limits and explanation and the **Inspect** box, the tab **History**, and **Re-interpret
+  selected** ([Tolerances](tolerances.md)).
 - The version of Dimo at the bottom.
 
 ## Table height

@@ -33,17 +33,26 @@ Projekts** enthält die Regeln dieses Projekts. Sie werden in der Projektdatei g
 jede Änderung ist ein Rückgängig-Schritt.
 
 - **Allgemeintoleranz**: Tabelle und Klasse für Maße ohne Toleranz, zum Beispiel ISO 2768-1
-  Klasse m. Passungstabellen stehen hier nicht zur Wahl.
+  Klasse m. Die Auswahl listet die Allgemeintoleranztabellen und die eigenen Tabellen des
+  Projekts; Passungstabellen stehen hier nicht zur Wahl.
 - **Zeichnungsregel (eigene Tabelle)**: eine eigene Tabelle des Projekts, die vor der
   Allgemeintoleranz gilt.
 - **Regeln nach Dezimalstellen**: eine Toleranz je Anzahl Dezimalstellen, zum Beispiel 2 Stellen
   ±0,05. Gib Stellen und Toleranz ein und wähle **Regel hinzufügen**. Jede Anzahl Stellen hat eine
-  Regel.
-- **Rundung nach Einheitenumrechnung**: Dezimalstellen für Werte, die in mm oder Zoll umgerechnet
-  werden.
+  Regel, und die Toleranz ist plus und minus der eingegebene Wert. Eine Regel gilt für Maße, die
+  als Dezimalzahl ohne Toleranz geschrieben sind, nach der Zahl der geschriebenen Dezimalstellen
+  (`12.50` hat zwei). Die Toleranz einer Regel änderst du in ihrem Feld, und eine Regel entfernst
+  du mit der Schaltfläche ✕.
+- **Rundung nach Einheitenumrechnung**: Dezimalstellen für Grenzmaße, die in mm oder Zoll
+  umgerechnet werden müssen, zum Beispiel ein in Zoll geschriebenes Maß unter einer
+  Allgemeintoleranz, deren Tabelle in mm ist. Vorgabe sind 3 Stellen für mm und 4 für Zoll. Die
+  Grenzmaße werden nach innen gerundet, sind also nie weiter als die Tabelle, und die Erklärung
+  sagt, dass umgerechnet wurde. Zulässig sind ganze Zahlen von 0 bis 10.
 - **Eigene Tabellen**: **Tabelle importieren…** liest eine eigene Tabellendatei (TOML, im Format
   der mitgelieferten Tabellen). Dimo prüft die ganze Datei, bevor sie verwendet wird. Wird sie
-  abgelehnt, steht der Grund da, mit der Zeile der Datei, wo Dimo sie bestimmen kann. Eine
+  abgelehnt, steht der Grund da, mit der Zeile der Datei, wo Dimo sie bestimmen kann. Das
+  Dateiformat steht in `data/tolerances/README.md` der Dimo-Quellen, neben den mitgelieferten
+  Tabellen. Eine
   importierte Tabelle wird in das Projekt kopiert, das Projekt braucht die Datei danach nicht
   mehr, und sie bleibt nach einem Absturz erhalten, auch vor dem Speichern. Wird eine Tabelle mit
   derselben Kennung erneut importiert, ersetzt sie die alte, und die Einstellungen, die sie
@@ -63,6 +72,8 @@ Abmaße, Grenzmaße, Passung und Regel. Das Ganze ist ein Rückgängig-Schritt.
 - Merkmale, deren Text leer oder kein Maß ist, bleiben unverändert.
 - Art, Anzahl und das Feld **Prüfen** bleiben so, wie du sie gesetzt hast. Ein Merkmal, dessen
   Text noch nie gelesen wurde, erhält sie aus dem Text.
+- Hast du den Text der Spalte **Anforderung** in der Tabelle geändert, liest das Neuauswerten den
+  neuen Text.
 
 Die Zeile unter der Schaltfläche sagt, wie viele neu gelesen, behalten oder nicht lesbar waren.
 
@@ -84,12 +95,32 @@ unterscheiden:
 | **(Hilfsmaß)** mit runden Enden | Hilfsmaß: keine Grenzmaße |
 | **Theor. genau** in eckigem Rahmen | Theoretisch genaues Maß: keine Grenzmaße |
 
+Einige Hinweise zeigt nur die Karte der Rahmenauswahl, sie werden nicht gespeichert: Eine
+Passungspaarung wie `H7/g6` nennt eine Bohrung und eine Welle, darum gibt Dimo keine Grenzmaße
+und bittet dich, beide als zwei Merkmale zu erfassen. Die anderen Hinweise der Tabelle werden beim
+Merkmal gespeichert:
+
+- Die eingetragenen Abmaße weichen von der Passungstabelle ab; die eingetragenen gelten.
+- Die Passung steht nicht in der Passungstabelle, es gibt also keine Grenzmaße daraus.
+- Das Maß liegt außerhalb der Bereiche einer Tabelle, diese Regel ergab also keine Grenzmaße.
+
+## Grenzmaße, die du selbst eingibst
+
+Gibst du in der Tabelle ein Nennmaß, ein Abmaß oder ein Grenzmaß ein und ändern sich dadurch die
+Grenzmaße, wird die Regel **Von Hand eingegeben**. Diese Grenzmaße bleiben beim Neuauswerten
+erhalten, und die Erklärung sagt nur, dass sie von Hand eingegeben wurden. Löschst du alle Abmaße und Grenzmaße, wird die
+Regel entfernt, und das Merkmal kann wieder gelesen werden.
+
 ## Entwurfstabellen
 
 Die mitgelieferten Tabellen sind Entwürfe, bis ihre Werte mit der gedruckten Norm verglichen
 wurden. Grenzmaße aus einer Entwurfstabelle funktionieren wie alle anderen, tragen aber die
 Markierung **Entwurf** in der Tabelle, in der Seitenleiste und auf der Karte der Rahmenauswahl.
-Auch eine importierte eigene Tabelle kann ein Entwurf sein.
+Auch eine importierte eigene Tabelle kann ein Entwurf sein. Die Einstellungen zeigen die
+Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
+Entwurfstabelle mit deiner eigenen Norm, bevor du dich darauf verlässt. Eine Tabelle ist erst
+kein Entwurf mehr, wenn ihre Datei von der Person als geprüft gekennzeichnet ist, die jeden Wert
+verglichen hat; Dimo ändert das nie selbst.
 
 ## Hilfsmaße und theoretisch genaue Maße
 

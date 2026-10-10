@@ -30,7 +30,8 @@ Projekts und vor dem Schließen des Fensters oder dem Beenden von Dimo: **Speich
 ## Was in einer Projektdatei steht
 
 Eine `.dimo`-Datei enthält die Zeichnung, wie du sie importiert hast, die Merkmale und Ballons,
-die Einstellungen des Projekts (zum Beispiel den Ballonstil), Drehung, Einheit und Maßstab jedes
+die Einstellungen des Projekts (Ballonstil, Toleranzregeln mit den importierten eigenen
+Tabellen, Nummerierungsstrategie), Drehung, Einheit, Maßstab, Zonenraster und Ansichten jedes
 Blatts, die Nummerierungssperre und das Änderungsprotokoll: jede Änderung mit Zeit und dem
 Benutzernamen aus den [Einstellungen](settings.md). Die Datei ist ein ZIP-Archiv, du kannst sie also
 mit jedem ZIP-Programm ansehen, aber nur Dimo sollte sie schreiben.

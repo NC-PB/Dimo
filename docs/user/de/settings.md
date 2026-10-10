@@ -24,7 +24,7 @@ aller Ballons des Projekts ohne eigenen Stil. Eine Änderung ist ein Schritt bei
 wie jede andere Änderung am Projekt. Einzelnen Ballons gibst du einen eigenen Stil, indem du sie
 in der Zeichnung auswählst und **Stil** (S) verwendest.
 
-## Toleranzen dieses Projekts
+## Toleranzen des Projekts
 
 Sichtbar, solange ein Projekt offen ist: Allgemeintoleranz und Klasse, Zeichnungsregel, Regeln nach
 Dezimalstellen, Rundung nach Einheitenumrechnung und der Import eigener Tabellen. Jede Änderung ist

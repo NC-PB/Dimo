@@ -57,6 +57,12 @@ Grenzwerte nach. Entfernst du ein Abmaß, verschwinden auch die berechneten Gren
 Grenzwert, den du selbst tippst, behält Dimo, und er geht den Abmaßen vor. Alle Zahlen sind exakte
 Dezimalzahlen; nichts wird gerundet.
 
+Aus der Zeichnung gelesene Grenzwerte kommen mit ihrer Regel und einer Erklärung in der
+Seitenleiste. Grenzwerte, die du tippst, erhalten die Regel "Von Hand eingegeben" und werden beim
+Neuauswerten nie geändert. Das Bearbeiten der Zelle **Anforderung** speichert nur den Text; wähle
+das Merkmal aus und nimm **Ausgewählte neu auswerten** in der Seitenleiste, um ihn erneut zu
+lesen. Einzelheiten: [Toleranzen](tolerances.md).
+
 ## Löschen
 
 Die Tabelle hat keine Löschtaste. Wähle die Zeilen aus und verwende **Löschen** in der

@@ -27,8 +27,9 @@ before the window closes or Dimo quits: **Save**, **Don't save** or **Cancel**.
 ## What is in a project file
 
 One `.dimo` file holds the drawing as you imported it, the characteristics and balloons, the
-settings of the project (such as the balloon style), the rotation, unit and scale of each sheet,
-the numbering lock, and the change log: every change with the time and the user name set in
+settings of the project (balloon style, tolerance rules with the custom tables you imported,
+numbering strategy), the rotation, unit, scale, zone grid and views of each sheet, the numbering
+lock, and the change log: every change with the time and the user name set in
 [Settings](settings.md). The file is a ZIP archive, so you can look inside it with any ZIP
 program, but only Dimo should write it.
 

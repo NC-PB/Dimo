@@ -88,6 +88,19 @@ Zeichnung.
 | Tabelle: Auswahl nach unten verschieben | `⌥↓` | `Alt+↓` |
 <!-- /shortcuts -->
 
+## Karte der Rahmenauswahl und getippte Werte
+
+Diese Tasten wirken, solange die Vorschlagskarte einer Rahmenauswahl oder das Wertfeld eines
+Ballons offen ist, und auch auf der Zeichnung in dem Moment zwischen dem Klick und dem Öffnen der
+Karte oder des Felds.
+
+| Aktion | Taste |
+|---|---|
+| Die Vorschläge der Karte übernehmen oder den Wert speichern | Enter |
+| Die Karte verwerfen oder das Wertfeld schließen, ohne zu speichern | Esc |
+| Den Wert oder den Anforderungstext tippen | Jedes Zeichen, auch gleich nach dem Klick oder dem Rahmen |
+| Das Zeichnen eines Zonenrahmens oder einer Ansicht abbrechen | Esc |
+
 ## Maus und Trackpad
 
 | Aktion | So geht es |

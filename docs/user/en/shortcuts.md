@@ -87,6 +87,19 @@ These act while the table has the focus. They replace the drawing keys of the sa
 | Table: move selected down | `⌥↓` | `Alt+↓` |
 <!-- /shortcuts -->
 
+## Box select card and typed values
+
+These keys work while the proposal card of a box select, or the value field of a balloon, is
+open, and also on the drawing in the moment between the click and the opening of the card or
+field.
+
+| Action | Key |
+|---|---|
+| Accept the proposals of the card, or store the value | Enter |
+| Discard the card, or close the value field without storing | Esc |
+| Type the value or the requirement text | Any character, also right after the click or the box |
+| Stop drawing a zone frame or a view | Esc |
+
 ## Mouse and trackpad
 
 | Action | How |

@@ -46,9 +46,17 @@ betroffen.
 
 ## Seitenleiste
 
-- **Blatteigenschaften**: Drehung, Einheit und Maßstab des angezeigten Blatts.
+- **Blatteigenschaften**: Drehung, Einheit und Maßstab des angezeigten Blatts, sein Zonenraster
+  und seine Ansichten ([Blätter](sheets.md), [Nummerierungsstrategien, Zonen und
+  Ansichten](numbering.md)).
+- **Nummerierung**: Strategie, Vorschau und Anwenden, wiederholte Elemente und die Einstellung für
+  das Einfügen bei gesperrter Nummerierung ([Nummerierungsstrategien, Zonen und
+  Ansichten](numbering.md)).
 - **Auswahl**: die Werte des ausgewählten Merkmals oder die Liste der ausgewählten Merkmale. Die
   Leiste zeigt sie nur an; Werte bearbeitest du in der Tabelle.
+- **Merkmalsdetails** für das ausgewählte Merkmal: der Reiter **Toleranz** mit Regel, Grenzmaßen
+  und Erklärung und dem Feld **Prüfen**, der Reiter **Verlauf** und **Ausgewählte neu auswerten**
+  ([Toleranzen](tolerances.md)).
 - Unten die Version von Dimo.
 
 ## Höhe der Tabelle
