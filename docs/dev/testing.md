@@ -9,6 +9,7 @@
 | Output formats (CSV, XLSX, PDF structure, project JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
 | Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` (truth) or `-p dimo-io --test schema` (project) or `-p dimo-tolerance --test schema` (tolerance tables) | `dimo-core/tests/`, `dimo-io/tests/`, `dimo-tolerance/tests/` |
 | Project file migrations | one fixture per schema version in folder mode, never changed after release; new one with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations` | `dimo-io/tests/fixtures/v<n>/` |
+| Box select (M2 exit criterion) | box select with the tolerance engine on every truth region of the corpus and of synth seeds 1 to 40, per callout category; fails below 99 percent of the common callouts (known gaps listed, not gated). Report: `cargo run -p dimo-cli -- eval box-select` | `dimo-detect/src/evaluation.rs`, `dimo-detect/tests/box_select_corpus.rs`, `dimo-cli/tests/box_select_evaluation.rs`, run by `check.sh` in CI |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
 | Frontend units | Vitest | `apps/desktop/src/**/*.test.ts` |
 | End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` |

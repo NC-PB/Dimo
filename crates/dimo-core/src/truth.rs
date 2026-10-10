@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use crate::characteristic::{CharacteristicKind, ToleranceRule, Unit};
 use crate::decimal::decimal_schema;
 use crate::geometry::{OrientedBox, Size};
+use crate::project::ToleranceSettings;
 use crate::sheet::SheetKind;
 
 /// Version of the truth format written by this code. Increase it on any incompatible change.
@@ -43,6 +44,11 @@ pub struct TruthFile {
     pub sheets: Vec<TruthSheet>,
     /// Every characteristic a correct recognition proposes, in a stable order.
     pub characteristics: Vec<TruthCharacteristic>,
+    /// Tolerance settings of the project that the expected limits assume (FR-TOL-01, M2
+    /// decision 2). Absent means the settings of a new project: no general tolerance and no
+    /// rules, so untoleranced dimensions have no limits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tolerance_settings: Option<ToleranceSettings>,
     /// Free text: how the truth was made (for example how regions were measured), conventions,
     /// open questions.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -167,6 +173,13 @@ impl TruthFile {
         }
         check_drawing(&self.drawing, &mut issues);
         check_sheets(&self.sheets, &mut issues);
+        if let Some(Err(problem)) = self
+            .tolerance_settings
+            .as_ref()
+            .map(ToleranceSettings::validate)
+        {
+            issues.push(format!("tolerance_settings: {problem}"));
+        }
         let mut ids = BTreeSet::new();
         for c in &self.characteristics {
             if !ids.insert(c.id.as_str()) {
@@ -388,6 +401,27 @@ mod tests {
         let c = &truth.characteristics[0];
         assert_eq!(c.upper_limit, Some(Decimal::new(7987, 3)));
         assert_eq!(serde_json::to_value(&truth).unwrap(), valid());
+    }
+
+    // T2.9: the settings the expected limits assume round trip and are validated.
+    #[test]
+    fn tolerance_settings_round_trip_and_are_checked() {
+        let mut value = valid();
+        value["tolerance_settings"] = json!({
+            "general": { "table": { "id": "iso-2768-1", "version": 1 }, "class": "m" },
+            "drawing_rule": null, "decimal_rules": [],
+            "unit_rounding": { "mm_places": 3, "inch_places": 4 }, "custom_tables": []
+        });
+        let truth = TruthFile::from_json_str(&value.to_string()).unwrap();
+        let settings = truth.tolerance_settings.as_ref().unwrap();
+        assert_eq!(settings.general.as_ref().unwrap().class, "m");
+        assert_eq!(serde_json::to_value(&truth).unwrap(), value);
+        value["tolerance_settings"]["unit_rounding"]["mm_places"] = json!(11);
+        let issues = issues_of(&value);
+        assert!(
+            issues.iter().any(|i| i.starts_with("tolerance_settings:")),
+            "{issues:?}"
+        );
     }
 
     /// Table driven: each edit must produce an issue containing the expected text.

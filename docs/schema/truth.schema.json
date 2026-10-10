@@ -85,6 +85,45 @@
         }
       ]
     },
+    "CustomTable": {
+      "description": "A custom tolerance table stored in the project container as `tolerances/<id>.toml`\n(FR-TOL-07, M2 decision 4).",
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/Sha256Hex",
+          "description": "SHA-256 of the stored file, checked when the project is opened."
+        },
+        "table": {
+          "$ref": "#/$defs/TableRef",
+          "description": "Table id and version as in the file."
+        }
+      },
+      "required": [
+        "table",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "DecimalPlaceRule": {
+      "description": "Decimal place rule: a nominal written with `places` decimals gets `±tolerance` (FR-TOL-06).",
+      "properties": {
+        "places": {
+          "description": "Decimal places of the nominal, 0 to 10.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tolerance": {
+          "description": "Symmetric tolerance, positive.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "places",
+        "tolerance"
+      ],
+      "type": "object"
+    },
     "OrientedBox": {
       "additionalProperties": false,
       "description": "Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).",
@@ -131,6 +170,10 @@
       ],
       "type": "object"
     },
+    "Sha256Hex": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
     "SheetKind": {
       "description": "How the text of a sheet is stored, which decides the recognition path (FR-DOC-03).",
       "oneOf": [
@@ -169,6 +212,44 @@
       "required": [
         "width",
         "height"
+      ],
+      "type": "object"
+    },
+    "TableClass": {
+      "description": "A range table and its class column, e.g. ISO 2768-1 class `m` (FR-TOL-02, M2 decision 2).",
+      "properties": {
+        "class": {
+          "description": "The class column, e.g. `m`.",
+          "type": "string"
+        },
+        "table": {
+          "$ref": "#/$defs/TableRef",
+          "description": "The table, shipped or custom."
+        }
+      },
+      "required": [
+        "table",
+        "class"
+      ],
+      "type": "object"
+    },
+    "TableRef": {
+      "description": "A tolerance table by id and version (`data/tolerances/`, D-43). Shipped tables are referenced\nthis way; custom tables are also copied into the project (M2 decision 4).",
+      "properties": {
+        "id": {
+          "description": "Table id, e.g. `iso-2768-1`.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Table version.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
       ],
       "type": "object"
     },
@@ -211,6 +292,57 @@
           "type": "string"
         }
       ]
+    },
+    "ToleranceSettings": {
+      "description": "Tolerance settings of a project (M2 decision 2, FR-TOL-01, FR-TOL-06, FR-TOL-09).\n\nNew projects have no general tolerance, so untoleranced dimensions get \"no tolerance\ndefined\" until the user sets one.",
+      "properties": {
+        "custom_tables": {
+          "description": "Custom tables stored in the project, sorted by id, ids unique (M2 decision 4).",
+          "items": {
+            "$ref": "#/$defs/CustomTable"
+          },
+          "type": "array"
+        },
+        "decimal_rules": {
+          "description": "Decimal place rules, sorted by places, at most one per number of places (FR-TOL-06).",
+          "items": {
+            "$ref": "#/$defs/DecimalPlaceRule"
+          },
+          "type": "array"
+        },
+        "drawing_rule": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TableClass"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Custom table of the project that applies as drawing specific rule, above the general\ntolerance (FR-TOL-01 level 3)."
+        },
+        "general": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TableClass"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "General tolerance standard and class (FR-TOL-02)."
+        },
+        "unit_rounding": {
+          "$ref": "#/$defs/UnitRounding",
+          "description": "Rounding of unit conversions (FR-TOL-09)."
+        }
+      },
+      "required": [
+        "decimal_rules",
+        "unit_rounding",
+        "custom_tables"
+      ],
+      "type": "object"
     },
     "TruthCharacteristic": {
       "additionalProperties": false,
@@ -371,6 +503,28 @@
           "type": "string"
         }
       ]
+    },
+    "UnitRounding": {
+      "description": "Rounding of values converted between mm and inch (FR-TOL-09).",
+      "properties": {
+        "inch_places": {
+          "description": "Decimal places of values converted to inch, 0 to 10.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mm_places": {
+          "description": "Decimal places of values converted to mm, 0 to 10.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mm_places",
+        "inch_places"
+      ],
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -407,6 +561,17 @@
         "$ref": "#/$defs/TruthSheet"
       },
       "type": "array"
+    },
+    "tolerance_settings": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ToleranceSettings"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Tolerance settings of the project that the expected limits assume (FR-TOL-01, M2\ndecision 2). Absent means the settings of a new project: no general tolerance and no\nrules, so untoleranced dimensions have no limits."
     }
   },
   "required": [

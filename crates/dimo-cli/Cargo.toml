@@ -10,15 +10,18 @@ publish.workspace = true
 
 [dependencies]
 clap.workspace = true
+# Box select evaluation (T2.9). The CLI may depend on every crate and on the generator (rust.md).
+dimo-core.workspace = true
+dimo-detect.workspace = true
+dimo-pdf.workspace = true
+dimo-synth = { path = "../../tools/synth" }
+dimo-tolerance.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 # Import glue test: dimo-io may not depend on dimo-pdf, the CLI may use both (rust.md).
-dimo-core.workspace = true
-# Box select on synthetic drawings (T2.6); T2.9 adds the evaluation command here.
-dimo-detect.workspace = true
 dimo-io.workspace = true
-dimo-pdf.workspace = true
-dimo-synth = { path = "../../tools/synth" }
 tempfile.workspace = true
 
 [lints]

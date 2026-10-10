@@ -69,27 +69,53 @@ fn same_seed_gives_identical_bytes_and_other_seeds_differ() {
     assert_ne!(a.pdf, generate(8, 12).unwrap().pdf);
 }
 
+// T2.9: every form of the common callouts, decimal commas and every symbol occur.
 #[test]
-fn all_callout_styles_occur() {
+fn all_callout_forms_occur() {
     let mut rules = std::collections::BTreeSet::new();
+    let mut forms = Vec::new();
     let mut texts = String::new();
-    for seed in 1..=10 {
-        for c in generate(seed, 15).unwrap().truth.characteristics {
+    // The seeds of the box select evaluation (dimo-cli).
+    for seed in 1..=40 {
+        let drawing = generate(seed, 15).unwrap();
+        assert_eq!(
+            drawing.truth.tolerance_settings,
+            Some(dimo_synth::tolerance_settings())
+        );
+        for (c, form) in drawing.truth.characteristics.iter().zip(drawing.forms) {
             rules.insert(format!("{:?}", c.tolerance_rule.unwrap()));
             texts.push_str(&c.requirement_text);
+            texts.push(' ');
+            if !forms.contains(&form) {
+                forms.push(form);
+            }
             if c.fit.is_some() {
-                assert_eq!(c.tolerance_rule, Some(ToleranceRule::Fit));
+                assert!(
+                    matches!(
+                        c.tolerance_rule,
+                        Some(ToleranceRule::Fit | ToleranceRule::Explicit)
+                    ),
+                    "{}",
+                    c.id
+                );
                 assert!(c.review_note.is_some(), "fit limits are drafts");
+            }
+            if c.tolerance_rule == Some(ToleranceRule::General) {
+                assert!(c.review_note.is_some(), "general limits are drafts");
             }
         }
     }
+    assert_eq!(forms.len(), dimo_synth::Form::ALL.len(), "{forms:?}");
     assert_eq!(
         rules.len(),
-        3,
-        "explicit, fit, no_tolerance_defined: {rules:?}"
+        4,
+        "explicit, fit, general, no_tolerance_defined: {rules:?}"
     );
-    for symbol in ['Ø', '±', '\u{2212}'] {
+    for symbol in ['Ø', '±', '\u{2212}', '°', ',', '('] {
         assert!(texts.contains(symbol), "{symbol} is generated");
+    }
+    for fit in [" cd", " ef", " fg", " CD", " EF", " FG"] {
+        assert!(texts.contains(fit), "{fit} is generated");
     }
 }
 

@@ -7,8 +7,12 @@
 //! with `dimo-notation` and interpret through the [`Interpreter`] seam: [`ToleranceEngine`]
 //! (the `dimo-tolerance` engine) in the app, [`CalloutOnly`] as fallback. Nothing here changes a
 //! project: proposals become characteristics only through an accept command (ADR 0006).
+//!
+//! T2.9 adds [`evaluation`]: box select on the truth regions of corpus and synthetic drawings,
+//! compared with the truth and counted per callout category (M2 exit criterion).
 
 pub mod box_select;
+pub mod evaluation;
 pub mod interpret;
 pub mod read;
 

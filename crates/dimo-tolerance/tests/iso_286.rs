@@ -197,10 +197,11 @@ fn limits_and_explanation_data() {
     assert_eq!((m6.upper, m6.delta), (d("-0.009"), None));
 }
 
-/// Parse the `FITS` table of `tools/synth/src/lib.rs` as text, so no code is shared with the
+/// Parse the `FITS` table of `tools/synth/src/callout.rs` as text, so no code is shared with the
 /// generator (it stays an independent truth source): `(nominal, fit, upper µm, lower µm)`.
 fn synth_fits() -> Vec<(i64, String, i64, i64)> {
-    let text = std::fs::read_to_string(common::repo_root().join("tools/synth/src/lib.rs")).unwrap();
+    let text =
+        std::fs::read_to_string(common::repo_root().join("tools/synth/src/callout.rs")).unwrap();
     let start = text.find("const FITS").unwrap();
     let body = &text[start..];
     let body = &body[body.find("= &[").unwrap()..body.find("];").unwrap()];
@@ -230,7 +231,7 @@ fn report_differences_to_synth_fits() {
     let fits = synth_fits();
     assert_eq!(
         fits.len(),
-        15,
+        24,
         "FITS table of tools/synth not found or changed"
     );
     let mut differences = Vec::new();

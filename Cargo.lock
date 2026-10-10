@@ -866,7 +866,10 @@ dependencies = [
  "dimo-io",
  "dimo-pdf",
  "dimo-synth",
+ "dimo-tolerance",
+ "sha2",
  "tempfile",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
