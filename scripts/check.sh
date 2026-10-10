@@ -16,6 +16,12 @@ if [[ -f Cargo.toml ]]; then
   cargo clippy --workspace --all-targets -- -D warnings
   step "cargo test"
   cargo test --workspace
+  # T2.9: the M2 exit criterion is also a test in dimo-cli; this prints the per category
+  # report. Needs PDFium, so it runs where PDFium is required (CI, DIMO_REQUIRE_PDFIUM=1).
+  if [[ "${CI:-}" == "true" || ( -n "${DIMO_REQUIRE_PDFIUM:-}" && "${DIMO_REQUIRE_PDFIUM}" != "0" ) ]]; then
+    step "box select evaluation (M2 exit criterion)"
+    cargo run -q -p dimo-cli -- eval box-select
+  fi
   if [[ $FAST -eq 0 ]]; then
     if command -v cargo-deny >/dev/null 2>&1; then
       step "cargo deny"

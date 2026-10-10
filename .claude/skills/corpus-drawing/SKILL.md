@@ -20,6 +20,7 @@ For a new drawing the agent then:
    sheet kind with evidence from the content stream, text content, findings for the spec, pitfalls.
 5. Writes `corpus/truth/<name>.truth.json` once the truth schema exists (task T0.10). Expected limits
    come from what the drawing states plus the tolerance rules, never from the recognizer output.
-   Mark uncertain entries and list them for owner review in STATUS.md.
+   If the drawing declares a general tolerance, write it as `tolerance_settings`. Then run
+   `cargo run -p dimo-cli -- eval box-select` and look at the failures. Mark uncertain entries and list them for owner review in STATUS.md.
 
 Findings that change requirements go into the spec or a new ADR, not only into the notes.
