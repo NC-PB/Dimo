@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"1.000\\\" ±.005\", Cfg::None, Unit::Mm, Some(Unit::Mm), None)"
+---
+callout: 1.000" ±.005
+en: Tolerance written on the drawing: ±0.127 mm. Values converted from in to mm and rounded to 3 decimal places.
+de: Toleranz in der Zeichnung angegeben: ±0,127 mm. Werte von Zoll in mm umgerechnet und auf 3 Nachkommastellen gerundet.

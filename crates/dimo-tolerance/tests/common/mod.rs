@@ -2,6 +2,8 @@
 #![allow(dead_code, reason = "each test crate uses a different subset")]
 #![allow(clippy::unwrap_used)] // Helpers of a test crate; rust.md allows unwrap in tests.
 
+pub mod context;
+
 use std::path::PathBuf;
 use std::str::FromStr;
 

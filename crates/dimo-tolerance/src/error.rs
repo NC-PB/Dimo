@@ -40,4 +40,15 @@ pub enum TableError {
         /// Origin of the second table.
         second: String,
     },
+    /// A table stored in a project does not carry the id and version that the project settings
+    /// name for it (T2.4 loader check, FR-TOL-07).
+    #[error("{origin}: the file holds table {found}, the project expects {expected}")]
+    Mismatch {
+        /// File name or path.
+        origin: String,
+        /// `id` version `n` from the project settings.
+        expected: String,
+        /// `id` version `n` from the file.
+        found: String,
+    },
 }

@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"12.39±0.1\", Cfg::None, Unit::Mm, None, None)"
+---
+callout: 12.39±0.1
+en: Tolerance written on the drawing: ±0.1 mm.
+de: Toleranz in der Zeichnung angegeben: ±0,1 mm.

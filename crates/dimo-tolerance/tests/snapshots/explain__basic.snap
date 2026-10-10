@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"[25]\", Cfg::General, Unit::Mm, None, None)"
+---
+callout: [25]
+en: Theoretically exact dimension: no tolerance and not inspected unless chosen.
+de: Theoretisch genaues Maß: keine Toleranz und nur auf Wunsch geprüft.

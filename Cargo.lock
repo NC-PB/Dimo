@@ -992,6 +992,8 @@ version = "0.0.0"
 dependencies = [
  "boon",
  "dimo-core",
+ "dimo-notation",
+ "insta",
  "rust_decimal",
  "schemars 1.2.2",
  "serde",
