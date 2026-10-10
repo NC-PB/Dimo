@@ -1,12 +1,10 @@
 [
   { "mark": "crash flow start" },
   { "key": "b" },
-  { "click": [413.6, 159] },
-  { "type": "Ø8 f7" },
-  { "key": "Enter" },
-  { "click": [527.9, 269.1] },
-  { "type": "Ø8 h6" },
-  { "key": "Enter" },
+  { "click": [413.6, 159], "pause": false },
+  { "keys": "Ø8 f7\n" },
+  { "click": [527.9, 269.1], "pause": false },
+  { "keys": "Ø8 h6\n" },
   { "wait": 500 },
   { "report": "before crash" }
 ]

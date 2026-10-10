@@ -27,6 +27,7 @@ Leertaste beim Ziehen. Zoomen und Blätter stehen unter [Eine Zeichnung ansehen]
    gleich das nächste Merkmal an.
 
 Von Hand geht es am schnellsten so: klicken, tippen, Enter, klicken, tippen, Enter.
+Du musst nicht auf das Feld warten: Was du gleich nach dem Klick tippst, landet darin.
 
 - **Escape** im Feld schließt es, ohne den Text zu speichern. Der Ballon bleibt; ⌘Z entfernt ihn.
 - Ein Klick an eine andere Stelle speichert das Getippte ebenfalls.

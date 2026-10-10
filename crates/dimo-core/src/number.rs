@@ -12,6 +12,8 @@ use std::str::FromStr;
 use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
 use serde::{Deserialize, Serialize};
 
+use crate::zones::letters;
+
 /// Regular expression of a display number, used in the JSON schema.
 pub const DISPLAY_NUMBER_PATTERN: &str = r"^[1-9][0-9]*(\.[1-9][0-9]*)?[A-Z]*$";
 
@@ -116,19 +118,6 @@ impl DisplayNumber {
         };
         Ok(Self { base, sub, letter })
     }
-}
-
-/// Letters of a suffix count: 1 is `A`, 26 is `Z`, 27 is `AA`.
-fn letters(mut value: u32) -> String {
-    let mut out = Vec::new();
-    while value > 0 {
-        let rest = (value - 1) % 26;
-        // `rest` is below 26, so the byte is an upper case ASCII letter.
-        out.push(b'A' + u8::try_from(rest).unwrap_or(0));
-        value = (value - 1) / 26;
-    }
-    out.reverse();
-    String::from_utf8(out).unwrap_or_default()
 }
 
 impl fmt::Display for DisplayNumber {

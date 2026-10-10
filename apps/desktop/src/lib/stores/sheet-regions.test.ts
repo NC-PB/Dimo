@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Command, Patch, Project, Sheet } from "$lib/ipc/bindings";
+import type { Command, Patch, Project, Sheet, ZoneGridEdit } from "$lib/ipc/bindings";
+import type { ZoneGridApi } from "$lib/zone-grid";
 import { emptyProject } from "./fixtures";
 import { SheetRegionsStore, type RegionProject } from "./sheet-regions.svelte";
 
@@ -21,10 +22,31 @@ function fakeProject(edit: (sheet: Sheet) => void = () => undefined) {
   return { state, commands, sheet };
 }
 
+/** Stands in for Rust's `zone_grid_form`: records requests, answers with a fixed 8 by 6 grid. */
+function fakeZones() {
+  const requests: ZoneGridEdit[] = [];
+  const api: ZoneGridApi = {
+    zoneGridForm: (edit) => {
+      requests.push(edit);
+      return Promise.resolve({
+        grid: {
+          frame: { origin: { x: 28, y: 28 }, size: { width: 100, height: 100 } },
+          column_labels: ["1", "2", "3", "4", "5", "6", "7", "8"],
+          row_labels: ["A", "B", "C", "D", "E", "F"],
+        },
+        column_scheme: { kind: "numbers", reversed: false },
+        row_scheme: { kind: "letters", reversed: false },
+      });
+    },
+  };
+  return { api, requests };
+}
+
 describe("rectangle tools of the sheet properties (T2.7, M2 decision 1)", () => {
-  it("draws a zone frame with the default labels when the sheet has no grid", async () => {
+  it("draws a zone frame with the default labels of Rust when the sheet has no grid", async () => {
     const rust = fakeProject();
-    const store = new SheetRegionsStore(rust.state, () => 0);
+    const zones = fakeZones();
+    const store = new SheetRegionsStore(rust.state, () => 0, zones.api);
     store.toggle("zone_frame");
     store.begin({ x: 400, y: 300 });
     store.moveTo({ x: 200, y: 250 });
@@ -41,6 +63,7 @@ describe("rectangle tools of the sheet properties (T2.7, M2 decision 1)", () => 
         },
       },
     ]);
+    expect(zones.requests).toEqual([{ type: "default", size: rust.sheet?.size }]);
     expect(store.tool).toBeNull();
     expect(store.drag).toBeNull();
   });
@@ -53,7 +76,8 @@ describe("rectangle tools of the sheet properties (T2.7, M2 decision 1)", () => 
         row_labels: ["A", "B"],
       };
     });
-    const store = new SheetRegionsStore(rust.state, () => 0);
+    const zones = fakeZones();
+    const store = new SheetRegionsStore(rust.state, () => 0, zones.api);
     store.toggle("zone_frame");
     store.begin({ x: 10, y: 10 });
     await store.finish({ x: 110, y: 60 });
@@ -64,6 +88,7 @@ describe("rectangle tools of the sheet properties (T2.7, M2 decision 1)", () => 
       "2",
       "1",
     ]);
+    expect(zones.requests).toEqual([]);
   });
 
   it("adds a view after the others", async () => {

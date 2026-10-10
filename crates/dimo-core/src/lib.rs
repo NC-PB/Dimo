@@ -30,6 +30,7 @@ pub mod project;
 pub mod proposal;
 pub mod sheet;
 pub mod truth;
+pub mod zones;
 
 pub use balloon::{
     BALLOON_METRICS, Balloon, BalloonLayout, BalloonMetrics, BalloonShape, BalloonStyle,
@@ -63,6 +64,7 @@ pub use proposal::{BalloonPlacement, EngineVersion, ParseHint, ParseIssue, Propo
 pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
 };
+pub use zones::{AxisScheme, LabelKind, ZoneAxis, ZoneGridEdit, ZoneGridForm, zone_grid_form};
 
 /// The JSON schema of `project.json` content ([`Project`]), with object keys sorted.
 pub fn project_schema() -> serde_json::Value {

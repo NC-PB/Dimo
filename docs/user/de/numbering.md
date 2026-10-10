@@ -92,7 +92,11 @@ bei Sperre** legt die Nummer eines danach hinzugefügten Merkmals fest:
 | Einstellung | Beispiel |
 |---|---|
 | Nächste freie Nummer | Nach 12 kommt 13 (Vorgabe). |
-| Unternummer (12.1) | Ist 12 die höchste Nummer, erhält das neue 12.1, dann 12.2. |
-| Buchstabe angehängt (12A) | Ist 12 die höchste Nummer, erhält das neue 12A, dann 12B. |
+| Unternummer (12.1) | Ist Ballon 12 ausgewählt, erhält das neue 12.1, dann 12.2. |
+| Buchstabe angehängt (12A) | Ist Ballon 12 ausgewählt, erhält das neue 12A, dann 12B. |
+
+Unternummern und Buchstaben folgen dem ausgewählten Ballon. Wähle also den Ballon, zu dem das
+neue Element gehört, bevor du es platzierst. Ist nichts ausgewählt, folgen sie der höchsten
+Nummer.
 
 Eine bei Sperre vergebene Nummer wird nie wieder vergeben, auch wenn du ihr Merkmal löschst.

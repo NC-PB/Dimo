@@ -477,9 +477,9 @@
     <BalloonLayer view={shown} />
     <SheetOverlay view={shown} />
     <!-- The drawing surface on top of all layers: drag to pan, wheel to zoom, keys from the
-         shortcut map. Focusable so keyboard users reach it (NFR-UX-01); "application" is the
+         shortcut map (or kept for the value editor right after a placing click). Focusable so keyboard users reach it (NFR-UX-01); "application" is the
          ARIA role for such a surface, but Svelte does not count it as interactive. -->
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={element}
       class="surface absolute inset-0 touch-none select-none"
@@ -494,6 +494,12 @@
       ondblclick={(e) => {
         e.preventDefault();
       }}
+      onkeydown={(e) => {
+        // Keys typed right after a placing click belong to the value editor (FR-BAL-02).
+        if (balloonTools.typeAhead(e)) {
+          e.preventDefault();
+        }
+      }}
     ></div>
     <BalloonEditor view={shown} onDone={focusDrawing} />
     <ProposalCard
@@ -502,6 +508,7 @@
       width={viewport.size.width}
       height={viewport.size.height}
       onDone={focusDrawing}
+      takeTyped={() => balloonTools.takeTyped("card")}
     />
   {/if}
 </main>

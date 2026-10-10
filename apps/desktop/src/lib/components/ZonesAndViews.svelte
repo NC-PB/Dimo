@@ -1,25 +1,27 @@
 <script lang="ts">
   import { m } from "$lib/i18n";
-  import type { Sheet, SheetView, ZoneGrid } from "$lib/ipc/bindings";
+  import {
+    commands,
+    type AxisScheme,
+    type Sheet,
+    type SheetView,
+    type ZoneAxis,
+    type ZoneGrid,
+  } from "$lib/ipc/bindings";
   import { projectStore } from "$lib/stores/project.svelte";
   import { sheetRegions } from "$lib/stores/sheet-regions.svelte";
   import {
-    DEFAULT_COLUMNS,
-    DEFAULT_ROWS,
     MAX_DIVISIONS,
-    defaultGrid,
     labelsText,
     parseLabels,
-    schemeOf,
     viewsCommand,
-    withAxis,
     zoneGridCommand,
-    type AxisScheme,
   } from "$lib/zone-grid";
 
   /**
    * Zone grid and views of the shown sheet (T2.7, M2 decision 1, D-21): drawn by hand, used by
-   * the numbering strategies. Every change is one undoable command; Rust validates it.
+   * the numbering strategies. Every change is one undoable command; Rust validates it. Default
+   * grids, axis labels and the scheme of each axis come from Rust (`zone_grid_form`, T2.7a).
    */
   interface Props {
     sheet: Sheet;
@@ -29,7 +31,7 @@
 
   const grid = $derived(sheet.zone_grid);
 
-  type Axis = "columns" | "rows";
+  type Axis = ZoneAxis;
 
   /** Scheme choices per axis, as `kind:reversed` values of the select. */
   const SCHEMES: Record<Axis, { value: string; scheme: AxisScheme; label: () => string }[]> = {
@@ -84,24 +86,62 @@
     return axis === "columns" ? g.column_labels : g.row_labels;
   }
 
-  function schemeValue(g: ZoneGrid, axis: Axis): string {
-    const scheme = schemeOf(labelsOf(g, axis));
+  /**
+   * The label scheme of each axis of the shown grid as Rust reads it, `null` for labels typed by
+   * hand; `undefined` until the first answer arrives.
+   */
+  let schemes = $state<{ columns: AxisScheme | null; rows: AxisScheme | null } | undefined>();
+
+  $effect(() => {
+    const g = grid;
+    if (!g) {
+      schemes = undefined;
+      return;
+    }
+    let current = true;
+    commands
+      .zoneGridForm({ type: "describe", grid: g })
+      .then((form) => {
+        if (current) {
+          schemes = { columns: form.column_scheme, rows: form.row_scheme };
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  });
+
+  /** The select value of an axis: its scheme, `custom` for typed labels, empty while unknown. */
+  function schemeValue(axis: Axis): string {
+    if (schemes === undefined) {
+      return "";
+    }
+    const scheme = schemes[axis];
     const found = SCHEMES[axis].find(
       (s) => scheme && s.scheme.kind === scheme.kind && s.scheme.reversed === scheme.reversed,
     );
     return found?.value ?? CUSTOM;
   }
 
-  function currentScheme(g: ZoneGrid, axis: Axis): AxisScheme {
-    return schemeOf(labelsOf(g, axis)) ?? (axis === "columns" ? DEFAULT_COLUMNS : DEFAULT_ROWS);
-  }
-
   function setGrid(next: ZoneGrid | null): void {
     void projectStore.execute(zoneGridCommand(sheet, next));
   }
 
-  function addGrid(): void {
-    setGrid(defaultGrid({ width: sheet.size.width ?? 0, height: sheet.size.height ?? 0 }));
+  /** Relabels one axis through Rust; without a scheme the axis keeps its current one. */
+  async function relabel(
+    g: ZoneGrid,
+    axis: Axis,
+    count: number,
+    scheme: AxisScheme | null,
+  ): Promise<void> {
+    const form = await commands.zoneGridForm({ type: "axis", grid: g, axis, count, scheme });
+    setGrid(form.grid);
+  }
+
+  async function addGrid(): Promise<void> {
+    const form = await commands.zoneGridForm({ type: "default", size: sheet.size });
+    setGrid(form.grid);
   }
 
   function onCount(event: Event & { currentTarget: HTMLInputElement }, axis: Axis): void {
@@ -112,7 +152,7 @@
       return;
     }
     if (count !== labelsOf(g, axis).length) {
-      setGrid(withAxis(g, axis, count, currentScheme(g, axis)));
+      void relabel(g, axis, count, null);
     }
   }
 
@@ -120,7 +160,7 @@
     const g = grid;
     const choice = SCHEMES[axis].find((s) => s.value === event.currentTarget.value);
     if (g && choice) {
-      setGrid(withAxis(g, axis, labelsOf(g, axis).length, choice.scheme));
+      void relabel(g, axis, labelsOf(g, axis).length, choice.scheme);
     }
   }
 
@@ -193,7 +233,7 @@
         {axis === "columns" ? m.zones_column_scheme() : m.zones_row_scheme()}
         <select
           class={fieldClass}
-          value={schemeValue(grid, axis)}
+          value={schemeValue(axis)}
           onchange={(e) => {
             onScheme(e, axis);
           }}
@@ -201,7 +241,7 @@
           {#each SCHEMES[axis] as option (option.value)}
             <option value={option.value}>{option.label()}</option>
           {/each}
-          {#if schemeValue(grid, axis) === CUSTOM}
+          {#if schemeValue(axis) === CUSTOM}
             <option value={CUSTOM} disabled>{m.zones_scheme_custom()}</option>
           {/if}
         </select>
@@ -239,7 +279,9 @@
   {:else}
     <p class="text-xs text-text-muted">{m.zones_none()}</p>
     <div class="flex flex-wrap gap-1.5">
-      <button type="button" class={buttonClass} onclick={addGrid}>{m.zones_add()}</button>
+      <button type="button" class={buttonClass} onclick={() => void addGrid()}
+        >{m.zones_add()}</button
+      >
       <button
         type="button"
         class={buttonClass}

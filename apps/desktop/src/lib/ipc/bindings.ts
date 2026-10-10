@@ -75,6 +75,11 @@ export const commands = {
 	readCalloutText: (sheet: SheetId, text: string, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, language })),
 	/**  The order and numbers `strategy` would give, without changing the project (FR-BAL-05). */
 	previewNumbering: (strategy: NumberingStrategy) => typedError<NumberingPreview, CommandError>(__TAURI_INVOKE("preview_numbering", { strategy })),
+	/**
+	 *  A default zone grid, or a grid with one axis relabelled, and the label scheme of each axis
+	 *  (T2.7a, D-21). Changes nothing; the editor stores the grid with `set_zone_grid`.
+	 */
+	zoneGridForm: (edit: ZoneGridEdit) => __TAURI_INVOKE<ZoneGridForm>("zone_grid_form", { edit }),
 	/**  The settings of the user and the operating system user name. */
 	appSettings: () => __TAURI_INVOKE<SettingsView>("app_settings"),
 	/**
@@ -154,6 +159,18 @@ export type Autosave =
 { state: "failed"; 
 /**  Why, for the user and for bug reports. */
 message: string };
+
+/**
+ *  Label scheme of one axis: the kind and whether it counts from the far end (numbers right to
+ *  left, letters bottom to top). Labels are always stored as printed, left to right and top to
+ *  bottom.
+ */
+export type AxisScheme = {
+	/**  Letters or numbers. */
+	kind: LabelKind,
+	/**  Counted from the far end. */
+	reversed: boolean,
+};
 
 /**  A balloon on a sheet that marks a characteristic (data model `Balloon`). */
 export type Balloon = {
@@ -950,6 +967,13 @@ export type JobProgress = {
 	message: string,
 };
 
+/**  How the labels of one axis are written. */
+export type LabelKind = 
+/**  `A, B, ..., Z, AA, AB, ...` */
+"letters" | 
+/**  `1, 2, 3, ...` */
+"numbers";
+
 /**  Why numbering was locked (FR-BAL-10). */
 export type LockReason = 
 /**  The user locked it. */
@@ -1669,6 +1693,13 @@ export type UnitRounding = {
 	inch_places: number,
 };
 
+/**  One axis of a zone grid. */
+export type ZoneAxis = 
+/**  The column labels, left to right. */
+"columns" | 
+/**  The row labels, top to bottom. */
+"rows";
+
 /**
  *  The zone grid of a drawing frame: equal columns and rows inside the frame rectangle, with
  *  the labels printed on the frame (D-21 "sheet, then zone").
@@ -1683,6 +1714,37 @@ export type ZoneGrid = {
 	column_labels: string[],
 	/**  Row labels, top to bottom, e.g. `A` to `F`. One per row, at least one. */
 	row_labels: string[],
+};
+
+/**  A request of the zone grid editor. */
+export type ZoneGridEdit = 
+/**  The first grid for a sheet of this size, see [`ZoneGrid::default_for`]. */
+{ type: "default"; 
+/**  Sheet size in sheet units. */
+size: Size } | 
+/**  The grid unchanged, to learn the label schemes of its axes. */
+{ type: "describe"; 
+/**  The grid. */
+grid: ZoneGrid } | 
+/**  The grid with another count or scheme on one axis, see [`ZoneGrid::with_axis`]. */
+{ type: "axis"; 
+/**  The grid. */
+grid: ZoneGrid; 
+/**  The axis to change. */
+axis: ZoneAxis; 
+/**  Number of divisions, clamped to 1 to 100. */
+count: number; 
+/**  Label scheme; `null` keeps the current one. */
+scheme: AxisScheme | null };
+
+/**  A zone grid as the editor shows it: the grid and the label scheme of each axis. */
+export type ZoneGridForm = {
+	/**  The resulting grid. Not stored until it is sent with `set_zone_grid`. */
+	grid: ZoneGrid,
+	/**  Scheme of the column labels, `null` for labels typed by hand. */
+	column_scheme: AxisScheme | null,
+	/**  Scheme of the row labels, `null` for labels typed by hand. */
+	row_scheme: AxisScheme | null,
 };
 
 /* Tauri Specta runtime */

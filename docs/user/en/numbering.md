@@ -86,7 +86,10 @@ characteristic you add after that:
 | Setting | Example |
 |---|---|
 | Next free number | After 12 comes 13 (default). |
-| Sub-number (12.1) | With 12 as the highest number, the new one is 12.1, then 12.2. |
-| Letter suffix (12A) | With 12 as the highest number, the new one is 12A, then 12B. |
+| Sub-number (12.1) | With balloon 12 selected, the new one is 12.1, then 12.2. |
+| Letter suffix (12A) | With balloon 12 selected, the new one is 12A, then 12B. |
+
+Sub-numbers and letters follow the selected balloon, so select the balloon the new feature
+belongs to before you place it. With nothing selected they follow the highest number.
 
 A number given while locked is never given again, even if you delete its characteristic.

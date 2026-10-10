@@ -1,10 +1,36 @@
 import { describe, expect, it } from "vitest";
 import { UNITS_PER_MM } from "$lib/viewport/balloons";
 import { twoBalloons } from "$lib/viewport/balloon-fixtures";
-import { NO_OVERRIDE, NUDGE_MM, insertedCharacteristic, regionBox } from "./balloon-tools.svelte";
+import {
+  NO_OVERRIDE,
+  NUDGE_MM,
+  insertedCharacteristic,
+  regionBox,
+  typesCharacter,
+  type TypedKey,
+} from "./balloon-tools.svelte";
 import { addChanges, characteristic } from "./fixtures";
 
 const VIEW = { scale: 2, tx: 0, ty: 0, rotation: 0 } as const;
+const PLACEMENT = { position: { x: 300, y: 80 }, anchor: { x: 280, y: 100 } };
+
+function key(name: string, mods: Partial<TypedKey> = {}): TypedKey {
+  return { key: name, ctrlKey: false, metaKey: false, isComposing: false, ...mods };
+}
+
+/** Two balloons; Rust answers `add_characteristic` with `c` only once `release` is called. */
+function slowRust() {
+  const setup = twoBalloons();
+  const { api } = setup;
+  api.reply = { changes: addChanges("c", 3, 2) };
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const execute = api.execute;
+  api.execute = (command) => gate.then(() => execute(command));
+  return { ...setup, release };
+}
 
 describe("balloon tools (T1.6)", () => {
   it("restyles and resets the balloons of the selection as one command each", async () => {
@@ -82,6 +108,74 @@ describe("balloon tools (T1.6)", () => {
     expect(moves[0]?.position.y).toBeCloseTo(100, 9);
     expect(moves[1]?.position.x).toBeCloseTo(100, 9);
     expect(moves[1]?.position.y).toBeCloseTo(100 - step, 9);
+  });
+
+  it("keeps every key typed before the placement resolves and hands it to the editor (T2.7a)", async () => {
+    const { api, release, selection, tools } = slowRust();
+    selection.select(["a"]);
+    const placing = tools.place(PLACEMENT, null);
+    // `0`, `-` and `+` are zoom shortcuts on the drawing; while placing they are text.
+    const kept = [..."100 +0 -0.7", "Backspace", "6", "Enter"].map((k) => tools.typeAhead(key(k)));
+    expect(kept.every(Boolean)).toBe(true);
+    // After Enter, keys act on the drawing again.
+    expect(tools.typeAhead(key("b"))).toBe(false);
+    release();
+    await placing;
+    expect(tools.editing).toBe("c");
+    expect(tools.takeTyped("a")).toBeNull();
+    expect(tools.takeTyped("c")).toEqual({ text: "100 +0 -0.6", enter: true, cancel: false });
+    expect(tools.takeTyped("c")).toBeNull();
+    // The new characteristic follows the selected one when numbering is locked (FR-BAL-11).
+    expect(api.commands).toMatchObject([{ type: "add_characteristic", insert_after: "a" }]);
+  });
+
+  it("keeps keys typed after the answer until the editor takes them, Escape included", async () => {
+    const { release, tools } = slowRust();
+    const placing = tools.place(PLACEMENT, null);
+    expect(tools.typeAhead(key("Ø"))).toBe(true);
+    release();
+    await placing;
+    // The editor has not taken the focus yet.
+    expect(tools.typeAhead(key("8"))).toBe(true);
+    expect(tools.typeAhead(key("Escape"))).toBe(true);
+    expect(tools.takeTyped("c")).toEqual({ text: "Ø8", enter: false, cancel: true });
+  });
+
+  it("lets shortcuts through when no placement is pending or the editor is gone", async () => {
+    const { api, release, tools } = slowRust();
+    expect(tools.typeAhead(key("0"))).toBe(false);
+    const placing = tools.place(PLACEMENT, null);
+    // Cmd and Ctrl combinations and keys that type nothing stay shortcuts.
+    expect(tools.typeAhead(key("z", { metaKey: true }))).toBe(false);
+    expect(tools.typeAhead(key("s", { ctrlKey: true }))).toBe(false);
+    expect(tools.typeAhead(key("ArrowLeft"))).toBe(false);
+    expect(tools.typeAhead(key("a", { isComposing: true }))).toBe(false);
+    release();
+    await placing;
+    tools.stopEditing();
+    expect(tools.typeAhead(key("1"))).toBe(false);
+    expect(tools.takeTyped("c")).toBeNull();
+
+    // A placement Rust refuses drops what was typed.
+    api.reply = { changes: [] };
+    const refused = tools.place(PLACEMENT, null);
+    expect(tools.typeAhead(key("1"))).toBe(true);
+    await refused;
+    expect(tools.typeAhead(key("2"))).toBe(false);
+  });
+
+  it("sends no insert anchor without a selection", async () => {
+    const { api, tools } = twoBalloons();
+    api.reply = { changes: addChanges("c", 3, 2) };
+    await tools.place(PLACEMENT, null);
+    expect(api.commands).toMatchObject([{ type: "add_characteristic", insert_after: null }]);
+  });
+
+  it("counts single characters as typing, also with Alt", () => {
+    expect(typesCharacter(key("Ø", { metaKey: false }))).toBe(true);
+    expect(typesCharacter(key(" "))).toBe(true);
+    expect(typesCharacter(key("Enter"))).toBe(false);
+    expect(typesCharacter(key("a", { ctrlKey: true }))).toBe(false);
   });
 
   it("finds the new characteristic in a patch and builds the source region", () => {

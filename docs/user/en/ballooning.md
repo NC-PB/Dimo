@@ -26,6 +26,7 @@ you drag. Zooming and sheets are in [Looking at a drawing](drawing-view.md).
    feature right away.
 
 So the fastest way through a drawing by hand is: click, type, Enter, click, type, Enter.
+You do not have to wait for the field: what you type right after the click goes into it.
 
 - **Escape** in the field closes it without storing the text. The balloon stays; ⌘Z removes it.
 - Clicking somewhere else also stores what you typed.
