@@ -16,6 +16,9 @@
 //! T1.9: [`project_overlay`] maps the balloons of a project to these primitives with the
 //! balloon layout rule shared with the viewport (`dimo_core::BALLOON_METRICS`).
 //!
+//! T2.6: [`Document::region_text`] returns the characters, runs and basic dimension frames
+//! inside a region drawn by the user, also for rotated text (see [`region`]).
+//!
 //! # Coordinates
 //!
 //! All geometry is in sheet space (AGENTS.md rule 4): PDF user units, origin at the top left of
@@ -57,6 +60,7 @@ pub mod geometry;
 pub mod library;
 pub mod overlay;
 pub mod project_overlay;
+pub mod region;
 pub mod sheet_kind;
 pub mod text;
 pub mod tiles;
@@ -80,5 +84,6 @@ pub use overlay::{
 };
 pub use project_overlay::project_overlay;
 pub use raster::RgbaImage;
+pub use region::{RegionRun, RegionText, TextChar};
 pub use sheet_kind::{FontInfo, MIN_TEXT_CHARS, RASTER_COVERAGE, SheetAnalysis};
 pub use text::TextRun;

@@ -129,7 +129,7 @@ pub(crate) fn page_to_sheet(page: &PdfPage<'_>) -> Result<PageToSheet, PdfError>
 }
 
 /// Converts one PDFium character, or `None` for generated, invisible or boxless characters.
-fn glyph(ch: &PdfPageTextChar<'_>, to_sheet: &PageToSheet) -> Option<Glyph> {
+pub(crate) fn glyph(ch: &PdfPageTextChar<'_>, to_sheet: &PageToSheet) -> Option<Glyph> {
     if ch.is_generated().unwrap_or(false) {
         return None;
     }
@@ -182,22 +182,35 @@ pub(crate) fn text_error(e: PdfiumError) -> PdfError {
 
 /// Merges characters in content order into runs (see the module docs).
 pub(crate) fn merge_runs(glyphs: &[Glyph]) -> Vec<TextRun> {
+    merge_runs_indexed(glyphs)
+        .into_iter()
+        .map(|(run, _)| run)
+        .collect()
+}
+
+/// Like [`merge_runs`], with the range of `glyphs` each run was built from. A run always takes
+/// consecutive characters, so a range describes it exactly (whitespace included).
+pub(crate) fn merge_runs_indexed(glyphs: &[Glyph]) -> Vec<(TextRun, std::ops::Range<usize>)> {
     let mut runs = Vec::new();
-    let mut current: Option<RunBuilder> = None;
-    for g in glyphs {
-        if let Some(builder) = current.as_mut()
+    let mut current: Option<(RunBuilder, usize)> = None;
+    for (index, g) in glyphs.iter().enumerate() {
+        if let Some((builder, _)) = current.as_mut()
             && builder.accepts(g)
         {
             builder.push(g);
             continue;
         }
-        if let Some(run) = current.take().and_then(RunBuilder::finish) {
-            runs.push(run);
+        if let Some((builder, start)) = current.take()
+            && let Some(run) = builder.finish()
+        {
+            runs.push((run, start..index));
         }
-        current = Some(RunBuilder::start(g));
+        current = Some((RunBuilder::start(g), index));
     }
-    if let Some(run) = current.and_then(RunBuilder::finish) {
-        runs.push(run);
+    if let Some((builder, start)) = current
+        && let Some(run) = builder.finish()
+    {
+        runs.push((run, start..glyphs.len()));
     }
     runs
 }
@@ -288,16 +301,16 @@ impl RunBuilder {
     }
 }
 
-fn along(dir: (f64, f64), p: (f64, f64)) -> f64 {
+pub(crate) fn along(dir: (f64, f64), p: (f64, f64)) -> f64 {
     p.0 * dir.0 + p.1 * dir.1
 }
 
 /// Distance across the reading direction (toward the descenders is positive).
-fn across(dir: (f64, f64), p: (f64, f64)) -> f64 {
+pub(crate) fn across(dir: (f64, f64), p: (f64, f64)) -> f64 {
     -p.0 * dir.1 + p.1 * dir.0
 }
 
-fn corners(r: SheetRect) -> [(f64, f64); 4] {
+pub(crate) fn corners(r: SheetRect) -> [(f64, f64); 4] {
     [
         (r.x, r.y),
         (r.x + r.width, r.y),
