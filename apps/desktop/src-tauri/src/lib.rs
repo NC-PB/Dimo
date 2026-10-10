@@ -13,6 +13,7 @@ pub mod recognition;
 pub mod session;
 pub mod settings;
 pub mod tiles;
+pub mod tolerance;
 
 use std::path::{Path, PathBuf};
 
@@ -21,7 +22,7 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, numbering.rs, dev.rs). \
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, numbering.rs, tolerance.rs, dev.rs). \
 Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
@@ -51,6 +52,11 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             recognition::propose_from_region,
             recognition::read_callout_text,
             numbering::preview_numbering,
+            tolerance::tolerance_tables,
+            tolerance::explain_characteristic,
+            tolerance::characteristic_history,
+            tolerance::reinterpret_characteristics,
+            tolerance::import_tolerance_table,
             settings::app_settings,
             settings::set_app_settings,
             dev::dev_startup,

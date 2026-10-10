@@ -104,7 +104,7 @@ pub struct TypedCallout {
 }
 
 /// The shipped tolerance tables, parsed once per process.
-fn shipped() -> Option<&'static TableSet> {
+pub(crate) fn shipped() -> Option<&'static TableSet> {
     static SHIPPED: OnceLock<Option<TableSet>> = OnceLock::new();
     SHIPPED
         .get_or_init(|| match TableSet::shipped() {

@@ -426,3 +426,38 @@ describe("characteristic table (T1.7)", () => {
     expect(target.querySelector<HTMLInputElement>("input.editor")?.value).toBe("x");
   });
 });
+
+describe("rule column (T2.8)", () => {
+  it("shows the rule with the draft and no tolerance markers", async () => {
+    const rust = fakeRust();
+    const project = new ProjectStore(rust.api);
+    const data = projectWith(2);
+    const [first, second] = data.characteristics;
+    if (first && second) {
+      first.derivation = {
+        rule: { rule: "fit", table: { id: "iso-286", version: 2 }, fit: "f7", range: null },
+        draft: true,
+        hints: [],
+        conversion: null,
+      };
+      second.derivation = {
+        rule: { rule: "no_tolerance_defined" },
+        draft: false,
+        hints: [],
+        conversion: null,
+      };
+    }
+    project.load(loaded(1, data));
+    component = mount(CharacteristicTable, {
+      target,
+      props: { project, selected: new SelectionStore() },
+    });
+    flushSync();
+    await tick();
+    const cell = (n: number) => target.querySelector(`[data-row="${String(n)}"] [id$="-rule"]`);
+    expect(cell(0)?.textContent).toContain("Fit table");
+    expect(cell(0)?.querySelector('[data-badge="draft"]')).not.toBeNull();
+    expect(cell(1)?.querySelector('[data-badge="no_tolerance"] svg')).not.toBeNull();
+    expect(cell(1)?.querySelector('[data-badge="draft"]')).toBeNull();
+  });
+});

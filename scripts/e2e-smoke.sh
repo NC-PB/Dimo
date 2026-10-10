@@ -191,7 +191,11 @@ if [[ -s "$CSV" ]]; then
     "$(tail -n +2 "$CSV" | cut -d, -f1,3 | tr '\n' ' ' | sed 's/ $//')"
   expect "csv: nominal, deviations and limits with their digits, unit" "8.0,0.02,-0.05,8.02,7.95,mm" \
     "$(sed -n 3p "$CSV" | cut -d, -f4-9)"
-  expect "csv: comment" "check twice" "$(sed -n 5p "$CSV" | cut -d, -f20)"
+  expect "csv: comment" "check twice" "$(sed -n 5p "$CSV" | cut -d, -f21)"
+  # T2.8: the rule column, values typed in the table are manual, box select reads explicit.
+  expect "csv: rule column" "Rule" "$(head -1 "$CSV" | cut -d, -f11)"
+  expect "csv: rules of rows 2 and 3" "manual explicit" \
+    "$(sed -n '3p;4p' "$CSV" | cut -d, -f11 | tr '\n' ' ' | sed 's/ $//')"
 fi
 
 # XLSX: a zip with one worksheet of six rows, texts in the shared strings.

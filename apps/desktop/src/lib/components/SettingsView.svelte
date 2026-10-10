@@ -1,6 +1,7 @@
 <script lang="ts">
   import { COLORS, OUTLINES_MM, SHAPES, SIZES_MM, shapeLabel } from "$lib/balloon-style-options";
   import ShapeIcon from "$lib/components/ShapeIcon.svelte";
+  import ToleranceSettings from "$lib/components/ToleranceSettings.svelte";
   import { LOCALE_NAMES, commandErrorMessage, locales, m, themeLabel } from "$lib/i18n";
   import type { BalloonStyle, Theme } from "$lib/ipc/bindings";
   import { baseLocale, extractLocaleFromNavigator } from "$lib/paraglide/runtime.js";
@@ -199,4 +200,6 @@
       </label>
     {/if}
   </fieldset>
+
+  <ToleranceSettings />
 </section>

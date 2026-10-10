@@ -7,6 +7,7 @@
   } from "@tanstack/svelte-table";
   import { untrack } from "svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
+  import ToleranceBadges from "$lib/components/ToleranceBadges.svelte";
   import { m } from "$lib/i18n";
   import type { CharId, Characteristic, Command, CommandError } from "$lib/ipc/bindings";
   import { isMacPlatform, matchShortcut } from "$lib/shortcuts";
@@ -833,6 +834,12 @@
                       title={m.numbering_ghost({ number: ghost })}>→{ghost}</span
                     >
                   {/if}
+                {:else if column.id === "rule"}
+                  {@const text = displayText(c, column.id)}
+                  <span class="flex min-w-0 flex-1 items-center gap-1 px-2" title={text}>
+                    <span class="truncate">{text}</span>
+                    <ToleranceBadges derivation={c.derivation} compact />
+                  </span>
                 {:else if column.editor === "check"}
                   <input
                     type="checkbox"
