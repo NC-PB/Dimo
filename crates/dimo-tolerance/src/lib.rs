@@ -20,7 +20,7 @@ pub mod interpret;
 pub mod load;
 pub mod table;
 
-pub use context::{ContextError, DEFAULT_FIT_TABLE, ToleranceContext};
+pub use context::{ContextError, DEFAULT_FIT_TABLE, ToleranceContext, import_custom_table};
 pub use designation::{Fit, Grade};
 pub use error::TableError;
 pub use explain::{ExplainValues, Language, explain};

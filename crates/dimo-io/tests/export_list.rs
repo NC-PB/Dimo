@@ -11,6 +11,7 @@ use dimo_core::{
     FixedEnvironment, OrientedBox, Point, Project, ProjectInfo, RevisionId, Sha256Hex, Sheet,
     SheetId, SheetKind, Size, SourceRegion, TextSource, Timestamp, Unit,
 };
+use dimo_core::{DerivationHint, DerivationRule, TableRef, ToleranceDerivation};
 use dimo_io::export::{
     COLUMNS, CsvListExporter, ExportOptions, Exporter, Language, XlsxListExporter,
 };
@@ -22,6 +23,7 @@ fn dec(text: &str) -> Option<Decimal> {
 
 /// A project with two sheets and characteristics in a non display order, covering quoting,
 /// scales, long decimals, a balloon only sheet link, a rejected one and empty values.
+#[allow(clippy::too_many_lines, reason = "one fixture with every column case")]
 fn project() -> Project {
     let mut env = FixedEnvironment::new();
     let sheet1 = SheetId::from_uuid(env.new_uuid());
@@ -88,6 +90,7 @@ fn project() -> Project {
     c2.inspection.sampling = "100%".into();
     c2.comment = "check after coating; see note 3".into();
     c2.sources.push(region(sheet2));
+    c2.derivation = Some(ToleranceDerivation::new(DerivationRule::Explicit));
 
     let mut c1 = new(&mut env, 1);
     c1.kind = CharacteristicKind::Diameter;
@@ -98,6 +101,16 @@ fn project() -> Project {
     c1.fit = Some("H7".into());
     c1.unit = Some(Unit::Mm);
     c1.sources.push(region(sheet1));
+    let mut fit = ToleranceDerivation::new(DerivationRule::Fit {
+        table: TableRef {
+            id: "iso-286".into(),
+            version: 2,
+        },
+        fit: "H7".into(),
+        range: None,
+    });
+    fit.draft = true;
+    c1.derivation = Some(fit);
 
     // Sheet only known from the balloon.
     let mut c3 = new(&mut env, 3);
@@ -106,6 +119,9 @@ fn project() -> Project {
     c3.nominal = dec("45");
     c3.unit = Some(Unit::Deg);
     c3.inspect = false;
+    let mut reference = ToleranceDerivation::new(DerivationRule::NoToleranceDefined);
+    reference.hints.push(DerivationHint::ReferenceDimension);
+    c3.derivation = Some(reference);
     let balloon = Balloon {
         id: dimo_core::BalloonId::from_uuid(env.new_uuid()),
         characteristic: c3.id,
@@ -121,6 +137,7 @@ fn project() -> Project {
     c4.nominal = dec("123456.7890123456789");
     c4.upper_limit = dec("0.000000000000001");
     c4.status = CharacteristicStatus::Proposed;
+    c4.derivation = Some(ToleranceDerivation::manual());
 
     let mut rejected = new(&mut env, 5);
     rejected.status = CharacteristicStatus::Rejected;

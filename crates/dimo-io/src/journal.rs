@@ -10,8 +10,13 @@
 //!
 //! JSON Lines. The first line is a header with the format name, the schema version and the
 //! SHA-256 of the project it continues ([`base_hash`]). Every further line is one
-//! [`AuditEntry`]. Replay applies each entry's `changes` with [`Project::apply_change`];
+//! [`AuditEntry`] or one custom tolerance table file (`{"table": {"sha256": ..., "text":
+//! ...}}`, M2 decision 4). Replay applies each entry's `changes` with [`Project::apply_change`];
 //! re-running the commands would create new IDs.
+//!
+//! A table line is written in the same append as the first entry whose tolerance settings list
+//! the table, before it. So a crash can never leave replayed settings that name a table whose
+//! file is lost (T2.8): the project file only holds the tables of the saved settings.
 //!
 //! Each append is one write of complete lines followed by `fsync`. A crash during a write can
 //! only leave an incomplete last line, which recovery drops. A journal whose header does not
@@ -65,6 +70,22 @@ struct Header {
     format: String,
     schema_version: u32,
     base_sha256: Sha256Hex,
+}
+
+/// A custom tolerance table file in the journal (M2 decision 4). Table files are TOML, so the
+/// text is stored as is.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+struct TableFile {
+    sha256: Sha256Hex,
+    text: String,
+}
+
+/// A journal line that carries a table file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+struct TableLine {
+    table: TableFile,
 }
 
 /// An open journal, appending audit entries.
@@ -123,10 +144,37 @@ impl Journal {
     /// Appends entries as complete lines and flushes them to disk. On error the file is cut
     /// back to its previous length, so a retry never leaves a broken line in the middle.
     pub fn append(&mut self, entries: &[AuditEntry]) -> Result<(), ProjectError> {
-        if entries.is_empty() {
+        self.append_with_tables(&[], entries)
+    }
+
+    /// Appends custom table files, then entries, in one write (see the module docs). Table
+    /// files must be UTF-8 text, as every valid table file is.
+    pub fn append_with_tables(
+        &mut self,
+        tables: &[(&Sha256Hex, &[u8])],
+        entries: &[AuditEntry],
+    ) -> Result<(), ProjectError> {
+        if entries.is_empty() && tables.is_empty() {
             return Ok(());
         }
         let mut lines = Vec::new();
+        for (sha256, bytes) in tables {
+            let text = std::str::from_utf8(bytes).map_err(|e| {
+                ProjectError::io(
+                    &self.path,
+                    std::io::Error::new(std::io::ErrorKind::InvalidData, e),
+                )
+            })?;
+            let line = TableLine {
+                table: TableFile {
+                    sha256: (*sha256).clone(),
+                    text: text.to_owned(),
+                },
+            };
+            serde_json::to_writer(&mut lines, &line)
+                .map_err(|e| ProjectError::json("journal", &e))?;
+            lines.push(b'\n');
+        }
         for entry in entries {
             serde_json::to_writer(&mut lines, entry)
                 .map_err(|e| ProjectError::json("journal", &e))?;
@@ -176,6 +224,8 @@ pub enum Recovery {
     Replayed {
         /// The replayed entries, oldest first, for the audit log.
         entries: Vec<AuditEntry>,
+        /// Custom table files written with the entries, by hash, to keep with the project.
+        tables: Vec<(Sha256Hex, Vec<u8>)>,
         /// True if an incomplete last line (a write cut by the crash) was dropped.
         dropped_incomplete_line: bool,
         /// The journal, open for further appends.
@@ -235,7 +285,22 @@ pub fn recover(path: &Path, project: &mut Project) -> Result<Recovery, ProjectEr
     }
 
     let mut entries = Vec::new();
+    let mut tables = Vec::new();
     for (index, line) in lines.enumerate() {
+        // Table lines start with their only key; everything else is an audit entry, read as
+        // such so its error names the field.
+        if line.starts_with(br#"{"table":"#) {
+            let table = match serde_json::from_slice::<TableLine>(line) {
+                Ok(TableLine { table }) => table,
+                Err(e) => return discard(format!("entry {} is unreadable: {e}", index + 1)),
+            };
+            let bytes = table.text.into_bytes();
+            if crate::project::sha256(&bytes) != table.sha256 {
+                return discard(format!("entry {} is a damaged table", index + 1));
+            }
+            tables.push((table.sha256, bytes));
+            continue;
+        }
         match serde_json::from_slice::<AuditEntry>(line) {
             Ok(entry) => entries.push(entry),
             Err(e) => return discard(format!("entry {} is unreadable: {e}", index + 1)),
@@ -259,6 +324,7 @@ pub fn recover(path: &Path, project: &mut Project) -> Result<Recovery, ProjectEr
     *project = replayed;
     Ok(Recovery::Replayed {
         entries,
+        tables,
         dropped_incomplete_line,
         journal,
     })

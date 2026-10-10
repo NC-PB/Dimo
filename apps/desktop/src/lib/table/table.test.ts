@@ -5,7 +5,7 @@ import { isNumberingLocked, lockExplanation, refusalDetail } from "./refusal";
 import { moveStep, moveToGap } from "./reorder";
 
 describe("table columns (T1.7, FR-CHR-02)", () => {
-  it("has one column per M1 field, editable except the number", () => {
+  it("has one column per field, editable except the number and the rule", () => {
     expect(COLUMNS.map((c) => c.id)).toEqual([
       "number",
       "kind",
@@ -17,6 +17,7 @@ describe("table columns (T1.7, FR-CHR-02)", () => {
       "lower_limit",
       "unit",
       "fit",
+      "rule",
       "quantity",
       "classification",
       "inspection_method",
@@ -26,7 +27,25 @@ describe("table columns (T1.7, FR-CHR-02)", () => {
       "comment",
       "inspect",
     ]);
-    expect(COLUMNS.filter((c) => c.editor === "none").map((c) => c.id)).toEqual(["number"]);
+    expect(COLUMNS.filter((c) => c.editor === "none").map((c) => c.id)).toEqual(["number", "rule"]);
+  });
+
+  // T2.8, FR-TOL-08: the rule column shows the translated rule and is never sent.
+  it("shows the rule of the derivation", () => {
+    const c = characteristic("a", 1);
+    expect(displayText(c, "rule")).toBe("");
+    const derived = {
+      ...c,
+      derivation: {
+        rule: { rule: "explicit" as const },
+        draft: false,
+        hints: [],
+        conversion: null,
+      },
+    };
+    expect(rawText(derived, "rule")).toBe("explicit");
+    expect(displayText(derived, "rule")).toBe("Explicit (on the drawing)");
+    expect(fieldValue("rule", "manual")).toBeNull();
   });
 
   it("shows stored decimals unchanged", () => {

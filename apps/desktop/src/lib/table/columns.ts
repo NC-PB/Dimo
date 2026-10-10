@@ -6,7 +6,7 @@
  * logic"). The table only turns typed text into a `FieldValue`; Rust parses and validates it.
  */
 
-import { classificationLabel, kindLabel, m, unitLabel } from "$lib/i18n";
+import { classificationLabel, kindLabel, m, ruleLabel, unitLabel } from "$lib/i18n";
 import type {
   CharacteristicKind,
   Characteristic,
@@ -30,7 +30,11 @@ export type EditorKind =
   /** Check box. */
   | "check";
 
-/** Column IDs. Except `number` they are the `field` names of `FieldValue`. */
+/**
+ * Column IDs. Except `number` and `rule` they are the `field` names of `FieldValue`. `rule` shows
+ * the tolerance rule with its markers (T2.8); it changes only through the values or a
+ * re-interpretation, never directly.
+ */
 export type ColumnId =
   | "number"
   | "kind"
@@ -42,6 +46,7 @@ export type ColumnId =
   | "lower_limit"
   | "unit"
   | "fit"
+  | "rule"
   | "quantity"
   | "classification"
   | "inspection_method"
@@ -85,6 +90,7 @@ export const COLUMNS: readonly ColumnSpec[] = [
   },
   { id: "unit", editor: "choice", size: 64, label: () => m.col_unit() },
   { id: "fit", editor: "text", size: 64, label: () => m.col_fit() },
+  { id: "rule", editor: "none", size: 232, label: () => m.col_rule() },
   { id: "quantity", editor: "quantity", size: 56, label: () => m.col_quantity(), numeric: true },
   { id: "classification", editor: "choice", size: 112, label: () => m.col_classification() },
   { id: "inspection_method", editor: "text", size: 120, label: () => m.col_inspection_method() },
@@ -120,6 +126,8 @@ export function rawText(c: Characteristic, id: ColumnId): string {
       return c[id] ?? "";
     case "unit":
       return c.unit ?? NO_UNIT;
+    case "rule":
+      return c.derivation?.rule.rule ?? "";
     case "quantity":
       return String(c.quantity);
     case "classification":
@@ -146,6 +154,8 @@ export function displayText(c: Characteristic, id: ColumnId): string {
       return c.unit === null ? "" : unitLabel(c.unit);
     case "classification":
       return c.classification === "none" ? "" : classificationLabel(c.classification);
+    case "rule":
+      return c.derivation === null ? "" : ruleLabel(c.derivation.rule);
     case "inspect":
       return "";
     default:
@@ -220,6 +230,7 @@ function isUnit(value: string): value is Unit {
 export function fieldValue(id: ColumnId, text: string): FieldValue | null {
   switch (id) {
     case "number":
+    case "rule":
     case "inspect":
       return null;
     case "nominal":

@@ -36,8 +36,9 @@ Dimo reads the typed text like a dimension on the drawing: `Ø30 H7 +0.0203 -0` 
 **Diameter**, nominal `30`, fit `H7`, the deviations and the limits `30.0203` and `30`, with the
 rule **Explicit**. `Ø8 f7` alone gets its limits from the ISO 286 fit table, with the rule **Fit
 table**. Values from a table that is still a draft are marked as such. A dimension without a
-tolerance gets **No tolerance defined**, because the project has no general tolerance yet; enter
-its limits in the table ([Characteristic table](characteristics.md)). Text that is not a
+tolerance gets its limits from the general tolerance or the rules of the project; without them it
+gets **No tolerance defined**, and you enter its limits in the table ([Tolerances](tolerances.md),
+[Characteristic table](characteristics.md)). Text that is not a
 dimension, such as a note, is stored as requirement text only.
 
 ## Box select

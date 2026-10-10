@@ -5,6 +5,7 @@
    * edited text is read again by Rust. Enter accepts (one undo step), Esc discards.
    */
   import type { CharacteristicKind } from "$lib/ipc/bindings";
+  import ToleranceBadges from "$lib/components/ToleranceBadges.svelte";
   import { kindLabel, m, noteText, ruleLabel, unitLabel } from "$lib/i18n";
   import { untrack } from "svelte";
   import type { TypedAhead } from "$lib/stores/balloon-tools.svelte";
@@ -210,7 +211,10 @@
             <dt class="text-text-muted">{m.proposal_lower()}</dt>
             <dd class="tabular-nums" data-field="lower_limit">{value(proposal.lower_limit)}</dd>
             <dt class="text-text-muted">{m.proposal_rule()}</dt>
-            <dd data-field="rule">{ruleLabel(proposal.derivation?.rule ?? null)}</dd>
+            <dd data-field="rule" class="flex flex-wrap items-center gap-1">
+              <span>{ruleLabel(proposal.derivation?.rule ?? null)}</span>
+              <ToleranceBadges derivation={proposal.derivation} />
+            </dd>
             {#if store.explanations[index]}
               <dt class="text-text-muted">{m.proposal_explanation()}</dt>
               <dd data-field="explanation">{store.explanations[index]}</dd>

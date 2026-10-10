@@ -19,6 +19,8 @@ pub enum TableError {
         origin: String,
         /// Parser message with line and column.
         message: String,
+        /// Line of the error, counted from 1, if the parser names a position.
+        line: Option<u32>,
     },
     /// The file matches the format but breaks a rule (see [`crate::Table::parse`]).
     #[error("{origin}: {location}: {message}")]
@@ -51,4 +53,14 @@ pub enum TableError {
         /// `id` version `n` from the file.
         found: String,
     },
+}
+
+impl TableError {
+    /// Line of the file the error is on, counted from 1, if known (parse errors only).
+    pub fn line(&self) -> Option<u32> {
+        match self {
+            Self::Parse { line, .. } => *line,
+            _ => None,
+        }
+    }
 }

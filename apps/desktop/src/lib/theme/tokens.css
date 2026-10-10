@@ -15,6 +15,8 @@
   --dimo-focus: #1f6feb;
   --dimo-danger: #b42318;
   --dimo-success: #1a7f37;
+  /* Draft tables and tolerance hints (D-43), always with a shape as well. */
+  --dimo-warning: #8a5a00;
   /* Overlay on the drawing. The sheet stays white in both themes, so these do not change. */
   --dimo-balloon-selected: #e8590c;
   --dimo-balloon-selected-fill: rgb(232 89 12 / 0.08);
@@ -36,6 +38,7 @@
   --dimo-focus: #79a8ff;
   --dimo-danger: #ff8a80;
   --dimo-success: #6fdd8b;
+  --dimo-warning: #e3b341;
 }
 
 @theme inline {
@@ -50,4 +53,5 @@
   --color-focus: var(--dimo-focus);
   --color-danger: var(--dimo-danger);
   --color-success: var(--dimo-success);
+  --color-warning: var(--dimo-warning);
 }

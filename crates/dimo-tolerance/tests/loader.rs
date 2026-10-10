@@ -151,6 +151,36 @@ fn parse_errors_name_the_line() {
     assert!(message.contains("line"), "{message}");
 }
 
+// T2.8: the import of a custom table shows the line of a syntax error as a number.
+#[test]
+fn parse_errors_carry_the_line_number() {
+    let text = custom("company-a").replace(r#"kind = "custom""#, "kind = custom");
+    let error = Table::parse("test.toml", &text).unwrap_err();
+    let line = text
+        .lines()
+        .position(|l| l == "kind = custom")
+        .map(|i| u32::try_from(i + 1).unwrap());
+    assert!(line.is_some());
+    assert_eq!(error.line(), line);
+    let invalid = custom("company-a").replace("version = 2", "version = 0");
+    assert_eq!(
+        Table::parse("test.toml", &invalid).unwrap_err().line(),
+        None
+    );
+}
+
+// T2.8: the classes offered in the project settings.
+#[test]
+fn classes_of_general_and_custom_tables() {
+    let table = Table::parse("test.toml", &custom("company-a")).unwrap();
+    assert_eq!(table.classes(), ["fine", "coarse"]);
+    let shipped = TableSet::shipped().unwrap();
+    assert_eq!(
+        shipped.get("iso-2768-1").unwrap().classes(),
+        ["f", "m", "c", "v"]
+    );
+}
+
 #[test]
 fn validation_rules() {
     let base = custom("company-a");

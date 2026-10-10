@@ -1,9 +1,12 @@
 import type {
   Autosave,
   BuildProfile,
+  ChangeSource,
+  CharacteristicField,
   CharacteristicKind,
   Classification,
   CommandError,
+  DerivationHint,
   DerivationRule,
   InterpreterNote,
   OpenNotice,
@@ -223,6 +226,80 @@ export function ruleLabel(rule: DerivationRule | null): string {
       return m.rule_manual();
     case undefined:
       return m.rule_none();
+  }
+}
+
+/**
+ * Translated text of a derivation hint that the hint marker lists (T2.8). Reference and basic
+ * dimensions have their own badges and return `null`.
+ */
+export function hintText(hint: DerivationHint): string | null {
+  switch (hint.hint) {
+    case "fit_deviations_differ":
+      return m.hint_fit_deviations_differ({ fit: hint.fit });
+    case "unknown_fit":
+      return m.hint_unknown_fit({ fit: hint.fit });
+    case "size_outside_table":
+      return m.hint_size_outside_table({ table: hint.table.id });
+    case "reference_dimension":
+    case "basic_dimension":
+      return null;
+  }
+}
+
+/** Translated source of a change in the history (FR-CHR-10). */
+export function changeSourceLabel(source: ChangeSource): string {
+  switch (source) {
+    case "manual":
+      return m.history_source_manual();
+    case "rule":
+      return m.history_source_rule();
+    case "recognition":
+      return m.history_source_recognition();
+  }
+}
+
+/** Translated name of a characteristic field in the history (FR-CHR-10). */
+export function fieldLabel(field: CharacteristicField): string {
+  switch (field) {
+    case "number":
+      return m.col_number();
+    case "kind":
+      return m.col_kind();
+    case "requirement_text":
+      return m.col_requirement_text();
+    case "nominal":
+      return m.col_nominal();
+    case "unit":
+      return m.col_unit();
+    case "upper_dev":
+      return m.col_upper_dev();
+    case "lower_dev":
+      return m.col_lower_dev();
+    case "upper_limit":
+      return m.col_upper_limit();
+    case "lower_limit":
+      return m.col_lower_limit();
+    case "fit":
+      return m.col_fit();
+    case "derivation":
+      return m.col_rule();
+    case "quantity":
+      return m.col_quantity();
+    case "classification":
+      return m.col_classification();
+    case "inspection":
+      return m.field_inspection();
+    case "inspect":
+      return m.col_inspect();
+    case "status":
+      return m.field_status();
+    case "origin":
+      return m.field_origin();
+    case "sources":
+      return m.field_sources();
+    case "comment":
+      return m.col_comment();
   }
 }
 

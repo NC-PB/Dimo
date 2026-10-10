@@ -17,10 +17,12 @@
 //! [`ProjectSession::open_autosaved`] restores it after a crash as an unsaved project. Saving
 //! or discarding deletes the base file together with its journal.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use dimo_core::{
-    CharId, Command, Document, HistoryEntry, Project, ProjectInfo, Sha256Hex, Timestamp,
+    AuditEntry, Change, CharId, Command, Document, HistoryEntry, Project, ProjectInfo, Sha256Hex,
+    Timestamp,
 };
 
 use super::error::ProjectError;
@@ -51,6 +53,8 @@ pub struct ProjectSession {
     /// Base file of the journal while the project has no location (never saved).
     autosave: Option<PathBuf>,
     journal: Option<Journal>,
+    /// Custom table files already written to the open journal (M2 decision 4, T2.8).
+    journaled_tables: BTreeSet<Sha256Hex>,
     /// The project differs from the file because the journal was replayed.
     recovered: bool,
 }
@@ -95,6 +99,7 @@ impl ProjectSession {
             location,
             autosave: None,
             journal: None,
+            journaled_tables: BTreeSet::new(),
             recovered: false,
         }
     }
@@ -109,16 +114,21 @@ impl ProjectSession {
         let mut file = loaded.file;
         let mut current = file.project.clone();
         let mut journal = None;
+        let mut journaled_tables = BTreeSet::new();
         match journal::recover(&journal::journal_path(path), &mut current)? {
             Recovery::Nothing => {}
             Recovery::Replayed {
                 entries,
+                tables,
                 dropped_incomplete_line,
                 journal: open,
             } => {
                 report.recovered_entries = entries.len();
                 report.dropped_incomplete_line = dropped_incomplete_line;
                 file.audit.extend(entries);
+                for (_, bytes) in tables {
+                    journaled_tables.insert(file.insert_table(bytes));
+                }
                 journal = Some(open);
             }
             Recovery::Discarded { reason, moved_to } => {
@@ -132,6 +142,7 @@ impl ProjectSession {
             location: Some((path.to_owned(), Layout::of(path))),
             autosave: None,
             journal,
+            journaled_tables,
             recovered,
         };
         Ok((session, report))
@@ -173,7 +184,8 @@ impl ProjectSession {
 
     /// Keeps a custom tolerance table file for the project and returns its hash. It is saved
     /// once the tolerance settings list it (M2 decision 4); validate it with `dimo-tolerance`
-    /// first.
+    /// first. Until the next save, the journal holds it with the first entry whose settings list
+    /// it, so crash recovery never restores settings without their table (T2.8).
     pub fn insert_table(&mut self, bytes: Vec<u8>) -> Sha256Hex {
         self.file.insert_table(bytes)
     }
@@ -260,10 +272,15 @@ impl ProjectSession {
                     &journal::journal_path(path),
                     &self.file.project,
                 )?);
+                self.journaled_tables.clear();
             }
+            let tables =
+                tables_to_journal(&self.file, &self.journaled_tables, self.document.audit());
             if let Some(journal) = &mut self.journal {
-                journal.append(self.document.audit())?;
+                journal.append_with_tables(&tables, self.document.audit())?;
             }
+            let written: Vec<Sha256Hex> = tables.iter().map(|(hash, _)| (*hash).clone()).collect();
+            self.journaled_tables.extend(written);
         }
         self.file.audit.extend(self.document.take_audit());
         Ok(pending)
@@ -309,6 +326,7 @@ impl ProjectSession {
     /// A project that was never saved also loses its autosave base file.
     pub fn discard_journal(&mut self) -> Result<(), ProjectError> {
         if let Some(journal) = self.journal.take() {
+            self.journaled_tables.clear();
             journal.remove()?;
         }
         if let Some(base) = self.autosave.take() {
@@ -321,4 +339,32 @@ impl ProjectSession {
         }
         Ok(())
     }
+}
+
+/// Custom table files that `entries` list in the tolerance settings and that neither the saved
+/// project file (the journal's base) nor the journal holds yet (T2.8, M2 decision 4).
+fn tables_to_journal<'a>(
+    file: &'a ProjectFile,
+    journaled: &BTreeSet<Sha256Hex>,
+    entries: &[AuditEntry],
+) -> Vec<(&'a Sha256Hex, &'a [u8])> {
+    let saved = &file.project.settings.tolerance.custom_tables;
+    let mut out: Vec<(&Sha256Hex, &[u8])> = Vec::new();
+    let listed = entries
+        .iter()
+        .flat_map(|e| &e.changes)
+        .filter_map(|change| match change {
+            Change::SettingsChanged { after, .. } => Some(&after.tolerance.custom_tables),
+            _ => None,
+        })
+        .flatten();
+    for table in listed {
+        let needed = !journaled.contains(&table.sha256)
+            && !saved.iter().any(|t| t.sha256 == table.sha256)
+            && !out.iter().any(|(hash, _)| **hash == table.sha256);
+        if needed && let Some((hash, bytes)) = file.tables.get_key_value(&table.sha256) {
+            out.push((hash, bytes.as_slice()));
+        }
+    }
+    out
 }

@@ -23,3 +23,9 @@ Sichtbar, solange ein Projekt offen ist. Form, Größe, Linienbreite, Randfarbe 
 aller Ballons des Projekts ohne eigenen Stil. Eine Änderung ist ein Schritt beim Rückgängigmachen,
 wie jede andere Änderung am Projekt. Einzelnen Ballons gibst du einen eigenen Stil, indem du sie
 in der Zeichnung auswählst und **Stil** (S) verwendest.
+
+## Toleranzen dieses Projekts
+
+Sichtbar, solange ein Projekt offen ist: Allgemeintoleranz und Klasse, Zeichnungsregel, Regeln nach
+Dezimalstellen, Rundung nach Einheitenumrechnung und der Import eigener Tabellen. Jede Änderung ist
+ein Rückgängig-Schritt. Details: [Toleranzen](tolerances.md).

@@ -15,6 +15,7 @@ Drag the line above the table to change its height (or focus it and use ↑ and 
 | Upper limit, Lower limit | Limits. Dimo works them out from nominal and deviations; you can also type them |
 | Unit | mm, in, ° or none. A nominal without a unit gets the unit of the sheet (degrees for angles) |
 | Fit | Fit designation such as `H7` |
+| Rule | The rule that gave the limits, with markers for draft tables, no tolerance, notes, reference and basic dimensions. Read only; see [Tolerances](tolerances.md) |
 | Qty | Number of features the characteristic stands for, at least 1 |
 | Class | Critical, major, minor, key, or empty when not classified |
 | Method, Gauge, Sampling, Frequency | How the characteristic is inspected, free text |
@@ -52,6 +53,10 @@ nominal `8.0` with upper deviation `0.02` and lower deviation `-0.05` gives uppe
 lower limit `7.95`. When you change the nominal value or a deviation, the limits follow. When you
 remove a deviation, the limits that were worked out go too. A limit you type yourself is kept and
 wins over the deviations. All numbers are exact decimals; nothing is rounded.
+
+Limits read from the drawing come with their rule and an explanation in the side panel. Limits
+you type get the rule "Entered by hand" and are never changed by a re-interpretation. Details:
+[Tolerances](tolerances.md).
 
 ## Deleting
 

@@ -2,9 +2,9 @@
 source: crates/dimo-io/tests/export_list.rs
 expression: "String::from_utf8(bytes).unwrap()"
 ---
-No,Kind,Requirement,Nominal,Upper deviation,Lower deviation,Upper limit,Lower limit,Unit,Fit,Quantity,Classification,Inspection method,Gauge,Sampling,Frequency,Inspect,Status,Sheet,Comment
-1,diameter,⌀30 H7,30.0,,,30.021,30,mm,H7,1,,,,,,yes,accepted,1,
+No,Kind,Requirement,Nominal,Upper deviation,Lower deviation,Upper limit,Lower limit,Unit,Fit,Rule,Quantity,Classification,Inspection method,Gauge,Sampling,Frequency,Inspect,Status,Sheet,Comment
+1,diameter,⌀30 H7,30.0,,,30.021,30,mm,H7,fit,1,,,,,,yes,accepted,1,
 2,linear,"12.5 +0.1/-0.2, ""ream""
-bore",12.5,0.1,-0.2,12.6,12.3,mm,,4,critical,CMM,"Caliper, digital",100%,,yes,accepted,2,check after coating; see note 3
-3,angle,45°,45,,,,,deg,,1,,,,,,no,accepted,2,
-4,linear,,123456.7890123456789,,,0.000000000000001,,,,1,,,,,,yes,proposed,,
+bore",12.5,0.1,-0.2,12.6,12.3,mm,,explicit,4,critical,CMM,"Caliper, digital",100%,,yes,accepted,2,check after coating; see note 3
+3,angle,45°,45,,,,,deg,,no_tolerance_defined,1,,,,,,no,accepted,2,
+4,linear,,123456.7890123456789,,,0.000000000000001,,,,manual,1,,,,,,yes,proposed,,

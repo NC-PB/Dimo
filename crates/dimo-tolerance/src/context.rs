@@ -3,7 +3,8 @@
 
 use dimo_core::characteristic::Unit;
 use dimo_core::derivation::TableRef;
-use dimo_core::project::{TableClass, ToleranceSettings};
+use dimo_core::project::{CustomTable, TableClass, ToleranceSettings};
+use dimo_core::sheet::Sha256Hex;
 
 use crate::error::TableError;
 use crate::format::{PartKind, TableKind};
@@ -53,6 +54,69 @@ pub enum ContextError {
     /// A stored custom table could not be loaded.
     #[error(transparent)]
     Table(#[from] TableError),
+}
+
+impl ContextError {
+    /// Line of the table file the error is on, counted from 1, if known.
+    pub fn line(&self) -> Option<u32> {
+        match self {
+            Self::Table(error) => error.line(),
+            _ => None,
+        }
+    }
+}
+
+/// Settings with the custom table `text` added (FR-TOL-07, M2 decision 4), checked as a whole.
+///
+/// The file must be a valid table of kind `custom` whose id is not one of `base` (the shipped
+/// tables). A stored table with the same id is replaced; settings that name it (general
+/// tolerance, drawing rule) follow its new version. `origin` names the file in errors, `sha256`
+/// is the hash of `text` under which the project stores it, and `stored` are the custom tables
+/// already in the project as `(id, file text)`. Changes nothing: the caller stores the file and
+/// sends the returned settings as one command.
+pub fn import_custom_table<'a>(
+    settings: &ToleranceSettings,
+    base: TableSet,
+    stored: impl IntoIterator<Item = (&'a str, &'a str)>,
+    origin: &str,
+    text: &'a str,
+    sha256: Sha256Hex,
+) -> Result<(ToleranceSettings, TableRef), ContextError> {
+    let table = Table::parse(origin, text)?;
+    let header = table.header();
+    if header.kind != TableKind::Custom {
+        return Err(ContextError::WrongKind {
+            id: header.id.clone(),
+            usage: "custom table",
+        });
+    }
+    let reference = TableRef {
+        id: header.id.clone(),
+        version: header.version,
+    };
+    let mut next = settings.clone();
+    next.custom_tables.retain(|t| t.table.id != reference.id);
+    next.custom_tables.push(CustomTable {
+        table: reference.clone(),
+        sha256,
+    });
+    next.custom_tables
+        .sort_by(|a, b| a.table.id.cmp(&b.table.id));
+    for class in [&mut next.general, &mut next.drawing_rule]
+        .into_iter()
+        .flatten()
+    {
+        if class.table.id == reference.id {
+            class.table.version = reference.version;
+        }
+    }
+    let mut files: Vec<(&str, &str)> = stored
+        .into_iter()
+        .filter(|(id, _)| *id != reference.id)
+        .collect();
+    files.push((reference.id.as_str(), text));
+    ToleranceContext::for_project(&next, base, files)?;
+    Ok((next, reference))
 }
 
 /// Settings, tables and units for [`crate::interpret`].

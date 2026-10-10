@@ -756,26 +756,53 @@ impl AppSession {
             .ok_or_else(|| CommandError::InvalidArgument {
                 message: format!("sheet {sheet} is not a sheet of the current drawing"),
             })?;
-        let custom_tables = project
-            .settings
-            .tolerance
-            .custom_tables
-            .iter()
-            .filter_map(|t| {
-                let bytes = open.project.table(&t.sha256)?;
-                Some((
-                    t.table.id.clone(),
-                    String::from_utf8_lossy(bytes).into_owned(),
-                ))
-            })
-            .collect();
         Ok(RecognitionTarget {
             drawing: open.hash,
             page: usize::try_from(found.index).unwrap_or(usize::MAX),
             unit: found.unit,
             settings: project.settings.clone(),
-            custom_tables,
+            custom_tables: Self::custom_tables_of(&open.project),
         })
+    }
+
+    /// The custom tolerance tables the settings of `project` list, as (id, file text).
+    fn custom_tables_of(project: &ProjectSession) -> Vec<(String, String)> {
+        project
+            .project()
+            .settings
+            .tolerance
+            .custom_tables
+            .iter()
+            .filter_map(|t| {
+                let bytes = project.table(&t.sha256)?;
+                Some((
+                    t.table.id.clone(),
+                    String::from_utf8_lossy(bytes).into_owned(),
+                ))
+            })
+            .collect()
+    }
+
+    /// The custom tolerance tables of the open project as (id, file text) (T2.8).
+    pub fn custom_tables(&self) -> Result<Vec<(String, String)>, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        Ok(Self::custom_tables_of(&open.project))
+    }
+
+    /// Change history of one characteristic, oldest first (FR-CHR-10).
+    pub fn characteristic_history(
+        &self,
+        id: dimo_core::CharId,
+    ) -> Result<Vec<dimo_core::HistoryEntry>, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        Ok(open.project.characteristic_history(id))
+    }
+
+    /// Keeps a custom tolerance table file in the open project (M2 decision 4) and returns its
+    /// hash. Validate it first; it is journaled with the first command whose settings list it.
+    pub fn insert_table(&mut self, bytes: Vec<u8>) -> Result<Sha256Hex, CommandError> {
+        let open = self.open.as_mut().ok_or(CommandError::NoProject)?;
+        Ok(open.project.insert_table(bytes))
     }
 }
 

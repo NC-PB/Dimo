@@ -24,6 +24,8 @@
 //!
 //! - `DIMO_DEV_SAVE_AS=<path>`: "save as" (and "save" of a project without a file) skips the
 //!   save dialog and saves to this path (T1.10).
+//! - `DIMO_DEV_IMPORT_TABLE=<path>`: "import custom table" skips the open dialog and reads this
+//!   table file (T2.8).
 //! - `DIMO_DEV_HOME=<dir>`: the cache, data and config folders of the app (tiles, autosave,
 //!   `settings.json`) are `cache`, `data` and `config` below this folder instead of the
 //!   user's, so a scripted run neither reads nor changes the settings of the person running it
@@ -70,6 +72,16 @@ pub fn dev_export_dir() -> Option<PathBuf> {
 pub fn dev_save_as() -> Option<PathBuf> {
     if cfg!(debug_assertions) {
         var("DIMO_DEV_SAVE_AS").map(PathBuf::from)
+    } else {
+        None
+    }
+}
+
+/// Debug builds started with `DIMO_DEV_IMPORT_TABLE`: the table import skips the open dialog
+/// and reads this file (T2.8).
+pub fn dev_import_table() -> Option<PathBuf> {
+    if cfg!(debug_assertions) {
+        var("DIMO_DEV_IMPORT_TABLE").map(PathBuf::from)
     } else {
         None
     }

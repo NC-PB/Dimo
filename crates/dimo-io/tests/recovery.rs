@@ -277,3 +277,106 @@ fn modified_follows_the_audit_log_not_the_clock() {
     session.flush_journal().unwrap();
     assert_eq!(session.modified().as_str(), "2026-03-02T09:30:00Z");
 }
+
+/// Settings that list the shop table of `common::TABLE`, stored under `hash`.
+fn with_table(session: &ProjectSession, hash: dimo_core::Sha256Hex) -> Command {
+    let mut settings = session.project().settings.tolerance.clone();
+    settings.custom_tables = vec![dimo_core::CustomTable {
+        table: dimo_core::TableRef {
+            id: "shop-table".into(),
+            version: 1,
+        },
+        sha256: hash,
+    }];
+    Command::SetToleranceSettings { settings }
+}
+
+// T2.8, M2 decision 4: a custom table imported after the last save survives a crash. The
+// journal holds the table file, so the replayed settings never name a missing table.
+#[test]
+fn a_table_imported_before_a_crash_is_kept() {
+    for layout in [Layout::Zip, Layout::Folder] {
+        let dir = tempfile::tempdir().unwrap();
+        let (path, mut env) = saved_project(dir.path(), layout);
+        let (mut session, _) = ProjectSession::open(&path).unwrap();
+        let hash = session.insert_table(common::TABLE.to_vec());
+        let command = with_table(&session, hash.clone());
+        assert_eq!(session.missing_table(&command), None);
+        session.document_mut().execute(command, &mut env).unwrap();
+        session.flush_journal().unwrap();
+        // Undo and redo after the table line: the table is written once.
+        session.document_mut().undo(&mut env).unwrap();
+        session.document_mut().redo(&mut env).unwrap();
+        session.flush_journal().unwrap();
+        let expected = session.project().clone();
+        drop(session); // crash
+
+        let journal = fs::read_to_string(journal_path(&path)).unwrap();
+        assert_eq!(
+            journal.matches(r#"{"table":{"sha256""#).count(),
+            1,
+            "{layout:?}"
+        );
+        let (mut session, report) = ProjectSession::open(&path).unwrap();
+        assert_eq!(report.recovered_entries, 3);
+        assert_eq!(*session.project(), expected);
+        assert_eq!(session.table(&hash), Some(common::TABLE));
+        // Another crash after more changes still has the table.
+        rename(&mut session, &mut env, "after");
+        session.flush_journal().unwrap();
+        drop(session);
+        let (mut session, report) = ProjectSession::open(&path).unwrap();
+        assert_eq!(report.recovered_entries, 4);
+        assert_eq!(session.table(&hash), Some(common::TABLE));
+        session.save().unwrap();
+        let saved = ProjectFile::load(&path).unwrap().file;
+        assert_eq!(saved.table(&hash), Some(common::TABLE), "{layout:?}");
+    }
+}
+
+// The same for a project that was never saved: the table goes into the autosave journal.
+#[test]
+fn a_table_of_an_unsaved_project_survives_a_crash() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut env = common::env();
+    let base = dimo_io::autosave::base_path(dir.path(), "t");
+    let mut session =
+        ProjectSession::create_autosaved(common::info(), common::drawing(&mut env), &base).unwrap();
+    let hash = session.insert_table(common::TABLE.to_vec());
+    let command = with_table(&session, hash.clone());
+    session.document_mut().execute(command, &mut env).unwrap();
+    session.flush_journal().unwrap();
+    drop(session); // crash
+
+    let (mut session, report) = ProjectSession::open_autosaved(&base).unwrap();
+    assert_eq!(report.recovered_entries, 1);
+    assert_eq!(session.table(&hash), Some(common::TABLE));
+    let target = dir.path().join("saved.dimo");
+    session.save_as(&target, Layout::Zip).unwrap();
+    assert_eq!(
+        ProjectFile::load(&target).unwrap().file.table(&hash),
+        Some(common::TABLE)
+    );
+}
+
+// A damaged table line makes the journal unusable rather than replaying settings without it.
+#[test]
+fn a_damaged_table_line_sets_the_journal_aside() {
+    let dir = tempfile::tempdir().unwrap();
+    let (path, mut env) = saved_project(dir.path(), Layout::Zip);
+    let (mut session, _) = ProjectSession::open(&path).unwrap();
+    let hash = session.insert_table(common::TABLE.to_vec());
+    let command = with_table(&session, hash);
+    session.document_mut().execute(command, &mut env).unwrap();
+    session.flush_journal().unwrap();
+    drop(session);
+    let journal = fs::read_to_string(journal_path(&path)).unwrap();
+    fs::write(
+        journal_path(&path),
+        journal.replace("Shop general tolerances", "Changed"),
+    )
+    .unwrap();
+    let (_, report) = ProjectSession::open(&path).unwrap();
+    let (reason, _) = report.discarded_journal.unwrap();
+    assert!(reason.contains("damaged table"), "{reason}");
+}

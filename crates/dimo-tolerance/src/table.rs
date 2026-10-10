@@ -332,6 +332,7 @@ impl Table {
         let file: TableFile = toml::from_str(text).map_err(|e| TableError::Parse {
             origin: origin.to_owned(),
             message: e.to_string().trim_end().to_owned(),
+            line: e.span().map(|span| line_of(text, span.start)),
         })?;
         Self::validate(origin, file)
     }
@@ -413,6 +414,23 @@ impl Table {
         &self.parts
     }
 
+    /// Class columns of the symmetric parts (general and custom tables), in first seen order,
+    /// for choosing a class in the project settings (M2 decision 2).
+    pub fn classes(&self) -> Vec<String> {
+        let mut classes: Vec<String> = Vec::new();
+        for part in &self.parts {
+            if part.part.kind != PartKind::Symmetric {
+                continue;
+            }
+            for column in &part.part.columns {
+                if !classes.contains(column) {
+                    classes.push(column.clone());
+                }
+            }
+        }
+        classes
+    }
+
     /// A part by id.
     pub fn part(&self, id: &str) -> Option<&TablePart> {
         self.parts.iter().find(|p| p.part.id == id)
@@ -460,6 +478,13 @@ impl Table {
             unit: part.part.value_unit,
         })
     }
+}
+
+/// Line (from 1) of byte offset `at` in `text`.
+fn line_of(text: &str, at: usize) -> u32 {
+    let before = text.get(..at.min(text.len())).unwrap_or(text);
+    let breaks = before.bytes().filter(|&b| b == b'\n').count();
+    u32::try_from(breaks).unwrap_or(u32::MAX).saturating_add(1)
 }
 
 /// Parts every fit table needs (FR-TOL-04).

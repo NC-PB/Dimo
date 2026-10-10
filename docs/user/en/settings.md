@@ -22,3 +22,9 @@ Shown while a project is open. Shape, size, line width, outline color and leader
 balloons of the project that have no style of their own. A change is one step of undo, like
 every other change of the project. To give single balloons their own style, select them in the
 drawing and use **Style** (S).
+
+## Tolerances of this project
+
+Shown while a project is open: general tolerance and class, drawing rule, decimal place rules,
+rounding after unit conversion, and the import of custom tables. Each change is one step of undo.
+Details: [Tolerances](tolerances.md).

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CharacteristicDetail from "$lib/components/CharacteristicDetail.svelte";
   import DevPanel from "$lib/components/DevPanel.svelte";
   import NumberingPanel from "$lib/components/NumberingPanel.svelte";
   import SelectionSummary from "$lib/components/SelectionSummary.svelte";
@@ -15,6 +16,7 @@
   <SheetProperties />
   <NumberingPanel />
   <SelectionSummary />
+  <CharacteristicDetail />
   {#if DEV_TOOLS_ENABLED}
     <DevPanel />
   {/if}

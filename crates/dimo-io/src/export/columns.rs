@@ -1,7 +1,8 @@
 //! Columns of the characteristic list (FR-CHR-02) and their cell values.
 
 use dimo_core::{
-    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, Project, Unit,
+    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, DerivationRule,
+    Project, Unit,
 };
 use rust_decimal::Decimal;
 
@@ -30,6 +31,8 @@ pub enum Column {
     Unit,
     /// Fit designation.
     Fit,
+    /// Tolerance rule that produced the limits (FR-TOL-08), as a stable English identifier.
+    Rule,
     /// Quantity of features.
     Quantity,
     /// Classification.
@@ -53,7 +56,7 @@ pub enum Column {
 }
 
 /// All columns in output order.
-pub const COLUMNS: [Column; 20] = [
+pub const COLUMNS: [Column; 21] = [
     Column::Number,
     Column::Kind,
     Column::Requirement,
@@ -64,6 +67,7 @@ pub const COLUMNS: [Column; 20] = [
     Column::LowerLimit,
     Column::Unit,
     Column::Fit,
+    Column::Rule,
     Column::Quantity,
     Column::Classification,
     Column::Method,
@@ -103,6 +107,7 @@ impl Column {
             Self::LowerLimit => ("Lower limit", "Untere Grenze"),
             Self::Unit => ("Unit", "Einheit"),
             Self::Fit => ("Fit", "Passung"),
+            Self::Rule => ("Rule", "Regel"),
             Self::Quantity => ("Quantity", "Anzahl"),
             Self::Classification => ("Classification", "Klassifizierung"),
             Self::Method => ("Inspection method", "Prüfmethode"),
@@ -129,6 +134,7 @@ impl Column {
                 15.0
             }
             Self::Number | Self::Unit | Self::Quantity | Self::Inspect | Self::Sheet => 8.0,
+            Self::Rule => 20.0,
             _ => 12.0,
         }
     }
@@ -160,6 +166,10 @@ impl Column {
                 .unit
                 .map_or(Cell::Empty, |u| Cell::Text(unit_id(u).to_owned())),
             Self::Fit => c.fit.as_deref().map_or(Cell::Empty, text),
+            Self::Rule => c
+                .derivation
+                .as_ref()
+                .map_or(Cell::Empty, |d| Cell::Text(rule_id(&d.rule).to_owned())),
             Self::Quantity => Cell::Integer(c.quantity),
             Self::Classification => match c.classification {
                 Classification::None => Cell::Empty,
@@ -218,6 +228,20 @@ fn kind_id(kind: CharacteristicKind) -> &'static str {
         K::FlagNote => "flag_note",
         K::MaterialProcess => "material_process",
         K::Other => "other",
+    }
+}
+
+/// The rule as in `project.json` and the corpus truth format, never translated.
+fn rule_id(rule: &DerivationRule) -> &'static str {
+    match rule {
+        DerivationRule::Explicit => "explicit",
+        DerivationRule::Fit { .. } => "fit",
+        DerivationRule::DrawingRule { .. } => "drawing_rule",
+        DerivationRule::General { .. } => "general",
+        DerivationRule::DecimalRule { .. } => "decimal_rule",
+        DerivationRule::CustomTable { .. } => "custom_table",
+        DerivationRule::NoToleranceDefined => "no_tolerance_defined",
+        DerivationRule::Manual => "manual",
     }
 }
 
