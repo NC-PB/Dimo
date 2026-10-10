@@ -54,7 +54,7 @@ Die Sprache der Spaltenüberschriften wählst du pro Export: Englisch oder Deuts
 
 | Spalte (Deutsch) | Spalte (Englisch) | Inhalt |
 |---|---|---|
-| Nr | No | Ballonnummer |
+| Nr | No | Ballonnummer, z. B. `12`, oder `12.1` und `12A` für Merkmale, die bei gesperrter Nummerierung hinzukommen. Einfache Nummern sind in XLSX Zahlenzellen, die anderen Text |
 | Art | Kind | `linear`, `diameter`, `radius`, `spherical_radius`, `angle`, `chamfer`, `thread`, `counterbore`, `countersink`, `depth`, `surface_texture`, `geometric`, `note`, `flag_note`, `material_process`, `other` |
 | Anforderung | Requirement | Text wie auf der Zeichnung |
 | Nennmaß | Nominal | Nennwert |

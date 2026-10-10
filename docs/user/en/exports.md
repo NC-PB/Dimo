@@ -53,7 +53,7 @@ change with the language.
 
 | Column (English) | Column (German) | Content |
 |---|---|---|
-| No | Nr | Display number (the number in the balloon) |
+| No | Nr | Display number (the number in the balloon), e.g. `12`, or `12.1` and `12A` for characteristics added to a locked numbering. Plain numbers are number cells in XLSX, the others text |
 | Kind | Art | `linear`, `diameter`, `radius`, `spherical_radius`, `angle`, `chamfer`, `thread`, `counterbore`, `countersink`, `depth`, `surface_texture`, `geometric`, `note`, `flag_note`, `material_process`, `other` |
 | Requirement | Anforderung | Text as it appears on the drawing |
 | Nominal | Nennmaß | Nominal value |
