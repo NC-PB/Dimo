@@ -50,6 +50,8 @@ pub struct Reading {
     pub parse_hints: Vec<ParseHint>,
     /// Parser and interpreter that made this reading.
     pub engines: Vec<EngineVersion>,
+    /// What the interpreter could not decide (not stored in the project).
+    pub notes: Vec<dimo_tolerance::Note>,
 }
 
 /// Parses and interprets one callout text (FR-REC-02, ADR 0006: a reading changes nothing in
@@ -89,6 +91,7 @@ pub fn read_callout(
                 }),
                 parse_hints: Vec::new(),
                 engines,
+                notes: Vec::new(),
             };
         }
     };
@@ -111,6 +114,7 @@ pub fn read_callout(
         parse_error: None,
         parse_hints: hints(text, &callout),
         engines,
+        notes: interpretation.notes,
     }
 }
 

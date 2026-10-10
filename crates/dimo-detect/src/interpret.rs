@@ -1,14 +1,16 @@
 //! The interpretation step of box select and typed callouts (spec 08 stage 7, FR-TOL-01).
 //!
 //! Recognition parses a callout and hands it to an [`Interpreter`], which turns it into limits
-//! and a derivation. The tolerance engine of `dimo-tolerance` is the real interpreter; it is
-//! plugged in by the app through this trait, so `dimo-detect` does not decide tolerance rules.
-//! [`CalloutOnly`] is the fallback: it reads only what is written on the callout.
+//! and a derivation. [`ToleranceEngine`] is the real interpreter: the tolerance engine of
+//! `dimo-tolerance` with the project's [`ToleranceContext`]; the app uses it. [`CalloutOnly`]
+//! reads only what is written on the callout; it is the fallback when the project's tables
+//! cannot be loaded, and keeps unit tests independent of table data.
 
 use dimo_core::characteristic::Unit;
 use dimo_core::derivation::{DerivationHint, DerivationRule, ToleranceDerivation};
 use dimo_core::proposal::EngineVersion;
 use dimo_notation::{Callout, Kind, Tolerance};
+use dimo_tolerance::{Note, ToleranceContext};
 use rust_decimal::Decimal;
 
 /// Limits and derivation of one callout, the result of an [`Interpreter`].
@@ -28,6 +30,8 @@ pub struct Interpretation {
     pub lower_limit: Option<Decimal>,
     /// Which rule produced the limits (FR-TOL-08). `None` when the interpreter applied no rule.
     pub derivation: Option<ToleranceDerivation>,
+    /// What the interpreter could not decide, for the user; never stored in the project.
+    pub notes: Vec<Note>,
 }
 
 /// Turns a parsed callout into limits (spec 08 stage 7).
@@ -42,6 +46,46 @@ pub trait Interpreter {
 
     /// Name and version of the interpreter, stored on proposals.
     fn engine(&self) -> EngineVersion;
+}
+
+/// The tolerance engine of `dimo-tolerance` (spec 08 stage 7, FR-TOL-01) with a project's
+/// context. The drawing unit of each call is set on a copy of the context.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ToleranceEngine {
+    context: ToleranceContext,
+}
+
+/// Engine name of [`ToleranceEngine`].
+pub const TOLERANCE_ENGINE: &str = "dimo-tolerance";
+
+impl ToleranceEngine {
+    /// The engine for a context built from the project settings and tables.
+    pub fn new(context: ToleranceContext) -> Self {
+        Self { context }
+    }
+}
+
+impl Interpreter for ToleranceEngine {
+    fn interpret(&self, callout: &Callout, drawing_unit: Unit) -> Interpretation {
+        // Box select does not know the shorter leg of an angle in M2; the engine then answers
+        // with a note instead of limits from an angular table.
+        let context = self.context.clone().with_drawing_unit(drawing_unit);
+        let i = dimo_tolerance::interpret(callout, &context);
+        Interpretation {
+            unit: i.unit,
+            nominal: i.nominal,
+            upper_dev: i.upper_dev,
+            lower_dev: i.lower_dev,
+            upper_limit: i.upper_limit,
+            lower_limit: i.lower_limit,
+            derivation: Some(i.derivation),
+            notes: i.notes,
+        }
+    }
+
+    fn engine(&self) -> EngineVersion {
+        EngineVersion::new(TOLERANCE_ENGINE, env!("CARGO_PKG_VERSION"))
+    }
 }
 
 /// Fallback interpreter: the callout alone, without tables or project settings.

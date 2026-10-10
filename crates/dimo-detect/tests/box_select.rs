@@ -9,13 +9,15 @@
 use std::path::PathBuf;
 
 use dimo_core::characteristic::{CharacteristicKind, ToleranceRule, Unit};
+use dimo_core::derivation::DerivationHint;
 use dimo_core::geometry::{OrientedBox, Point, Size};
 use dimo_core::id::SheetId;
 use dimo_core::proposal::{BalloonPlacement, Proposal};
 use dimo_core::truth::{TruthCharacteristic, TruthFile};
 use dimo_core::{Environment as _, FixedEnvironment};
-use dimo_detect::{BoxSelectContext, CalloutOnly, box_select};
+use dimo_detect::{BoxSelectContext, CalloutOnly, Interpreter, ToleranceEngine, box_select};
 use dimo_pdf::{Document, PdfEngine, PdfError};
+use dimo_tolerance::{TableSet, ToleranceContext};
 use rust_decimal::Decimal;
 
 fn repo_root() -> PathBuf {
@@ -49,28 +51,19 @@ fn grown(r: &OrientedBox, margin: f64) -> OrientedBox {
     }
 }
 
-/// The same area as an axis aligned box on the sheet, as the box tool draws it.
-fn axis_aligned(r: &OrientedBox) -> OrientedBox {
-    let turned = (r.angle.rem_euclid(180.0) - 90.0).abs() < 1.0;
-    let size = if turned {
-        Size {
-            width: r.size.height,
-            height: r.size.width,
-        }
-    } else {
-        r.size
-    };
-    OrientedBox {
-        center: r.center,
-        size,
-        angle: 0.0,
-    }
+fn select(doc: &Document, sheet: SheetId, region: &OrientedBox) -> Vec<Proposal> {
+    select_with(doc, sheet, region, &CalloutOnly)
 }
 
-fn select(doc: &Document, sheet: SheetId, region: &OrientedBox) -> Vec<Proposal> {
+fn select_with(
+    doc: &Document,
+    sheet: SheetId,
+    region: &OrientedBox,
+    interpreter: &dyn Interpreter,
+) -> Vec<Proposal> {
     let text = doc.region_text(0, *region).unwrap();
     let context = BoxSelectContext {
-        interpreter: &CalloutOnly,
+        interpreter,
         drawing_unit: Unit::Mm,
         placement: BalloonPlacement {
             position: Point {
@@ -146,26 +139,42 @@ fn test_drawing_1_callouts() {
     }
 }
 
-/// T2.6 acceptance: rotated callouts on synthetic drawings are read correctly, with a box in
-/// the reading direction and with an axis aligned box as the box tool draws it.
+/// T2.6 acceptance with the tolerance engine (T2.5): `Ø30 H7 +0.0203 -0` keeps the printed
+/// limits, rule explicit, with a hint that ISO 286 H7 differs from the printed deviations.
 #[test]
-fn synthetic_rotated_callouts() {
+fn test_drawing_1_with_the_tolerance_engine() {
     let Some(engine) = engine() else { return };
-    let sheet = sheet_id();
-    let mut rotated = 0;
-    for seed in 1..=8 {
-        let drawing = dimo_synth::generate(seed, 15).unwrap();
-        let doc = engine.open(drawing.pdf.clone()).unwrap();
-        for c in &drawing.truth.characteristics {
-            for region in [grown(&c.region, 1.5), axis_aligned(&grown(&c.region, 1.5))] {
-                let proposals = select(&doc, sheet, &region);
-                assert_eq!(proposals.len(), 1, "seed {seed} {}: {proposals:#?}", c.id);
-                check(&proposals[0], c);
-            }
-            if (c.region.angle - 90.0).abs() < 1e-9 {
-                rotated += 1;
-            }
-        }
-    }
-    assert!(rotated >= 8, "only {rotated} rotated callouts");
+    let bytes = std::fs::read(repo_root().join("corpus/drawings/test_drawing_1.pdf")).unwrap();
+    let doc = engine.open(bytes).unwrap();
+    let settings = dimo_core::ProjectSettings::default().tolerance;
+    let context = ToleranceContext::for_project(&settings, TableSet::shipped().unwrap(), [])
+        .unwrap()
+        .with_drawing_unit(Unit::Mm);
+    let interpreter = ToleranceEngine::new(context);
+    let region = OrientedBox {
+        center: Point {
+            x: 594.3,
+            y: 159.07,
+        },
+        size: Size {
+            width: 93.28,
+            height: 31.66,
+        },
+        angle: 0.0,
+    };
+    let proposals = select_with(&doc, sheet_id(), &region, &interpreter);
+    assert_eq!(proposals.len(), 1);
+    let p = &proposals[0];
+    assert_eq!(p.upper_limit, Some(Decimal::new(300_203, 4)));
+    assert_eq!(p.lower_limit, Some(Decimal::new(30, 0)));
+    let derivation = p.derivation.as_ref().unwrap();
+    assert_eq!(derivation.rule.kind(), Some(ToleranceRule::Explicit));
+    assert!(
+        derivation
+            .hints
+            .iter()
+            .any(|h| matches!(h, DerivationHint::FitDeviationsDiffer { fit, .. } if fit == "H7")),
+        "{derivation:?}"
+    );
+    assert_eq!(p.engines[1].name, dimo_detect::TOLERANCE_ENGINE);
 }

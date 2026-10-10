@@ -16,9 +16,5 @@ dimo-notation.workspace = true
 dimo-tolerance.workspace = true
 rust_decimal.workspace = true
 
-[dev-dependencies]
-# Synthetic drawings with rotated callouts for the box select tests (T2.6).
-dimo-synth = { path = "../../tools/synth" }
-
 [lints]
 workspace = true

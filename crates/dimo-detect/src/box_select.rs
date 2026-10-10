@@ -60,6 +60,29 @@ pub fn box_select(
     text: &RegionText,
     context: &BoxSelectContext<'_>,
 ) -> Vec<Proposal> {
+    box_select_with_notes(sheet, region, text, context)
+        .into_iter()
+        .map(|p| p.proposal)
+        .collect()
+}
+
+/// A proposal with what the interpreter could not decide. The notes are shown with the
+/// proposal and never stored in the project.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Proposed {
+    /// The proposal.
+    pub proposal: Proposal,
+    /// Notes of the interpreter, such as an angle whose shorter leg is unknown.
+    pub notes: Vec<dimo_tolerance::Note>,
+}
+
+/// Like [`box_select`], with the interpreter's notes of each proposal.
+pub fn box_select_with_notes(
+    sheet: SheetId,
+    region: &OrientedBox,
+    text: &RegionText,
+    context: &BoxSelectContext<'_>,
+) -> Vec<Proposed> {
     let lines = lines(&text.runs);
     if lines.is_empty() {
         return Vec::new();
@@ -90,7 +113,7 @@ pub fn box_select(
             if line.stacked && reading.parse_error.is_none() {
                 parse_hints.push(ParseHint::StackedLinesJoined);
             }
-            Proposal {
+            let proposal = Proposal {
                 kind: reading.kind,
                 requirement_text: reading.requirement_text,
                 nominal: reading.nominal,
@@ -115,6 +138,10 @@ pub fn box_select(
                 parse_hints,
                 job_id: context.job_id,
                 engines: reading.engines,
+            };
+            Proposed {
+                proposal,
+                notes: reading.notes,
             }
         })
         .collect()
