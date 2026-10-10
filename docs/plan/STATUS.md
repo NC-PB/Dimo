@@ -49,10 +49,10 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.1 Callout parser | done | `parse_callout`, `Callout`, canonical printer; 4 property tests at 10,000 cases. Owner: confirm inch heuristic and limit order (decision log 2026-10-10) |
 | T2.2 Tolerance table format and ISO 2768-1 | review | Format, loader, schema, release gate (`scripts/check-table-status.sh`, CI job "tolerance tables (D-43)"). Owner: verify `iso-2768-1.toml` (D-43) |
 | T2.3 ISO 286 fit tables | review | 514 fit vectors pass; synth `FITS` and corpus truth fits match the table. Owner: verify `iso-286.toml` (D-43) |
-| T2.4 Data model version 2 | done | Schema version 2 with migration; `DisplayNumber`, `ToleranceDerivation`, numbering and tolerance settings, zone grid, views, `Proposal`, `AcceptProposals`, history query. Owner: confirm balloon sub-index choice (decision log 2026-10-10) |
-| T2.5 Tolerance engine | todo | Wave 2 |
-| T2.6 Box select with PDF text | todo | Wave 2 |
-| T2.7 Numbering strategies | todo | Wave 2 |
+| T2.4 Data model version 2 | done | Schema version 2 with migration; `DisplayNumber`, `ToleranceDerivation`, numbering and tolerance settings, zone grid, views, `Proposal`, `AcceptProposals`, history query. Sub-numbers as separate characteristics (owner confirmed) |
+| T2.5 Tolerance engine | in progress | Wave 2 |
+| T2.6 Box select with PDF text | in progress | Wave 2 |
+| T2.7 Numbering strategies | in progress | Wave 2 |
 | T2.8 Tolerance UI, explanations and history | todo | Wave 3 |
 | T2.9 Evaluation and exit criterion | todo | Wave 3, needs the owner's truth file review |
 | T2.10 User guide | todo | Wave 3 |
