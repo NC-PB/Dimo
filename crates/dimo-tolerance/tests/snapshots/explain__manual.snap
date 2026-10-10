@@ -1,0 +1,6 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "format!(\"en: {}\\nde: {}\\n\", explain(&derivation, &values, Language::English),\nexplain(&derivation, &values, Language::German))"
+---
+en: Limits entered by hand.
+de: Grenzmaße von Hand eingegeben.

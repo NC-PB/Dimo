@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"45\", Cfg::DrawingRule, Unit::Mm, None, None)"
+---
+callout: 45
+en: No tolerance on the drawing. Drawing rule from table shop version 2, class a, part linear. Nominal 45 mm is in the range from 0.5 up to and including 50 mm, so ±0.05 mm. The table is a draft and not verified yet.
+de: Keine Toleranz in der Zeichnung. Zeichnungsregel aus Tabelle shop Version 2, Klasse a, Teil linear. Nennmaß 45 mm liegt im Bereich ab 0,5 bis einschließlich 50 mm, daher ±0,05 mm. Die Tabelle ist ein Entwurf und noch nicht geprüft.

@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"Ø30 H7 +0.0203 -0\", Cfg::None, Unit::Mm, None, None)"
+---
+callout: Ø30 H7 +0.0203 -0
+en: Tolerance written on the drawing: +0.0203 / 0 mm. The written deviations differ from fit H7 in the table (+0.021 / 0 mm). The written values are kept.
+de: Toleranz in der Zeichnung angegeben: +0,0203 / 0 mm. Die angegebenen Abmaße weichen von der Passung H7 in der Tabelle ab (+0,021 / 0 mm). Die angegebenen Werte gelten.

@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"12.50\", Cfg::Decimal, Unit::Mm, None, None)"
+---
+callout: 12.50
+en: No tolerance on the drawing. The nominal is written with 2 decimal places, so the decimal place rule gives ±0.05 mm.
+de: Keine Toleranz in der Zeichnung. Das Nennmaß hat 2 Nachkommastellen, daher gilt nach der Regel für Nachkommastellen ±0,05 mm.

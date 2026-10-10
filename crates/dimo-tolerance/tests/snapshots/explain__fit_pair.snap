@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"Ø8 H7/g6\", Cfg::General, Unit::Mm, None, None)"
+---
+callout: Ø8 H7/g6
+en: No rule gives limits for this dimension, so no limits. Check this characteristic. Fit H7/g6 is not in the fit table, so it gives no limits.
+de: Keine Regel ergibt Grenzmaße für dieses Maß, daher keine Grenzmaße. Dieses Merkmal prüfen. Die Passung H7/g6 ist nicht in der Passungstabelle, daher keine Grenzmaße daraus.
