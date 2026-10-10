@@ -572,3 +572,33 @@ fn history_lists_who_when_what_and_source() {
         ]
     );
 }
+
+/// Regression (T2.6): typing `30.0` over a nominal of `30` keeps the typed digits. Decimal
+/// equality ignores the scale, so the edit was dropped as "no change" before.
+#[test]
+fn typed_digits_replace_an_equal_value() {
+    let (mut doc, mut env) = fresh();
+    let p = proposal(&doc, "Ø30 H7", 100.0);
+    doc.execute(
+        Command::AcceptProposals {
+            proposals: vec![p],
+            insert_after: None,
+        },
+        &mut env,
+    )
+    .unwrap();
+    let id = doc.project().characteristics[0].id;
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![id],
+            values: vec![FieldValue::Nominal(dec("30.0").into())],
+        },
+        &mut env,
+    )
+    .unwrap();
+    let nominal = doc.project().characteristics[0].nominal.unwrap();
+    assert_eq!(nominal.to_string(), "30.0");
+    doc.undo(&mut env).unwrap();
+    let nominal = doc.project().characteristics[0].nominal.unwrap();
+    assert_eq!(nominal.to_string(), "30");
+}

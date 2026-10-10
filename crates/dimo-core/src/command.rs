@@ -685,11 +685,28 @@ fn update_fields(
         after.set_values(values)?;
         let sheet = sheet_of(tx.project, &after);
         fill_unit(tx.project, &mut after, sheet);
-        if after != before {
+        if after != before || digits_differ(&before, &after) {
             tx.push(Change::CharacteristicChanged { before, after })?;
         }
     }
     Ok(())
+}
+
+/// True if a decimal field is equal in value but written with other digits, e.g. `8` and
+/// `8.0`. `Decimal` equality ignores the scale, but the typed digits are kept and exported
+/// (FR-EXP-11), so such an edit is a change.
+fn digits_differ(a: &Characteristic, b: &Characteristic) -> bool {
+    let digits = |c: &Characteristic| {
+        [
+            c.nominal,
+            c.upper_dev,
+            c.lower_dev,
+            c.upper_limit,
+            c.lower_limit,
+        ]
+        .map(|d| d.map(|d| d.scale()))
+    };
+    digits(a) != digits(b)
 }
 
 fn update_balloons(
