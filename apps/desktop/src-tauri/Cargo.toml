@@ -13,9 +13,12 @@ tauri-build.workspace = true
 
 [dependencies]
 dimo-core = { workspace = true, features = ["specta"] }
+dimo-detect.workspace = true
 dimo-io.workspace = true
 dimo-pdf.workspace = true
+dimo-tolerance.workspace = true
 rfd.workspace = true
+rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 specta.workspace = true

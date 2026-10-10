@@ -17,6 +17,8 @@
     "allow-undo",
     "allow-redo",
     "allow-export-project",
+    "allow-propose-from-region",
+    "allow-read-callout-text",
     "allow-app-settings",
     "allow-set-app-settings",
     "allow-dev-startup",

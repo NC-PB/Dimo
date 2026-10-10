@@ -11,13 +11,21 @@ import type {
   BalloonStyleOverride,
   CharId,
   Command,
+  FieldValue,
   OrientedBox,
   Patch,
   SheetId,
 } from "$lib/ipc/bindings";
+import { commands } from "$lib/ipc/bindings";
 import { frozenSet } from "$lib/sets";
 import { UNITS_PER_MM, groupMoves, type Placement } from "$lib/viewport/balloons";
 import { screenToSheet, type Rect, type ViewTransform } from "$lib/viewport/view-math";
+import {
+  boxSelect,
+  explainLanguage,
+  type BoxSelectStore,
+  type RecognitionCommands,
+} from "./box-select.svelte";
 import { documentStore } from "./document.svelte";
 import { projectStore, type ProjectStore } from "./project.svelte";
 import { selection, type SelectionStore } from "./selection.svelte";
@@ -68,16 +76,28 @@ export class BalloonToolsStore {
   readonly #project: ProjectStore;
   readonly #selection: SelectionStore;
   readonly #sheet: () => SheetId | undefined;
+  readonly #boxSelect: BoxSelectStore | null;
+  readonly #recognition: Pick<RecognitionCommands, "readCalloutText"> | null;
 
   /**
    * @param project the open project
    * @param chosen the shared selection
    * @param sheet ID of the sheet shown in the viewport
+   * @param box box select of the place tool (T2.6); without it a dragged box places a balloon
+   * @param recognition reads typed values (M2 decision 5); without it they are text only
    */
-  constructor(project: ProjectStore, chosen: SelectionStore, sheet: () => SheetId | undefined) {
+  constructor(
+    project: ProjectStore,
+    chosen: SelectionStore,
+    sheet: () => SheetId | undefined,
+    box: BoxSelectStore | null = null,
+    recognition: Pick<RecognitionCommands, "readCalloutText"> | null = null,
+  ) {
     this.#project = project;
     this.#selection = chosen;
     this.#sheet = sheet;
+    this.#boxSelect = box;
+    this.#recognition = recognition;
   }
 
   /** Balloons on the sheet in the viewport, in drawing order. */
@@ -101,11 +121,24 @@ export class BalloonToolsStore {
   /**
    * Adds a characteristic with its balloon (FR-BAL-01), selects it and opens the value editor
    * (FR-BAL-02). `region` is the rectangle the user dragged, `null` for a click.
+   *
+   * A dragged region is first read as box select (T2.6, FR-REC-01): if it holds PDF text, the
+   * proposal card opens instead and nothing is added until the user accepts. Returns `null`
+   * then.
    */
   async place(placement: Placement, region: Rect | null): Promise<CharId | null> {
     const sheet = this.#sheet();
     if (sheet === undefined) {
       return null;
+    }
+    // A new click or box replaces an open proposal card.
+    this.#boxSelect?.discard();
+    if (region && this.#boxSelect) {
+      const box = regionBox(region);
+      if (await this.#boxSelect.select(sheet, region, box, placement)) {
+        this.editing = null;
+        return null;
+      }
     }
     const patch = await this.#project.execute({
       type: "add_characteristic",
@@ -140,17 +173,27 @@ export class BalloonToolsStore {
     this.editing = null;
   }
 
-  /** Stores the text typed in the value editor as requirement text, if it changed. */
+  /**
+   * Stores the text typed in the value editor, if it changed. Rust parses and interprets it like
+   * a box selection (M2 decision 5): kind, nominal, limits and rule are set in the same command.
+   * Text that does not parse is stored as requirement text only.
+   */
   async commitText(id: CharId, text: string): Promise<void> {
     const current = this.#project.characteristicById.get(id);
     if (current === undefined || current.requirement_text === text.trim()) {
       return;
     }
-    await this.#project.execute({
-      type: "update_fields",
-      ids: [id],
-      values: [{ field: "requirement_text", value: text }],
-    });
+    let values: FieldValue[] = [{ field: "requirement_text", value: text }];
+    const sheet = this.#sheet();
+    if (this.#recognition && sheet !== undefined) {
+      const read = await this.#recognition
+        .readCalloutText(sheet, text, explainLanguage())
+        .catch(() => null);
+      if (read?.status === "ok") {
+        values = read.data.values;
+      }
+    }
+    await this.#project.execute({ type: "update_fields", ids: [id], values });
   }
 
   /** Moves balloons or leader anchors as one undoable command (FR-BAL-12). */
@@ -224,10 +267,15 @@ export class BalloonToolsStore {
   }
 
   /**
-   * Escape: closes the style picker, else clears the selection, else returns to the select
-   * tool. Returns whether it did something. Gestures and the editor handle Escape themselves.
+   * Escape: discards the open proposal card, else closes the style picker, else clears the
+   * selection, else returns to the select tool. Returns whether it did something. Gestures and
+   * the editor handle Escape themselves.
    */
   escape(): boolean {
+    if (this.#boxSelect?.open) {
+      this.#boxSelect.discard();
+      return true;
+    }
     if (this.styleOpen) {
       this.styleOpen = false;
       return true;
@@ -249,4 +297,6 @@ export const balloonTools = new BalloonToolsStore(
   projectStore,
   selection,
   () => projectStore.sheets[documentStore.sheet]?.id,
+  boxSelect,
+  commands,
 );

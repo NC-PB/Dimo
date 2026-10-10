@@ -14,8 +14,11 @@ clap.workspace = true
 [dev-dependencies]
 # Import glue test: dimo-io may not depend on dimo-pdf, the CLI may use both (rust.md).
 dimo-core.workspace = true
+# Box select on synthetic drawings (T2.6); T2.9 adds the evaluation command here.
+dimo-detect.workspace = true
 dimo-io.workspace = true
 dimo-pdf.workspace = true
+dimo-synth = { path = "../../tools/synth" }
 tempfile.workspace = true
 
 [lints]

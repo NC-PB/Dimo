@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError, mpsc};
 
+use dimo_core::geometry::OrientedBox;
 use pdfium_render::prelude::{
     PdfColor, PdfDocument, PdfPage, PdfRenderConfig, Pdfium, PdfiumError,
 };
@@ -17,6 +18,7 @@ use crate::library::resolve_library_path;
 use crate::overlay::BalloonOverlay;
 use crate::page_cache::{PAGES_PER_DOCUMENT, PageCache};
 use crate::raster::RgbaImage;
+use crate::region::{RegionText, region_text};
 use crate::sheet_kind::{SheetAnalysis, analyze_sheet};
 use crate::text::{TextRun, load_page, text_error, text_runs};
 use crate::writer::write_ballooned;
@@ -90,6 +92,12 @@ enum Request {
         doc: u64,
         sheet: usize,
         reply: Reply<SheetAnalysis>,
+    },
+    RegionText {
+        doc: u64,
+        sheet: usize,
+        region: OrientedBox,
+        reply: Reply<RegionText>,
     },
     WriteBallooned {
         original: Vec<u8>,
@@ -304,6 +312,18 @@ impl Document {
         })
     }
 
+    /// Characters, runs and basic dimension frames inside `region` of a sheet (box select,
+    /// FR-REC-01). See [`RegionText`].
+    pub fn region_text(&self, sheet: usize, region: OrientedBox) -> Result<RegionText, PdfError> {
+        self.sheet_size(sheet)?;
+        self.engine.call(|reply| Request::RegionText {
+            doc: self.id,
+            sheet,
+            region,
+            reply,
+        })
+    }
+
     /// Classifies a sheet from its content (FR-DOC-03, stage 1). See [`SheetAnalysis`].
     pub fn analyze_sheet(&self, sheet: usize) -> Result<SheetAnalysis, PdfError> {
         self.sheet_size(sheet)?;
@@ -476,6 +496,16 @@ fn serve(pdfium: &Pdfium, rx: &mpsc::Receiver<Request>) {
             }
             Request::TextRuns { doc, sheet, reply } => {
                 let _ = reply.send(with_page(&mut docs, doc, sheet, text_runs));
+            }
+            Request::RegionText {
+                doc,
+                sheet,
+                region,
+                reply,
+            } => {
+                let _ = reply.send(with_page(&mut docs, doc, sheet, |page| {
+                    region_text(page, &region)
+                }));
             }
             Request::AnalyzeSheet { doc, sheet, reply } => {
                 let _ = reply.send(with_page(&mut docs, doc, sheet, |page| {

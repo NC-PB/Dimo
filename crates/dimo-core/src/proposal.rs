@@ -50,8 +50,30 @@ pub enum ParseHint {
     DecimalComma,
 }
 
+/// Name and version of an engine that took part in making a proposal (data model `Proposal`:
+/// "job ID and engine versions"), for example the callout parser or the tolerance engine.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub struct EngineVersion {
+    /// Engine name, such as `dimo-notation`.
+    pub name: String,
+    /// Engine version, such as the crate version.
+    pub version: String,
+}
+
+impl EngineVersion {
+    /// An engine version from name and version.
+    pub fn new(name: impl Into<String>, version: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            version: version.into(),
+        }
+    }
+}
+
 /// A suggested characteristic (data model `Proposal`, ADR 0006): characteristic fields plus
-/// source region, origin, balloon placement and parse hints.
+/// source region, origin, balloon placement, parse hints, job ID and engine versions.
 ///
 /// The frontend may change the fields before accepting, like any typed value. Limits are stored
 /// as proposed, they are not derived again from nominal and deviations.
@@ -108,4 +130,13 @@ pub struct Proposal {
     pub parse_error: Option<ParseIssue>,
     /// Assumptions of the parser to check.
     pub parse_hints: Vec<ParseHint>,
+    /// The recognition job that made the proposal, if it ran as a job or was numbered like one.
+    /// Proposals of one box selection share it. Missing in audit entries written before T2.6,
+    /// which read as `null`.
+    #[serde(default)]
+    pub job_id: Option<u32>,
+    /// Engines that made the proposal, in pipeline order (parser, then interpreter). Missing in
+    /// audit entries written before T2.6, which read as empty.
+    #[serde(default)]
+    pub engines: Vec<EngineVersion>,
 }

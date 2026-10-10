@@ -741,6 +741,57 @@ impl AppSession {
     pub fn project(&self) -> Option<&Project> {
         self.open.as_ref().map(|o| o.project.project())
     }
+
+    /// What recognition needs for `sheet` of the current drawing revision (T2.6): the drawing
+    /// in the tile service, the page, the unit and the project settings. Reads only.
+    pub fn recognition_target(
+        &self,
+        sheet: dimo_core::SheetId,
+    ) -> Result<RecognitionTarget, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        let project = open.project.project();
+        let found = project
+            .current_revision()
+            .and_then(|r| r.sheets.iter().find(|s| s.id == sheet))
+            .ok_or_else(|| CommandError::InvalidArgument {
+                message: format!("sheet {sheet} is not a sheet of the current drawing"),
+            })?;
+        let custom_tables = project
+            .settings
+            .tolerance
+            .custom_tables
+            .iter()
+            .filter_map(|t| {
+                let bytes = open.project.table(&t.sha256)?;
+                Some((
+                    t.table.id.clone(),
+                    String::from_utf8_lossy(bytes).into_owned(),
+                ))
+            })
+            .collect();
+        Ok(RecognitionTarget {
+            drawing: open.hash,
+            page: usize::try_from(found.index).unwrap_or(usize::MAX),
+            unit: found.unit,
+            settings: project.settings.clone(),
+            custom_tables,
+        })
+    }
+}
+
+/// What recognition reads from the open project for one sheet (T2.6).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RecognitionTarget {
+    /// Content hash of the drawing, its key in the tile service.
+    pub drawing: ContentHash,
+    /// Zero based page of the sheet in the drawing.
+    pub page: usize,
+    /// Unit of the sheet (D-20).
+    pub unit: dimo_core::Unit,
+    /// Project settings, for the tolerance engine.
+    pub settings: dimo_core::ProjectSettings,
+    /// Custom tolerance tables stored in the project as (id, file text) (M2 decision 4).
+    pub custom_tables: Vec<(String, String)>,
 }
 
 /// True if both paths name the same existing file or folder.

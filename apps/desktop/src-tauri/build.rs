@@ -17,6 +17,8 @@ fn main() {
         "undo",
         "redo",
         "export_project",
+        "propose_from_region",
+        "read_callout_text",
         "app_settings",
         "set_app_settings",
         "dev_startup",

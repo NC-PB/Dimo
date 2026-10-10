@@ -75,6 +75,8 @@ fn proposal(doc: &Document, text: &str, x: f64) -> Proposal {
         },
         parse_error: None,
         parse_hints: Vec::new(),
+        job_id: Some(7),
+        engines: vec![dimo_core::EngineVersion::new("dimo-notation", "0.1.0")],
     }
 }
 
@@ -234,6 +236,23 @@ fn a_proposal_with_a_parse_error_keeps_its_raw_text_and_has_no_limits() {
     let c = &doc.project().characteristics[0];
     assert_eq!(c.requirement_text, "Ø3O H7");
     assert_eq!((c.upper_limit, c.lower_limit, c.unit), (None, None, None));
+}
+
+/// T2.6: proposals carry job ID and engine versions (data model `Proposal`); audit entries
+/// written before T2.6 have neither and still read.
+#[test]
+fn proposals_without_job_and_engines_still_read() {
+    let (doc, _) = fresh();
+    let p = proposal(&doc, "Ø30 H7", 100.0);
+    let mut json = serde_json::to_value(&p).unwrap();
+    assert_eq!(json["job_id"], 7);
+    assert_eq!(json["engines"][0]["name"], "dimo-notation");
+    let object = json.as_object_mut().unwrap();
+    object.remove("job_id");
+    object.remove("engines");
+    let old: Proposal = serde_json::from_value(json).unwrap();
+    assert_eq!(old.job_id, None);
+    assert_eq!(old.engines, Vec::new());
 }
 
 #[test]
@@ -552,4 +571,34 @@ fn history_lists_who_when_what_and_source() {
             (HistoryAction::Undo, ChangeSource::Manual, true),
         ]
     );
+}
+
+/// Regression (T2.6): typing `30.0` over a nominal of `30` keeps the typed digits. Decimal
+/// equality ignores the scale, so the edit was dropped as "no change" before.
+#[test]
+fn typed_digits_replace_an_equal_value() {
+    let (mut doc, mut env) = fresh();
+    let p = proposal(&doc, "Ø30 H7", 100.0);
+    doc.execute(
+        Command::AcceptProposals {
+            proposals: vec![p],
+            insert_after: None,
+        },
+        &mut env,
+    )
+    .unwrap();
+    let id = doc.project().characteristics[0].id;
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![id],
+            values: vec![FieldValue::Nominal(dec("30.0").into())],
+        },
+        &mut env,
+    )
+    .unwrap();
+    let nominal = doc.project().characteristics[0].nominal.unwrap();
+    assert_eq!(nominal.to_string(), "30.0");
+    doc.undo(&mut env).unwrap();
+    let nominal = doc.project().characteristics[0].nominal.unwrap();
+    assert_eq!(nominal.to_string(), "30");
 }

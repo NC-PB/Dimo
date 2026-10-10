@@ -2,12 +2,14 @@
   import { untrack } from "svelte";
   import BalloonEditor from "$lib/components/BalloonEditor.svelte";
   import BalloonLayer from "$lib/components/BalloonLayer.svelte";
+  import ProposalCard from "$lib/components/ProposalCard.svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { DUMMY_STYLE, dummyBalloons, leaderLine } from "$lib/dev/dummy-balloons";
   import { m } from "$lib/i18n";
   import { commands, type TileRange } from "$lib/ipc/bindings";
   import { balloonTools } from "$lib/stores/balloon-tools.svelte";
+  import { boxSelect } from "$lib/stores/box-select.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { selection } from "$lib/stores/selection.svelte";
@@ -492,6 +494,13 @@
       }}
     ></div>
     <BalloonEditor view={shown} onDone={focusDrawing} />
+    <ProposalCard
+      store={boxSelect}
+      view={shown}
+      width={viewport.size.width}
+      height={viewport.size.height}
+      onDone={focusDrawing}
+    />
   {/if}
 </main>
 

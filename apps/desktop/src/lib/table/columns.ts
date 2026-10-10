@@ -163,7 +163,7 @@ export interface ChoiceOption {
   label: string;
 }
 
-const KINDS: readonly CharacteristicKind[] = [
+export const KINDS: readonly CharacteristicKind[] = [
   "linear",
   "diameter",
   "radius",

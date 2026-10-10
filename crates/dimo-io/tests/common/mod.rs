@@ -331,6 +331,8 @@ pub fn edit_v2(document: &mut Document, env: &mut FixedEnvironment) {
                 },
                 parse_error: None,
                 parse_hints: vec![ParseHint::StackedLinesJoined],
+                job_id: None,
+                engines: Vec::new(),
             }],
             insert_after: Some(first),
         },

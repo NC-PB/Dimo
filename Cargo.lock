@@ -862,8 +862,10 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "dimo-core",
+ "dimo-detect",
  "dimo-io",
  "dimo-pdf",
+ "dimo-synth",
  "tempfile",
 ]
 
@@ -890,9 +892,12 @@ name = "dimo-desktop"
 version = "0.0.0"
 dependencies = [
  "dimo-core",
+ "dimo-detect",
  "dimo-io",
  "dimo-pdf",
+ "dimo-tolerance",
  "rfd",
+ "rust_decimal",
  "serde",
  "serde_json",
  "specta",
@@ -910,10 +915,12 @@ dependencies = [
 name = "dimo-detect"
 version = "0.0.0"
 dependencies = [
+ "dimo-core",
  "dimo-notation",
  "dimo-pdf",
  "dimo-tolerance",
  "dimo-vision",
+ "rust_decimal",
 ]
 
 [[package]]

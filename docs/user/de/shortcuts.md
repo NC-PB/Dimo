@@ -98,7 +98,7 @@ Zeichnung.
 | Ballon zur Auswahl hinzufügen oder entfernen | Shift+Klick oder ⌘+Klick (Ctrl+Klick) |
 | Ballons in einer Fläche auswählen | Shift gedrückt halten und auf leerer Zeichnung ziehen |
 | Ballon an einem Punkt setzen | Werkzeug Ballon setzen, klicken |
-| Ballon für einen Bereich setzen | Werkzeug Ballon setzen, einen Rahmen ziehen |
+| Ein Maß lesen (Rahmenauswahl) | Werkzeug Ballon setzen, einen Rahmen ziehen; Enter übernimmt die Karte, Escape verwirft sie |
 | Wertfeld eines Ballons öffnen | Doppelklick darauf |
 | Ballons verschieben | Ziehen |
 | Ende einer Bezugslinie verschieben | Quadratischen Griff eines ausgewählten Ballons ziehen |

@@ -10,7 +10,7 @@ wiederholen.
 | Werkzeug | Taste | Was die linke Maustaste auf der Zeichnung tut |
 |---|---|---|
 | Auswählen | V | Klick wählt einen Ballon, Ziehen verschiebt Ballons, Ziehen auf leerer Zeichnung verschiebt die Ansicht |
-| Ballon setzen | B | Klick oder Ziehen setzt einen neuen Ballon, Ziehen auf einem Ballon verschiebt ihn |
+| Ballon setzen | B | Klick setzt einen neuen Ballon, ein gezogener Rahmen liest seinen Text (Rahmenauswahl), Ziehen auf einem Ballon verschiebt ihn |
 
 In beiden Werkzeugen verschiebst du die Ansicht mit der mittleren Maustaste oder mit gedrückter
 Leertaste beim Ziehen. Zoomen und Blätter stehen unter [Eine Zeichnung ansehen](drawing-view.md).
@@ -18,26 +18,57 @@ Leertaste beim Ziehen. Zoomen und Blätter stehen unter [Eine Zeichnung ansehen]
 ## Ballons setzen
 
 1. Drücke **B** oder wähle **Ballon setzen** in der Werkzeugleiste.
-2. Klicke auf das Merkmal, das geprüft werden soll, oder ziehe einen Rahmen um seinen Maßtext.
-   Der Ballon erscheint rechts oberhalb davon mit der nächsten freien Nummer, seine Bezugslinie
-   zeigt auf die Klickstelle (oder auf die Ecke des Rahmens). Am Blattrand weicht er auf die
-   andere Seite aus.
+2. Klicke auf das Merkmal, das geprüft werden soll. Der Ballon erscheint rechts oberhalb davon
+   mit der nächsten freien Nummer, seine Bezugslinie zeigt auf die Klickstelle. Am Blattrand
+   weicht er auf die andere Seite aus.
 3. Neben dem Ballon öffnet sich ein kleines Feld. Tippe den Wert so, wie er auf der Zeichnung
    steht, zum Beispiel `Ø8 f7` oder `100 ±0.2`.
 4. Drücke **Enter**. Der Wert ist gespeichert und das Werkzeug bleibt aktiv, du klickst also
    gleich das nächste Merkmal an.
 
-Am schnellsten geht es so: klicken, tippen, Enter, klicken, tippen, Enter.
+Von Hand geht es am schnellsten so: klicken, tippen, Enter, klicken, tippen, Enter.
 
 - **Escape** im Feld schließt es, ohne den Text zu speichern. Der Ballon bleibt; ⌘Z entfernt ihn.
 - Ein Klick an eine andere Stelle speichert das Getippte ebenfalls.
-- Der gezogene Rahmen wird als Quellbereich beim Merkmal gespeichert, so findest du später, woher
-  der Wert stammt. Ein einfacher Klick speichert keinen Bereich.
 - **Enter** auf einem ausgewählten Ballon oder ein Doppelklick darauf öffnet das Feld wieder.
 
-Das Feld speichert den Text, wie er geschrieben ist, in der Spalte **Anforderung** der
-Merkmalstabelle. Dimo zerlegt ihn in dieser Version nicht in Nennmaß und Toleranzen; Nennmaß,
-Abmaße, Art und den Rest trägst du in der Tabelle ein ([Merkmalstabelle](characteristics.md)).
+Dimo liest den getippten Text wie ein Maß auf der Zeichnung: `Ø30 H7 +0.0203 -0` ergibt die Art
+**Durchmesser**, das Nennmaß `30`, die Passung `H7`, die Abmaße und die Grenzwerte `30.0203` und
+`30` mit der Regel **Explizit**. Text, der kein Maß ist, etwa ein Hinweis, wird nur als
+Anforderung gespeichert. `Ø8 f7` allein erhält seine Grenzwerte aus der Passungstabelle nach
+ISO 286 mit der Regel **Passungstabelle**. Werte aus einer Tabelle, die noch ein Entwurf ist,
+werden so markiert. Ein Maß ohne Toleranz erhält **Keine Toleranz festgelegt**, weil das Projekt
+noch keine Allgemeintoleranz hat; seine Grenzwerte trägst du in der Tabelle ein
+([Merkmalstabelle](characteristics.md)).
+
+## Rahmenauswahl
+
+Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
+
+1. Drücke **B** und ziehe einen Rahmen um den Maßtext, gestapelte Toleranzen eingeschlossen.
+   Gedrehter Text, etwa entlang einer senkrechten Maßlinie, geht genauso.
+2. Neben dem Rahmen öffnet sich eine Karte. Sie zeigt, was Dimo gelesen hat: den
+   Anforderungstext, die Art, das Nennmaß, die obere und die untere Grenze, die Regel, aus der
+   sie stammen, und eine Erklärung dazu. Aufgedruckte Abmaße gelten immer; weichen sie von der
+   Passungstabelle ab, sagt die Erklärung das. Hinweise nennen, was Dimo nicht entscheiden
+   konnte, etwa einen Winkel, dessen kürzeren Schenkel es nicht kennt.
+3. Prüfe die Werte. Den Anforderungstext (Dimo liest ihn erneut) und die Art kannst du
+   korrigieren.
+4. Drücke **Enter** oder **Übernehmen**. Der Ballon erscheint rechts oberhalb des Rahmens wie ein
+   gesetzter Ballon, mit den Werten der Karte. **Escape** oder **Verwerfen** schließt die Karte,
+   ohne etwas zu ändern.
+
+- Vor dem Übernehmen wird nichts hinzugefügt. Übernehmen ist ein Schritt für ⌘Z, auch wenn der
+  Rahmen mehrere Maße enthielt.
+- Ein Rahmen um mehrere Maße übereinander ergibt für jedes einen Vorschlag.
+- Eine Zahl in einem rechteckigen Rahmen wird als theoretisch genaues Maß gelesen, ein Wert in
+  Klammern als Hilfsmaß. Beide werden als nicht zu prüfen markiert.
+- Kann Dimo den Text nicht als Maß lesen, sagt die Karte das, und Übernehmen speichert nur den
+  Text.
+- Enthält der Rahmen keinen PDF-Text (gescannte Zeichnung), wird ein Ballon gesetzt und das
+  Wertfeld öffnet sich wie bei einem Klick.
+- Der Rahmen wird als Quellbereich beim Merkmal gespeichert, so findest du später, woher der
+  Wert stammt. Ein einfacher Klick speichert keinen Bereich.
 
 ## Ballonnummern
 

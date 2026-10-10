@@ -1,0 +1,180 @@
+//! Box select on real PDFs (T2.6, FR-REC-01, FR-REC-02, ADR 0006): the corpus drawing and
+//! synthetic drawings with rotated callouts.
+//!
+//! Skips without PDFium like the `dimo-pdf` tests, fails instead with `CI=true` or
+//! `DIMO_REQUIRE_PDFIUM=1`.
+
+#![allow(clippy::unwrap_used, clippy::print_stderr)]
+
+use std::path::PathBuf;
+
+use dimo_core::characteristic::{CharacteristicKind, ToleranceRule, Unit};
+use dimo_core::derivation::DerivationHint;
+use dimo_core::geometry::{OrientedBox, Point, Size};
+use dimo_core::id::SheetId;
+use dimo_core::proposal::{BalloonPlacement, Proposal};
+use dimo_core::truth::{TruthCharacteristic, TruthFile};
+use dimo_core::{Environment as _, FixedEnvironment};
+use dimo_detect::{BoxSelectContext, CalloutOnly, Interpreter, ToleranceEngine, box_select};
+use dimo_pdf::{Document, PdfEngine, PdfError};
+use dimo_tolerance::{TableSet, ToleranceContext};
+use rust_decimal::Decimal;
+
+fn repo_root() -> PathBuf {
+    PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default()).join("../..")
+}
+
+fn pdfium_required() -> bool {
+    std::env::var("CI").is_ok_and(|v| v == "true")
+        || std::env::var("DIMO_REQUIRE_PDFIUM").is_ok_and(|v| !v.is_empty() && v != "0")
+}
+
+fn engine() -> Option<PdfEngine> {
+    match PdfEngine::start() {
+        Ok(engine) => Some(engine),
+        Err(e @ PdfError::LibraryNotFound { .. }) if !pdfium_required() => {
+            eprintln!("SKIPPED (PDFium missing): {e}");
+            None
+        }
+        Err(e) => panic!("{e}"),
+    }
+}
+
+/// The truth region grown by `margin` on every side, as a user draws it a bit generously.
+fn grown(r: &OrientedBox, margin: f64) -> OrientedBox {
+    OrientedBox {
+        size: Size {
+            width: r.size.width + 2.0 * margin,
+            height: r.size.height + 2.0 * margin,
+        },
+        ..*r
+    }
+}
+
+fn select(doc: &Document, sheet: SheetId, region: &OrientedBox) -> Vec<Proposal> {
+    select_with(doc, sheet, region, &CalloutOnly)
+}
+
+fn select_with(
+    doc: &Document,
+    sheet: SheetId,
+    region: &OrientedBox,
+    interpreter: &dyn Interpreter,
+) -> Vec<Proposal> {
+    let text = doc.region_text(0, *region).unwrap();
+    let context = BoxSelectContext {
+        interpreter,
+        drawing_unit: Unit::Mm,
+        placement: BalloonPlacement {
+            position: Point {
+                x: region.center.x + 30.0,
+                y: region.center.y - 30.0,
+            },
+            anchor: region.center,
+        },
+        job_id: Some(1),
+    };
+    box_select(sheet, region, &text, &context)
+}
+
+fn sheet_id() -> SheetId {
+    SheetId::from_uuid(FixedEnvironment::new().new_uuid())
+}
+
+/// Checks one proposal against its truth entry: text, kind, nominal, and limits where the
+/// callout writes them (the fallback interpreter does not expand fits or general tolerances).
+fn check(p: &Proposal, c: &TruthCharacteristic) {
+    assert_eq!(p.requirement_text, c.requirement_text, "{}", c.id);
+    assert_eq!(p.kind, c.kind, "{}", c.id);
+    if c.kind != CharacteristicKind::Note {
+        assert_eq!(p.nominal, c.nominal, "{}", c.id);
+        assert!(p.parse_error.is_none(), "{}: {:?}", c.id, p.parse_error);
+    }
+    if c.tolerance_rule == Some(ToleranceRule::Explicit) {
+        assert_eq!(p.upper_limit, c.upper_limit, "{}", c.id);
+        assert_eq!(p.lower_limit, c.lower_limit, "{}", c.id);
+        let rule = p.derivation.as_ref().and_then(|d| d.rule.kind());
+        assert_eq!(rule, Some(ToleranceRule::Explicit), "{}", c.id);
+    }
+}
+
+/// T2.6 acceptance: box select on `Ø30 H7 +0.0203 -0` gives the printed limits with rule
+/// explicit, and every callout of the corpus drawing reads as in its truth file.
+#[test]
+fn test_drawing_1_callouts() {
+    let Some(engine) = engine() else { return };
+    let bytes = std::fs::read(repo_root().join("corpus/drawings/test_drawing_1.pdf")).unwrap();
+    let doc = engine.open(bytes).unwrap();
+    let truth = TruthFile::from_json_str(
+        &std::fs::read_to_string(repo_root().join("corpus/truth/test_drawing_1.truth.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    let sheet = sheet_id();
+
+    let c03 = truth
+        .characteristics
+        .iter()
+        .find(|c| c.id == "c03")
+        .unwrap();
+    let proposals = select(&doc, sheet, &grown(&c03.region, 2.0));
+    assert_eq!(proposals.len(), 1);
+    let p = &proposals[0];
+    assert_eq!(p.requirement_text, "Ø30 H7 +0.0203 -0");
+    assert_eq!(p.upper_limit, Some(Decimal::new(300_203, 4)));
+    assert_eq!(p.lower_limit, Some(Decimal::new(30, 0)));
+    assert_eq!(p.fit.as_deref(), Some("H7"));
+    assert_eq!(p.unit, Some(Unit::Mm));
+    assert_eq!(
+        p.derivation.as_ref().and_then(|d| d.rule.kind()),
+        Some(ToleranceRule::Explicit)
+    );
+    assert_eq!(p.source.sheet, sheet);
+    assert_eq!(p.job_id, Some(1));
+
+    for c in &truth.characteristics {
+        let proposals = select(&doc, sheet, &grown(&c.region, 1.0));
+        assert_eq!(proposals.len(), 1, "{}: {proposals:#?}", c.id);
+        check(&proposals[0], c);
+    }
+}
+
+/// T2.6 acceptance with the tolerance engine (T2.5): `Ø30 H7 +0.0203 -0` keeps the printed
+/// limits, rule explicit, with a hint that ISO 286 H7 differs from the printed deviations.
+#[test]
+fn test_drawing_1_with_the_tolerance_engine() {
+    let Some(engine) = engine() else { return };
+    let bytes = std::fs::read(repo_root().join("corpus/drawings/test_drawing_1.pdf")).unwrap();
+    let doc = engine.open(bytes).unwrap();
+    let settings = dimo_core::ProjectSettings::default().tolerance;
+    let context = ToleranceContext::for_project(&settings, TableSet::shipped().unwrap(), [])
+        .unwrap()
+        .with_drawing_unit(Unit::Mm);
+    let interpreter = ToleranceEngine::new(context);
+    let region = OrientedBox {
+        center: Point {
+            x: 594.3,
+            y: 159.07,
+        },
+        size: Size {
+            width: 93.28,
+            height: 31.66,
+        },
+        angle: 0.0,
+    };
+    let proposals = select_with(&doc, sheet_id(), &region, &interpreter);
+    assert_eq!(proposals.len(), 1);
+    let p = &proposals[0];
+    assert_eq!(p.upper_limit, Some(Decimal::new(300_203, 4)));
+    assert_eq!(p.lower_limit, Some(Decimal::new(30, 0)));
+    let derivation = p.derivation.as_ref().unwrap();
+    assert_eq!(derivation.rule.kind(), Some(ToleranceRule::Explicit));
+    assert!(
+        derivation
+            .hints
+            .iter()
+            .any(|h| matches!(h, DerivationHint::FitDeviationsDiffer { fit, .. } if fit == "H7")),
+        "{derivation:?}"
+    );
+    assert_eq!(p.engines[1].name, dimo_detect::TOLERANCE_ENGINE);
+}
