@@ -24,6 +24,7 @@ pub mod geometry;
 pub mod history;
 pub mod id;
 pub mod number;
+pub mod numbering;
 pub mod patch;
 pub mod project;
 pub mod proposal;
@@ -51,6 +52,7 @@ pub use history::{
 };
 pub use id::{BalloonId, CharId, RevisionId, SheetId};
 pub use number::DisplayNumber;
+pub use numbering::{NumberedCharacteristic, NumberingPreview};
 pub use patch::{Change, Patch};
 pub use project::{
     CustomTable, DecimalPlaceRule, InsertPolicy, LockReason, MultiInstance, Numbering,
