@@ -57,7 +57,7 @@ pub use project::{
     NumberingLock, NumberingSettings, NumberingStrategy, Project, ProjectInfo, ProjectSettings,
     TableClass, ToleranceSettings, UnitRounding,
 };
-pub use proposal::{BalloonPlacement, ParseHint, ParseIssue, Proposal};
+pub use proposal::{BalloonPlacement, EngineVersion, ParseHint, ParseIssue, Proposal};
 pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
 };

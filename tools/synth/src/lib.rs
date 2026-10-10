@@ -3,7 +3,8 @@
 //! Writes one sheet with dimension lines and callouts, plus the matching truth file in the
 //! format of T0.10 (`dimo_core::truth`). Callout styles: plain linear size (no tolerance),
 //! symmetric `±`, stacked deviations (upper and lower as separate smaller text objects) and
-//! fits such as `Ø20 H7`.
+//! fits such as `Ø20 H7`. Every fourth callout (T2.6) sits at a vertical dimension line and is
+//! rotated by 90 degrees, read bottom to top; its truth region has angle 90.
 //!
 //! Determinism (AGENTS.md rule 11): all choices come from a seeded generator implemented here,
 //! the PDF has no Info dictionary, no document ID and no dates, and all numbers are formatted
@@ -104,17 +105,28 @@ pub fn generate(seed: u64, count: usize) -> Result<Drawing, SynthError> {
         let cell_y = MARGIN + (index / COLUMNS) as f64 * cell_h;
         let callout = make_callout(&mut rng);
 
-        // Dimension line with two extension ticks, the callout sits above it.
-        let x0 = r2(cell_x + 16.0);
+        // Dimension line with two extension ticks, the callout sits above it (left of it when
+        // rotated). The length is drawn in both cases, so the generator sequence is the same.
         let length = f64::from(rng.range(120, 220));
-        let x1 = r2(x0 + length);
-        let line_y = r2(cell_y + cell_h * 0.65);
-        let baseline = r2(line_y - 6.0);
-        line(&mut content, x0, line_y, x1, line_y);
-        line(&mut content, x0, line_y - 8.0, x0, line_y + 8.0);
-        line(&mut content, x1, line_y - 8.0, x1, line_y + 8.0);
-
-        let (parts, region) = layout(&callout, r2(x0 + 6.0), baseline);
+        let rotated = index % 4 == 3;
+        let (parts, region) = if rotated {
+            let x = r2(cell_x + 60.0);
+            let y1 = r2(cell_y + cell_h - 8.0);
+            let y0 = r2(y1 - length.min(cell_h - 16.0));
+            line(&mut content, x, y0, x, y1);
+            line(&mut content, x - 8.0, y0, x + 8.0, y0);
+            line(&mut content, x - 8.0, y1, x + 8.0, y1);
+            layout(&callout, r2(x - 6.0), r2(y1 - 6.0), true)
+        } else {
+            let x0 = r2(cell_x + 16.0);
+            let x1 = r2(x0 + length);
+            let line_y = r2(cell_y + cell_h * 0.65);
+            let baseline = r2(line_y - 6.0);
+            line(&mut content, x0, line_y, x1, line_y);
+            line(&mut content, x0, line_y - 8.0, x0, line_y + 8.0);
+            line(&mut content, x1, line_y - 8.0, x1, line_y + 8.0);
+            layout(&callout, r2(x0 + 6.0), baseline, false)
+        };
         for part in &parts {
             text(&mut content, part);
         }
@@ -157,6 +169,7 @@ fn notes(seed: u64, count: usize) -> Vec<String> {
             env!("CARGO_PKG_VERSION")
         ),
         "Regions are computed from the placed text with the Helvetica width table: x from the start to the end of the text, y from 0.8 times the font size above the baseline to 0.2 times below it. Stacked deviations are 7 pt text right of the main text.".to_string(),
+        "Every fourth callout is rotated by 90 degrees (read bottom to top) at a vertical dimension line; its region is measured the same way in the reading direction and has angle 90.".to_string(),
         "Fit limits come from a small table in the generator and are drafts: the ISO 286 data tables are not verified yet (D-43). Entries with a fit carry a review_note.".to_string(),
     ]
 }
@@ -311,13 +324,16 @@ impl Callout {
 // ---------------------------------------------------------------------------------------------
 // Layout and PDF
 
-/// One placed text object, positions in sheet space (origin top left, y down).
+/// One placed text object, positions in sheet space (origin top left, y down). `x` and
+/// `baseline` are the start of the text on its baseline; rotated text runs up the sheet from
+/// there.
 #[derive(Debug, Clone)]
 struct Placed {
     text: String,
     x: f64,
     baseline: f64,
     size: f64,
+    rotated: bool,
 }
 
 impl Placed {
@@ -335,47 +351,71 @@ impl Placed {
     }
 }
 
-/// Place the texts of a callout and compute the box around all of them.
-fn layout(callout: &Callout, x: f64, baseline: f64) -> (Vec<Placed>, OrientedBox) {
+/// Place the texts of a callout and compute the box around all of them. The texts start at
+/// `x`, `baseline`; `rotated` turns the whole callout by 90 degrees counterclockwise around that
+/// point (read bottom to top).
+fn layout(callout: &Callout, x: f64, baseline: f64, rotated: bool) -> (Vec<Placed>, OrientedBox) {
+    // Laid out in the reading frame with the start at the origin, then moved to the sheet.
     let (main, upper, lower) = callout.texts();
     let main = Placed {
         text: main,
-        x,
-        baseline,
+        x: 0.0,
+        baseline: 0.0,
         size: MAIN_SIZE,
+        rotated,
     };
     let mut parts = vec![main];
-    let dev_x = r2(x + parts[0].width() + 1.5);
+    let dev_x = r2(parts[0].width() + 1.5);
     if let Some(text) = upper {
         parts.push(Placed {
             text,
             x: dev_x,
-            baseline: r2(baseline - 4.0),
+            baseline: -4.0,
             size: DEV_SIZE,
+            rotated,
         });
     }
     if let Some(text) = lower {
         parts.push(Placed {
             text,
             x: dev_x,
-            baseline: r2(baseline + 4.0),
+            baseline: 4.0,
             size: DEV_SIZE,
+            rotated,
         });
     }
     let left = parts.iter().map(|p| p.x).fold(f64::MAX, f64::min);
-    let right = parts.iter().map(|p| p.x + p.width()).fold(0.0, f64::max);
+    let right = parts
+        .iter()
+        .map(|p| p.x + p.width())
+        .fold(f64::MIN, f64::max);
     let top = parts.iter().map(Placed::top).fold(f64::MAX, f64::min);
-    let bottom = parts.iter().map(Placed::bottom).fold(0.0, f64::max);
+    let bottom = parts.iter().map(Placed::bottom).fold(f64::MIN, f64::max);
+    // Reading frame (u along, v down) to the sheet: unrotated (x + u, baseline + v), rotated
+    // by 90 degrees (x + v, baseline - u).
+    let to_sheet = |u: f64, v: f64| {
+        if rotated {
+            (x + v, baseline - u)
+        } else {
+            (x + u, baseline + v)
+        }
+    };
+    for part in &mut parts {
+        let (px, py) = to_sheet(part.x, part.baseline);
+        part.x = r2(px);
+        part.baseline = r2(py);
+    }
+    let (cx, cy) = to_sheet(f64::midpoint(left, right), f64::midpoint(top, bottom));
     let region = OrientedBox {
         center: Point {
-            x: r2(f64::midpoint(left, right)),
-            y: r2(f64::midpoint(top, bottom)),
+            x: r2(cx),
+            y: r2(cy),
         },
         size: Size {
             width: r2(right - left),
             height: r2(bottom - top),
         },
-        angle: 0.0,
+        angle: if rotated { 90.0 } else { 0.0 },
     };
     (parts, region)
 }
@@ -430,13 +470,24 @@ fn text(out: &mut String, p: &Placed) {
         let _ = write!(s, "{:02X}", code(c));
         s
     });
-    let _ = writeln!(
-        out,
-        "BT /F1 {:.1} Tf {:.2} {:.2} Td <{hex}> Tj ET",
-        p.size,
-        p.x,
-        pdf_y(p.baseline)
-    );
+    if p.rotated {
+        // Text matrix turned by 90 degrees: the baseline runs up the page.
+        let _ = writeln!(
+            out,
+            "BT /F1 {:.1} Tf 0 1 -1 0 {:.2} {:.2} Tm <{hex}> Tj ET",
+            p.size,
+            p.x,
+            pdf_y(p.baseline)
+        );
+    } else {
+        let _ = writeln!(
+            out,
+            "BT /F1 {:.1} Tf {:.2} {:.2} Td <{hex}> Tj ET",
+            p.size,
+            p.x,
+            pdf_y(p.baseline)
+        );
+    }
 }
 
 const TO_UNICODE: &str = "/CIDInit /ProcSet findresource begin
