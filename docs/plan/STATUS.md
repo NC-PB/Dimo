@@ -5,8 +5,8 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M0 Foundations** ([plan](M0.md)) finishing, **M1 Manual ballooning** ([plan](M1.md)) implemented, waiting for owner review and exit criterion
-- Next: **owner review of M0 and M1** (manual test, exit criterion, open "Owner: confirm" decisions) and of the M2 plan ([plan](M2.md), decisions 1 to 6); then M2 wave 1 (T2.1 to T2.4)
+- Milestone: **M2 Assisted capture** ([plan](M2.md)) in progress, waves 1 and 2 done; M0 and M1 implemented, waiting for owner reviews
+- Next: **M2 wave 3** (T2.7a, T2.8, T2.9, T2.10); owner: Tabellenbuch check of the tolerance tables and the truth file, M1 manual test and exit criterion, open "Owner: confirm" decisions
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -64,7 +64,7 @@ States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (re
 
 | Item | Since |
 |---|---|
-| Tolerance tables to verify against Tabellenbuch (D-43): `data/tolerances/iso-2768-1.toml` (ISO 2768-1:1989 tables 1 to 3: linear 8 ranges 0.5 to 4000 mm f/m/c/v, broken edges 3 ranges, angular by shorter leg in minutes of arc; all range bounds) and `data/tolerances/iso-286.toml` (ISO 286-1:2010, table numbers in `source` to confirm: IT01 to IT18 up to 500 mm, shaft es a to h, shaft ei j, k, m to zc with intermediate steps, hole J6 to J8, K, M, N up to and above IT8, delta IT3 to IT8, M6 special case -9 µm at 250 to 315 mm, rule choices js/JS odd IT, classes not used up to 1 mm, K above IT8 only up to 3 mm). Also both `.test.toml` files (`checked_by_owner`). Update 2026-10-10: `iso-286.toml` (version 2, now up to 3150 mm) was cross-checked by an agent against ISO 286-1/-2:2010, so the owner pass can focus on: ef at 18 to 30 mm (set to -0.028 to mirror EF +0.028; the standard's two tables disagree), N9 above 500 mm (taken from ISO 286-2), H17/H18 kept for 1 to 3 mm, js/JS exact ±IT/2, and the new range above 500 mm. ISO 2768-1 is not cross-checked yet | 2026-10-09 |
+| Tolerance tables to verify against Tabellenbuch (D-43): `data/tolerances/iso-2768-1.toml` (ISO 2768-1:1989 tables 1 to 3: linear 8 ranges 0.5 to 4000 mm f/m/c/v, broken edges 3 ranges, angular by shorter leg in minutes of arc; all range bounds) and `data/tolerances/iso-286.toml` (ISO 286-1:2010, table numbers in `source` to confirm: IT01 to IT18 up to 500 mm, shaft es a to h, shaft ei j, k, m to zc with intermediate steps, hole J6 to J8, K, M, N up to and above IT8, delta IT3 to IT8, M6 special case -9 µm at 250 to 315 mm, rule choices js/JS odd IT, classes not used up to 1 mm, K above IT8 only up to 3 mm). Also both `.test.toml` files (`checked_by_owner`). Update 2026-10-10: `iso-286.toml` (version 2, now up to 3150 mm) was cross-checked by an agent against ISO 286-1/-2:2010, so the owner pass can focus on: ef at 18 to 30 mm (set to -0.028 to mirror EF +0.028; the standard's two tables disagree), N9 above 500 mm (taken from ISO 286-2), H17/H18 kept for 1 to 3 mm, js/JS exact ±IT/2, and the new range above 500 mm. ISO 2768-1 cross-checked by the agent on 2026-10-10: tables 2 and 3 and classes f, m, v of table 1 confirmed; **check class c at 0.5 to 3 mm and over 3 to 6 mm** (drafted ±0.2 and ±0.3; ±0.15 and ±0.2 also circulate), left unchanged | 2026-10-09 |
 | More corpus drawings, especially scans and outlined text (Q-10) | before M4 |
 | Trademark search Swissreg / EUIPO (Q-01) | before 0.1 |
 
