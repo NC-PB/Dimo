@@ -11,6 +11,7 @@
 pub mod box_select;
 pub mod interpret;
 pub mod read;
+pub mod reinterpret;
 
 pub use box_select::{BoxSelectContext, Proposed, box_select, box_select_with_notes};
 pub use interpret::{
@@ -18,3 +19,4 @@ pub use interpret::{
     ToleranceEngine,
 };
 pub use read::{PARSER_ENGINE, Reading, read_callout};
+pub use reinterpret::{Reinterpretation, reinterpret};
