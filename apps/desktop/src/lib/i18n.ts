@@ -4,6 +4,7 @@ import type {
   CharacteristicKind,
   Classification,
   CommandError,
+  DerivationRule,
   OpenNotice,
   RejectReason,
   Theme,
@@ -197,6 +198,30 @@ export function kindLabel(kind: CharacteristicKind): string {
       return m.kind_material_process();
     case "other":
       return m.kind_other();
+  }
+}
+
+/** Translated name of the rule that produced limits (FR-TOL-08); `null` is "no rule". */
+export function ruleLabel(rule: DerivationRule | null): string {
+  switch (rule?.rule) {
+    case "explicit":
+      return m.rule_explicit();
+    case "fit":
+      return m.rule_fit();
+    case "drawing_rule":
+      return m.rule_drawing_rule();
+    case "general":
+      return m.rule_general();
+    case "decimal_rule":
+      return m.rule_decimal_rule();
+    case "custom_table":
+      return m.rule_custom_table();
+    case "no_tolerance_defined":
+      return m.rule_no_tolerance_defined();
+    case "manual":
+      return m.rule_manual();
+    case undefined:
+      return m.rule_none();
   }
 }
 

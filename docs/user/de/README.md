@@ -4,11 +4,12 @@ Dimo versieht jedes zu prüfende Merkmal einer technischen Zeichnung mit einem n
 Ballon, führt die Merkmalsliste und exportiert ein PDF mit Ballons und eine Merkmalsliste für die
 Prüfung. Alles bleibt auf deinem Computer.
 
-Diese Version ist für das **manuelle Ballonieren**: Du klickst ein Merkmal auf der Zeichnung an,
-tippst den Wert so, wie er aufgedruckt ist, und Dimo übernimmt Nummerierung, Liste, Speichern und
-Exporte. Dimo liest die Zeichnung noch nicht selbstständig. Es zerlegt den getippten Text auch
-noch nicht in Nennmaß und Toleranzen; diese trägst du in der Merkmalstabelle ein, und Dimo
-berechnet daraus die Grenzwerte.
+Diese Version ist für das **unterstützte Ballonieren**: Du ziehst einen Rahmen um ein Maß und Dimo
+liest seinen PDF-Text, oder du klickst ein Merkmal an und tippst den Wert so, wie er aufgedruckt
+ist. Dimo liest Nennmaß, Passung und aufgedruckte Toleranzen aus dem Text und übernimmt
+Nummerierung, Liste, Speichern und Exporte. Dimo durchsucht die Zeichnung noch nicht
+selbstständig und wendet noch keine Passungstabellen oder Allgemeintoleranzen an; diese
+Grenzwerte trägst du in der Merkmalstabelle ein.
 
 ## Seiten
 
@@ -57,10 +58,10 @@ gedrückter Leertaste und Ziehen. Bild auf und Bild ab wechseln die Blätter. Ei
 ### 3. Ballons setzen und Werte erfassen
 
 1. Drücke **B** (das Werkzeug **Ballon setzen**).
-2. Klicke das Maß oder den Hinweis an, das geprüft werden soll, oder ziehe einen Rahmen um seinen
-   Text.
-3. Neben dem neuen Ballon öffnet sich ein kleines Feld. Tippe den Wert so, wie er aufgedruckt ist,
-   zum Beispiel `Ø8 f7`, und drücke **Enter**.
+2. Ziehe einen Rahmen um den Maßtext. Eine Karte zeigt, was Dimo gelesen hat; **Enter**
+   übernimmt sie. Oder klicke das Maß oder den Hinweis an, tippe den Wert so, wie er aufgedruckt
+   ist, zum Beispiel `Ø8 f7`, und drücke **Enter**.
+3. **Escape** verwirft eine Karte, die du nicht willst.
 4. Klicke das nächste Merkmal an.
 
 Die Ballons werden in der Reihenfolge des Setzens mit 1, 2, 3 nummeriert. Hast du dich vertan,
@@ -69,8 +70,9 @@ drücke ⌘Z. Mit **V** wechselst du zurück zum Werkzeug **Auswählen**. Einzel
 
 ### 4. Die Werte in der Merkmalstabelle vervollständigen
 
-Die Tabelle unter der Zeichnung hat eine Zeile pro Ballon. Der getippte Text steht in der Spalte
-**Anforderung**. Trage ein, was die Prüfung braucht: **Art**, **Nennmaß**, **Oberes Abmaß** und
+Die Tabelle unter der Zeichnung hat eine Zeile pro Ballon. Der gelesene oder getippte Text steht in
+der Spalte **Anforderung**, Art, Nennmaß, Passung und aufgedruckte Toleranzen sind schon
+ausgefüllt. Ergänze, was die Prüfung braucht: **Art**, **Nennmaß**, **Oberes Abmaß** und
 **Unteres Abmaß** (Dimo berechnet **Obere Grenze** und **Untere Grenze**), **Einheit**,
 **Passung**, **Anzahl**, **Klasse** sowie die Spalten für Prüfmethode, Prüfmittel, Stichprobe und
 Häufigkeit. Doppelklicke eine Zelle oder beginne zu tippen, bestätige mit Enter, gehe mit Tab
@@ -138,6 +140,6 @@ wird. Die Einstellungen bleiben für den nächsten Start erhalten. Einzelheiten:
 
 - Öffne das Projekt später mit **Projekt öffnen** (⌘O) und mache weiter. Jede Änderung, die du
   gemacht hast, steht im Änderungsprotokoll im Projekt.
-- Noch nicht in dieser Version: automatisches Lesen der Zeichnung, Toleranzen aus dem getippten
-  Text ableiten, Prüfergebnisse und Berichte. Die Ansichten **Prüfen** und **Messen** zeigen einen
+- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung, Passungstabellen und
+  Allgemeintoleranzen, Prüfergebnisse und Berichte. Die Ansichten **Prüfen** und **Messen** zeigen einen
   Hinweis, dass sie in einer späteren Version folgen.

@@ -8,8 +8,8 @@ Drag the line above the table to change its height (or focus it and use ↑ and 
 | Column | Content |
 |---|---|
 | No | Balloon number. Drag the handle ⠿ to move the characteristic |
-| Kind | Linear, diameter, radius, spherical radius, angle, chamfer, thread, counterbore, countersink, depth, surface texture, geometric tolerance, note, flag note, material or process, other. A balloon you place starts as other |
-| Requirement | The text you typed into the balloon, as it appears on the drawing |
+| Kind | Linear, diameter, radius, spherical radius, angle, chamfer, thread, counterbore, countersink, depth, surface texture, geometric tolerance, note, flag note, material or process, other. A balloon you place starts as other until Dimo reads its text |
+| Requirement | The text as it appears on the drawing, read by box select or typed into the balloon |
 | Nominal | Nominal value |
 | Upper dev., Lower dev. | Deviations, with sign |
 | Upper limit, Lower limit | Limits. Dimo works them out from nominal and deviations; you can also type them |

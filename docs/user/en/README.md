@@ -4,10 +4,11 @@ Dimo numbers every characteristic of an engineering drawing that has to be inspe
 balloon, keeps the list of characteristics, and exports a ballooned PDF and a characteristic list
 for inspection. Everything stays on your computer.
 
-This version is for **manual ballooning**: you click a feature on the drawing, type the value as it
-is printed, and Dimo takes care of numbering, the list, saving and the exports. Dimo does not read
-the drawing by itself yet. It also does not split the typed text into nominal value and tolerances;
-you enter those in the characteristic table, and Dimo works out the limits from them.
+This version is for **assisted ballooning**: you drag a box around a dimension and Dimo reads its
+PDF text, or you click a feature and type the value as it is printed. Dimo reads nominal value,
+fit and written tolerances from the text, and takes care of numbering, the list, saving and the
+exports. Dimo does not search the drawing by itself yet, and it does not apply fit tables or
+general tolerances yet; you enter those limits in the characteristic table.
 
 ## Pages
 
@@ -53,9 +54,10 @@ switch sheets. Details: [Looking at a drawing](drawing-view.md).
 ### 3. Place balloons and capture the values
 
 1. Press **B** (the **Place balloon** tool).
-2. Click the dimension or note you want to inspect, or drag a box around its text.
-3. A small field opens next to the new balloon. Type the value as printed, for example `Ø8 f7`,
-   and press **Enter**.
+2. Drag a box around the dimension text. A card shows what Dimo read; press **Enter** to accept
+   it. Or click the dimension or note, type the value as printed, for example `Ø8 f7`, and
+   press **Enter**.
+3. Press **Escape** to discard a card you do not want.
 4. Click the next feature.
 
 The balloons are numbered 1, 2, 3 in the order you place them. If you made a mistake, press ⌘Z.
@@ -63,8 +65,9 @@ Press **V** to go back to the **Select** tool. Details: [Ballooning a drawing](b
 
 ### 4. Complete the values in the characteristic table
 
-The table under the drawing has one row per balloon. The typed text is in the **Requirement**
-column. Fill in what the inspection needs: **Kind**, **Nominal**, **Upper dev.** and **Lower dev.**
+The table under the drawing has one row per balloon. The text read or typed is in the
+**Requirement** column, and kind, nominal, fit and printed tolerances are already filled in.
+Complete what the inspection needs: **Kind**, **Nominal**, **Upper dev.** and **Lower dev.**
 (Dimo computes **Upper limit** and **Lower limit**), **Unit**, **Fit**, **Qty**, **Class**, and the
 columns for method, gauge, sampling and frequency. Double click a cell or start typing, confirm
 with Enter, move on with Tab. Clear **Inspect** for reference and basic dimensions that are not
@@ -123,6 +126,6 @@ start. Details: [Settings](settings.md).
 
 - Open the project later with **Open project** (⌘O) and carry on. Every change you made is recorded
   in the change log inside the project.
-- Not yet in this version: reading the drawing automatically, parsing tolerances from the typed
-  text, inspection results and reports. The **Review** and **Measure** views show a note that they
+- Not yet in this version: searching the drawing automatically, fit tables and general
+  tolerances, inspection results and reports. The **Review** and **Measure** views show a note that they
   come in a later version.

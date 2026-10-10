@@ -36,6 +36,7 @@
 import { commands, type ExportFormat } from "$lib/ipc/bindings";
 import { isMacPlatform } from "$lib/shortcuts";
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
+import { boxSelect } from "$lib/stores/box-select.svelte";
 import { EXPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
@@ -173,7 +174,14 @@ function report(label: string): string {
     .join(",");
   const exports = EXPORT_FORMATS.map(exportState).join(", ");
   const theme = document.documentElement.dataset.theme ?? "-";
-  return `${label}: view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
+  // The open proposal card of box select (T2.6): text, limits and rule of each proposal.
+  const card = boxSelect.proposals
+    .map(
+      (p) =>
+        `"${p.requirement_text}" ${p.upper_limit ?? "-"}/${p.lower_limit ?? "-"} ${p.derivation?.rule.rule ?? "none"}`,
+    )
+    .join("; ");
+  return `${label}: card [${card}], view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}`;
 }
 
 async function run(step: UiStep): Promise<void> {

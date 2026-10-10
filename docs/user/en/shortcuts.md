@@ -97,7 +97,7 @@ These act while the table has the focus. They replace the drawing keys of the sa
 | Add a balloon to the selection or remove it | Shift+click or ⌘+click (Ctrl+click) |
 | Select balloons in an area | Shift and drag on empty drawing |
 | Place a balloon at a point | Place balloon tool, click |
-| Place a balloon for a region | Place balloon tool, drag a box |
+| Read a dimension (box select) | Place balloon tool, drag a box; Enter accepts the card, Escape discards it |
 | Open the value field of a balloon | Double click it |
 | Move balloons | Drag them |
 | Move the end of a leader line | Drag the square handle of a selected balloon |

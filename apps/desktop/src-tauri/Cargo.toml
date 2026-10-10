@@ -13,6 +13,7 @@ tauri-build.workspace = true
 
 [dependencies]
 dimo-core = { workspace = true, features = ["specta"] }
+dimo-detect.workspace = true
 dimo-io.workspace = true
 dimo-pdf.workspace = true
 rfd.workspace = true
@@ -29,6 +30,7 @@ tracing.workspace = true
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
+rust_decimal.workspace = true
 tempfile.workspace = true
 
 [lints]

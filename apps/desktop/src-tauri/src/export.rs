@@ -115,6 +115,11 @@ pub struct JobFinished {
 /// IDs of background jobs within one app session.
 static NEXT_JOB: AtomicU32 = AtomicU32::new(1);
 
+/// A new job ID, also for recognition runs that answer directly (T2.6).
+pub(crate) fn next_job_id() -> JobId {
+    JobId(NEXT_JOB.fetch_add(1, Ordering::SeqCst))
+}
+
 fn export_error(message: impl std::fmt::Display) -> CommandError {
     CommandError::Export {
         message: message.to_string(),
@@ -241,7 +246,7 @@ pub async fn export_project(
         session.export_snapshot(format == ExportFormat::BalloonedPdf)
     })
     .await?;
-    let id = JobId(NEXT_JOB.fetch_add(1, Ordering::SeqCst));
+    let id = next_job_id();
     let job_app = app.clone();
     std::thread::Builder::new()
         .name("dimo-export".into())

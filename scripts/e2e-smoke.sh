@@ -2,7 +2,8 @@
 # End to end smoke test of the M1 main flow (T1.10). Starts the real desktop app (debug build) and
 # drives it with the development hooks of `apps/desktop/src-tauri/src/dev.rs`:
 #
-#   1. Main flow: new project from the corpus drawing, place five balloons, edit values in the
+#   1. Main flow: new project from the corpus drawing, place five balloons (two by box select,
+#      one of them accepted from the proposal card without typing, T2.6), edit values in the
 #      table, reorder, rotate the sheet, set scale and unit, save as, export PDF, CSV and XLSX
 #      "as issued", save again. The results are checked from the files the app wrote.
 #   2. Reopen: the saved project opens again with the same balloons, rotation and numbering lock.
@@ -168,6 +169,9 @@ if [[ -s "$PROJECT" ]]; then
     "$(jqp '.characteristics[] | select(.number == "2") | "\(.nominal) \(.upper_dev) \(.lower_dev) \(.upper_limit) \(.lower_limit) \(.unit)"')"
   expect "project: comment typed in the table" "check twice" \
     "$(jqp '.characteristics[] | select(.number == "4") | .comment')"
+  expect "project: box select accepted with the printed limits and rule (T2.6)" \
+    "Ø30 H7 +0.0203 -0 30.0203 30 explicit box_select" \
+    "$(jqp '.characteristics[] | select(.number == "3") | "\(.requirement_text) \(.upper_limit) \(.lower_limit) \(.derivation.rule.rule) \(.origin)"')"
   expect "project: sheet rotation, unit and scale" "deg90 in 2:1" \
     "$(jqp '.revisions[0].sheets[0] | "\(.rotation) \(.unit) \(.scale.drawing):\(.scale.actual)"')"
   expect "project: numbering locked by the issued export" "issued_report 5" \
@@ -219,6 +223,11 @@ if [[ -s "$PDF" && -n "$JSON" ]]; then
              END { print bad + 0 }' "$WORK/balloons.txt" "$WORK/runs-after.txt")
   expect "pdf: every number sits at its balloon" "0" "$off"
 fi
+
+# The proposal card of the box select, before Enter accepted it (T2.6).
+expect "app: proposal card shows the printed limits with rule explicit" \
+  'card ["Ø30 H7 +0.0203 -0" 30.0203/30 explicit]' \
+  "$({ grep -o 'card \[[^]]*\]' <<<"$(report main proposed)" || true; } | head -1)"
 
 # What the app itself reported at the end of the flow.
 final=$(report main final)
