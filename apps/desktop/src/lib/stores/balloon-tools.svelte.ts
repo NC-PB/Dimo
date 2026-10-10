@@ -114,6 +114,7 @@ export class BalloonToolsStore {
       anchor: placement.anchor,
       region: region ? regionBox(region) : null,
       values: [],
+      insert_after: null,
     });
     const id = insertedCharacteristic(patch);
     if (id !== null) {

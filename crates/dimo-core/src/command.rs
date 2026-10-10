@@ -18,9 +18,14 @@ use crate::characteristic::{
 use crate::env::Environment;
 use crate::geometry::{OrientedBox, Point};
 use crate::id::{BalloonId, CharId, SheetId};
+use crate::number::DisplayNumber;
 use crate::patch::{Change, ChangeError, invert};
-use crate::project::{InsertPolicy, LockReason, Numbering, NumberingLock, Project, ProjectInfo};
-use crate::sheet::{Rotation, Scale};
+use crate::project::{
+    InsertPolicy, LockReason, Numbering, NumberingLock, NumberingSettings, Project, ProjectInfo,
+    ProjectSettings, ToleranceSettings,
+};
+use crate::proposal::{BalloonPlacement, Proposal};
+use crate::sheet::{Rotation, Scale, Sheet, SheetView, ZoneGrid};
 
 /// New position of one balloon.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -40,8 +45,9 @@ pub struct BalloonMove {
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Command {
-    /// Adds a characteristic with one balloon at the end of the placement order (FR-BAL-01).
-    /// Numbered by placement order, or with the next free number when locked (D-21, D-23).
+    /// Adds a characteristic with one balloon (FR-BAL-01). Unlocked: at the end of the
+    /// placement order, numbered by it (D-21). Locked: numbered by the insert policy and placed
+    /// in number order (D-23, FR-BAL-11).
     AddCharacteristic {
         /// Sheet the balloon and region are on.
         sheet: SheetId,
@@ -53,6 +59,18 @@ pub enum Command {
         region: Option<OrientedBox>,
         /// Initial field values.
         values: Vec<FieldValue>,
+        /// Anchor of the sub-number and letter insert policies while locked: the new number
+        /// follows this characteristic. `null` uses the highest number. Not used while unlocked
+        /// and by the next free policy, but it must name an existing characteristic.
+        insert_after: Option<CharId>,
+    },
+    /// Turns proposals into accepted characteristics with one balloon each, as one undo step
+    /// (ADR 0006, FR-REC-02). Numbered like [`Command::AddCharacteristic`], in the given order.
+    AcceptProposals {
+        /// Proposals to accept, possibly edited by the user.
+        proposals: Vec<Proposal>,
+        /// Anchor of the locked insert policies, as for [`Command::AddCharacteristic`].
+        insert_after: Option<CharId>,
     },
     /// Sets field values on one or more characteristics (FR-CHR-02).
     UpdateFields {
@@ -103,6 +121,32 @@ pub enum Command {
         /// New scale.
         scale: Option<Scale>,
     },
+    /// Sets or removes the zone grid of a sheet (M2 decision 1, D-21).
+    SetZoneGrid {
+        /// The sheet.
+        sheet: SheetId,
+        /// New grid; `null` removes it.
+        grid: Option<ZoneGrid>,
+    },
+    /// Replaces the view rectangles of a sheet (M2 decision 1).
+    SetViews {
+        /// The sheet.
+        sheet: SheetId,
+        /// All views of the sheet, in order.
+        views: Vec<SheetView>,
+    },
+    /// Sets the numbering strategy, multi-instance numbering and locked insert policy
+    /// (FR-BAL-04, FR-BAL-07, FR-BAL-11). Numbers do not change.
+    SetNumberingSettings {
+        /// New settings.
+        settings: NumberingSettings,
+    },
+    /// Sets the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). Limits
+    /// of existing characteristics do not change.
+    SetToleranceSettings {
+        /// New settings.
+        settings: ToleranceSettings,
+    },
     /// Locks numbering (FR-BAL-10). No change if already locked.
     LockNumbering {
         /// Why.
@@ -148,9 +192,13 @@ pub enum CommandError {
     /// A style size is not finite and positive.
     #[error("balloon sizes must be finite and positive")]
     InvalidStyle,
-    /// A sheet unit that is not a length, or a scale with a zero part.
+    /// A sheet unit that is not a length, a scale with a zero part, or an invalid zone grid or
+    /// view.
     #[error("invalid sheet setting: {0}")]
     InvalidSheetSetting(&'static str),
+    /// Project settings that break their rules, e.g. unsorted decimal rules.
+    #[error("invalid project setting: {0}")]
+    InvalidProjectSetting(&'static str),
     /// `MoveCharacteristics` target is one of the moved characteristics.
     #[error("cannot move characteristics before one of themselves")]
     InvalidMoveTarget,
@@ -217,7 +265,25 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
             anchor,
             region,
             values,
-        } => add_characteristic(tx, *sheet, *position, *anchor, region.as_ref(), values, env),
+            insert_after,
+        } => add_characteristic(
+            tx,
+            *sheet,
+            BalloonPlacement {
+                position: *position,
+                anchor: *anchor,
+            },
+            region.as_ref(),
+            values,
+            *insert_after,
+            env,
+        ),
+        Command::AcceptProposals {
+            proposals,
+            insert_after,
+        } => proposals
+            .iter()
+            .try_for_each(|p| accept_proposal(tx, p, *insert_after, env)),
         Command::UpdateFields { ids, values } => update_fields(tx, ids, values),
         Command::MoveBalloons { moves } => move_balloons(tx, moves),
         Command::DeleteCharacteristics { ids } => delete_characteristics(tx, ids),
@@ -237,6 +303,32 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
             unit,
             scale,
         } => update_sheet(tx, *sheet, *rotation, *unit, *scale),
+        Command::SetZoneGrid { sheet, grid } => {
+            if let Some(grid) = grid {
+                grid.validate().map_err(CommandError::InvalidSheetSetting)?;
+            }
+            change_sheet(tx, *sheet, |s| s.zone_grid.clone_from(grid))
+        }
+        Command::SetViews { sheet, views } => {
+            if views.len() > MAX_VIEWS {
+                return Err(CommandError::InvalidSheetSetting(
+                    "a sheet has at most 1000 views",
+                ));
+            }
+            for view in views {
+                view.validate().map_err(CommandError::InvalidSheetSetting)?;
+            }
+            change_sheet(tx, *sheet, |s| s.views.clone_from(views))
+        }
+        Command::SetNumberingSettings { settings } => {
+            change_settings(tx, |s| s.numbering = *settings)
+        }
+        Command::SetToleranceSettings { settings } => {
+            settings
+                .validate()
+                .map_err(CommandError::InvalidProjectSetting)?;
+            change_settings(tx, |s| s.tolerance.clone_from(settings))
+        }
         Command::LockNumbering { reason } => lock_numbering(tx, *reason, env),
         Command::UnlockNumbering => {
             if tx.project.numbering.lock.is_some() {
@@ -252,13 +344,7 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
             if !style.is_valid() {
                 return Err(CommandError::InvalidStyle);
             }
-            if tx.project.settings.balloon_style != *style {
-                let before = Box::new(tx.project.settings.clone());
-                let mut after = before.clone();
-                after.balloon_style = style.clone();
-                tx.push(Change::SettingsChanged { before, after })?;
-            }
-            Ok(())
+            change_settings(tx, |s| s.balloon_style = style.clone())
         }
         Command::UpdateProjectInfo { info } => {
             if tx.project.info != *info {
@@ -322,31 +408,76 @@ fn sheet_of(project: &Project, c: &Characteristic) -> Option<SheetId> {
         .or_else(|| c.sources.first().map(|s| s.sheet))
 }
 
-/// Number for a characteristic appended now. Locked: one more than the highest number ever
-/// given, and the lock remembers it (D-23).
-fn next_number(tx: &mut Tx<'_>) -> Result<u32, CommandError> {
-    let highest_present = tx
-        .project
+/// Number and placement index for a characteristic added now (D-21, D-23, FR-BAL-11).
+///
+/// Unlocked: the next number at the end of the placement order. Locked: the number of the
+/// insert policy, placed in number order; the lock remembers it, so it is never given again.
+fn insert_slot(
+    tx: &mut Tx<'_>,
+    after: Option<CharId>,
+) -> Result<(DisplayNumber, usize), CommandError> {
+    let project = &*tx.project;
+    let len = project.characteristics.len();
+    let anchor = match after {
+        Some(id) => Some(
+            project
+                .characteristic(id)
+                .ok_or(CommandError::UnknownCharacteristic(id))?
+                .number,
+        ),
+        None => project.characteristics.iter().map(|c| c.number).max(),
+    };
+    let Some(lock) = &project.numbering.lock else {
+        return Ok((DisplayNumber::plain(index_u32(len).saturating_add(1)), len));
+    };
+    let present = project.characteristics.iter().map(|c| c.number);
+    let known: Vec<DisplayNumber> = present.chain(lock.given.iter().copied()).collect();
+    let mut new_lock = lock.clone();
+    let number = match (project.settings.numbering.insert_when_locked, anchor) {
+        (InsertPolicy::SubNumber, Some(anchor)) => {
+            let highest = known
+                .iter()
+                .filter(|n| n.base() == anchor.base())
+                .filter_map(|n| n.sub())
+                .max()
+                .unwrap_or(0);
+            DisplayNumber::plain(anchor.base()).with_sub(highest.saturating_add(1))
+        }
+        (InsertPolicy::LetterSuffix, Some(anchor)) => {
+            let highest = known
+                .iter()
+                .filter(|n| n.base() == anchor.base() && n.sub() == anchor.sub())
+                .filter_map(|n| n.letter())
+                .max()
+                .unwrap_or(0);
+            anchor.with_letter(highest.saturating_add(1))
+        }
+        // Next free, or nothing to follow yet.
+        _ => {
+            let highest_present = known.iter().map(|n| n.base()).max().unwrap_or(0);
+            let base = lock.highest_number.max(highest_present).saturating_add(1);
+            new_lock.highest_number = base;
+            DisplayNumber::plain(base)
+        }
+    };
+    if number.as_plain().is_none()
+        && let Err(at) = new_lock.given.binary_search(&number)
+    {
+        new_lock.given.insert(at, number);
+    }
+    let index = project
         .characteristics
         .iter()
-        .map(|c| c.number)
-        .max()
-        .unwrap_or(0);
-    let Some(lock) = &tx.project.numbering.lock else {
-        return Ok(index_u32(tx.project.characteristics.len()).saturating_add(1));
-    };
-    match lock.insert_policy {
-        InsertPolicy::NextFree => {
-            let number = lock.highest_number.max(highest_present).saturating_add(1);
-            let before = tx.project.numbering.clone();
-            let mut after = before.clone();
-            if let Some(lock) = &mut after.lock {
-                lock.highest_number = number;
-            }
-            tx.push(Change::NumberingChanged { before, after })?;
-            Ok(number)
-        }
-    }
+        .position(|c| c.number > number)
+        .unwrap_or(len);
+    let before = project.numbering.clone();
+    tx.push(Change::NumberingChanged {
+        before,
+        after: Numbering {
+            lock: Some(new_lock),
+        },
+    })?;
+    Ok((number, index))
 }
 
 /// While unlocked, numbers are `1..=n` in placement order (D-21).
@@ -355,7 +486,7 @@ fn renumber_if_unlocked(tx: &mut Tx<'_>) -> Result<(), CommandError> {
         return Ok(());
     }
     for i in 0..tx.project.characteristics.len() {
-        let number = index_u32(i).saturating_add(1);
+        let number = DisplayNumber::plain(index_u32(i).saturating_add(1));
         let current = &tx.project.characteristics[i];
         if current.number != number {
             let before = Box::new(current.clone());
@@ -367,48 +498,47 @@ fn renumber_if_unlocked(tx: &mut Tx<'_>) -> Result<(), CommandError> {
     Ok(())
 }
 
-fn add_characteristic(
-    tx: &mut Tx<'_>,
+fn valid_region(r: &OrientedBox) -> bool {
+    let positive = |v: f64| v.is_finite() && v > 0.0;
+    finite(r.center) && r.angle.is_finite() && positive(r.size.width) && positive(r.size.height)
+}
+
+/// Checks sheet and geometry of a new characteristic with its balloon.
+fn check_new(
+    project: &Project,
     sheet: SheetId,
-    position: Point,
-    anchor: Point,
+    placement: BalloonPlacement,
     region: Option<&OrientedBox>,
-    values: &[FieldValue],
-    env: &mut dyn Environment,
 ) -> Result<(), CommandError> {
-    if tx.project.sheet(sheet).is_none() {
+    if project.sheet(sheet).is_none() {
         return Err(CommandError::UnknownSheet(sheet));
     }
-    if !finite(position) || !finite(anchor) {
+    if !finite(placement.position) || !finite(placement.anchor) {
         return Err(CommandError::InvalidGeometry("balloon position or anchor"));
     }
-    if let Some(r) = region {
-        let positive = |v: f64| v.is_finite() && v > 0.0;
-        if !finite(r.center)
-            || !r.angle.is_finite()
-            || !positive(r.size.width)
-            || !positive(r.size.height)
-        {
-            return Err(CommandError::InvalidGeometry("region"));
-        }
+    if region.is_some_and(|r| !valid_region(r)) {
+        return Err(CommandError::InvalidGeometry("region"));
     }
+    Ok(())
+}
+
+/// Inserts a characteristic built by `build` from its ID and number, with one balloon.
+fn insert_new(
+    tx: &mut Tx<'_>,
+    sheet: SheetId,
+    placement: BalloonPlacement,
+    insert_after: Option<CharId>,
+    env: &mut dyn Environment,
+    build: impl FnOnce(&mut Characteristic) -> Result<(), CommandError>,
+) -> Result<(), CommandError> {
     let id = CharId::from_uuid(env.new_uuid());
     let balloon_id = BalloonId::from_uuid(env.new_uuid());
-    let number = next_number(tx)?;
+    let (number, index) = insert_slot(tx, insert_after)?;
     let mut characteristic = Characteristic::manual(id, number);
-    characteristic.sources = region
-        .map(|region| SourceRegion {
-            sheet,
-            region: *region,
-            text_source: TextSource::Manual,
-            raw_text: None,
-        })
-        .into_iter()
-        .collect();
-    characteristic.set_values(values)?;
+    build(&mut characteristic)?;
     fill_unit(tx.project, &mut characteristic, Some(sheet));
     tx.push(Change::CharacteristicInserted {
-        index: index_u32(tx.project.characteristics.len()),
+        index: index_u32(index),
         characteristic: Box::new(characteristic),
     })?;
     tx.push(Change::BalloonInserted {
@@ -417,11 +547,113 @@ fn add_characteristic(
             id: balloon_id,
             characteristic: id,
             sheet,
-            position,
-            anchor,
+            position: placement.position,
+            anchor: placement.anchor,
             style: BalloonStyleOverride::default(),
         }),
     })
+}
+
+fn add_characteristic(
+    tx: &mut Tx<'_>,
+    sheet: SheetId,
+    placement: BalloonPlacement,
+    region: Option<&OrientedBox>,
+    values: &[FieldValue],
+    insert_after: Option<CharId>,
+    env: &mut dyn Environment,
+) -> Result<(), CommandError> {
+    check_new(tx.project, sheet, placement, region)?;
+    insert_new(tx, sheet, placement, insert_after, env, |c| {
+        c.sources = region
+            .map(|region| SourceRegion {
+                sheet,
+                region: *region,
+                text_source: TextSource::Manual,
+                raw_text: None,
+            })
+            .into_iter()
+            .collect();
+        c.set_values(values)?;
+        Ok(())
+    })
+}
+
+/// One accepted proposal becomes a characteristic with the proposed values (ADR 0006).
+fn accept_proposal(
+    tx: &mut Tx<'_>,
+    proposal: &Proposal,
+    insert_after: Option<CharId>,
+    env: &mut dyn Environment,
+) -> Result<(), CommandError> {
+    let sheet = proposal.source.sheet;
+    check_new(
+        tx.project,
+        sheet,
+        proposal.placement,
+        Some(&proposal.source.region),
+    )?;
+    if proposal.quantity == 0 {
+        return Err(FieldError::ZeroQuantity.into());
+    }
+    insert_new(tx, sheet, proposal.placement, insert_after, env, |c| {
+        c.kind = proposal.kind;
+        proposal
+            .requirement_text
+            .trim()
+            .clone_into(&mut c.requirement_text);
+        c.nominal = proposal.nominal;
+        c.unit = proposal.unit;
+        c.upper_dev = proposal.upper_dev;
+        c.lower_dev = proposal.lower_dev;
+        c.upper_limit = proposal.upper_limit;
+        c.lower_limit = proposal.lower_limit;
+        c.fit = proposal
+            .fit
+            .as_deref()
+            .map(str::trim)
+            .filter(|f| !f.is_empty())
+            .map(str::to_owned);
+        c.derivation.clone_from(&proposal.derivation);
+        c.quantity = proposal.quantity;
+        c.inspect = proposal.inspect;
+        c.origin = proposal.origin;
+        c.sources = vec![proposal.source.clone()];
+        Ok(())
+    })
+}
+
+/// Most view rectangles per sheet.
+const MAX_VIEWS: usize = 1000;
+
+/// Edits one sheet; records a change only if it differs.
+fn change_sheet(
+    tx: &mut Tx<'_>,
+    id: SheetId,
+    edit: impl FnOnce(&mut Sheet),
+) -> Result<(), CommandError> {
+    let current = tx.project.sheet(id).ok_or(CommandError::UnknownSheet(id))?;
+    let before = Box::new(current.clone());
+    let mut after = before.clone();
+    edit(&mut after);
+    if after != before {
+        tx.push(Change::SheetChanged { before, after })?;
+    }
+    Ok(())
+}
+
+/// Edits the project settings; records a change only if they differ.
+fn change_settings(
+    tx: &mut Tx<'_>,
+    edit: impl FnOnce(&mut ProjectSettings),
+) -> Result<(), CommandError> {
+    let before = Box::new(tx.project.settings.clone());
+    let mut after = before.clone();
+    edit(&mut after);
+    if after != before {
+        tx.push(Change::SettingsChanged { before, after })?;
+    }
+    Ok(())
 }
 
 /// Distinct IDs in first seen order, all checked to exist.
@@ -569,16 +801,11 @@ fn update_sheet(
             "scale parts must be at least 1",
         ));
     }
-    let current = tx.project.sheet(id).ok_or(CommandError::UnknownSheet(id))?;
-    let before = Box::new(current.clone());
-    let mut after = before.clone();
-    after.rotation = rotation.unwrap_or(after.rotation);
-    after.unit = unit.unwrap_or(after.unit);
-    after.scale = scale.unwrap_or(after.scale);
-    if after != before {
-        tx.push(Change::SheetChanged { before, after })?;
-    }
-    Ok(())
+    change_sheet(tx, id, |s| {
+        s.rotation = rotation.unwrap_or(s.rotation);
+        s.unit = unit.unwrap_or(s.unit);
+        s.scale = scale.unwrap_or(s.scale);
+    })
 }
 
 fn lock_numbering(
@@ -593,7 +820,7 @@ fn lock_numbering(
         .project
         .characteristics
         .iter()
-        .map(|c| c.number)
+        .map(|c| c.number.base())
         .max()
         .unwrap_or(0);
     let after = Numbering {
@@ -601,8 +828,8 @@ fn lock_numbering(
             reason,
             locked_at: env.now(),
             locked_by: env.user_name(),
-            insert_policy: InsertPolicy::NextFree,
             highest_number,
+            given: Vec::new(),
         }),
     };
     tx.push(Change::NumberingChanged {

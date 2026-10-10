@@ -54,6 +54,7 @@ fn add_inserts_characteristic_then_balloon() {
                     FieldValue::UpperDev(dec("0.1")),
                     FieldValue::LowerDev(dec("-0.1")),
                 ],
+                insert_after: None,
             },
             &mut env,
         )
@@ -74,7 +75,7 @@ fn add_inserts_characteristic_then_balloon() {
         balloon.id.to_string(),
         "00000000-0000-0000-0000-000000000005"
     );
-    assert_eq!(c.number, 1);
+    assert_eq!(c.number.to_string(), "1");
     assert_eq!(c.unit, Some(Unit::Mm), "unit taken from the sheet");
     assert_eq!(c.upper_limit.unwrap().to_string(), "8.1");
     assert_eq!(c.lower_limit.unwrap().to_string(), "7.9");
@@ -120,7 +121,7 @@ fn locked_add_records_the_new_highest_number_first() {
     };
     assert_eq!(before.lock.as_ref().unwrap().highest_number, 2);
     assert_eq!(after.lock.as_ref().unwrap().highest_number, 3);
-    assert_eq!(characteristic.number, 3);
+    assert_eq!(characteristic.number.to_string(), "3");
 }
 
 #[test]
@@ -152,7 +153,10 @@ fn delete_removes_balloons_then_characteristics_then_renumbers() {
             "characteristic_changed"
         ]
     );
-    assert_eq!(common::numbers(doc.project()), [1, 2]);
+    assert_eq!(
+        common::numbers(doc.project()),
+        [1, 2].map(dimo_core::DisplayNumber::plain)
+    );
 }
 
 #[test]
@@ -392,6 +396,7 @@ fn refused_commands_change_nothing() {
             anchor: Point { x: 0.0, y: 0.0 },
             region: None,
             values: vec![],
+            insert_after: None,
         },
         // A batch whose second command fails rolls back the first.
         Command::Batch {
@@ -434,7 +439,10 @@ fn batch_is_one_undo_step_and_one_audit_entry() {
         &mut env,
     )
     .unwrap();
-    assert_eq!(common::numbers(doc.project()), [1, 2]);
+    assert_eq!(
+        common::numbers(doc.project()),
+        [1, 2].map(dimo_core::DisplayNumber::plain)
+    );
     let entry = doc.audit().last().unwrap();
     assert!(matches!(
         &entry.action,

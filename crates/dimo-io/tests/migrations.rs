@@ -82,10 +82,32 @@ fn current_fixture_is_written_byte_identical() {
         "project.json".into(),
         "audit.jsonl".into(),
     ];
-    for entry in fs::read_dir(dir.join("drawings")).unwrap() {
-        let name = entry.unwrap().file_name().into_string().unwrap();
-        names.push(format!("drawings/{name}"));
+    for folder in ["drawings", "tolerances"] {
+        let Ok(listing) = fs::read_dir(dir.join(folder)) else {
+            continue;
+        };
+        for entry in listing {
+            let name = entry.unwrap().file_name().into_string().unwrap();
+            names.push(format!("{folder}/{name}"));
+        }
     }
+    let mut written_names = Vec::new();
+    for folder in ["drawings", "tolerances"] {
+        if let Ok(listing) = fs::read_dir(written.join(folder)) {
+            for entry in listing {
+                let name = entry.unwrap().file_name().into_string().unwrap();
+                written_names.push(format!("{folder}/{name}"));
+            }
+        }
+    }
+    written_names.sort();
+    let mut expected_names: Vec<&String> = names.iter().skip(3).collect();
+    expected_names.sort();
+    assert_eq!(
+        written_names.iter().collect::<Vec<_>>(),
+        expected_names,
+        "same drawings and tables"
+    );
     for name in names {
         let expected = fs::read(dir.join(&name)).unwrap();
         let mut actual = fs::read(written.join(&name)).unwrap();
@@ -99,4 +121,70 @@ fn current_fixture_is_written_byte_identical() {
         }
         assert!(actual == expected, "{name} differs from the fixture");
     }
+}
+
+/// T2.4 acceptance: the version 1 fixture opens, saves as version 2, and saving the reopened
+/// file again gives identical bytes (NFR-REL-03, FR-EXP-11).
+#[test]
+fn version_1_saves_as_version_2_and_then_byte_identical() {
+    let loaded = ProjectFile::from_folder(&fixture(1)).unwrap();
+    assert_eq!(loaded.migrated_from(), Some(1));
+    let first = loaded.file.to_zip().unwrap();
+    let reopened = ProjectFile::from_zip(&first).unwrap();
+    assert_eq!(reopened.manifest.schema_version, 2);
+    assert_eq!(reopened.migrated_from(), None);
+    assert_eq!(reopened.file, loaded.file);
+    let second = reopened.file.to_zip().unwrap();
+    assert!(first == second, "second save differs from the first");
+
+    // Folder mode as well.
+    let out = tempfile::tempdir().unwrap();
+    let (a, b) = (out.path().join("a"), out.path().join("b"));
+    loaded.file.save(&a, Layout::Folder).unwrap();
+    ProjectFile::from_folder(&a)
+        .unwrap()
+        .file
+        .save(&b, Layout::Folder)
+        .unwrap();
+    for name in [MANIFEST, "project.json", "audit.jsonl"] {
+        assert!(
+            fs::read(a.join(name)).unwrap() == fs::read(b.join(name)).unwrap(),
+            "{name} differs"
+        );
+    }
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(a.join(MANIFEST)).unwrap()).unwrap();
+    assert_eq!(manifest["schema_version"], 2);
+}
+
+/// What the version 1 to 2 migration makes of the version 1 data (T2.4).
+#[test]
+fn version_1_migration_fills_the_new_fields() {
+    let project = ProjectFile::from_folder(&fixture(1)).unwrap().file.project;
+    let numbers: Vec<String> = project
+        .characteristics
+        .iter()
+        .map(|c| c.number.to_string())
+        .collect();
+    assert_eq!(numbers, ["1", "2"]);
+    // Limits typed by hand in version 1 are manual (FR-TOL-08); no limits, no derivation.
+    assert_eq!(
+        project.characteristics[0].derivation,
+        Some(dimo_core::ToleranceDerivation::manual())
+    );
+    assert_eq!(project.characteristics[1].derivation, None);
+    let settings = &project.settings;
+    assert_eq!(
+        settings.numbering.strategy,
+        dimo_core::NumberingStrategy::Manual
+    );
+    assert_eq!(
+        settings.numbering.insert_when_locked,
+        dimo_core::InsertPolicy::NextFree
+    );
+    assert_eq!(settings.tolerance, dimo_core::ToleranceSettings::default());
+    let lock = project.numbering.lock.as_ref().unwrap();
+    assert_eq!((lock.highest_number, lock.given.len()), (2, 0));
+    let sheet = &project.revisions[0].sheets[0];
+    assert!(sheet.zone_grid.is_none() && sheet.views.is_empty());
 }

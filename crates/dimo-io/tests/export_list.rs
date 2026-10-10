@@ -7,9 +7,9 @@ use std::io::Read;
 
 use dimo_core::{
     Balloon, BalloonStyleOverride, CharId, Characteristic, CharacteristicKind,
-    CharacteristicStatus, Classification, DrawingRevision, Environment, FixedEnvironment,
-    OrientedBox, Point, Project, ProjectInfo, RevisionId, Sha256Hex, Sheet, SheetId, SheetKind,
-    Size, SourceRegion, TextSource, Timestamp, Unit,
+    CharacteristicStatus, Classification, DisplayNumber, DrawingRevision, Environment,
+    FixedEnvironment, OrientedBox, Point, Project, ProjectInfo, RevisionId, Sha256Hex, Sheet,
+    SheetId, SheetKind, Size, SourceRegion, TextSource, Timestamp, Unit,
 };
 use dimo_io::export::{
     COLUMNS, CsvListExporter, ExportOptions, Exporter, Language, XlsxListExporter,
@@ -52,8 +52,11 @@ fn project() -> Project {
         revision,
     );
 
-    let new = |env: &mut FixedEnvironment, number| {
-        Characteristic::manual(CharId::from_uuid(env.new_uuid()), number)
+    let new = |env: &mut FixedEnvironment, number: u32| {
+        Characteristic::manual(
+            CharId::from_uuid(env.new_uuid()),
+            DisplayNumber::plain(number),
+        )
     };
     let region = |sheet| SourceRegion {
         sheet,
@@ -232,4 +235,29 @@ fn xlsx_zip_entries_have_a_fixed_time() {
         );
         assert_eq!((time.hour(), time.minute(), time.second()), (0, 0, 0));
     }
+}
+
+/// D-23, FR-BAL-11: sub-numbers and letters export as text in number order; plain numbers stay
+/// numbers, so the plain snapshots above do not change.
+#[test]
+fn structured_numbers_export_as_text_in_number_order() {
+    let mut project = project();
+    for c in &mut project.characteristics {
+        match c.number.as_plain() {
+            Some(3) => c.number = DisplayNumber::parse("2A").unwrap(),
+            Some(4) => c.number = DisplayNumber::parse("2.1").unwrap(),
+            _ => {}
+        }
+    }
+    let bytes = export(&CsvListExporter, &project, Language::English);
+    let mut reader = csv::Reader::from_reader(bytes.as_slice());
+    let numbers: Vec<String> = reader.records().map(|r| r.unwrap()[0].to_owned()).collect();
+    assert_eq!(numbers, ["1", "2", "2A", "2.1"]);
+
+    let bytes = export(&XlsxListExporter, &project, Language::English);
+    let strings = read_entry(&bytes, "xl/sharedStrings.xml");
+    assert!(
+        strings.contains(">2A<") && strings.contains(">2.1<"),
+        "{strings}"
+    );
 }

@@ -249,6 +249,7 @@ export function rejectReasonText(reason: RejectReason): string | null {
     case "invalid_geometry":
     case "invalid_style":
     case "invalid_sheet_setting":
+    case "invalid_project_setting":
     case "nothing_to_undo":
     case "nothing_to_redo":
     case "internal":

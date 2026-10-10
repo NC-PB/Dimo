@@ -198,7 +198,7 @@ describe("refusals", () => {
       reason: "manual",
       locked_at: "2026-10-09T10:00:00Z",
       locked_by: "peter",
-      insert_policy: "next_free",
+      given: [] as string[],
       highest_number: 3,
     } as const;
     const error = {
@@ -234,7 +234,7 @@ describe("refusals", () => {
       reason: "issued_report",
       locked_at: "2026-10-09T10:00:00Z",
       locked_by: "peter",
-      insert_policy: "next_free",
+      given: [],
       highest_number: 12,
     });
     expect(text).toContain("peter");

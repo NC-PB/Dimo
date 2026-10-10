@@ -161,13 +161,13 @@ if [[ -s "$PROJECT" ]]; then
   jqp() { jq -r "$1" <<<"$JSON"; }
   expect "project: characteristics in number order" \
     "1:Ø8 c10|2:Ø8 f7|3:Ø30 H7 +0.0203 -0|4:100 +0 -0.6|5:Ø8 h6" \
-    "$(jqp '[.characteristics | sort_by(.number)[] | "\(.number):\(.requirement_text)"] | join("|")')"
+    "$(jqp '[.characteristics | sort_by(.number | tonumber)[] | "\(.number):\(.requirement_text)"] | join("|")')"
   expect "project: one balloon per characteristic" "5" "$(jqp '.balloons | length')"
   expect "project: nominal and deviations typed in the table, limits worked out" \
     "8.0 0.02 -0.05 8.02 7.95 mm" \
-    "$(jqp '.characteristics[] | select(.number == 2) | "\(.nominal) \(.upper_dev) \(.lower_dev) \(.upper_limit) \(.lower_limit) \(.unit)"')"
+    "$(jqp '.characteristics[] | select(.number == "2") | "\(.nominal) \(.upper_dev) \(.lower_dev) \(.upper_limit) \(.lower_limit) \(.unit)"')"
   expect "project: comment typed in the table" "check twice" \
-    "$(jqp '.characteristics[] | select(.number == 4) | .comment')"
+    "$(jqp '.characteristics[] | select(.number == "4") | .comment')"
   expect "project: sheet rotation, unit and scale" "deg90 in 2:1" \
     "$(jqp '.revisions[0].sheets[0] | "\(.rotation) \(.unit) \(.scale.drawing):\(.scale.actual)"')"
   expect "project: numbering locked by the issued export" "issued_report 5" \

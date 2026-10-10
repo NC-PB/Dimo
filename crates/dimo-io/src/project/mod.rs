@@ -7,6 +7,7 @@
 //!   manifest.json         format name, schema version, app version, created, modified
 //!   project.json          dimo_core::Project, schema in docs/schema/project.schema.json
 //!   audit.jsonl           one dimo_core::AuditEntry per line, append only
+//!   tolerances/<id>.toml  custom tolerance tables used by the project (M2 decision 4)
 //!   drawings/<sha256>.pdf original drawing files, byte identical to the import (FR-DOC-07)
 //! ```
 //!
@@ -16,10 +17,10 @@
 //! # Determinism
 //!
 //! The same [`ProjectFile`] always gives the same bytes (FR-EXP-11, rule 11): entries in the
-//! order above with drawings sorted by hash, JSON from the Rust types (no maps with random
-//! order), every ZIP entry stored uncompressed with the manifest's `modified` time, fixed
-//! permissions and host system. `modified` is the time of the last audit entry, so saving an
-//! unchanged project after loading it gives identical bytes.
+//! order above with tables sorted by id and drawings sorted by hash, JSON from the Rust types
+//! (no maps with random order), every ZIP entry stored uncompressed with the manifest's
+//! `modified` time, fixed permissions and host system. `modified` is the time of the last audit
+//! entry, so saving an unchanged project after loading it gives identical bytes.
 //!
 //! # Modules
 //!
@@ -52,7 +53,7 @@ pub use session::{OpenReport, ProjectSession};
 /// The `format` value in every manifest.
 pub const FORMAT_NAME: &str = "dimo-project";
 /// The schema version this build writes and the highest it reads (NFR-REL-03).
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 /// File extension of project files, without the dot.
 pub const EXTENSION: &str = "dimo";
 /// Version of the Dimo build, written to the manifest.
@@ -66,6 +67,8 @@ pub const PROJECT: &str = "project.json";
 pub const AUDIT: &str = "audit.jsonl";
 /// Folder of the drawing files.
 pub const DRAWINGS_DIR: &str = "drawings";
+/// Folder of the custom tolerance tables (M2 decision 4).
+pub const TOLERANCES_DIR: &str = "tolerances";
 
 /// How a project is stored on disk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -113,6 +116,9 @@ pub struct ProjectFile {
     pub audit: Vec<AuditEntry>,
     /// Drawing files by their SHA-256. Only drawings of a revision are saved.
     pub drawings: BTreeMap<Sha256Hex, Vec<u8>>,
+    /// Custom tolerance table files (TOML) by their SHA-256. Only tables listed in the tolerance
+    /// settings are saved, as `tolerances/<id>.toml` (M2 decision 4, FR-TOL-07).
+    pub tables: BTreeMap<Sha256Hex, Vec<u8>>,
 }
 
 /// A project read from disk.
@@ -139,6 +145,7 @@ impl ProjectFile {
             project,
             audit: Vec::new(),
             drawings: BTreeMap::new(),
+            tables: BTreeMap::new(),
         }
     }
 
@@ -152,6 +159,20 @@ impl ProjectFile {
     /// The drawing file with this hash.
     pub fn drawing(&self, hash: &Sha256Hex) -> Option<&[u8]> {
         self.drawings.get(hash).map(Vec::as_slice)
+    }
+
+    /// Adds a custom tolerance table file and returns its hash, for a
+    /// [`CustomTable`](dimo_core::CustomTable) entry of the tolerance settings. The bytes are
+    /// stored as given; `dimo-tolerance` validates them (FR-TOL-07).
+    pub fn insert_table(&mut self, bytes: Vec<u8>) -> Sha256Hex {
+        let hash = sha256(&bytes);
+        self.tables.entry(hash.clone()).or_insert(bytes);
+        hash
+    }
+
+    /// The custom tolerance table file with this hash.
+    pub fn table(&self, hash: &Sha256Hex) -> Option<&[u8]> {
+        self.tables.get(hash).map(Vec::as_slice)
     }
 
     /// The manifest written for this content.
@@ -190,6 +211,28 @@ impl ProjectFile {
             (PROJECT.to_owned(), Cow::Owned(project)),
             (AUDIT.to_owned(), Cow::Owned(audit)),
         ];
+        // Sorted by id (the settings keep them sorted, ids unique).
+        let mut tables: Vec<&dimo_core::CustomTable> = self
+            .project
+            .settings
+            .tolerance
+            .custom_tables
+            .iter()
+            .collect();
+        tables.sort_by(|a, b| a.table.id.cmp(&b.table.id));
+        for table in tables {
+            let name = format!("{TOLERANCES_DIR}/{}.toml", table.table.id);
+            if !dimo_core::project::is_table_id(&table.table.id)
+                || entries.iter().any(|(n, _)| *n == name)
+            {
+                return Err(ProjectError::InvalidTable(table.table.id.clone()));
+            }
+            let bytes = self
+                .tables
+                .get(&table.sha256)
+                .ok_or_else(|| ProjectError::MissingTable(table.table.id.clone()))?;
+            entries.push((name, Cow::Borrowed(bytes.as_slice())));
+        }
         let hashes: BTreeSet<&Sha256Hex> =
             self.project.revisions.iter().map(|r| &r.sha256).collect();
         for hash in hashes {
@@ -314,12 +357,31 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
         drawings.insert(hash.clone(), bytes);
     }
 
+    let mut tables = BTreeMap::new();
+    for table in &project.settings.tolerance.custom_tables {
+        let id = &table.table.id;
+        let bytes = raw
+            .tables
+            .remove(id)
+            .ok_or_else(|| ProjectError::MissingTable(id.clone()))?;
+        let actual = sha256(&bytes);
+        if actual != table.sha256 {
+            return Err(ProjectError::TableHashMismatch {
+                id: id.clone(),
+                expected: table.sha256.clone(),
+                actual,
+            });
+        }
+        tables.insert(actual, bytes);
+    }
+
     Ok(LoadedProject {
         file: ProjectFile {
             created: manifest.created.clone(),
             project,
             audit,
             drawings,
+            tables,
         },
         manifest,
     })

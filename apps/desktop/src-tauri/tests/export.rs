@@ -63,6 +63,7 @@ fn session(tiles: &TileService) -> AppSession {
                 },
                 region: None,
                 values: vec![FieldValue::RequirementText(text.into())],
+                insert_after: None,
             })
             .unwrap();
     }

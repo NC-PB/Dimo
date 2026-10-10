@@ -1,0 +1,19 @@
+[table]
+id = "shop-table"
+title = "Shop general tolerances"
+kind = "custom"
+unit = "mm"
+version = 1
+status = "draft"
+source = "Example shop standard"
+
+[[part]]
+id = "linear"
+kind = "symmetric"
+applies_to = "linear"
+value_unit = "mm"
+columns = ["a"]
+rows = [
+  { min_inclusive = "0.5", max_inclusive = "30", values = ["0.1"] },
+  { min_exclusive = "30", values = ["0.2"] },
+]

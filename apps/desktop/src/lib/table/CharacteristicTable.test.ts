@@ -57,7 +57,7 @@ function projectWith(count: number, locked = false) {
         reason: "manual",
         locked_at: "2026-10-09T10:00:00Z",
         locked_by: "peter",
-        insert_policy: "next_free",
+        given: [],
         highest_number: count,
       },
     };

@@ -18,7 +18,7 @@ export const DOC_HASH = "a".repeat(64);
 export function characteristic(id: string, number: number): Characteristic {
   return {
     id,
-    number,
+    number: String(number),
     kind: "other",
     requirement_text: "",
     nominal: null,
@@ -28,6 +28,7 @@ export function characteristic(id: string, number: number): Characteristic {
     upper_limit: null,
     lower_limit: null,
     fit: null,
+    derivation: null,
     quantity: 1,
     classification: "none",
     inspection: { method: "", gauge: "", sampling: "", frequency: "" },
@@ -78,6 +79,8 @@ export function emptyProject(): Project {
             raster_dpi: null,
             unit: "mm",
             scale: { drawing: 1, actual: 1 },
+            zone_grid: null,
+            views: [],
           },
         ],
       },
@@ -95,6 +98,18 @@ export function emptyProject(): Project {
         fill_color: "#FFFFFF",
         text_color: "#000000",
         leader: true,
+      },
+      numbering: {
+        strategy: "sheet_zone",
+        multi_instance: "quantity",
+        insert_when_locked: "next_free",
+      },
+      tolerance: {
+        general: null,
+        drawing_rule: null,
+        decimal_rules: [],
+        unit_rounding: { mm_places: 3, inch_places: 4 },
+        custom_tables: [],
       },
     },
   };

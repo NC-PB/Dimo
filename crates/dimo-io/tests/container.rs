@@ -215,6 +215,7 @@ fn container_layout_is_fixed() {
             "manifest.json".to_owned(),
             "project.json".to_owned(),
             "audit.jsonl".to_owned(),
+            "tolerances/shop-table.toml".to_owned(),
             format!("drawings/{hash}.pdf"),
         ]
     );
@@ -260,7 +261,7 @@ fn manifest_and_audit_content() {
     let audit = String::from_utf8(entries[2].1.clone()).unwrap();
     assert_eq!(audit.lines().count(), file.audit.len());
     assert!(audit.ends_with('\n'));
-    assert_eq!(SCHEMA_VERSION, 1);
+    assert_eq!(SCHEMA_VERSION, 2);
 }
 
 #[test]
@@ -368,7 +369,7 @@ fn newer_schema_versions_are_refused_and_left_untouched() {
             error,
             ProjectError::NewerVersion {
                 found: 99,
-                supported: 1
+                supported: 2
             }
         ),
         "{error}"
@@ -411,6 +412,74 @@ fn drawings_must_match_their_hash() {
         file.to_zip(),
         Err(ProjectError::MissingDrawing(h)) if h == hash
     ));
+}
+
+/// M2 decision 4: custom tables travel with the project, checked by their hash.
+#[test]
+fn custom_tables_are_stored_and_checked() {
+    let file = common::sample();
+    let loaded = ProjectFile::from_zip(&file.to_zip().unwrap()).unwrap();
+    assert_eq!(
+        loaded.file.table(&sha256(common::TABLE)),
+        Some(common::TABLE)
+    );
+
+    let bytes = sample_entries_with("tolerances/shop-table.toml", b"[table]\nid = \"x\"\n");
+    let error = ProjectFile::from_zip(&bytes).unwrap_err();
+    assert!(
+        matches!(&error, ProjectError::TableHashMismatch { id, .. } if id == "shop-table"),
+        "{error}"
+    );
+
+    let mut missing = common::sample();
+    missing.tables.clear();
+    assert!(matches!(
+        missing.to_zip(),
+        Err(ProjectError::MissingTable(id)) if id == "shop-table"
+    ));
+    let entries: Vec<(String, Vec<u8>)> = unzip(&file.to_zip().unwrap())
+        .into_iter()
+        .filter(|(name, _)| !name.starts_with("tolerances/"))
+        .collect();
+    let borrowed: Vec<(&str, &[u8])> = entries
+        .iter()
+        .map(|(n, d)| (n.as_str(), d.as_slice()))
+        .collect();
+    let error = ProjectFile::from_zip(&zip_of(&borrowed)).unwrap_err();
+    assert!(matches!(error, ProjectError::MissingTable(_)), "{error}");
+}
+
+/// M2 decision 4: settings may list a custom table only after its file was stored.
+#[test]
+fn session_finds_custom_tables_without_a_file() {
+    let file = common::sample();
+    let settings = file.project.settings.tolerance.clone();
+    let command = Command::Batch {
+        commands: vec![Command::SetToleranceSettings { settings }],
+    };
+    let mut without = file.clone();
+    without.tables.clear();
+    let mut session = dimo_io::project::ProjectSession::from_file(without, None);
+    assert_eq!(
+        session.missing_table(&command).as_deref(),
+        Some("shop-table")
+    );
+    session.insert_table(common::TABLE.to_vec());
+    assert_eq!(session.missing_table(&command), None);
+}
+
+#[test]
+fn folder_mode_removes_tables_that_left_the_project() {
+    let dir = tempfile::tempdir().unwrap();
+    let folder = dir.path().join("p");
+    let mut file = common::sample();
+    file.save(&folder, Layout::Folder).unwrap();
+    let table = folder.join("tolerances/shop-table.toml");
+    assert_eq!(fs::read(&table).unwrap(), common::TABLE);
+    file.project.settings.tolerance = dimo_core::ToleranceSettings::default();
+    file.save(&folder, Layout::Folder).unwrap();
+    assert!(!table.exists());
+    assert!(ProjectFile::load(&folder).is_ok());
 }
 
 #[test]

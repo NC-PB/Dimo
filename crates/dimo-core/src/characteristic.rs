@@ -8,8 +8,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::decimal::{OptionalDecimal, decimal_option_schema};
+use crate::derivation::ToleranceDerivation;
 use crate::geometry::OrientedBox;
 use crate::id::{CharId, SheetId};
+use crate::number::DisplayNumber;
 
 /// What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
@@ -205,9 +207,11 @@ pub struct SourceRegion {
 pub struct Characteristic {
     /// Stable ID, never changes (FR-BAL-09).
     pub id: CharId,
-    /// Display number, starting at 1. Follows the placement order while numbering is unlocked
-    /// (D-21); kept when numbering is locked (D-23).
-    pub number: u32,
+    /// Display number such as `12`, `12.1` or `12A`. Follows the placement order while
+    /// numbering is unlocked (D-21); kept when numbering is locked, where added characteristics
+    /// are numbered by the insert policy (D-23, FR-BAL-11).
+    #[cfg_attr(feature = "specta", specta(type = String))]
+    pub number: DisplayNumber,
     /// What the characteristic describes.
     pub kind: CharacteristicKind,
     /// Text as it appears on the drawing.
@@ -241,6 +245,9 @@ pub struct Characteristic {
     pub lower_limit: Option<Decimal>,
     /// Fit designation such as `H7`.
     pub fit: Option<String>,
+    /// Which rule produced the limits (FR-TOL-08). `null` if no rule was recorded, e.g. for a
+    /// characteristic without values.
+    pub derivation: Option<ToleranceDerivation>,
     /// Number of features the characteristic stands for, from `4X` or `2 PL` (D-22). At least 1.
     pub quantity: u32,
     /// Importance class.
@@ -262,7 +269,7 @@ pub struct Characteristic {
 impl Characteristic {
     /// A characteristic placed by hand: kind `other`, no values, quantity 1, inspected,
     /// accepted.
-    pub fn manual(id: CharId, number: u32) -> Self {
+    pub fn manual(id: CharId, number: DisplayNumber) -> Self {
         Self {
             id,
             number,
@@ -275,6 +282,7 @@ impl Characteristic {
             upper_limit: None,
             lower_limit: None,
             fit: None,
+            derivation: None,
             quantity: 1,
             classification: Classification::None,
             inspection: Inspection::default(),
@@ -293,7 +301,12 @@ impl Characteristic {
     /// deviation; with a deviation missing, limits derived from deviations are cleared, so no
     /// stale limit stays. Limits set explicitly in the same values are kept as given, and
     /// explicit limits of a characteristic without deviations survive nominal edits.
+    ///
+    /// If the limits change and the values set no derivation, the derivation becomes `manual`,
+    /// or `null` when both limits are cleared (FR-TOL-08).
     pub fn set_values(&mut self, values: &[FieldValue]) -> Result<(), FieldError> {
+        let limits_before = (self.upper_limit, self.lower_limit);
+        let mut derivation_set = false;
         let mut nominal_touched = false;
         let mut deviation_touched = false;
         let mut limit_touched = false;
@@ -324,6 +337,9 @@ impl Characteristic {
                 FieldValue::Inspect(inspect) => self.inspect = *inspect,
                 FieldValue::Status(status) => self.status = *status,
                 FieldValue::Comment(text) => self.comment.clone_from(text),
+                FieldValue::Derivation(derivation) => {
+                    (self.derivation, derivation_set) = (derivation.clone(), true);
+                }
             }
         }
         if (nominal_touched || deviation_touched) && !limit_touched {
@@ -340,6 +356,14 @@ impl Characteristic {
                 // Only explicit limits, no deviations: keep them.
                 _ => {}
             }
+        }
+        // FR-TOL-08: limits changed by hand come from no rule any more.
+        if !derivation_set && (self.upper_limit, self.lower_limit) != limits_before {
+            self.derivation = if self.upper_limit.is_none() && self.lower_limit.is_none() {
+                None
+            } else {
+                Some(ToleranceDerivation::manual())
+            };
         }
         Ok(())
     }
@@ -388,6 +412,8 @@ pub enum FieldValue {
     Status(CharacteristicStatus),
     /// Comment.
     Comment(String),
+    /// Which rule produced the limits (FR-TOL-08), set together with the limits it explains.
+    Derivation(Option<ToleranceDerivation>),
 }
 
 /// A field value that cannot be stored.
@@ -408,7 +434,10 @@ mod tests {
     }
 
     fn sample() -> Characteristic {
-        Characteristic::manual(CharId::from_uuid(Uuid::from_u128(7)), 1)
+        Characteristic::manual(
+            CharId::from_uuid(Uuid::from_u128(7)),
+            crate::number::DisplayNumber::plain(1),
+        )
     }
 
     #[test]

@@ -101,7 +101,7 @@
     style:transform="translate({at.right ? '0' : '-100%'}, -50%)"
   >
     <label for="balloon-value" class="text-sm font-semibold text-text tabular-nums">
-      {m.balloon_value_label({ number: String(characteristic.number) })}
+      {m.balloon_value_label({ number: characteristic.number })}
     </label>
     <input
       id="balloon-value"
