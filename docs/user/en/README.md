@@ -43,11 +43,11 @@ into the project, so the project does not depend on the original file afterwards
 first sheet fitted into the window. A drawing with several sheets (pages) shows a sheet selector
 in the toolbar.
 
-The project has no file yet. The toolbar says "Untitled"; you save it in step 8, but Dimo already
+The project has no file yet. The toolbar says "Untitled"; you save it in step 9, but Dimo already
 keeps a recoverable copy of everything you do ([Projects](projects.md)).
 
 If the sheet is sideways, set its rotation, unit and scale in **Sheet properties** on the right
-now, as in step 7. Setting the unit and the scale early saves you from forgetting them.
+now, as in step 8. Setting the unit and the scale early saves you from forgetting them.
 
 ### 2. Look around
 
@@ -56,19 +56,32 @@ is), or with **+** and **-**. **0** fits the whole sheet into the window again. 
 with the arrow keys, with the middle mouse button, or by holding Space and dragging. PgUp and PgDn
 switch sheets. Details: [Looking at a drawing](drawing-view.md).
 
-### 3. Place balloons and capture the values
+### 3. Choose the general tolerance of the project
+
+Most drawings print a general tolerance in the title block, for example ISO 2768-m. Dimo does not
+read the title block yet, so tell it once: open **Settings** (⌘,), go to **Tolerances of the
+project**, choose **ISO 2768-1** as **General tolerance** and the class from the drawing, then
+return to the drawing with ⌘1. From now on a dimension without a tolerance gets its limits from
+that table. Without a general tolerance such a dimension is marked **No tolerance defined** and
+has no limits. The tables shipped with Dimo carry the marker **Draft** until their values have
+been verified. Details: [Tolerances](tolerances.md).
+
+### 4. Place balloons and capture the values
 
 1. Press **B** (the **Place balloon** tool).
-2. Drag a box around the dimension text. A card shows what Dimo read; press **Enter** to accept
-   it. Or click the dimension or note, type the value as printed, for example `Ø8 f7`, and
-   press **Enter**.
+2. Drag a box around the dimension text. A card shows what Dimo read: kind, nominal value,
+   limits, the rule the limits come from and an explanation. Press **Enter** to accept it.
+   Or click the dimension or note, type the value as printed, for example `Ø8 f7`, and
+   press **Enter**. Dimo reads typed text the same way as a box.
 3. Press **Escape** to discard a card you do not want.
-4. Click the next feature.
+4. Drag or click the next feature. You can start typing right after the click or the box.
 
 The balloons are numbered 1, 2, 3 in the order you place them. If you made a mistake, press ⌘Z.
 Press **V** to go back to the **Select** tool. Details: [Ballooning a drawing](ballooning.md).
+Click a balloon or a row to see the rule, the explanation and the history of a characteristic in
+the side panel ([Tolerances](tolerances.md)).
 
-### 4. Complete the values in the characteristic table
+### 5. Complete the values in the characteristic table
 
 The table under the drawing has one row per balloon. The text read or typed is in the
 **Requirement** column, and kind, nominal, fit and printed tolerances are already filled in.
@@ -81,24 +94,29 @@ and exported (`90.0` stays `90.0`). Details: [Characteristic table](characterist
 
 Click a row to see its balloon in the drawing, and click a balloon to see its row.
 
-### 5. Change the order
+### 6. Change the order and the numbering
 
 Drag the handle ⠿ of a row, or select rows and press ⌥↑ or ⌥↓. All characteristics are numbered
 again, and the balloons on the drawing follow. One ⌘Z puts everything back.
 
-### 6. Style the balloons
+To number by zone, by view or by type, use the **Numbering** panel in the side panel: choose a
+strategy, tick **Preview new numbers** to see the result on the drawing and in the table, and
+choose **Apply numbering**. Zone grid and views are drawn by hand in **Sheet properties**.
+Details: [Numbering strategies, zones and views](numbering.md).
+
+### 7. Style the balloons
 
 Select balloons and press **S**: shape (circle, flag, rectangle), leader line, size and outline
 color. The style of the whole project is in **Settings**. Status is shown by shape as well as
 color. Details: [Ballooning a drawing](ballooning.md), [Settings](settings.md).
 
-### 7. Set rotation, unit and scale of the sheet
+### 8. Set rotation, unit and scale of the sheet
 
 In **Sheet properties** on the right: rotate the sheet in steps of 90 degrees (**R** and
 **Shift+R**), choose millimeter or inch, and the scale of the title block. Each sheet has its own
 values. Details: [Sheets](sheets.md).
 
-### 8. Save
+### 9. Save
 
 Choose **Save** (⌘S). Because the project has no file yet, Dimo asks for a name and location and
 writes one `.dimo` file that contains the drawing, the characteristics, the balloons and the log
@@ -109,23 +127,25 @@ opening the project again (or starting Dimo, for a project that was never saved)
 work, with a note above the drawing. When you close the window or create or open another
 project with unsaved changes, Dimo asks first. Details: [Projects](projects.md).
 
-### 9. Export
+### 10. Export
 
 Open the **Export** view (⌘E).
 
 - **Ballooned PDF**: the drawing with the balloons drawn in. The original file is not changed.
-- **Characteristic list (CSV)** and **(Excel)**: one row per characteristic, in balloon order.
+- **Characteristic list (CSV)** and **(Excel)**: one row per characteristic, in balloon order,
+  with the rule that gave each limit.
 
 Pick the language of the column headers and how the PDF carries the balloons. Each export asks
 where to save the file and runs in the background. For a drawing that goes to a customer, tick
 **Export as issued** first: it locks the numbering, so numbers never change afterwards, even if
 you add or delete characteristics. Details: [Exports](exports.md).
 
-### 10. Settings
+### 11. Settings
 
 In **Settings** (⌘,) choose the theme (light, dark or as the system), the language of the app, and
 the user name that is written into the change log of each project. Settings are kept for the next
-start. Details: [Settings](settings.md).
+start. The tolerance rules of the project (step 3) are in the same view. Details:
+[Settings](settings.md).
 
 ### What next
 

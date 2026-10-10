@@ -13,7 +13,8 @@ sheet in **Sheet properties**, under **Zone grid**:
 
 1. Choose **Draw frame** and drag a rectangle along the inner edge of the drawing frame. Esc
    cancels. (**Add zone grid** puts a frame 10 mm inside the sheet edge instead, which you can draw
-   again later.)
+   again later.) A sheet without a grid gets a new one with default labels: columns 1 to 8 and
+   rows A to F on a landscape sheet, columns 1 to 6 and rows A to H on a portrait sheet.
 2. Set the number of **Columns** and **Rows**.
 3. Choose how the labels are written: for columns 1, 2, 3 or A, B, C from the left or from the
    right, for rows A, B, C or 1, 2, 3 from the top or from the bottom.
@@ -36,7 +37,7 @@ the sheet is shown on screen, so a rotated sheet is read the way you see it.
 
 | Strategy | Order |
 |---|---|
-| Sheet, zone, reading order | Sheet by sheet, zone by zone (rows of zones top to bottom, left to right), inside a zone in reading order. Without a zone grid the whole sheet is read in reading order. This is the default for new projects. |
+| Sheet, zone, reading order | Sheet by sheet, zone by zone (rows of zones top to bottom, left to right), inside a zone in reading order. Without a zone grid the whole sheet is read in reading order. This is the default for new projects. A project made with an earlier version starts with **Manual**, so its order does not change. |
 | Per view, reading order | View by view in the order you drew them, reading order inside each view. Balloons outside all views come last on their sheet, in reading order. |
 | Per view, clockwise | View by view, clockwise around the middle of the view, starting at 12 o'clock. Balloons outside all views come last. |
 | By type | Grouped by kind (linear, diameter, radius, angle and so on), each kind in sheet and zone order. |
@@ -51,10 +52,12 @@ A point outside the zone frame belongs to the nearest zone.
 
 1. Pick the strategy in the **Numbering** panel. A short text explains it.
 2. Tick **Preview new numbers**. Each balloon gets its new number in a dashed box next to it, and
-   the table shows it next to the current number. Numbers that change are drawn bold and in
-   color, numbers that stay are thin and grey. The panel counts how many numbers change.
+   the table shows it as an arrow and the new number in the **No** column. Numbers that change
+   are drawn bold and in color, numbers that stay are italic and grey. The panel counts how many
+   numbers change.
 3. Choose **Apply numbering**. The table is sorted in the new order, all balloons get their new
-   numbers, and the strategy is saved with the project. ⌘Z undoes the whole step.
+   numbers, and the strategy is saved with the project. ⌘Z undoes the whole step. Applying
+   also turns the preview off.
 
 The preview follows every change you make while it is on, so it always shows what applying would
 do. New balloons are still added at the end with the next number; apply the strategy again when
@@ -71,7 +74,9 @@ are numbered:
 | Sub-numbers (5.1, 5.2) | One characteristic per feature, numbered 5.1, 5.2, 5.3, 5.4, with stacked balloons. |
 
 With sub-numbers, a callout with a quantity read from the drawing becomes one characteristic per
-feature when you accept it. Every strategy keeps those characteristics together. Switching back to
+feature when you accept it. This applies to box select only: a `4X` value you type into a balloon
+stays one characteristic with its quantity. Every strategy except **Manual** keeps those
+characteristics together. Switching back to
 **One balloon with quantity** gives them plain numbers again; they stay separate characteristics.
 If you change the kind or the requirement of one of them, it gets a plain number of its own.
 While numbering is locked, and for more than 100 features, a callout stays one characteristic
@@ -90,6 +95,9 @@ characteristic you add after that:
 | Letter suffix (12A) | With balloon 12 selected, the new one is 12A, then 12B. |
 
 Sub-numbers and letters follow the selected balloon, so select the balloon the new feature
-belongs to before you place it. With nothing selected they follow the highest number.
+belongs to before you place it. With nothing selected they follow the highest number. A new
+balloon is selected as soon as it is placed, so the next one follows it: after 12.1 comes 12.2,
+after 12A comes 12B. The same holds for characteristics you accept from a box select. The new
+row is put in number order in the table, for example 12.1 right after 12.
 
 A number given while locked is never given again, even if you delete its characteristic.

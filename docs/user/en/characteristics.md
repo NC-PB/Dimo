@@ -55,8 +55,9 @@ remove a deviation, the limits that were worked out go too. A limit you type you
 wins over the deviations. All numbers are exact decimals; nothing is rounded.
 
 Limits read from the drawing come with their rule and an explanation in the side panel. Limits
-you type get the rule "Entered by hand" and are never changed by a re-interpretation. Details:
-[Tolerances](tolerances.md).
+you type get the rule "Entered by hand" and are never changed by a re-interpretation. Editing
+the **Requirement** cell stores only the text; select the characteristic and use **Re-interpret
+selected** in the side panel to read it again. Details: [Tolerances](tolerances.md).
 
 ## Deleting
 

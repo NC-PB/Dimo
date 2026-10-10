@@ -13,7 +13,9 @@ einmal je Blatt in den **Blatteigenschaften** unter **Zonenraster** fest:
 
 1. Wähle **Rahmen zeichnen** und ziehe ein Rechteck entlang der Innenkante des Zeichnungsrahmens
    auf. Esc bricht ab. (**Zonenraster hinzufügen** setzt stattdessen einen Rahmen 10 mm innerhalb
-   des Blattrands, den du später neu zeichnen kannst.)
+   des Blattrands, den du später neu zeichnen kannst.) Ein Blatt ohne Raster erhält ein neues mit
+   Standardbezeichnungen: Spalten 1 bis 8 und Zeilen A bis F bei einem Blatt im Querformat, Spalten
+   1 bis 6 und Zeilen A bis H bei einem Blatt im Hochformat.
 2. Stelle die Zahl der **Spalten** und **Zeilen** ein.
 3. Wähle, wie die Bezeichnungen geschrieben sind: für Spalten 1, 2, 3 oder A, B, C von links oder
    von rechts, für Zeilen A, B, C oder 1, 2, 3 von oben oder von unten.
@@ -39,7 +41,7 @@ das Blatt auf dem Bildschirm gezeigt wird; ein gedrehtes Blatt wird so gelesen, 
 
 | Strategie | Reihenfolge |
 |---|---|
-| Blatt, Zone, Lesereihenfolge | Blatt für Blatt, Zone für Zone (Zeilen von Zonen von oben nach unten, von links nach rechts), in einer Zone in Lesereihenfolge. Ohne Zonenraster wird das ganze Blatt in Lesereihenfolge gelesen. Das ist die Vorgabe für neue Projekte. |
+| Blatt, Zone, Lesereihenfolge | Blatt für Blatt, Zone für Zone (Zeilen von Zonen von oben nach unten, von links nach rechts), in einer Zone in Lesereihenfolge. Ohne Zonenraster wird das ganze Blatt in Lesereihenfolge gelesen. Das ist die Vorgabe für neue Projekte. Ein Projekt, das mit einer früheren Version angelegt wurde, beginnt mit **Manuell**, seine Reihenfolge ändert sich also nicht. |
 | Je Ansicht, Lesereihenfolge | Ansicht für Ansicht in der Reihenfolge, in der du sie gezeichnet hast, in jeder Ansicht in Lesereihenfolge. Ballons außerhalb aller Ansichten kommen zuletzt auf ihrem Blatt, in Lesereihenfolge. |
 | Je Ansicht, im Uhrzeigersinn | Ansicht für Ansicht, im Uhrzeigersinn um die Mitte der Ansicht, beginnend bei 12 Uhr. Ballons außerhalb aller Ansichten kommen zuletzt. |
 | Nach Art | Nach Art gruppiert (Längenmaß, Durchmesser, Radius, Winkel und so weiter), jede Art in Blatt- und Zonenreihenfolge. |
@@ -55,12 +57,12 @@ Zonenrahmens gehört zur nächsten Zone.
 
 1. Wähle die Strategie im Bereich **Nummerierung**. Ein kurzer Text erklärt sie.
 2. Setze den Haken bei **Neue Nummern als Vorschau zeigen**. Jeder Ballon erhält seine neue
-   Nummer in einem gestrichelten Kasten daneben, und die Tabelle zeigt sie neben der aktuellen
-   Nummer. Nummern, die sich ändern, sind fett und farbig, Nummern, die bleiben, dünn und grau. Der
-   Bereich zählt, wie viele Nummern sich ändern.
+   Nummer in einem gestrichelten Kasten daneben, und die Tabelle zeigt sie als Pfeil und neue
+   Nummer in der Spalte **Nr**. Nummern, die sich ändern, sind fett und farbig, Nummern, die
+   bleiben, kursiv und grau. Der Bereich zählt, wie viele Nummern sich ändern.
 3. Wähle **Nummerierung anwenden**. Die Tabelle wird in die neue Reihenfolge gebracht, alle
    Ballons erhalten ihre neuen Nummern, und die Strategie wird mit dem Projekt gespeichert. ⌘Z
-   macht den ganzen Schritt rückgängig.
+   macht den ganzen Schritt rückgängig. Das Anwenden schaltet auch die Vorschau aus.
 
 Die Vorschau folgt jeder Änderung, solange sie eingeschaltet ist, und zeigt so immer, was das
 Anwenden bewirken würde. Neue Ballons werden weiter am Ende mit der nächsten Nummer angefügt;
@@ -77,7 +79,9 @@ sie nummeriert werden:
 | Unternummern (5.1, 5.2) | Ein Merkmal je Element, nummeriert 5.1, 5.2, 5.3, 5.4, mit gestapelten Ballons. |
 
 Mit Unternummern wird eine aus der Zeichnung gelesene Angabe mit Anzahl beim Übernehmen zu einem
-Merkmal je Element. Jede Strategie hält diese Merkmale zusammen. Schaltest du zurück auf **Ein
+Merkmal je Element. Das gilt nur für die Rahmenauswahl: Ein `4X`, das du in einen Ballon tippst,
+bleibt ein Merkmal mit seiner Anzahl. Jede Strategie außer **Manuell** hält diese Merkmale
+zusammen. Schaltest du zurück auf **Ein
 Ballon mit Anzahl**, erhalten sie wieder einfache Nummern; sie bleiben getrennte Merkmale.
 Änderst du die Art oder die Anforderung eines davon, erhält es eine eigene einfache Nummer.
 Bei gesperrter Nummerierung und bei mehr als 100 Elementen bleibt eine Angabe ein Merkmal mit
@@ -97,6 +101,9 @@ bei Sperre** legt die Nummer eines danach hinzugefügten Merkmals fest:
 
 Unternummern und Buchstaben folgen dem ausgewählten Ballon. Wähle also den Ballon, zu dem das
 neue Element gehört, bevor du es platzierst. Ist nichts ausgewählt, folgen sie der höchsten
-Nummer.
+Nummer. Ein neuer Ballon ist ausgewählt, sobald er gesetzt ist, der nächste folgt also ihm: Nach
+12.1 kommt 12.2, nach 12A kommt 12B. Dasselbe gilt für Merkmale, die du aus einer Rahmenauswahl
+übernimmst. Die neue Zeile wird in der Tabelle nach der Nummer einsortiert, zum Beispiel 12.1
+direkt nach 12.
 
 Eine bei Sperre vergebene Nummer wird nie wieder vergeben, auch wenn du ihr Merkmal löschst.
