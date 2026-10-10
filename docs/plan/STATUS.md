@@ -51,7 +51,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.3 ISO 286 fit tables | review | 514 fit vectors pass; synth `FITS` and corpus truth fits match the table. Owner: verify `iso-286.toml` (D-43) |
 | T2.4 Data model version 2 | done | Schema version 2 with migration; `DisplayNumber`, `ToleranceDerivation`, numbering and tolerance settings, zone grid, views, `Proposal`, `AcceptProposals`, history query. Sub-numbers as separate characteristics (owner confirmed) |
 | T2.5 Tolerance engine | done | `interpret`, `ToleranceContext::for_project`, `explain` (en, de). All truth limits reproduced on draft tables. Owner: confirm rounding and fit rules (decision log 2026-10-10) |
-| T2.6 Box select with PDF text | in progress | Wave 2 |
+| T2.6 Box select with PDF text | done | Box tool proposal card (Enter accepts, Esc discards), typed callouts through the same Rust path, real engine wired (`src-tauri/src/recognition.rs`). Known bug: keystrokes typed right after a placing click can be lost before the value editor has focus (smoke test flaked once), fix after T2.7 merges |
 | T2.7 Numbering strategies | in progress | Wave 2 |
 | T2.8 Tolerance UI, explanations and history | todo | Wave 3 |
 | T2.9 Evaluation and exit criterion | todo | Wave 3, needs the owner's truth file review |
@@ -74,6 +74,9 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-10 | Box select: runs grouped by reading direction, then lines, then stacks (main, upper, lower); a box with several parseable lines gives one proposal per line (region = line box, balloon keeps the box offset); a stacked limit dimension without main text gives two proposals (T2.9 to refine); unparseable text becomes kind `note` with a word of 3 or more letters, else `other`; frames for basic dimensions searched in top level path objects only; a box with no PDF text falls back to manual placement | FR-REC-01, FR-REC-02, M2 decision 6 | T2.6, agent |
+| 2026-10-10 | Box select IPC: `propose_from_region` direct (about 1.5 ms on test_drawing_1, test asserts under 50 ms), `read_callout_text` for typed values, accept through `execute(accept_proposals)`; explanations built by Rust in the request language; engine context per request from project settings, falls back to callout only interpretation with a logged warning if the context fails. The card edits requirement text and kind only; limits change through the text or the table | ADR 0006, M2 decision 5 | T2.6, agent |
+| 2026-10-10 | `Proposal` gains `job_id` and `engines` (serde default), schema stays 2; the unreleased v2 fixture `audit.jsonl` was edited for it. Fix: `update_fields` dropped `8` to `8.0` because decimal equality ignores scale (regression test) | Spec 07 | T2.6, agent |
 | 2026-10-10 | Tolerance engine precedence details: a fit always ends the search (unexpandable fit, pair `H7/g6`, size outside table give `no_tolerance_defined` plus hint, never a general tolerance); a table not covering the size adds `size_outside_table` and the search continues; general from a custom table is rule `custom_table`; fit table is `iso-286` if present; explicit limits never set the draft flag. **Owner: confirm** | FR-TOL-01, D-43 | T2.5, agent |
 | 2026-10-10 | Rounding: converted nominal half away from zero, converted limits rounded inward to the settings places (never wider), deviations = limits minus nominal; arcmin to degrees rounded toward zero to 6 places (20' = ±0.333333°); fit difference compared exactly in mm, in inch after converting and rounding to the written places. **Owner: confirm** | FR-TOL-09 | T2.5, agent |
 | 2026-10-10 | Reference, basic and threads get rule `no_tolerance_defined` without limits; radii, spherical radii and chamfer legs use the ISO 2768-1 `radius_chamfer` part, lengths, diameters and depths `linear`; angular general tolerance needs the shorter leg (`Measures`), without it no limits plus a proposal note; decimal place rules only for lengths written as decimals; limit dimension keeps the first written value as nominal; German explanations use decimal comma and "Zoll" | FR-TOL-02, FR-TOL-06, FR-TOL-08, D-25 | T2.5, agent |
@@ -164,6 +167,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 Short entries, newest first: date, task, what changed, anything the next session must know.
 
+- 2026-10-10: T2.6 merged (box select), check green; smoke test failed once (typed text of balloons 4 and 5 lost: editor not focused yet when typing started), passed on rerun. Parallel agents now get their own `CARGO_TARGET_DIR` (two worktrees building into one `target/` kept invalidating each other).
 - 2026-10-10: T2.5 merged (tolerance engine), check green. T2.6 must replace its fallback interpreter with `dimo_tolerance::interpret` when merged.
 - 2026-10-10: T2.4 merged (data model v2), check and smoke test green on main. Follow-ups carried into T2.5, T2.6, T2.8 in M2.md. Wave 1 complete.
 - 2026-10-10: T2.1 merged (callout parser). Wave 1 done except T2.4, held for the owner's confirmation of M2 decisions 1 to 4.
