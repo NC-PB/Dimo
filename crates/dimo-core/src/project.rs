@@ -41,8 +41,9 @@ pub struct ProjectSettings {
     pub tolerance: ToleranceSettings,
 }
 
-/// Order in which characteristics are numbered (FR-BAL-04, D-21). Stored as a setting here;
-/// the strategies are applied by the numbering command of T2.7.
+/// Order in which characteristics are numbered (FR-BAL-04, D-21). The last strategy applied with
+/// [`Command::ApplyNumbering`](crate::command::Command::ApplyNumbering); the rules are in
+/// [`numbering`](crate::numbering).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
@@ -275,15 +276,16 @@ pub struct NumberingLock {
     pub locked_by: String,
     /// Highest base number given so far, including numbers of deleted characteristics.
     pub highest_number: u32,
-    /// Sub-numbered and lettered numbers given while locked, including those of deleted
-    /// characteristics, sorted (FR-BAL-11).
+    /// Sub-numbered and lettered numbers present when locking (D-22) or given while locked,
+    /// including those of deleted characteristics, sorted (FR-BAL-11).
     #[cfg_attr(feature = "specta", specta(type = Vec<String>))]
     pub given: Vec<DisplayNumber>,
 }
 
 /// Numbering state of the project (D-21, D-23).
 ///
-/// Unlocked: numbers are always `1..=n` in placement order, and every add, delete or move
+/// Unlocked: numbers always follow the placement order, `1..=n` with sub-numbers for
+/// multi-instance groups when the project uses them (D-22), and every add, delete or move
 /// renumbers. Locked: numbers never change, deletions leave gaps, moves are refused and added
 /// characteristics are numbered by [`NumberingSettings::insert_when_locked`].
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]

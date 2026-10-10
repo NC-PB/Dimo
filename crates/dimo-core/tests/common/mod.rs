@@ -94,11 +94,16 @@ pub fn check_invariants(project: &Project) {
             "given is sorted"
         );
     } else {
-        let expected: Vec<DisplayNumber> = (1..)
-            .take(numbers.len())
-            .map(DisplayNumber::plain)
-            .collect();
+        // D-21, D-22: 1..n in placement order, sub-numbers for multi-instance groups.
+        let expected = dimo_core::numbering::numbers_for_order(project, &order(project));
         assert_eq!(numbers, expected, "unlocked numbers follow placement order");
+        if project.settings.numbering.multi_instance == dimo_core::MultiInstance::Quantity {
+            let plain: Vec<DisplayNumber> = (1..)
+                .take(numbers.len())
+                .map(DisplayNumber::plain)
+                .collect();
+            assert_eq!(numbers, plain, "without sub-numbers all numbers are plain");
+        }
     }
     for c in &project.characteristics {
         assert_eq!(project.balloons_of(c.id).count(), 1, "one balloon per char");

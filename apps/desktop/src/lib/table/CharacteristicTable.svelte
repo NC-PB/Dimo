@@ -10,6 +10,7 @@
   import { m } from "$lib/i18n";
   import type { CharId, Characteristic, Command, CommandError } from "$lib/ipc/bindings";
   import { isMacPlatform, matchShortcut } from "$lib/shortcuts";
+  import { numberingStore } from "$lib/stores/numbering.svelte";
   import { projectStore, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection, type SelectionStore } from "$lib/stores/selection.svelte";
   import CellEditor, { type EditMove } from "./CellEditor.svelte";
@@ -823,6 +824,15 @@
                     aria-hidden="true">⠿</span
                   >
                   <span class="flex-1 px-2 text-right font-semibold tabular-nums">{c.number}</span>
+                  {@const ghost = numberingStore.ghosts[c.id]}
+                  {#if ghost !== undefined}
+                    <!-- FR-BAL-05: the number the previewed strategy gives, dashed box. -->
+                    <span
+                      class="ghost mr-1 px-1 tabular-nums"
+                      class:changed={ghost !== c.number}
+                      title={m.numbering_ghost({ number: ghost })}>→{ghost}</span
+                    >
+                  {/if}
                 {:else if column.editor === "check"}
                   <input
                     type="checkbox"
@@ -892,6 +902,20 @@
   .cell.active {
     outline: 1px dashed var(--dimo-border);
     outline-offset: -2px;
+  }
+
+  /* Ghost number of the numbering preview (FR-BAL-05): dashed box, bold when it changes. */
+  .ghost {
+    border: 1px dashed var(--dimo-text-muted);
+    border-radius: 3px;
+    color: var(--dimo-text-muted);
+    font-style: italic;
+  }
+
+  .ghost.changed {
+    border-color: var(--dimo-accent);
+    color: var(--dimo-accent);
+    font-weight: 700;
   }
 
   .handle {

@@ -900,7 +900,7 @@
       ]
     },
     "Numbering": {
-      "description": "Numbering state of the project (D-21, D-23).\n\nUnlocked: numbers are always `1..=n` in placement order, and every add, delete or move\nrenumbers. Locked: numbers never change, deletions leave gaps, moves are refused and added\ncharacteristics are numbered by [`NumberingSettings::insert_when_locked`].",
+      "description": "Numbering state of the project (D-21, D-23).\n\nUnlocked: numbers always follow the placement order, `1..=n` with sub-numbers for\nmulti-instance groups when the project uses them (D-22), and every add, delete or move\nrenumbers. Locked: numbers never change, deletions leave gaps, moves are refused and added\ncharacteristics are numbered by [`NumberingSettings::insert_when_locked`].",
       "properties": {
         "lock": {
           "anyOf": [
@@ -920,7 +920,7 @@
       "description": "State of a numbering lock (FR-BAL-10, D-23).",
       "properties": {
         "given": {
-          "description": "Sub-numbered and lettered numbers given while locked, including those of deleted\ncharacteristics, sorted (FR-BAL-11).",
+          "description": "Sub-numbered and lettered numbers present when locking (D-22) or given while locked,\nincluding those of deleted characteristics, sorted (FR-BAL-11).",
           "items": {
             "$ref": "#/$defs/DisplayNumber"
           },
@@ -978,7 +978,7 @@
       "type": "object"
     },
     "NumberingStrategy": {
-      "description": "Order in which characteristics are numbered (FR-BAL-04, D-21). Stored as a setting here;\nthe strategies are applied by the numbering command of T2.7.",
+      "description": "Order in which characteristics are numbered (FR-BAL-04, D-21). The last strategy applied with\n[`Command::ApplyNumbering`](crate::command::Command::ApplyNumbering); the rules are in\n[`numbering`](crate::numbering).",
       "oneOf": [
         {
           "const": "sheet_zone",

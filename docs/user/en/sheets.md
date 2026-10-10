@@ -2,6 +2,8 @@
 
 Every sheet of a drawing has its own rotation, unit and scale. You set them in the **Sheet
 properties** panel on the right. Each change can be undone and redone like any other change.
+The zone grid and the views of a sheet are set in the same panel; they are described in
+[Numbering strategies, zones and views](numbering.md).
 
 ## Rotation
 

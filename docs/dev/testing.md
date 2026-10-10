@@ -70,6 +70,9 @@ the test needs a desktop session. It is not part of `check.sh`.
 2. Reopen the saved project: balloons, rotation and lock equal the state at the end of step 1.
 3. Crash: place two balloons in an unsaved project, kill the app with SIGKILL, start it again:
    the project is restored with a recovery notice.
+4. Numbering (`scripts/e2e/numbering.json`): place five balloons, draw a zone grid frame, preview
+   and apply "sheet, zone, reading order", draw a view, preview and apply "clockwise per view",
+   undo. The ghost numbers of each preview must equal the numbers the apply then gives.
 
 Work happens in a temporary folder below the target directory with its own `DIMO_DEV_HOME`, so
 your settings and your own unsaved work are untouched. The language is forced to English because

@@ -19,6 +19,7 @@ fn main() {
         "export_project",
         "propose_from_region",
         "read_callout_text",
+        "preview_numbering",
         "app_settings",
         "set_app_settings",
         "dev_startup",

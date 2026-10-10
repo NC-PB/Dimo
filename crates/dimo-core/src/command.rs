@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::balloon::{Balloon, BalloonStyle, BalloonStyleOverride};
+use crate::balloon::{Balloon, BalloonStyle, BalloonStyleOverride, UNITS_PER_MM};
 use crate::characteristic::{
     Characteristic, CharacteristicKind, FieldError, FieldValue, SourceRegion, TextSource, Unit,
 };
@@ -19,10 +19,11 @@ use crate::env::Environment;
 use crate::geometry::{OrientedBox, Point};
 use crate::id::{BalloonId, CharId, SheetId};
 use crate::number::DisplayNumber;
+use crate::numbering::{numbers_for_order, strategy_order};
 use crate::patch::{Change, ChangeError, invert};
 use crate::project::{
-    InsertPolicy, LockReason, Numbering, NumberingLock, NumberingSettings, Project, ProjectInfo,
-    ProjectSettings, ToleranceSettings,
+    InsertPolicy, LockReason, MultiInstance, Numbering, NumberingLock, NumberingSettings,
+    NumberingStrategy, Project, ProjectInfo, ProjectSettings, ToleranceSettings,
 };
 use crate::proposal::{BalloonPlacement, Proposal};
 use crate::sheet::{Rotation, Scale, Sheet, SheetView, ZoneGrid};
@@ -72,7 +73,8 @@ pub enum Command {
         /// Anchor of the locked insert policies, as for [`Command::AddCharacteristic`].
         insert_after: Option<CharId>,
     },
-    /// Sets field values on one or more characteristics (FR-CHR-02).
+    /// Sets field values on one or more characteristics (FR-CHR-02). While unlocked, a copy of a
+    /// repeated feature whose kind or text changes leaves its sub-number group (D-22).
     UpdateFields {
         /// Characteristics to change.
         ids: Vec<CharId>,
@@ -136,7 +138,8 @@ pub enum Command {
         views: Vec<SheetView>,
     },
     /// Sets the numbering strategy, multi-instance numbering and locked insert policy
-    /// (FR-BAL-04, FR-BAL-07, FR-BAL-11). Numbers do not change.
+    /// (FR-BAL-04, FR-BAL-07, FR-BAL-11). The order does not change. While unlocked, a change of
+    /// multi-instance numbering renumbers groups as sub-numbers or plain numbers (D-22).
     SetNumberingSettings {
         /// New settings.
         settings: NumberingSettings,
@@ -146,6 +149,14 @@ pub enum Command {
     SetToleranceSettings {
         /// New settings.
         settings: ToleranceSettings,
+    },
+    /// Reorders and renumbers all characteristics by a numbering strategy as one undo step, and
+    /// makes it the strategy of the project (FR-BAL-04, D-21). The result equals
+    /// [`numbering::preview`](crate::numbering::preview) (FR-BAL-05). Refused while numbering is
+    /// locked (D-23).
+    ApplyNumbering {
+        /// The strategy.
+        strategy: NumberingStrategy,
     },
     /// Locks numbering (FR-BAL-10). No change if already locked.
     LockNumbering {
@@ -281,9 +292,7 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
         Command::AcceptProposals {
             proposals,
             insert_after,
-        } => proposals
-            .iter()
-            .try_for_each(|p| accept_proposal(tx, p, *insert_after, env)),
+        } => accept_proposals(tx, proposals, *insert_after, env),
         Command::UpdateFields { ids, values } => update_fields(tx, ids, values),
         Command::MoveBalloons { moves } => move_balloons(tx, moves),
         Command::DeleteCharacteristics { ids } => delete_characteristics(tx, ids),
@@ -321,7 +330,8 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
             change_sheet(tx, *sheet, |s| s.views.clone_from(views))
         }
         Command::SetNumberingSettings { settings } => {
-            change_settings(tx, |s| s.numbering = *settings)
+            change_settings(tx, |s| s.numbering = *settings)?;
+            renumber_if_unlocked(tx)
         }
         Command::SetToleranceSettings { settings } => {
             settings
@@ -329,6 +339,7 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
                 .map_err(CommandError::InvalidProjectSetting)?;
             change_settings(tx, |s| s.tolerance.clone_from(settings))
         }
+        Command::ApplyNumbering { strategy } => apply_numbering(tx, *strategy),
         Command::LockNumbering { reason } => lock_numbering(tx, *reason, env),
         Command::UnlockNumbering => {
             if tx.project.numbering.lock.is_some() {
@@ -428,7 +439,12 @@ fn insert_slot(
         None => project.characteristics.iter().map(|c| c.number).max(),
     };
     let Some(lock) = &project.numbering.lock else {
-        return Ok((DisplayNumber::plain(index_u32(len).saturating_add(1)), len));
+        // Unlocked numbers ascend in placement order, so the last one has the highest base.
+        let last = project
+            .characteristics
+            .last()
+            .map_or(0, |c| c.number.base());
+        return Ok((DisplayNumber::plain(last.saturating_add(1)), len));
     };
     let present = project.characteristics.iter().map(|c| c.number);
     let known: Vec<DisplayNumber> = present.chain(lock.given.iter().copied()).collect();
@@ -480,13 +496,15 @@ fn insert_slot(
     Ok((number, index))
 }
 
-/// While unlocked, numbers are `1..=n` in placement order (D-21).
+/// While unlocked, numbers follow the placement order: `1..=n`, with sub-numbers for
+/// multi-instance groups when the project uses them (D-21, D-22, [`numbers_for_order`]).
 fn renumber_if_unlocked(tx: &mut Tx<'_>) -> Result<(), CommandError> {
     if tx.project.numbering.lock.is_some() {
         return Ok(());
     }
-    for i in 0..tx.project.characteristics.len() {
-        let number = DisplayNumber::plain(index_u32(i).saturating_add(1));
+    let order: Vec<CharId> = tx.project.characteristics.iter().map(|c| c.id).collect();
+    let numbers = numbers_for_order(tx.project, &order);
+    for (i, number) in numbers.into_iter().enumerate() {
         let current = &tx.project.characteristics[i];
         if current.number != number {
             let before = Box::new(current.clone());
@@ -576,7 +594,21 @@ fn add_characteristic(
             .collect();
         c.set_values(values)?;
         Ok(())
-    })
+    })?;
+    renumber_if_unlocked(tx)
+}
+
+/// Accepts proposals in order, then renumbers once (ADR 0006).
+fn accept_proposals(
+    tx: &mut Tx<'_>,
+    proposals: &[Proposal],
+    insert_after: Option<CharId>,
+    env: &mut dyn Environment,
+) -> Result<(), CommandError> {
+    for proposal in proposals {
+        accept_proposal(tx, proposal, insert_after, env)?;
+    }
+    renumber_if_unlocked(tx)
 }
 
 /// One accepted proposal becomes a characteristic with the proposed values (ADR 0006).
@@ -596,7 +628,43 @@ fn accept_proposal(
     if proposal.quantity == 0 {
         return Err(FieldError::ZeroQuantity.into());
     }
-    insert_new(tx, sheet, proposal.placement, insert_after, env, |c| {
+    // D-22, FR-BAL-07: with sub-numbers, a callout for several features becomes one
+    // characteristic per feature with the same source region; their balloons are stacked
+    // downwards, a little more than one balloon size apart, and numbering gives them
+    // sub-numbers. While locked, and above `MAX_SPLIT` features, it stays one characteristic
+    // with the quantity: locked numbers follow the insert policy only (D-23).
+    let split = tx.project.settings.numbering.multi_instance == MultiInstance::SubNumber
+        && !tx.project.is_numbering_locked()
+        && (2..=MAX_SPLIT).contains(&proposal.quantity);
+    let (copies, quantity) = if split {
+        (proposal.quantity, 1)
+    } else {
+        (1, proposal.quantity)
+    };
+    // Whole sheet units, so positions stay exact in `project.json`.
+    let step = (tx.project.settings.balloon_style.size_mm * UNITS_PER_MM * 1.2).round();
+    for copy in 0..copies {
+        let mut placement = proposal.placement;
+        placement.position.y += step * f64::from(copy);
+        accept_one(tx, proposal, placement, quantity, insert_after, env)?;
+    }
+    Ok(())
+}
+
+/// Most characteristics one multi-instance callout is split into (D-22).
+const MAX_SPLIT: u32 = 100;
+
+/// Inserts one characteristic with the values of `proposal`.
+fn accept_one(
+    tx: &mut Tx<'_>,
+    proposal: &Proposal,
+    placement: BalloonPlacement,
+    quantity: u32,
+    insert_after: Option<CharId>,
+    env: &mut dyn Environment,
+) -> Result<(), CommandError> {
+    let sheet = proposal.source.sheet;
+    insert_new(tx, sheet, placement, insert_after, env, |c| {
         c.kind = proposal.kind;
         proposal
             .requirement_text
@@ -615,7 +683,7 @@ fn accept_proposal(
             .filter(|f| !f.is_empty())
             .map(str::to_owned);
         c.derivation.clone_from(&proposal.derivation);
-        c.quantity = proposal.quantity;
+        c.quantity = quantity;
         c.inspect = proposal.inspect;
         c.origin = proposal.origin;
         c.sources = vec![proposal.source.clone()];
@@ -689,7 +757,8 @@ fn update_fields(
             tx.push(Change::CharacteristicChanged { before, after })?;
         }
     }
-    Ok(())
+    // A copy of a repeated feature whose kind or text is edited leaves its group (D-22).
+    renumber_if_unlocked(tx)
 }
 
 /// True if a decimal field is equal in value but written with other digits, e.g. `8` and
@@ -825,6 +894,23 @@ fn update_sheet(
     })
 }
 
+/// Reorders by `strategy` and renumbers, one undo step (FR-BAL-04, D-21, D-23).
+fn apply_numbering(tx: &mut Tx<'_>, strategy: NumberingStrategy) -> Result<(), CommandError> {
+    if tx.project.is_numbering_locked() {
+        return Err(CommandError::NumberingLocked);
+    }
+    change_settings(tx, |s| s.numbering.strategy = strategy)?;
+    let old: Vec<CharId> = tx.project.characteristics.iter().map(|c| c.id).collect();
+    let new = strategy_order(tx.project, strategy);
+    if new != old {
+        tx.push(Change::OrderChanged {
+            before: old,
+            after: new,
+        })?;
+    }
+    renumber_if_unlocked(tx)
+}
+
 fn lock_numbering(
     tx: &mut Tx<'_>,
     reason: LockReason,
@@ -840,13 +926,24 @@ fn lock_numbering(
         .map(|c| c.number.base())
         .max()
         .unwrap_or(0);
+    let mut given: Vec<DisplayNumber> = tx
+        .project
+        .characteristics
+        .iter()
+        .map(|c| c.number)
+        .filter(|n| n.as_plain().is_none())
+        .collect();
+    given.sort();
+    given.dedup();
     let after = Numbering {
         lock: Some(NumberingLock {
             reason,
             locked_at: env.now(),
             locked_by: env.user_name(),
             highest_number,
-            given: Vec::new(),
+            // Sub-numbers present when locking (D-22) count as given, so a deleted one is
+            // never given again.
+            given,
         }),
     };
     tx.push(Change::NumberingChanged {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import DevPanel from "$lib/components/DevPanel.svelte";
+  import NumberingPanel from "$lib/components/NumberingPanel.svelte";
   import SelectionSummary from "$lib/components/SelectionSummary.svelte";
   import SheetProperties from "$lib/components/SheetProperties.svelte";
   import { DEV_TOOLS_ENABLED } from "$lib/dev/dev-tools.svelte";
@@ -8,10 +9,11 @@
 </script>
 
 <aside
-  class="flex w-72 shrink-0 flex-col gap-2 border-l border-border bg-surface p-3 text-sm text-text-muted"
+  class="flex min-h-0 w-72 shrink-0 flex-col gap-2 overflow-y-auto border-l border-border bg-surface p-3 text-sm text-text-muted"
   aria-label={m.side_panel_label()}
 >
   <SheetProperties />
+  <NumberingPanel />
   <SelectionSummary />
   {#if DEV_TOOLS_ENABLED}
     <DevPanel />

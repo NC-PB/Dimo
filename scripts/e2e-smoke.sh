@@ -8,6 +8,8 @@
 #      "as issued", save again. The results are checked from the files the app wrote.
 #   2. Reopen: the saved project opens again with the same balloons, rotation and numbering lock.
 #   3. Crash recovery: an unsaved project is killed with SIGKILL and restored at the next start.
+#   4. Numbering strategies: place five balloons, draw a zone grid frame and a view, preview and
+#      apply "sheet, zone, reading order" and "clockwise per view", undo.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -250,6 +252,27 @@ run_app recovered "$SCRIPTS/report.json" term home3
 restored=$(report recovered reopened)
 expect "unsaved project restored with the same balloons" "$(state "$placed")" "$(state "$restored")"
 expect "restored project carries the recovery notice" "yes" "$(yesno grep -q 'restored true' <<<"$restored")"
+
+step "4. numbering strategies (T2.7)"
+run_app numbering "$SCRIPTS/numbering.json" term home4 DIMO_DEV_OPEN="$DRAWING"
+# "P1:3 P2:4 ..." from the balloons of a report line, sorted by requirement text.
+numbers_of() {
+  { grep -oE '#[0-9.A-Z]+ [a-z]+ at [0-9.,-]+ "P[0-9]"' <<<"$1" || true; } |
+    sed -E 's/^#([0-9.A-Z]+) .*"(P[0-9])"$/\2:\1/' | sort | tr '\n' ' ' | sed 's/ $//'
+}
+ghosts_of() { { grep -oE 'ghosts \[[^]]*\]' <<<"$1" || true; } | sed -E 's/ghosts \[(.*)\]/\1/'; }
+expect "numbering: five balloons in placement order" "P1:1 P2:2 P3:3 P4:4 P5:5" \
+  "$(numbers_of "$(report numbering placed)")"
+expect "numbering: preview of sheet, zone, reading order (current>new)" "5>1 3>2 1>3 2>4 4>5" \
+  "$(ghosts_of "$(report numbering "zone preview")")"
+zones=$(report numbering "zones applied")
+expect "numbering: apply gives the previewed numbers" "P1:3 P2:4 P3:2 P4:5 P5:1" "$(numbers_of "$zones")"
+expect "numbering: preview of clockwise per view" "5>1 4>2 1>3 2>4 3>5" \
+  "$(ghosts_of "$(report numbering "view preview")")"
+expect "numbering: clockwise per view applied" "P1:5 P2:2 P3:4 P4:1 P5:3" \
+  "$(numbers_of "$(report numbering "views applied")")"
+expect "numbering: undo restores the zone numbers in one step" "$(numbers_of "$zones")" \
+  "$(numbers_of "$(report numbering undone)")"
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

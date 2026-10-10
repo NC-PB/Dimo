@@ -1,0 +1,63 @@
+[
+  { "mark": "numbering start" },
+  { "key": "b" },
+  { "click": [594.3, 159.1] },
+  { "type": "P1" },
+  { "key": "Enter" },
+  { "click": [399.9, 291.2] },
+  { "type": "P2" },
+  { "key": "Enter" },
+  { "click": [413.6, 159] },
+  { "type": "P3" },
+  { "key": "Enter" },
+  { "click": [527.9, 269.1] },
+  { "type": "P4" },
+  { "key": "Enter" },
+  { "click": [218, 165] },
+  { "type": "P5" },
+  { "key": "Enter" },
+  { "report": "placed" },
+
+  { "button": "Draw frame" },
+  {
+    "drag": [
+      [15, 15],
+      [827, 580]
+    ]
+  },
+  { "wait": 300 },
+  { "select": ["Strategy", "sheet_zone"] },
+  { "check": ["Preview new numbers", true] },
+  { "wait": 600 },
+  { "report": "zone preview" },
+  { "view": [120, 420, 220] },
+  { "mark": "zone preview shown" },
+  { "wait": 2500 },
+  { "button": "Apply numbering" },
+  { "wait": 300 },
+  { "report": "zones applied" },
+
+  { "button": "Draw view" },
+  {
+    "drag": [
+      [380, 240],
+      [560, 310]
+    ]
+  },
+  { "wait": 300 },
+  { "select": ["Strategy", "view_clockwise"] },
+  { "check": ["Preview new numbers", true] },
+  { "wait": 600 },
+  { "report": "view preview" },
+  { "view": [150, 470, 260] },
+  { "reveal": "Strategy" },
+  { "mark": "view preview shown" },
+  { "wait": 2500 },
+  { "button": "Apply numbering" },
+  { "wait": 300 },
+  { "report": "views applied" },
+
+  { "key": "z", "mod": true },
+  { "wait": 300 },
+  { "report": "undone" }
+]

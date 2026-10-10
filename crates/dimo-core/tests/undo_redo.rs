@@ -89,6 +89,10 @@ enum Op {
         inch: bool,
         scale: (u32, u32),
     },
+    /// Reorder and renumber by a strategy (FR-BAL-04).
+    ApplyNumbering {
+        strategy: u8,
+    },
     Lock,
     Unlock,
     DefaultStyle {
@@ -159,6 +163,7 @@ fn simple_op() -> impl Strategy<Value = Op> {
             .prop_map(|(picks, before)| Op::MoveChars { picks, before }),
         1 => (0usize..2, 0u8..4, any::<bool>(), (0u32..3, 0u32..3))
             .prop_map(|(sheet, rotation, inch, scale)| Op::Sheet { sheet, rotation, inch, scale }),
+        2 => (0u8..5).prop_map(|strategy| Op::ApplyNumbering { strategy }),
         1 => Just(Op::Lock),
         1 => Just(Op::Unlock),
         1 => (0u8..40).prop_map(|quarter_mm| Op::DefaultStyle { quarter_mm }),
@@ -289,7 +294,12 @@ fn proposals(project: &Project, sheet: usize, count: usize, x: i16, valid: bool)
                     fit: "H7".into(),
                     range: None,
                 })),
-                quantity: u32::from(valid || i + 1 < count),
+                // Quantities 1 to 3; with sub-numbers a quantity above 1 is split (D-22).
+                quantity: if valid || i + 1 < count {
+                    u32::try_from(i % 3 + 1).unwrap()
+                } else {
+                    0
+                },
                 inspect: i % 2 == 0,
                 source: SourceRegion {
                     sheet,
@@ -319,6 +329,16 @@ fn proposals(project: &Project, sheet: usize, count: usize, x: i16, valid: bool)
             }
         })
         .collect()
+}
+
+fn strategy_of(index: u8) -> NumberingStrategy {
+    [
+        NumberingStrategy::SheetZone,
+        NumberingStrategy::View,
+        NumberingStrategy::ViewClockwise,
+        NumberingStrategy::Kind,
+        NumberingStrategy::Manual,
+    ][usize::from(index)]
 }
 
 #[allow(clippy::too_many_lines, reason = "one arm per operation")]
@@ -389,13 +409,7 @@ fn command(project: &Project, op: &Op) -> Command {
             sub_number,
         } => Command::SetNumberingSettings {
             settings: NumberingSettings {
-                strategy: [
-                    NumberingStrategy::SheetZone,
-                    NumberingStrategy::View,
-                    NumberingStrategy::ViewClockwise,
-                    NumberingStrategy::Kind,
-                    NumberingStrategy::Manual,
-                ][usize::from(*strategy)],
+                strategy: strategy_of(*strategy),
                 multi_instance: if *sub_number {
                     MultiInstance::SubNumber
                 } else {
@@ -494,6 +508,9 @@ fn command(project: &Project, op: &Op) -> Command {
                 drawing: scale.0,
                 actual: scale.1,
             }),
+        },
+        Op::ApplyNumbering { strategy } => Command::ApplyNumbering {
+            strategy: strategy_of(*strategy),
         },
         Op::Lock => Command::LockNumbering {
             reason: LockReason::Manual,
