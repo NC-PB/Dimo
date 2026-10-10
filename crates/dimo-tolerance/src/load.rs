@@ -7,6 +7,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+use dimo_core::project::CustomTable;
+
 use crate::error::TableError;
 use crate::table::Table;
 
@@ -82,6 +84,26 @@ pub fn load_dir(dir: &Path) -> Result<Vec<Table>, TableError> {
             Table::parse(&path.display().to_string(), &text)
         })
         .collect()
+}
+
+/// Parse a custom table stored in a project (`tolerances/<id>.toml`, M2 decision 4) and check
+/// that the id and version inside the file match the settings entry (FR-TOL-07). The SHA-256 of
+/// the file is checked by the project loader.
+pub fn load_custom_table(
+    entry: &CustomTable,
+    origin: &str,
+    text: &str,
+) -> Result<Table, TableError> {
+    let table = Table::parse(origin, text)?;
+    let header = table.header();
+    if header.id != entry.table.id || header.version != entry.table.version {
+        return Err(TableError::Mismatch {
+            origin: origin.to_owned(),
+            expected: format!("{} version {}", entry.table.id, entry.table.version),
+            found: format!("{} version {}", header.id, header.version),
+        });
+    }
+    Ok(table)
 }
 
 /// A set of tables with unique ids.

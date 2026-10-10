@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"150\", Cfg::DrawingRule, Unit::Mm, None, None)"
+---
+callout: 150
+en: No tolerance on the drawing. General tolerance iso-2768-1 version 1, class m, part linear. Nominal 150 mm is in the range over 120 up to and including 400 mm, so ±0.5 mm. The size is outside the ranges of table shop version 2. The table is a draft and not verified yet.
+de: Keine Toleranz in der Zeichnung. Allgemeintoleranz iso-2768-1 Version 1, Klasse m, Teil linear. Nennmaß 150 mm liegt im Bereich über 120 bis einschließlich 400 mm, daher ±0,5 mm. Das Maß liegt außerhalb der Bereiche von Tabelle shop Version 2. Die Tabelle ist ein Entwurf und noch nicht geprüft.

@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\".250\", Cfg::General, Unit::Mm, None, None)"
+---
+callout: .250
+en: No tolerance on the drawing. General tolerance iso-2768-1 version 1, class m, part linear. Nominal 0.250 in is in the range over 6 up to and including 30 mm, so ±0.0078 in. The table is a draft and not verified yet. Values converted from mm to in and rounded to 4 decimal places.
+de: Keine Toleranz in der Zeichnung. Allgemeintoleranz iso-2768-1 Version 1, Klasse m, Teil linear. Nennmaß 0,250 Zoll liegt im Bereich über 6 bis einschließlich 30 mm, daher ±0,0078 Zoll. Die Tabelle ist ein Entwurf und noch nicht geprüft. Werte von mm in Zoll umgerechnet und auf 4 Nachkommastellen gerundet.

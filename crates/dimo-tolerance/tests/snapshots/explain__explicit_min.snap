@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"10 MIN\", Cfg::None, Unit::Mm, None, None)"
+---
+callout: 10 MIN
+en: Tolerance written on the drawing: lower limit 10 mm.
+de: Toleranz in der Zeichnung angegeben: Mindestmaß 10 mm.

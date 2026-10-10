@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 dimo-core.workspace = true
+dimo-notation.workspace = true
 rust_decimal.workspace = true
 schemars.workspace = true
 serde.workspace = true
@@ -19,6 +20,7 @@ toml.workspace = true
 
 [dev-dependencies]
 boon.workspace = true
+insta.workspace = true
 tempfile.workspace = true
 
 [lints]

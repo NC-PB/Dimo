@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"90°\", Cfg::General, Unit::Mm, None, Some(\"100\"))"
+---
+callout: 90°
+en: No tolerance on the drawing. General tolerance iso-2768-1 version 1, class m, part angular. The shorter leg is in the range over 50 up to and including 120 mm, so ±0.333333°. The table is a draft and not verified yet.
+de: Keine Toleranz in der Zeichnung. Allgemeintoleranz iso-2768-1 Version 1, Klasse m, Teil angular. Der kürzere Schenkel liegt im Bereich über 50 bis einschließlich 120 mm, daher ±0,333333°. Die Tabelle ist ein Entwurf und noch nicht geprüft.

@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "both(\"50\", Cfg::None, Unit::Mm, None, None)"
+---
+callout: 50
+en: No tolerance on the drawing and no general tolerance defined, so no limits. Check this characteristic.
+de: Keine Toleranz in der Zeichnung und keine Allgemeintoleranz festgelegt, daher keine Grenzmaße. Dieses Merkmal prüfen.
