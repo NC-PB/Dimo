@@ -1,10 +1,15 @@
-//! Synthetic drawing generator, first cut (T0.11, roadmap "First steps" 4).
+//! Synthetic drawing generator (T0.11, extended for the M2 evaluation in T2.9).
 //!
 //! Writes one sheet with dimension lines and callouts, plus the matching truth file in the
-//! format of T0.10 (`dimo_core::truth`). Callout styles: plain linear size (no tolerance),
-//! symmetric `±`, stacked deviations (upper and lower as separate smaller text objects) and
-//! fits such as `Ø20 H7`. Every fourth callout (T2.6) sits at a vertical dimension line and is
-//! rotated by 90 degrees, read bottom to top; its truth region has angle 90.
+//! format of T0.10 (`dimo_core::truth`). The callouts are the "common callouts" of the M2 exit
+//! criterion (see [`Form`]): linear, diameter, radius, angle and chamfer sizes without
+//! tolerance (ISO 2768-1 class m, written into the truth as `tolerance_settings`), symmetric,
+//! asymmetric, one sided and limit tolerances, fits with and without printed deviations,
+//! metric threads and reference dimensions. One callout in four writes decimal commas.
+//! Deviations are stacked (upper above lower, smaller text right of the main text), a limit
+//! dimension is two full size lines without a main text. Every fourth callout (T2.6) sits at
+//! a vertical dimension line and is rotated by 90 degrees, read bottom to top; its truth region
+//! has angle 90.
 //!
 //! Determinism (AGENTS.md rule 11): all choices come from a seeded generator implemented here,
 //! the PDF has no Info dictionary, no document ID and no dates, and all numbers are formatted
@@ -18,22 +23,23 @@
 //! The PDF uses the standard font Helvetica (not embedded) with an own `Encoding` dictionary
 //! based on `WinAnsiEncoding`. `WinAnsi` has `Ø` and `±` but no U+2212, so the codes `0x80`,
 //! `0x81` and `0x82` are remapped by `/Differences` to the Helvetica glyphs `minus`, `Oslash`
-//! and `plusminus`. Every text object is written as a hex string. A `ToUnicode` `CMap` maps the
-//! used codes back to U+2212, U+00D8 and U+00B1, so text extraction returns the printed
-//! characters (`Ø`, `±`, `−`), also for readers that ignore glyph names.
+//! and `plusminus`; the degree sign keeps its `WinAnsi` code `0xB0`. Every text object is
+//! written as a hex string. A `ToUnicode` `CMap` maps the used codes back to U+2212, U+00D8,
+//! U+00B1 and U+00B0, so text extraction returns the printed characters (`Ø`, `±`, `−`, `°`),
+//! also for readers that ignore glyph names.
 
 // Layout indices are tiny (at most 15), so the casts to f64 are exact.
 #![allow(clippy::cast_precision_loss)]
 
 use std::fmt::Write as _;
 
-use dimo_core::characteristic::{CharacteristicKind, ToleranceRule, Unit};
+use dimo_core::derivation::TableRef;
 use dimo_core::geometry::{OrientedBox, Point, Size};
+use dimo_core::project::{TableClass, ToleranceSettings};
 use dimo_core::sheet::SheetKind;
 use dimo_core::truth::{
     TRUTH_FORMAT_VERSION, TruthCharacteristic, TruthDrawing, TruthFile, TruthSheet,
 };
-use rust_decimal::Decimal;
 use sha2::{Digest, Sha256};
 
 /// Sheet width in PDF user units (A4 landscape).
@@ -43,17 +49,16 @@ pub const SHEET_HEIGHT: f64 = 595.0;
 
 const MAIN_SIZE: f64 = 10.0;
 const DEV_SIZE: f64 = 7.0;
+mod callout;
 mod stress;
 
+use callout::{Callout, DEGREE, MINUS, OSLASH, PLUS_MINUS, Slot, make_callout};
+pub use callout::{FITS, Form, GENERAL_CLASS, GENERAL_TABLE, GENERAL_TABLE_VERSION};
 pub use stress::{STRESS_SHEET_HEIGHT, STRESS_SHEET_WIDTH, generate_stress};
 
 const MAX_COUNT: usize = 15;
 const COLUMNS: usize = 3;
 const MARGIN: f64 = 40.0;
-
-const MINUS: char = '\u{2212}';
-const OSLASH: char = 'Ø';
-const PLUS_MINUS: char = '±';
 
 /// A generated drawing: PDF bytes, truth file text and a file name stem.
 #[derive(Debug, Clone)]
@@ -66,6 +71,8 @@ pub struct Drawing {
     pub truth_json: String,
     /// The truth file as a value.
     pub truth: TruthFile,
+    /// The form of each characteristic, in truth order.
+    pub forms: Vec<Form>,
 }
 
 /// Errors from [`generate`].
@@ -100,6 +107,7 @@ pub fn generate(seed: u64, count: usize) -> Result<Drawing, SynthError> {
 
     let mut content = String::new();
     let mut characteristics = Vec::new();
+    let mut forms = Vec::new();
     for index in 0..count {
         let cell_x = MARGIN + (index % COLUMNS) as f64 * cell_w;
         let cell_y = MARGIN + (index / COLUMNS) as f64 * cell_h;
@@ -130,7 +138,8 @@ pub fn generate(seed: u64, count: usize) -> Result<Drawing, SynthError> {
         for part in &parts {
             text(&mut content, part);
         }
-        characteristics.push(callout.into_truth(index, region));
+        forms.push(callout.form);
+        characteristics.push(into_truth(callout, index, region));
     }
     let pdf = write_pdf(&content);
 
@@ -150,6 +159,7 @@ pub fn generate(seed: u64, count: usize) -> Result<Drawing, SynthError> {
             },
         }],
         characteristics,
+        tolerance_settings: Some(tolerance_settings()),
         notes: notes(seed, count),
     };
     let mut truth_json = serde_json::to_string_pretty(&truth).map_err(SynthError::Json)?;
@@ -159,6 +169,7 @@ pub fn generate(seed: u64, count: usize) -> Result<Drawing, SynthError> {
         pdf,
         truth_json,
         truth,
+        forms,
     })
 }
 
@@ -168,156 +179,46 @@ fn notes(seed: u64, count: usize) -> Vec<String> {
             "Synthetic drawing from dimo-synth {} (seed {seed}, {count} callouts). Not a corpus drawing; drawing.file is the file name next to this truth file.",
             env!("CARGO_PKG_VERSION")
         ),
-        "Regions are computed from the placed text with the Helvetica width table: x from the start to the end of the text, y from 0.8 times the font size above the baseline to 0.2 times below it. Stacked deviations are 7 pt text right of the main text.".to_string(),
+        "Regions are computed from the placed text with the Helvetica width table: x from the start to the end of the text, y from 0.8 times the font size above the baseline to 0.2 times below it. Stacked deviations are 7 pt text right of the main text; a limit dimension is two 10 pt lines, upper limit above lower limit, the upper one written first and taken as nominal.".to_string(),
         "Every fourth callout is rotated by 90 degrees (read bottom to top) at a vertical dimension line; its region is measured the same way in the reading direction and has angle 90.".to_string(),
-        "Fit limits come from a small table in the generator and are drafts: the ISO 286 data tables are not verified yet (D-43). Entries with a fit carry a review_note.".to_string(),
+        "tolerance_settings: untoleranced sizes follow ISO 2768-1 class m. The expected limits come from tables in the generator (ISO 2768-1 tables 1 to 3, ISO 286-2 fits in FITS), written by hand and independent of dimo-tolerance. They are drafts like every agent written table (D-43); entries that use them carry a review_note.".to_string(),
+        "Angles without tolerance have limits from ISO 2768-1 table 3 by the shorter leg of the part, given in the review_note. The leg is not on the sheet.".to_string(),
     ]
 }
 
 // ---------------------------------------------------------------------------------------------
-// Callouts
+// Truth
 
-/// Fit table, micrometres: (nominal mm, designation, upper deviation, lower deviation).
-/// Values for shafts and holes as recalled from ISO 286 for nominal sizes 10, 20 and 40 mm.
-/// DRAFT, not verified by the owner (AGENTS.md rule 7, D-43). The tolerance engine (M2) replaces
-/// this table; it exists only so that fit callouts have an expected limit pair.
-const FITS: &[(i64, &str, i64, i64)] = &[
-    (10, "H7", 15, 0),
-    (10, "h6", 0, -9),
-    (10, "f7", -13, -28),
-    (10, "g6", -5, -14),
-    (10, "k6", 10, 1),
-    (20, "H7", 21, 0),
-    (20, "h6", 0, -13),
-    (20, "f7", -20, -41),
-    (20, "g6", -7, -20),
-    (20, "k6", 15, 2),
-    (40, "H7", 25, 0),
-    (40, "h6", 0, -16),
-    (40, "f7", -25, -50),
-    (40, "g6", -9, -25),
-    (40, "k6", 18, 2),
-];
-
-#[derive(Debug, Clone)]
-enum Style {
-    Plain,
-    Symmetric(Decimal),
-    /// Upper and lower deviation as magnitudes; the lower one is printed with a minus.
-    Stacked(Decimal, Decimal),
-    Fit(&'static str, Decimal, Decimal),
-}
-
-#[derive(Debug, Clone)]
-struct Callout {
-    diameter: bool,
-    nominal: Decimal,
-    style: Style,
-}
-
-fn make_callout(rng: &mut Rng) -> Callout {
-    let pick = rng.range(0, 3);
-    if pick == 3 {
-        let (nominal, fit, upper, lower) =
-            FITS[rng.range(0, u32::try_from(FITS.len() - 1).unwrap_or(0)) as usize];
-        return Callout {
-            diameter: true,
-            nominal: Decimal::from(nominal),
-            style: Style::Fit(fit, Decimal::new(upper, 3), Decimal::new(lower, 3)),
-        };
-    }
-    let scale = rng.range(0, 2);
-    let int = rng.range(5, 250);
-    let mut mantissa = i64::from(int);
-    for digit in 0..scale {
-        let last = digit + 1 == scale;
-        // The last decimal is never 0, so the printed text equals the decimal.
-        let d = if last {
-            rng.range(1, 9)
-        } else {
-            rng.range(0, 9)
-        };
-        mantissa = mantissa * 10 + i64::from(d);
-    }
-    let nominal = Decimal::new(mantissa, scale);
-    let style = match pick {
-        0 => Style::Plain,
-        1 => Style::Symmetric(Decimal::new([5, 10, 20, 50][rng.range(0, 3) as usize], 2)),
-        _ => Style::Stacked(
-            Decimal::new([5, 10, 20][rng.range(0, 2) as usize], 2),
-            Decimal::new([2, 5, 10][rng.range(0, 2) as usize], 2),
-        ),
-    };
-    Callout {
-        diameter: rng.range(0, 3) == 0,
-        nominal,
-        style,
-    }
-}
-
-impl Callout {
-    fn prefix(&self) -> &'static str {
-        if self.diameter { "Ø" } else { "" }
-    }
-
-    /// Main text, then optional upper and lower deviation text.
-    fn texts(&self) -> (String, Option<String>, Option<String>) {
-        let p = self.prefix();
-        let n = &self.nominal;
-        match &self.style {
-            Style::Plain => (format!("{p}{n}"), None, None),
-            Style::Symmetric(t) => (format!("{p}{n}{PLUS_MINUS}{t}"), None, None),
-            Style::Stacked(up, low) => (
-                format!("{p}{n}"),
-                Some(format!("+{up}")),
-                Some(format!("{MINUS}{low}")),
-            ),
-            Style::Fit(fit, _, _) => (format!("{p}{n} {fit}"), None, None),
-        }
-    }
-
-    fn into_truth(self, index: usize, region: OrientedBox) -> TruthCharacteristic {
-        let (main, upper, lower) = self.texts();
-        let requirement_text = [Some(main), upper, lower]
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>()
-            .join(" ");
-        let n = self.nominal;
-        let (fit, rule, limits, review_note) = match self.style {
-            Style::Plain => (None, ToleranceRule::NoToleranceDefined, None, None),
-            Style::Symmetric(t) => (None, ToleranceRule::Explicit, Some((n + t, n - t)), None),
-            Style::Stacked(up, low) => {
-                (None, ToleranceRule::Explicit, Some((n + up, n - low)), None)
-            }
-            Style::Fit(fit, up, low) => (
-                Some(fit.to_string()),
-                ToleranceRule::Fit,
-                Some((n + up, n + low)),
-                Some(format!(
-                    "Draft limits from the generator's small fit table (ISO 286 as recalled by the agent, not verified, D-43). Owner: check {fit} at {n} mm."
-                )),
-            ),
-        };
-        TruthCharacteristic {
-            id: format!("c{:02}", index + 1),
-            sheet: 0,
-            kind: if self.diameter {
-                CharacteristicKind::Diameter
-            } else {
-                CharacteristicKind::Linear
+/// The project tolerance settings the expected limits assume: ISO 2768-1 class m, no drawing
+/// rule, no decimal place rules, default unit rounding.
+pub fn tolerance_settings() -> ToleranceSettings {
+    ToleranceSettings {
+        general: Some(TableClass {
+            table: TableRef {
+                id: GENERAL_TABLE.to_owned(),
+                version: GENERAL_TABLE_VERSION,
             },
-            requirement_text,
-            region,
-            nominal: Some(n),
-            unit: Some(Unit::Mm),
-            fit,
-            tolerance_rule: Some(rule),
-            upper_limit: limits.map(|(u, _)| u),
-            lower_limit: limits.map(|(_, l)| l),
-            inspect: true,
-            review_note,
-        }
+            class: GENERAL_CLASS.to_owned(),
+        }),
+        ..ToleranceSettings::default()
+    }
+}
+
+fn into_truth(callout: Callout, index: usize, region: OrientedBox) -> TruthCharacteristic {
+    TruthCharacteristic {
+        id: format!("c{:02}", index + 1),
+        sheet: 0,
+        kind: callout.kind,
+        requirement_text: callout.requirement_text(),
+        region,
+        nominal: Some(callout.nominal),
+        unit: Some(callout.unit),
+        fit: callout.fit,
+        tolerance_rule: Some(callout.rule),
+        upper_limit: callout.limits.map(|(u, _)| u),
+        lower_limit: callout.limits.map(|(_, l)| l),
+        inspect: callout.inspect,
+        review_note: callout.review_note,
     }
 }
 
@@ -336,12 +237,13 @@ struct Placed {
     rotated: bool,
 }
 
+fn text_width(text: &str, size: f64) -> f64 {
+    text.chars().map(|c| glyph_width(c) * size / 1000.0).sum()
+}
+
 impl Placed {
     fn width(&self) -> f64 {
-        self.text
-            .chars()
-            .map(|c| glyph_width(c) * self.size / 1000.0)
-            .sum()
+        text_width(&self.text, self.size)
     }
     fn top(&self) -> f64 {
         self.baseline - 0.8 * self.size
@@ -356,34 +258,33 @@ impl Placed {
 /// point (read bottom to top).
 fn layout(callout: &Callout, x: f64, baseline: f64, rotated: bool) -> (Vec<Placed>, OrientedBox) {
     // Laid out in the reading frame with the start at the origin, then moved to the sheet.
-    let (main, upper, lower) = callout.texts();
-    let main = Placed {
-        text: main,
-        x: 0.0,
-        baseline: 0.0,
-        size: MAIN_SIZE,
-        rotated,
-    };
-    let mut parts = vec![main];
-    let dev_x = r2(parts[0].width() + 1.5);
-    if let Some(text) = upper {
-        parts.push(Placed {
-            text,
-            x: dev_x,
-            baseline: -4.0,
-            size: DEV_SIZE,
-            rotated,
-        });
-    }
-    if let Some(text) = lower {
-        parts.push(Placed {
-            text,
-            x: dev_x,
-            baseline: 4.0,
-            size: DEV_SIZE,
-            rotated,
-        });
-    }
+    let main_width = callout
+        .texts
+        .iter()
+        .filter(|(_, slot)| *slot == Slot::Main)
+        .map(|(text, _)| text_width(text, MAIN_SIZE))
+        .sum::<f64>();
+    let dev_x = r2(main_width + 1.5);
+    let mut parts: Vec<Placed> = callout
+        .texts
+        .iter()
+        .map(|(text, slot)| {
+            let (x, baseline, size) = match slot {
+                Slot::Main => (0.0, 0.0, MAIN_SIZE),
+                Slot::Upper => (dev_x, -4.0, DEV_SIZE),
+                Slot::Lower => (dev_x, 4.0, DEV_SIZE),
+                Slot::LimitUpper => (0.0, -5.5, MAIN_SIZE),
+                Slot::LimitLower => (0.0, 5.5, MAIN_SIZE),
+            };
+            Placed {
+                text: text.clone(),
+                x,
+                baseline,
+                size,
+                rotated,
+            }
+        })
+        .collect();
     let left = parts.iter().map(|p| p.x).fold(f64::MAX, f64::min);
     let right = parts
         .iter()
@@ -423,13 +324,17 @@ fn layout(callout: &Callout, x: f64, baseline: f64, rotated: bool) -> (Vec<Place
 /// Advance width in 1/1000 em from the Helvetica AFM, for the characters the generator uses.
 fn glyph_width(c: char) -> f64 {
     match c {
-        '0'..='9' => 556.0,
-        ' ' | '.' | 'f' => 278.0,
+        '0'..='9' | 'a' | 'b' | 'd' | 'e' | 'g' | 'h' | 'n' | 'p' | 'u' => 556.0,
+        ' ' | '.' | ',' | 'f' | 't' | '/' => 278.0,
         '+' | PLUS_MINUS | MINUS => 584.0,
-        OSLASH => 778.0,
-        'H' => 722.0,
-        'h' | 'g' | 'p' => 556.0,
-        'k' | 's' => 500.0,
+        '-' | '(' | ')' | 'r' => 333.0,
+        DEGREE => 400.0,
+        OSLASH | 'G' => 778.0,
+        'C' | 'D' | 'H' | 'R' => 722.0,
+        'E' | 'X' => 667.0,
+        'F' => 611.0,
+        'M' | 'm' => 833.0,
+        'c' | 'k' | 's' | 'x' => 500.0,
         'j' => 222.0,
         other => unreachable!("character {other:?} has no width entry in the generator"),
     }
@@ -441,6 +346,7 @@ fn code(c: char) -> u8 {
         MINUS => 0x80,
         OSLASH => 0x81,
         PLUS_MINUS => 0x82,
+        DEGREE => 0xB0,
         c if c.is_ascii() => c as u8,
         other => unreachable!("character {other:?} has no code in the generator"),
     }
@@ -502,10 +408,11 @@ endcodespacerange
 1 beginbfrange
 <20> <7E> <0020>
 endbfrange
-3 beginbfchar
+4 beginbfchar
 <80> <2212>
 <81> <00D8>
 <82> <00B1>
+<B0> <00B0>
 endbfchar
 endcmap
 CMapName currentdict /CMap defineresource pop
