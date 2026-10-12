@@ -1,4 +1,12 @@
-import type { Balloon, Change, Characteristic, Project, Sheet } from "$lib/ipc/bindings";
+import type {
+  Balloon,
+  Change,
+  Characteristic,
+  MeasurementResult,
+  Project,
+  ResultCell,
+  Sheet,
+} from "$lib/ipc/bindings";
 
 /**
  * A patch that does not fit the project in the store, for example after a missed event. The
@@ -57,6 +65,51 @@ function replaceSheet(project: Project, sheet: Sheet): Project {
   return { ...project, revisions };
 }
 
+/**
+ * Results in the order Rust keeps them: by sample order, then by characteristic placement order
+ * (M3 decision 1). A copy of Rust's order, so the store equals the project Rust holds.
+ */
+function sortResults(project: Project): Project {
+  if (project.results.length === 0) {
+    return project;
+  }
+  const samples = new Map(project.samples.map((s, i) => [s.id, i]));
+  const chars = new Map(project.characteristics.map((c, i) => [c.id, i]));
+  const key = (r: MeasurementResult): [number, number] => [
+    samples.get(r.sample) ?? Infinity,
+    chars.get(r.characteristic) ?? Infinity,
+  ];
+  const results = [...project.results].sort((a, b) => {
+    const [as, ac] = key(a);
+    const [bs, bc] = key(b);
+    return as - bs || ac - bc;
+  });
+  return results.every((r, i) => r === project.results[i]) ? project : { ...project, results };
+}
+
+function sameCell(result: MeasurementResult, cell: ResultCell): boolean {
+  return result.sample === cell.sample && result.characteristic === cell.characteristic;
+}
+
+function changeResult(
+  project: Project,
+  cell: ResultCell,
+  before: MeasurementResult | null,
+  after: MeasurementResult | null,
+): Project {
+  const index = project.results.findIndex((r) => sameCell(r, cell));
+  if (index >= 0 !== (before !== null)) {
+    throw new PatchMismatch(`result of ${cell.sample}/${cell.characteristic} differs`);
+  }
+  if (after === null) {
+    return { ...project, results: project.results.filter((_, i) => i !== index) };
+  }
+  if (index >= 0) {
+    return { ...project, results: project.results.map((r, i) => (i === index ? after : r)) };
+  }
+  return sortResults({ ...project, results: [...project.results, after] });
+}
+
 function applyChange(project: Project, change: Change): Project {
   switch (change.type) {
     case "characteristic_inserted":
@@ -84,7 +137,10 @@ function applyChange(project: Project, change: Change): Project {
     case "balloon_changed":
       return { ...project, balloons: replaceById(project.balloons, change.after) };
     case "order_changed":
-      return { ...project, characteristics: reorder(project.characteristics, change.after) };
+      return sortResults({
+        ...project,
+        characteristics: reorder(project.characteristics, change.after),
+      });
     case "sheet_changed":
       return replaceSheet(project, change.after);
     case "numbering_changed":
@@ -93,6 +149,44 @@ function applyChange(project: Project, change: Change): Project {
       return { ...project, settings: change.after };
     case "info_changed":
       return { ...project, info: change.after };
+    case "sample_inserted":
+      return { ...project, samples: insertAt(project.samples, change.index, change.sample) };
+    case "sample_removed":
+      return { ...project, samples: removeAt(project.samples, change.index, change.sample.id) };
+    case "sample_changed":
+      return { ...project, samples: replaceById(project.samples, change.after) };
+    case "sample_order_changed":
+      return sortResults({ ...project, samples: reorder(project.samples, change.after) });
+    case "result_changed":
+      return changeResult(project, change.cell, change.before, change.after);
+    case "report_info_changed":
+      return { ...project, report_info: change.after };
+    case "revision_label_changed": {
+      if (!project.revisions.some((r) => r.id === change.revision)) {
+        throw new PatchMismatch(`unknown revision ${change.revision}`);
+      }
+      return {
+        ...project,
+        revisions: project.revisions.map((r) =>
+          r.id === change.revision ? { ...r, label: change.after } : r,
+        ),
+      };
+    }
+    case "issued_report_inserted":
+      return {
+        ...project,
+        issued_reports: insertAt(project.issued_reports, change.index, change.report),
+      };
+    case "issued_report_removed": {
+      const reports = project.issued_reports;
+      if (change.index < 0 || change.index >= reports.length) {
+        throw new PatchMismatch(`no issued report at index ${String(change.index)}`);
+      }
+      return {
+        ...project,
+        issued_reports: reports.filter((_, i) => i !== change.index),
+      };
+    }
   }
 }
 

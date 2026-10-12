@@ -9,7 +9,7 @@ use rust_decimal::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::characteristic::{CharacteristicKind, Origin, SourceRegion, Unit};
+use crate::characteristic::{CharacteristicKind, Length, Origin, SourceRegion, Unit};
 use crate::decimal::decimal_option_schema;
 use crate::derivation::ToleranceDerivation;
 use crate::geometry::Point;
@@ -139,4 +139,9 @@ pub struct Proposal {
     /// audit entries written before T2.6, which read as empty.
     #[serde(default)]
     pub engines: Vec<EngineVersion>,
+    /// Shorter leg of an angle entered on the card (T2.9a), in the unit of the sheet. Stored on
+    /// the accepted characteristic. Missing in audit entries written before T2.9a, which read
+    /// as `null`.
+    #[serde(default)]
+    pub shorter_leg: Option<Length>,
 }

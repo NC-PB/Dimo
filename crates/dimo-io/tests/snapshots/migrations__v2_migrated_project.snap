@@ -165,7 +165,9 @@ expression: migrated
           "raw_text": null
         }
       ],
-      "comment": ""
+      "comment": "",
+      "shorter_leg": null,
+      "result_type": "auto"
     },
     {
       "id": "00000000-0000-0000-0000-00000000000a",
@@ -225,7 +227,9 @@ expression: migrated
           "raw_text": "Ø30 H7 +0.0203 0"
         }
       ],
-      "comment": ""
+      "comment": "",
+      "shorter_leg": null,
+      "result_type": "auto"
     },
     {
       "id": "00000000-0000-0000-0000-000000000006",
@@ -296,7 +300,9 @@ expression: migrated
           "raw_text": null
         }
       ],
-      "comment": "check twice"
+      "comment": "check twice",
+      "shorter_leg": null,
+      "result_type": "auto"
     }
   ],
   "balloons": [
@@ -432,5 +438,16 @@ expression: migrated
         }
       ]
     }
-  }
+  },
+  "samples": [],
+  "results": [],
+  "report_info": {
+    "report_number": "",
+    "report_date": "",
+    "company_name": "",
+    "inspected_by": "",
+    "approved_by": "",
+    "remarks": ""
+  },
+  "issued_reports": []
 }

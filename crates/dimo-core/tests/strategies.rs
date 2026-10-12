@@ -448,6 +448,7 @@ fn multi(synth: &Synth, text: &str, quantity: u32, at: Point) -> Proposal {
         parse_hints: Vec::new(),
         job_id: None,
         engines: Vec::new(),
+        shorter_leg: None,
     }
 }
 

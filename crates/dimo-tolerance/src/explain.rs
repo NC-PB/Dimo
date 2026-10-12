@@ -4,7 +4,7 @@
 //! the values of the characteristic. The text is plain and written for this program, not taken
 //! from any standard.
 
-use dimo_core::characteristic::{Characteristic, Unit};
+use dimo_core::characteristic::{Characteristic, Length, Unit};
 use dimo_core::derivation::{
     DerivationHint, DerivationRule, RangeBound, SizeRange, TableLookup, TableRef,
     ToleranceDerivation, UnitConversion,
@@ -38,6 +38,8 @@ pub struct ExplainValues {
     pub upper_limit: Option<Decimal>,
     /// Lower limit, used when a deviation is missing.
     pub lower_limit: Option<Decimal>,
+    /// Shorter leg of an angle (T2.9a), named in the explanation of an angular tolerance.
+    pub shorter_leg: Option<Length>,
 }
 
 impl From<&Characteristic> for ExplainValues {
@@ -49,6 +51,7 @@ impl From<&Characteristic> for ExplainValues {
             lower_dev: c.lower_dev,
             upper_limit: c.upper_limit,
             lower_limit: c.lower_limit,
+            shorter_leg: c.shorter_leg,
         }
     }
 }
@@ -62,6 +65,7 @@ impl From<&Proposal> for ExplainValues {
             lower_dev: p.lower_dev,
             upper_limit: p.upper_limit,
             lower_limit: p.lower_limit,
+            shorter_leg: p.shorter_leg,
         }
     }
 }
@@ -75,6 +79,7 @@ impl From<&Interpretation> for ExplainValues {
             lower_dev: i.lower_dev,
             upper_limit: i.upper_limit,
             lower_limit: i.lower_limit,
+            shorter_leg: i.shorter_leg,
         }
     }
 }
@@ -311,14 +316,7 @@ impl Text {
         };
         let range = self.range(range);
         if v.unit == Some(Unit::Deg) {
-            return match self.language {
-                Language::English => {
-                    format!("The shorter leg is in the range {range} mm, so {devs}.")
-                }
-                Language::German => {
-                    format!("Der kürzere Schenkel liegt im Bereich {range} mm, daher {devs}.")
-                }
-            };
+            return self.angle_range(v, &range, &devs);
         }
         let nominal = v
             .nominal
@@ -338,6 +336,51 @@ impl Text {
                 format!("Nennmaß {nominal} liegt im Bereich {range_unit}, daher {devs}.")
             }
         }
+    }
+
+    /// "The shorter leg is 40 mm, in the range over 10 up to and including 50 mm, so ±0.5°.
+    /// Limits 29.5° to 30.5°." (T2.9a). Inch legs show their mm value, the unit of the table.
+    fn angle_range(&self, v: &ExplainValues, range: &str, devs: &str) -> String {
+        let leg = v.shorter_leg.map(|leg| {
+            let typed = self.with_unit(&self.num(leg.value), Some(leg.unit));
+            match (leg.unit, leg.to_mm()) {
+                (Unit::In, Some(mm)) => {
+                    format!(
+                        "{typed} ({})",
+                        self.with_unit(&self.num(mm.normalize()), Some(Unit::Mm))
+                    )
+                }
+                _ => typed,
+            }
+        });
+        let mut text = match (self.language, leg) {
+            (Language::English, Some(leg)) => {
+                format!("The shorter leg is {leg}, in the range {range} mm, so {devs}.")
+            }
+            (Language::English, None) => {
+                format!("The shorter leg is in the range {range} mm, so {devs}.")
+            }
+            (Language::German, Some(leg)) => format!(
+                "Der kürzere Schenkel ist {leg} lang und liegt im Bereich {range} mm, daher {devs}."
+            ),
+            (Language::German, None) => {
+                format!("Der kürzere Schenkel liegt im Bereich {range} mm, daher {devs}.")
+            }
+        };
+        if let (Some(lower), Some(upper)) = (v.lower_limit, v.upper_limit) {
+            let (lower, upper) = (
+                self.with_unit(&self.num(lower), Some(Unit::Deg)),
+                self.with_unit(&self.num(upper), Some(Unit::Deg)),
+            );
+            let (word, to) = match self.language {
+                Language::English => ("Limits", "to"),
+                Language::German => ("Grenzmaße", "bis"),
+            };
+            for part in [" ", word, " ", &lower, " ", to, " ", &upper, "."] {
+                text.push_str(part);
+            }
+        }
+        text
     }
 
     fn range(&self, range: &SizeRange) -> String {

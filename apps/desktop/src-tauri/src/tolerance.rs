@@ -20,7 +20,7 @@ use tauri::{AppHandle, WebviewWindow};
 
 use crate::ipc::{CommandError, RejectReason};
 use crate::project::{emit_patched, with_session};
-use crate::recognition::{ExplainLanguage, shipped};
+use crate::recognition::{ExplainLanguage, parse_shorter_leg, shipped};
 use crate::session::{AppSession, ProjectPatched};
 
 /// Largest custom table file read, as in the project container.
@@ -88,6 +88,38 @@ pub struct Reinterpreted {
     pub skipped_manual: u32,
     /// Characteristics whose text is empty or not a callout, left unchanged.
     pub skipped_unreadable: u32,
+}
+
+/// What setting the shorter leg did with the limits (T2.9a).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum LegOutcome {
+    /// The text was read again with the leg; limits and rule follow it.
+    Interpreted,
+    /// Limits entered by hand were kept; only the leg is stored.
+    ManualKept,
+    /// The requirement text is empty or not a callout; only the leg is stored.
+    Unreadable,
+}
+
+impl From<dimo_detect::LegOutcome> for LegOutcome {
+    fn from(outcome: dimo_detect::LegOutcome) -> Self {
+        match outcome {
+            dimo_detect::LegOutcome::Interpreted => Self::Interpreted,
+            dimo_detect::LegOutcome::ManualKept => Self::ManualKept,
+            dimo_detect::LegOutcome::Unreadable => Self::Unreadable,
+        }
+    }
+}
+
+/// Result of setting the shorter leg of a characteristic (T2.9a).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub struct LegSet {
+    /// The change as one undo step, also sent as `project-patched`.
+    pub patched: ProjectPatched,
+    /// What happened to the limits.
+    pub outcome: LegOutcome,
 }
 
 fn count(items: &[CharId]) -> u32 {
@@ -189,6 +221,34 @@ pub fn reinterpret(
     })
 }
 
+/// Sets the shorter leg of characteristic `id` (T2.9a): `leg` is typed in the unit of the
+/// characteristic's sheet, `None` or empty text removes it. The requirement text is read again
+/// with the leg and the current settings, by the rules of re-interpretation (limits entered by
+/// hand stay), and the leg is stored in the same undo step.
+pub fn apply_shorter_leg(
+    session: &mut AppSession,
+    id: CharId,
+    leg: Option<&str>,
+) -> Result<LegSet, CommandError> {
+    let engine = ToleranceEngine::new(context(session)?);
+    let project = session.project().ok_or(CommandError::NoProject)?;
+    let c = project
+        .characteristic(id)
+        .ok_or_else(|| CommandError::InvalidArgument {
+            message: format!("unknown characteristic {id}"),
+        })?;
+    let leg = parse_shorter_leg(leg, dimo_detect::sheet_unit(project, c))?;
+    let change = dimo_detect::set_shorter_leg(project, id, leg, &engine).ok_or_else(|| {
+        CommandError::InvalidArgument {
+            message: format!("unknown characteristic {id}"),
+        }
+    })?;
+    Ok(LegSet {
+        patched: session.execute(change.command)?,
+        outcome: change.outcome.into(),
+    })
+}
+
 /// Imports the custom table file at `path` (FR-TOL-07): reads and checks it, stores it in the
 /// project and lists it in the settings as one undo step. The file is journaled with that step,
 /// so a crash before saving keeps it (M2 decision 4).
@@ -277,6 +337,24 @@ pub async fn reinterpret_characteristics(
 ) -> Result<Reinterpreted, CommandError> {
     with_session(app, move |app, session| {
         let mut result = reinterpret(session, &ids)?;
+        result.patched = emit_patched(app, result.patched);
+        Ok(result)
+    })
+    .await
+}
+
+/// Sets the shorter leg of an angle (T2.9a) as typed in the unit of its sheet, `null` or empty
+/// text to remove it, and reads its requirement text again with it as one undo step. Limits
+/// entered by hand stay; the outcome says so. Text that is not a positive number is refused.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_shorter_leg(
+    app: AppHandle,
+    id: CharId,
+    leg: Option<String>,
+) -> Result<LegSet, CommandError> {
+    with_session(app, move |app, session| {
+        let mut result = apply_shorter_leg(session, id, leg.as_deref())?;
         result.patched = emit_patched(app, result.patched);
         Ok(result)
     })

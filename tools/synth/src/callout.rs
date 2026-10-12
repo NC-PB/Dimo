@@ -6,7 +6,7 @@
 //! engine against an independent truth. The tables are drafts like every table an agent writes
 //! (D-43): the owner checks them together with the shipped tables.
 
-use dimo_core::characteristic::{CharacteristicKind, ToleranceRule, Unit};
+use dimo_core::characteristic::{CharacteristicKind, Length, ToleranceRule, Unit};
 use rust_decimal::Decimal;
 
 use crate::Rng;
@@ -173,6 +173,8 @@ pub(crate) struct Callout {
     pub limits: Option<(Decimal, Decimal)>,
     pub inspect: bool,
     pub review_note: Option<String>,
+    /// Shorter leg of an angle on the part, for angular general tolerances (truth field).
+    pub shorter_leg: Option<Length>,
 }
 
 impl Callout {
@@ -287,6 +289,7 @@ impl Draw {
             limits,
             inspect: true,
             review_note: None,
+            shorter_leg: None,
         }
     }
 }
@@ -379,8 +382,12 @@ fn untoleranced(draw: &Draw, rng: &mut Rng) -> Callout {
                 Some(sym(n, t)),
             );
             c.unit = Unit::Deg;
+            c.shorter_leg = Some(Length {
+                value: Decimal::from(leg),
+                unit: Unit::Mm,
+            });
             c.review_note = Some(format!(
-                "Shorter leg of the angle on the part: {leg} mm, ISO 2768-1 table 3 class {GENERAL_CLASS} gives ±{minutes}'. The leg is not written on the sheet, so box select cannot know it in M2 (generator table, draft, D-43)."
+                "Shorter leg of the angle on the part: {leg} mm (shorter_leg), ISO 2768-1 table 3 class {GENERAL_CLASS} gives ±{minutes}'. The leg is not written on the sheet; the user enters it on the proposal card (generator table, draft, D-43)."
             ));
             c
         }

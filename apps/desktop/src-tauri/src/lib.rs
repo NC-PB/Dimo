@@ -57,6 +57,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             tolerance::explain_characteristic,
             tolerance::characteristic_history,
             tolerance::reinterpret_characteristics,
+            tolerance::set_shorter_leg,
             tolerance::import_tolerance_table,
             settings::app_settings,
             settings::set_app_settings,

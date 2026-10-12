@@ -22,6 +22,17 @@ hand**. Dimo never changes them again on its own.
 When a fit is written together with deviations that differ from the fit table, the written
 deviations are used and the characteristic gets a note.
 
+### Angles: the shorter leg
+
+The general tolerance for an angle (ISO 2768-1) depends on the length of its shorter leg, which is
+not written on the drawing. For an angle without a written tolerance, type the length of the
+shorter leg in the field **Shorter leg** on the proposal card or in the side panel, tab
+**Tolerance**. The field is in the unit of the sheet (mm or inch). Dimo then sets the limits of the
+angle, and the explanation names the leg, its range and the limits. Without a leg the angle gets
+no limits and a note. The leg is stored with the characteristic and its unit, so **Re-interpret
+selected** and a retyped requirement text keep using it, also after the sheet unit changes.
+Limits you entered by hand stay. Empty the field to remove the leg.
+
 ## Tolerance settings of the project
 
 Open **Settings** (⌘,) while a project is open. The section **Tolerances of the project** holds

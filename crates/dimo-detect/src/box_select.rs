@@ -30,6 +30,8 @@ use dimo_notation::{Callout, Kind, Tolerance, parse_callout};
 use dimo_pdf::{RegionRun, RegionText};
 use rust_decimal::Decimal;
 
+use dimo_tolerance::Measures;
+
 use crate::interpret::Interpreter;
 use crate::read::read_callout;
 
@@ -109,11 +111,13 @@ pub fn box_select_with_notes(
     groups
         .into_iter()
         .map(|line| {
+            // No shorter leg yet: the user enters it on the card (T2.9a), detection is M4.
             let reading = read_callout(
                 &line.text,
                 line.framed,
                 context.drawing_unit,
                 context.interpreter,
+                &Measures::default(),
             );
             let source_box = if single { *region } else { line.bounds };
             let placement = if single {
@@ -150,6 +154,7 @@ pub fn box_select_with_notes(
                 parse_hints,
                 job_id: context.job_id,
                 engines: reading.engines,
+                shorter_leg: reading.shorter_leg,
             };
             Proposed {
                 proposal,

@@ -5,8 +5,9 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M2 Assisted capture** ([plan](M2.md)) in progress, waves 1 to 3 done except T2.10; M0 and M1 implemented, waiting for owner reviews
-- Next: **T2.9a shorter leg input** and **T2.10 user guide**; owner: Tabellenbuch check of the tolerance tables and the truth file, M1 manual test and exit criterion, open "Owner: confirm" decisions
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; wave 1 (T3.1, T3.2) started
+- M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
+- Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
 
 ## Tasks M0
@@ -55,9 +56,26 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T2.7 Numbering strategies | done | Strategies sheet/zone, view, clockwise per view, kind, manual; preview with ghost numbers; zone grid and view editors. Owner: confirm unlocked renumbering and sub-number grouping rules (decision log 2026-10-10) |
 | T2.7a Follow-ups from wave 2 | done | Type-ahead kept after a placing click (editor and proposal card), zone grid defaults in `dimo-core::zones`, locked inserts after the selection. Insert after selection confirmed by the owner |
 | T2.8 Tolerance UI, explanations and history | done | Rule column and markers, detail panel with explanation and history, tolerance settings and custom table import (crash safe through the journal), re-interpret, Rule column in CSV and XLSX |
-| T2.9 Evaluation and exit criterion | review | `dimo-cli eval box-select`, CI gate. Common gated 623/623 (100 %), strict 580/623 (93.1 %): all misses are angles under a general tolerance (shorter leg unknown). Owner: review truth file and tables, confirm on a real drawing. Angle gap: T2.9a |
-| T2.9a Shorter leg input for angles | todo | Owner decision 2026-10-10: field on the proposal card and in the detail panel, Rust derives the ISO 2768-1 angle limits |
-| T2.10 User guide | todo | Wave 3 |
+| T2.9 Evaluation and exit criterion | review | `dimo-cli eval box-select`, CI gate on the strict row: 623/623 (100 %) on common callouts after T2.9a (draft tables). Owner: review truth file and tables, confirm on a real drawing |
+| T2.9a Shorter leg input for angles | done | Leg field on the proposal card and in the detail panel (`set_shorter_leg`), stored as `Characteristic.shorter_leg` with its unit, kept by re-interpretation; schema stays 2. Strict evaluation 623/623. Spec review fixes merged |
+| T2.10 User guide | done | User guide en/de checked against the code (mismatches fixed), `docs/dev/manual-test-m2.md`, smoke test section 5 (tolerance settings, box select, re-interpret). Owner: confirm hand derived values in the manual test (inch `.250` limits) |
+
+
+## Tasks M3
+
+| Task | State | Notes |
+|---|---|---|
+| T3.1 Data model version 3 | todo | Wave 1, after T2.9a merge |
+| T3.2 Typst report rendering | in progress | Wave 1, spike with stop gate first |
+| T3.3 Evaluation and verdicts | todo | Wave 2 |
+| T3.4 Project and report details | todo | Wave 2 |
+| T3.5 Measurement grid | todo | Wave 2 |
+| T3.6 Report model and default templates | todo | Wave 2 |
+| T3.7 XLSX check sheet and inspection report | todo | Wave 3 |
+| T3.8 Report export in the app | todo | Wave 3 |
+| T3.9 Follow-ups from waves 2 and 3 | todo | Wave 4 |
+| T3.10 User guide and manual test | todo | Wave 4 |
+| T3.11 Exit check | todo | Wave 4 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -76,6 +94,11 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-12 | M3 plan and its decisions 1 to 17 confirmed, exit limit 60 minutes of working time for 25 characteristics and three parts | Owner review of `docs/plan/M3.md` | owner |
+| 2026-10-10 | Shorter leg stored as optional `Characteristic.shorter_leg` and `Proposal.shorter_leg` (`Length {value, unit}`, serde default, written as null; truth gains optional `shorter_leg`, truth format stays 1); schema stays 2 (unreleased, precedent `Proposal.job_id`; specta cannot omit empty keys); the v2 fixture gained the null key. Spec reviewer: no ADR needed while v2 is unreleased; any later field after v2 ships needs a version bump | T2.9a | T2.9a, agent |
+| 2026-10-10 | The leg is typed in the sheet unit and stored with its unit; Rust parses it (point or comma, positive only) and converts inch to mm exactly for ISO 2768-1 table 3; `read_callout_text` takes `LegInput` (`typed` text or `stored` `Length`) so a stored leg is never re-read as text; the detail panel uses `set_shorter_leg(id, leg)`, which follows the re-interpretation rules (hand entered limits, basic hint, kind, quantity, inspect stay) and returns `interpreted`, `manual_kept` or `unreadable`; a reading keeps the leg even when it selects no row | D-20, rule 2, FR-TOL-08, FR-CHR-08, spec review | T2.9a, agent |
+| 2026-10-10 | Evaluation: a proposal with the "shorter leg unknown" note is read again with the truth leg, as the card does; the CI gate is the strict row; the known gap special case is removed. The gate proves the plumbing and agreement with the draft tables, not ISO correctness (D-43) | T2.9 exit criterion | T2.9a, agent |
+| 2026-10-10 | User guide follows the code where they disagreed (T2.10): preview arrow in the No column, Apply turns the preview off, sub-number split only on accepting box select proposals, typed `4X` stays one characteristic, retyping a value overwrites hand entered limits, editing the Requirement cell does not re-read the text | NFR-UX-06 | T2.10, agent |
 | 2026-10-10 | Evaluation: common callout categories as in M2.md T2.9; box = truth region grown 1.5 pt, axis aligned (0 and 90 degree text); compares kind, nominal, limits, rule and inspect; synth truth carries optional `tolerance_settings` (truth format stays 1), synth uses ISO 2768-1 m, angles with shorter legs 8 or 40 mm; synth `FITS` moved to `tools/synth/src/callout.rs` (24 entries incl. cd, ef, fg, CD8, EF8, FG7) | M2 exit criterion | T2.9, agent |
 | 2026-10-10 | Known gap: an angle under a general tolerance gets no limits in box select (shorter leg unknown); the gate grades it on that M2 behaviour, the strict row (93.1 %) wants limits. Owner decided 2026-10-10: shorter leg input on the proposal card and in the detail panel (T2.9a); geometry based leg detection stays M4 | ISO 2768-1 table 3 needs the shorter leg | T2.9, coordinator |
 | 2026-10-10 | Stacked limit dimension joined into one proposal: lines stacked along the reading direction, gap at most 0.5 of the smaller height, heights within 0.8, same decimals (at least one), upper larger, lower at least 0.8 of upper, a lower line with its own prefix stays separate. Replaces "two proposals (T2.9 to refine)" | FR-REC-02 | T2.9, agent |

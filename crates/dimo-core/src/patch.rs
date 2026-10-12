@@ -10,13 +10,17 @@
 //!
 //! Indexes are positions in the project lists at the moment the change is applied.
 
+use std::collections::HashMap;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::balloon::Balloon;
 use crate::characteristic::Characteristic;
-use crate::id::CharId;
+use crate::id::{CharId, RevisionId, SampleId};
+use crate::measurement::{MeasurementResult, ResultCell, Sample};
 use crate::project::{Numbering, Project, ProjectInfo, ProjectSettings};
+use crate::report::{IssuedReport, ReportInfo};
 use crate::sheet::Sheet;
 
 /// One primitive change of a project.
@@ -101,6 +105,74 @@ pub enum Change {
         /// State after.
         after: ProjectInfo,
     },
+    /// A sample was inserted at `index` of `Project::samples`.
+    SampleInserted {
+        /// Position in the sample order.
+        index: u32,
+        /// The new sample.
+        sample: Sample,
+    },
+    /// The sample at `index` was removed. It has no results left.
+    SampleRemoved {
+        /// Position before removal.
+        index: u32,
+        /// The removed sample.
+        sample: Sample,
+    },
+    /// Serial, date, inspector, gauges or comment of a sample changed. The ID stays the same.
+    SampleChanged {
+        /// State before.
+        before: Sample,
+        /// State after.
+        after: Sample,
+    },
+    /// The sample order changed (same IDs, new order). Results follow the new order.
+    SampleOrderChanged {
+        /// Sample IDs in the order before.
+        before: Vec<SampleId>,
+        /// Sample IDs in the order after.
+        after: Vec<SampleId>,
+    },
+    /// The result of one cell was set, changed or cleared. `Project::results` stays sorted by
+    /// sample and placement order, so the position follows from the cell.
+    ResultChanged {
+        /// The cell.
+        cell: ResultCell,
+        /// State before; `null` if the cell had no result.
+        before: Option<MeasurementResult>,
+        /// State after; `null` if the result was cleared.
+        after: Option<MeasurementResult>,
+    },
+    /// Report header and approval data changed.
+    ReportInfoChanged {
+        /// State before.
+        before: ReportInfo,
+        /// State after.
+        after: ReportInfo,
+    },
+    /// The label of a drawing revision changed.
+    RevisionLabelChanged {
+        /// The revision.
+        revision: RevisionId,
+        /// Label before.
+        before: String,
+        /// Label after.
+        after: String,
+    },
+    /// An issued report record was inserted at `index` of `Project::issued_reports`.
+    IssuedReportInserted {
+        /// Position in the list.
+        index: u32,
+        /// The record.
+        report: IssuedReport,
+    },
+    /// The issued report record at `index` was removed.
+    IssuedReportRemoved {
+        /// Position before removal.
+        index: u32,
+        /// The record.
+        report: IssuedReport,
+    },
 }
 
 impl Change {
@@ -152,6 +224,44 @@ impl Change {
                 before: after,
                 after: before,
             },
+            Self::SampleInserted { index, sample } => Self::SampleRemoved { index, sample },
+            Self::SampleRemoved { index, sample } => Self::SampleInserted { index, sample },
+            Self::SampleChanged { before, after } => Self::SampleChanged {
+                before: after,
+                after: before,
+            },
+            Self::SampleOrderChanged { before, after } => Self::SampleOrderChanged {
+                before: after,
+                after: before,
+            },
+            Self::ResultChanged {
+                cell,
+                before,
+                after,
+            } => Self::ResultChanged {
+                cell,
+                before: after,
+                after: before,
+            },
+            Self::ReportInfoChanged { before, after } => Self::ReportInfoChanged {
+                before: after,
+                after: before,
+            },
+            Self::RevisionLabelChanged {
+                revision,
+                before,
+                after,
+            } => Self::RevisionLabelChanged {
+                revision,
+                before: after,
+                after: before,
+            },
+            Self::IssuedReportInserted { index, report } => {
+                Self::IssuedReportRemoved { index, report }
+            }
+            Self::IssuedReportRemoved { index, report } => {
+                Self::IssuedReportInserted { index, report }
+            }
         }
     }
 }
@@ -190,14 +300,24 @@ fn ensure(ok: bool, message: &'static str) -> Result<(), ChangeError> {
     }
 }
 
+fn is_permutation<T: Ord + Clone>(a: &[T], b: &[T]) -> bool {
+    let mut a = a.to_vec();
+    let mut b = b.to_vec();
+    a.sort_unstable();
+    b.sort_unstable();
+    a == b
+}
+
 fn position(index: u32) -> usize {
     usize::try_from(index).unwrap_or(usize::MAX)
 }
 
 impl Project {
     /// Applies one change after checking that it fits: the `before` state must match, IDs must
-    /// be unique, and balloons must refer to existing characteristics and sheets.
+    /// be unique, balloons must refer to existing characteristics and sheets, results to
+    /// existing samples and characteristics, and serials must be unique.
     /// On error the project is unchanged.
+    #[allow(clippy::too_many_lines, reason = "one arm per change, exhaustive")]
     pub fn apply_change(&mut self, change: &Change) -> Result<(), ChangeError> {
         match change {
             Change::CharacteristicInserted {
@@ -228,6 +348,10 @@ impl Project {
                 ensure(
                     self.balloons_of(characteristic.id).next().is_none(),
                     "characteristic still has balloons",
+                )?;
+                ensure(
+                    self.results_of(characteristic.id).next().is_none(),
+                    "characteristic still has results",
                 )?;
                 self.characteristics.remove(index);
             }
@@ -291,6 +415,107 @@ impl Project {
                 ensure(self.info == *before, "info differs from before")?;
                 self.info = after.clone();
             }
+            change @ (Change::SampleInserted { .. }
+            | Change::SampleRemoved { .. }
+            | Change::SampleChanged { .. }
+            | Change::SampleOrderChanged { .. }
+            | Change::ResultChanged { .. }
+            | Change::ReportInfoChanged { .. }
+            | Change::RevisionLabelChanged { .. }
+            | Change::IssuedReportInserted { .. }
+            | Change::IssuedReportRemoved { .. }) => self.apply_measurement_change(change)?,
+        }
+        Ok(())
+    }
+
+    /// [`Project::apply_change`] for samples, results and report data (data model version 3).
+    fn apply_measurement_change(&mut self, change: &Change) -> Result<(), ChangeError> {
+        match change {
+            Change::SampleInserted { index, sample } => {
+                let index = position(*index);
+                ensure(index <= self.samples.len(), "insert index out of range")?;
+                ensure(self.sample(sample.id).is_none(), "sample ID exists")?;
+                self.check_serial(sample)?;
+                self.samples.insert(index, sample.clone());
+            }
+            Change::SampleRemoved { index, sample } => {
+                let index = position(*index);
+                ensure(
+                    self.samples.get(index) == Some(sample),
+                    "removed sample differs",
+                )?;
+                ensure(
+                    !self.results.iter().any(|r| r.sample == sample.id),
+                    "sample still has results",
+                )?;
+                self.samples.remove(index);
+            }
+            Change::SampleChanged { before, after } => {
+                ensure(before.id == after.id, "sample ID changed")?;
+                self.check_serial(after)?;
+                let slot = self
+                    .samples
+                    .iter_mut()
+                    .find(|s| s.id == before.id)
+                    .ok_or(ChangeError("unknown sample"))?;
+                ensure(*slot == *before, "sample differs from before")?;
+                *slot = after.clone();
+            }
+            Change::SampleOrderChanged { before, after } => {
+                let current: Vec<SampleId> = self.samples.iter().map(|s| s.id).collect();
+                ensure(current == *before, "sample order differs from before")?;
+                ensure(is_permutation(before, after), "new order is no permutation")?;
+                let mut old = std::mem::take(&mut self.samples);
+                for id in after {
+                    // Present: `after` is a permutation of the current IDs.
+                    if let Some(i) = old.iter().position(|s| s.id == *id) {
+                        self.samples.push(old.swap_remove(i));
+                    }
+                }
+                self.sort_results();
+            }
+            Change::ResultChanged {
+                cell,
+                before,
+                after,
+            } => self.change_result(*cell, before.as_ref(), after.as_ref())?,
+            Change::ReportInfoChanged { before, after } => {
+                ensure(
+                    self.report_info == *before,
+                    "report info differs from before",
+                )?;
+                self.report_info = after.clone();
+            }
+            Change::RevisionLabelChanged {
+                revision,
+                before,
+                after,
+            } => {
+                let slot = self
+                    .revisions
+                    .iter_mut()
+                    .find(|r| r.id == *revision)
+                    .ok_or(ChangeError("unknown revision"))?;
+                ensure(slot.label == *before, "revision label differs from before")?;
+                slot.label.clone_from(after);
+            }
+            Change::IssuedReportInserted { index, report } => {
+                let index = position(*index);
+                ensure(
+                    index <= self.issued_reports.len(),
+                    "insert index out of range",
+                )?;
+                self.issued_reports.insert(index, report.clone());
+            }
+            Change::IssuedReportRemoved { index, report } => {
+                let index = position(*index);
+                ensure(
+                    self.issued_reports.get(index) == Some(report),
+                    "removed issued report differs",
+                )?;
+                self.issued_reports.remove(index);
+            }
+            _ => return Err(ChangeError("not a sample, result or report change")),
         }
         Ok(())
     }
@@ -298,17 +523,94 @@ impl Project {
     fn reorder(&mut self, before: &[CharId], after: &[CharId]) -> Result<(), ChangeError> {
         let current: Vec<CharId> = self.characteristics.iter().map(|c| c.id).collect();
         ensure(current == before, "order differs from before")?;
-        let mut sorted_before = before.to_vec();
-        let mut sorted_after = after.to_vec();
-        sorted_before.sort_unstable();
-        sorted_after.sort_unstable();
-        ensure(sorted_before == sorted_after, "new order is no permutation")?;
+        ensure(is_permutation(before, after), "new order is no permutation")?;
         let mut old = std::mem::take(&mut self.characteristics);
         for id in after {
             // Present: `after` is a permutation of the current IDs.
             if let Some(i) = old.iter().position(|c| c.id == *id) {
                 self.characteristics.push(old.swap_remove(i));
             }
+        }
+        self.sort_results();
+        Ok(())
+    }
+
+    /// Serials are trimmed, not empty and unique (M3 decision 6).
+    fn check_serial(&self, sample: &Sample) -> Result<(), ChangeError> {
+        ensure(
+            !sample.serial.is_empty() && sample.serial.trim() == sample.serial,
+            "serial is empty or not trimmed",
+        )?;
+        ensure(
+            !self
+                .samples
+                .iter()
+                .any(|s| s.id != sample.id && s.serial == sample.serial),
+            "serial exists",
+        )
+    }
+
+    /// Position of every sample and characteristic, the sort key of results.
+    fn result_order(&self) -> (HashMap<SampleId, usize>, HashMap<CharId, usize>) {
+        let samples = self.samples.iter().enumerate().map(|(i, s)| (s.id, i));
+        let chars = self
+            .characteristics
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (c.id, i));
+        (samples.collect(), chars.collect())
+    }
+
+    /// Restores the order of results after the sample or placement order changed.
+    fn sort_results(&mut self) {
+        if self.results.is_empty() {
+            return;
+        }
+        let (samples, chars) = self.result_order();
+        self.results.sort_by_key(|r| {
+            (
+                samples.get(&r.sample).copied().unwrap_or(usize::MAX),
+                chars.get(&r.characteristic).copied().unwrap_or(usize::MAX),
+            )
+        });
+    }
+
+    fn change_result(
+        &mut self,
+        cell: ResultCell,
+        before: Option<&MeasurementResult>,
+        after: Option<&MeasurementResult>,
+    ) -> Result<(), ChangeError> {
+        ensure(
+            before.is_some() || after.is_some(),
+            "result change without state",
+        )?;
+        ensure(
+            before.into_iter().chain(after).all(|r| r.cell() == cell),
+            "result belongs to another cell",
+        )?;
+        let (samples, chars) = self.result_order();
+        let key = |c: ResultCell| {
+            (
+                samples.get(&c.sample).copied().unwrap_or(usize::MAX),
+                chars.get(&c.characteristic).copied().unwrap_or(usize::MAX),
+            )
+        };
+        let target = key(cell);
+        ensure(
+            target.0 != usize::MAX && target.1 != usize::MAX,
+            "result of an unknown sample or characteristic",
+        )?;
+        let at = self.results.partition_point(|r| key(r.cell()) < target);
+        let current = self.results.get(at).filter(|r| r.cell() == cell);
+        ensure(current == before, "result differs from before")?;
+        match (current.is_some(), after) {
+            (true, Some(after)) => self.results[at] = after.clone(),
+            (true, None) => {
+                self.results.remove(at);
+            }
+            (false, Some(after)) => self.results.insert(at, after.clone()),
+            (false, None) => {}
         }
         Ok(())
     }

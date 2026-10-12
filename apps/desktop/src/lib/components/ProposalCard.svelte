@@ -1,8 +1,9 @@
 <script lang="ts">
   /**
    * The proposal card of box select (T2.6, FR-REC-01, FR-REC-02, ADR 0006): next to the box the
-   * user drew, it shows what Rust read there, with the tolerance engine's explanation and notes. The requirement text and the kind can be edited;
-   * edited text is read again by Rust. Enter accepts (one undo step), Esc discards.
+   * user drew, it shows what Rust read there, with the tolerance engine's explanation and notes. The requirement text and the kind can be edited,
+   * and an angle takes the length of its shorter leg (T2.9a); edited text and legs are read
+   * again by Rust. Enter accepts (one undo step), Esc discards.
    */
   import type { CharacteristicKind } from "$lib/ipc/bindings";
   import ToleranceBadges from "$lib/components/ToleranceBadges.svelte";
@@ -188,6 +189,34 @@
             {/each}
           </select>
         </label>
+        {#if proposal.kind === "angle"}
+          <label class="flex items-center justify-between gap-2">
+            <span class="text-xs text-text-muted">
+              {m.shorter_leg_label({ unit: unitLabel(store.sheetUnit) })}
+            </span>
+            <input
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              spellcheck="false"
+              class="w-20 rounded border border-border bg-surface px-1.5 py-0.5 text-right text-text tabular-nums"
+              data-field="shorter_leg"
+              title={m.shorter_leg_hint()}
+              aria-invalid={store.legErrors[index] ? "true" : undefined}
+              value={store.legs[index] ?? ""}
+              oninput={(e) => {
+                store.editLeg(index, e.currentTarget.value);
+              }}
+              onchange={() => void store.reread(index)}
+            />
+          </label>
+          {#if store.legErrors[index]}
+            <p class="text-xs text-danger" role="alert">
+              <span aria-hidden="true">⚠</span>
+              {m.shorter_leg_invalid()}
+            </p>
+          {/if}
+        {/if}
         {#if proposal.parse_error}
           <p class="text-xs text-text" role="note">
             <span aria-hidden="true">⚠</span>

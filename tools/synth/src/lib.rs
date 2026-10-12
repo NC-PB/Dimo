@@ -182,7 +182,7 @@ fn notes(seed: u64, count: usize) -> Vec<String> {
         "Regions are computed from the placed text with the Helvetica width table: x from the start to the end of the text, y from 0.8 times the font size above the baseline to 0.2 times below it. Stacked deviations are 7 pt text right of the main text; a limit dimension is two 10 pt lines, upper limit above lower limit, the upper one written first and taken as nominal.".to_string(),
         "Every fourth callout is rotated by 90 degrees (read bottom to top) at a vertical dimension line; its region is measured the same way in the reading direction and has angle 90.".to_string(),
         "tolerance_settings: untoleranced sizes follow ISO 2768-1 class m. The expected limits come from tables in the generator (ISO 2768-1 tables 1 to 3, ISO 286-2 fits in FITS), written by hand and independent of dimo-tolerance. They are drafts like every agent written table (D-43); entries that use them carry a review_note.".to_string(),
-        "Angles without tolerance have limits from ISO 2768-1 table 3 by the shorter leg of the part, given in the review_note. The leg is not on the sheet.".to_string(),
+        "Angles without tolerance have limits from ISO 2768-1 table 3 by the shorter leg of the part, given in shorter_leg. The leg is not on the sheet.".to_string(),
     ]
 }
 
@@ -219,6 +219,7 @@ fn into_truth(callout: Callout, index: usize, region: OrientedBox) -> TruthChara
         lower_limit: callout.limits.map(|(_, l)| l),
         inspect: callout.inspect,
         review_note: callout.review_note,
+        shorter_leg: callout.shorter_leg,
     }
 }
 

@@ -14,7 +14,7 @@
 //! `size_outside_table` and the search goes on. Reference and basic dimensions get no limits
 //! and `inspect = false` (D-25, FR-CHR-08).
 
-use dimo_core::characteristic::{CharacteristicKind, Unit};
+use dimo_core::characteristic::{CharacteristicKind, Length, Unit};
 use dimo_core::derivation::{
     DerivationHint, DerivationRule, RangeBound, SizeRange, TableLookup, TableRef,
     ToleranceDerivation, UnitConversion,
@@ -39,9 +39,25 @@ pub const ANGLE_PLACES: u32 = 6;
 /// Facts about the feature that the callout text does not hold.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Measures {
-    /// Length of the shorter leg of an angle in mm. Selects the row of angular general
-    /// tolerances (ISO 2768-1); without it those tolerances cannot apply.
-    pub shorter_leg: Option<Decimal>,
+    /// Length of the shorter leg of an angle, in mm or inch (T2.9a). Selects the row of angular
+    /// general tolerances (ISO 2768-1 table 3), whose ranges are in mm; an inch leg is converted
+    /// exactly. Without it, or with a leg that is not a positive length, those tolerances
+    /// cannot apply.
+    pub shorter_leg: Option<Length>,
+}
+
+impl Measures {
+    /// Measures with the shorter leg of an angle.
+    pub fn with_shorter_leg(shorter_leg: Option<Length>) -> Self {
+        Self { shorter_leg }
+    }
+
+    /// The shorter leg in mm, if it is a positive length.
+    fn shorter_leg_mm(&self) -> Option<Decimal> {
+        self.shorter_leg
+            .and_then(Length::to_mm)
+            .filter(|mm| *mm > Decimal::ZERO)
+    }
 }
 
 /// Something the engine could not decide and the user should resolve. Not stored in the
@@ -83,6 +99,9 @@ pub struct Interpretation {
     pub derivation: ToleranceDerivation,
     /// What the engine could not decide.
     pub notes: Vec<Note>,
+    /// The shorter leg that selected an angular general tolerance, as given in [`Measures`];
+    /// `None` when no angular table row was used.
+    pub shorter_leg: Option<Length>,
 }
 
 /// Interpret a callout without extra facts about the feature (FR-TOL-01).
@@ -105,6 +124,7 @@ pub fn interpret_with(
         hints: Vec::new(),
         notes: Vec::new(),
         draft: false,
+        leg_used: false,
     };
     let reference_or_basic = callout.reference || callout.basic;
     if callout.reference {
@@ -133,6 +153,7 @@ pub fn interpret_with(
         inspect: !reference_or_basic,
         derivation: ToleranceDerivation::new(DerivationRule::NoToleranceDefined),
         notes: Vec::new(),
+        shorter_leg: None,
     };
     let mut converted = written != output;
     if let Some(found) = found {
@@ -184,6 +205,7 @@ pub fn interpret_with(
     result.derivation.draft = state.draft;
     result.derivation.hints = state.hints;
     result.notes = state.notes;
+    result.shorter_leg = measures.shorter_leg.filter(|_| state.leg_used);
     result
 }
 
@@ -192,6 +214,8 @@ struct State {
     hints: Vec<DerivationHint>,
     notes: Vec<Note>,
     draft: bool,
+    /// True when the shorter leg selected an angular table row.
+    leg_used: bool,
 }
 
 /// Deviations of one level, in `unit`, relative to the nominal converted to `unit`.
@@ -249,7 +273,7 @@ fn derive(
             if !has_part(table, applies_to) {
                 continue;
             }
-            let Some(leg) = measures.shorter_leg else {
+            let Some(leg) = measures.shorter_leg_mm() else {
                 state.notes.push(Note::ShorterLegUnknown);
                 return None;
             };
@@ -260,6 +284,7 @@ fn derive(
         match table.general(applies_to, &setting.class, size) {
             Ok(general) => {
                 state.draft |= general.draft;
+                state.leg_used |= applies_to == AppliesTo::Angular;
                 let lookup = table_lookup(table, setting, &general.part, &general.range);
                 let rule = if drawing_rule {
                     DerivationRule::DrawingRule { lookup }

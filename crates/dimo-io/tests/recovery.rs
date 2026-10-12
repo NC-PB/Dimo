@@ -76,6 +76,44 @@ fn crash_after_journal_write_restores_all_commands() {
     }
 }
 
+/// T3.1: the changes of data model version 3 (samples, results, result types, report info,
+/// revision label, issued report, deletes with results) are journaled and replayed, including
+/// undo of a delete that took results with it (NFR-REL-01).
+#[test]
+fn crash_restores_samples_results_and_report_data() {
+    let dir = tempfile::tempdir().unwrap();
+    let (path, mut env) = saved_project(dir.path(), Layout::Zip);
+    let (mut session, _) = ProjectSession::open(&path).unwrap();
+    common::edit(session.document_mut(), &mut env);
+    common::edit_v2(session.document_mut(), &mut env);
+    session.flush_journal().unwrap();
+    common::edit_v3(session.document_mut(), &mut env);
+    let first = session.project().characteristics[0].id;
+    let doc = session.document_mut();
+    doc.execute(
+        Command::DeleteCharacteristics { ids: vec![first] },
+        &mut env,
+    )
+    .unwrap();
+    doc.undo(&mut env).unwrap();
+    doc.redo(&mut env).unwrap();
+    doc.undo(&mut env).unwrap();
+    session.flush_journal().unwrap();
+    let expected: Project = session.project().clone();
+    assert_eq!(expected.samples.len(), 3);
+    assert!(!expected.results.is_empty() && !expected.issued_reports.is_empty());
+    drop(session); // crash
+
+    let (session, report) = ProjectSession::open(&path).unwrap();
+    assert!(report.recovered_entries > 0);
+    assert_eq!(*session.project(), expected);
+    assert_eq!(
+        serde_json::to_string(session.project()).unwrap(),
+        serde_json::to_string(&expected).unwrap(),
+        "replay keeps the typed digits and the result order"
+    );
+}
+
 #[test]
 fn recovery_survives_repeated_crashes_and_save_compacts() {
     let dir = tempfile::tempdir().unwrap();

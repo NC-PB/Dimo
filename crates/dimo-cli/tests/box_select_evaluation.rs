@@ -10,7 +10,7 @@
 use std::path::PathBuf;
 
 use dimo_cli::evaluation::{SYNTH_COUNT, SYNTH_SEEDS, run};
-use dimo_detect::evaluation::{Category, classify, is_known_gap};
+use dimo_detect::evaluation::{Category, classify};
 use dimo_pdf::{PdfEngine, PdfError};
 use dimo_synth::Form;
 
@@ -61,8 +61,9 @@ fn synthetic_forms_fall_into_their_categories() {
         let drawing = dimo_synth::generate(seed, SYNTH_COUNT).unwrap();
         for (form, c) in drawing.forms.iter().zip(&drawing.truth.characteristics) {
             assert_eq!(classify(c), expected(*form), "seed {seed} {}", c.id);
+            // T2.9a: every generated angle carries the shorter leg its limits depend on.
             assert_eq!(
-                is_known_gap(c),
+                c.shorter_leg.is_some(),
                 *form == Form::Angle,
                 "seed {seed} {}",
                 c.id
@@ -76,8 +77,9 @@ fn synthetic_forms_fall_into_their_categories() {
     }
 }
 
-/// T2.9 acceptance: at least 99 percent correct limits on common callouts. The report is
-/// printed with `--nocapture` and on failure.
+/// T2.9 and T2.9a acceptance: at least 99 percent correct limits on common callouts, strict
+/// (angles under a general tolerance read with the shorter leg of the truth, as entered on the
+/// card). The report is printed with `--nocapture` and on failure.
 #[test]
 fn box_select_reaches_the_exit_criterion() {
     let Some(engine) = engine() else { return };
@@ -85,5 +87,8 @@ fn box_select_reaches_the_exit_criterion() {
     let report = evaluation.report();
     eprintln!("{report}");
     assert!(evaluation.passes(), "{report}");
-    assert!(evaluation.gated().count >= 500, "{report}");
+    assert!(evaluation.strict().count >= 500, "{report}");
+    // Every synthetic angle (40 seeds give 43) was read again with its leg.
+    let legs = evaluation.cases.iter().filter(|c| c.leg_entered).count();
+    assert!(legs >= 30, "only {legs} legs entered\n{report}");
 }

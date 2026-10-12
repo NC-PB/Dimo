@@ -1,8 +1,9 @@
 <script lang="ts">
   /**
    * Detail panel of the active characteristic (T2.8): its tolerance rule with markers and the
-   * explanation Rust builds in the UI language (FR-TOL-08), the inspect flag (FR-CHR-08), the
-   * change history (FR-CHR-10), and re-interpretation of the selection after a settings change.
+   * explanation Rust builds in the UI language (FR-TOL-08), the shorter leg of an angle (T2.9a),
+   * the inspect flag (FR-CHR-08), the change history (FR-CHR-10), and re-interpretation of the
+   * selection after a settings change.
    */
   import {
     changeSourceLabel,
@@ -18,6 +19,7 @@
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection as appSelection, type SelectionStore } from "$lib/stores/selection.svelte";
   import {
+    sheetOf,
     toleranceStore as appTolerance,
     type ToleranceStore,
   } from "$lib/stores/tolerance.svelte";
@@ -123,6 +125,29 @@
     }
   }
 
+  /** Unit of the characteristic's sheet (D-20): Rust reads a newly typed leg in it (T2.9a). */
+  const sheetUnit = $derived.by(() => {
+    if (c === null || project.project === null) {
+      return null;
+    }
+    const sheet = sheetOf(project.project, c);
+    return project.sheets.find((s) => s.id === sheet)?.unit ?? null;
+  });
+  /** A stored leg in another unit than the sheet's, shown beside the field instead of in it. */
+  const legElsewhere = $derived(
+    c?.shorter_leg && c.shorter_leg.unit !== sheetUnit ? c.shorter_leg : null,
+  );
+  const legRefused = $derived(c !== null && tolerance.legError?.id === c.id);
+  const legOutcome = $derived(
+    c !== null && tolerance.legOutcome?.id === c.id ? tolerance.legOutcome.outcome : null,
+  );
+
+  async function setLeg(text: string) {
+    if (c !== null) {
+      await tolerance.setShorterLeg(c.id, text);
+    }
+  }
+
   const done = $derived(tolerance.lastReinterpretation);
 </script>
 
@@ -172,6 +197,49 @@
               </dd>
             {/if}
           </dl>
+          {#if c.kind === "angle"}
+            <label class="flex items-center gap-2 text-xs">
+              <span class="text-text-muted">
+                {m.shorter_leg_label({ unit: unitLabel(sheetUnit) })}
+              </span>
+              <input
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                spellcheck="false"
+                class="w-20 rounded border border-border bg-surface px-1.5 py-0.5 text-right text-text tabular-nums"
+                data-field="shorter_leg"
+                title={m.shorter_leg_hint()}
+                aria-invalid={legRefused ? "true" : undefined}
+                value={legElsewhere === null ? (c.shorter_leg?.value ?? "") : ""}
+                onchange={(e) => void setLeg(e.currentTarget.value)}
+              />
+            </label>
+            {#if legElsewhere}
+              <p class="text-xs text-text-muted" data-field="shorter_leg_stored">
+                {m.shorter_leg_stored({
+                  value: legElsewhere.value,
+                  unit: unitLabel(legElsewhere.unit),
+                })}
+              </p>
+            {/if}
+            {#if legRefused}
+              <p class="text-xs text-danger" role="alert">
+                <span aria-hidden="true">⚠</span>
+                {m.shorter_leg_invalid()}
+              </p>
+            {:else if legOutcome === "manual_kept"}
+              <p class="text-xs" role="status">
+                <span aria-hidden="true">◇</span>
+                {m.shorter_leg_manual_kept()}
+              </p>
+            {:else if legOutcome === "unreadable"}
+              <p class="text-xs" role="status">
+                <span aria-hidden="true">◇</span>
+                {m.shorter_leg_unreadable()}
+              </p>
+            {/if}
+          {/if}
           <div class="text-xs">
             <h3 class="text-text-muted">{m.detail_explanation()}</h3>
             <p class="whitespace-pre-line" data-field="explanation" aria-live="polite">

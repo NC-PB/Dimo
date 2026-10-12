@@ -1,5 +1,20 @@
 {
   "$defs": {
+    "AttributeValue": {
+      "description": "Result of a go/no go or visual check (FR-MEA-06).",
+      "oneOf": [
+        {
+          "const": "ok",
+          "description": "The requirement is met.",
+          "type": "string"
+        },
+        {
+          "const": "not_ok",
+          "description": "The requirement is not met.",
+          "type": "string"
+        }
+      ]
+    },
     "Balloon": {
       "description": "A balloon on a sheet that marks a characteristic (data model `Balloon`).",
       "properties": {
@@ -271,6 +286,21 @@
           "description": "Text as it appears on the drawing.",
           "type": "string"
         },
+        "result_type": {
+          "$ref": "#/$defs/ResultType",
+          "description": "How the characteristic is measured (FR-MEA-06, M3 decision 4). Changed only with\n[`Command::SetResultType`](crate::command::Command::SetResultType)."
+        },
+        "shorter_leg": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Length"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It\nselects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.\nWritten as `null` when absent (files of schema version 2 without the key get `null` from\nthe migration to version 3)."
+        },
         "sources": {
           "description": "Regions of the drawing the characteristic was read from (FR-CHR-09).",
           "items": {
@@ -327,7 +357,8 @@
         "status",
         "origin",
         "sources",
-        "comment"
+        "comment",
+        "result_type"
       ],
       "type": "object"
     },
@@ -869,6 +900,68 @@
       ],
       "type": "object"
     },
+    "IssuedReport": {
+      "description": "Record of a report exported as issued (data model `IssuedReport`, D-23, M3 decision 17).",
+      "properties": {
+        "drawing_sha256": {
+          "$ref": "#/$defs/Sha256Hex",
+          "description": "SHA-256 of that revision's drawing file (FR-DOC-07)."
+        },
+        "exported_at": {
+          "$ref": "#/$defs/Timestamp",
+          "description": "When it was exported, from the environment clock. Project data only; never written into\nthe report file (FR-EXP-11)."
+        },
+        "format": {
+          "$ref": "#/$defs/ReportFormat",
+          "description": "File format."
+        },
+        "kind": {
+          "$ref": "#/$defs/ReportKind",
+          "description": "Which document."
+        },
+        "output_sha256": {
+          "$ref": "#/$defs/Sha256Hex",
+          "description": "SHA-256 of the written file."
+        },
+        "revision": {
+          "$ref": "#/$defs/RevisionId",
+          "description": "The drawing revision that was current."
+        },
+        "template": {
+          "$ref": "#/$defs/TemplateRef",
+          "description": "The template it was rendered with."
+        }
+      },
+      "required": [
+        "kind",
+        "template",
+        "revision",
+        "drawing_sha256",
+        "exported_at",
+        "output_sha256",
+        "format"
+      ],
+      "type": "object"
+    },
+    "Length": {
+      "description": "A length with its unit, such as the shorter leg of an angle (T2.9a). Serialized as\n`{ \"value\": \"40\", \"unit\": \"mm\" }`.",
+      "properties": {
+        "unit": {
+          "$ref": "#/$defs/Unit",
+          "description": "A length unit: `mm` or `in`."
+        },
+        "value": {
+          "description": "The value in `unit`.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "type": "object"
+    },
     "LockReason": {
       "description": "Why numbering was locked (FR-BAL-10).",
       "oneOf": [
@@ -883,6 +976,39 @@
           "type": "string"
         }
       ]
+    },
+    "MeasurementResult": {
+      "description": "The result of one sample for one characteristic (data model `Result`, M3 decision 1).\n\nHolds only what the user entered. The verdict is computed from the value and the current\nlimits of the characteristic (M3 decision 2).",
+      "properties": {
+        "characteristic": {
+          "$ref": "#/$defs/CharId",
+          "description": "The characteristic."
+        },
+        "comment": {
+          "description": "Free text.",
+          "type": "string"
+        },
+        "sample": {
+          "$ref": "#/$defs/SampleId",
+          "description": "The measured part."
+        },
+        "source": {
+          "$ref": "#/$defs/ResultSource",
+          "description": "Where the value came from."
+        },
+        "value": {
+          "$ref": "#/$defs/ResultValue",
+          "description": "The value."
+        }
+      },
+      "required": [
+        "sample",
+        "characteristic",
+        "value",
+        "source",
+        "comment"
+      ],
+      "type": "object"
     },
     "MultiInstance": {
       "description": "How a callout for several features (`4X`, `2 PL`) is numbered (FR-BAL-07, D-22).",
@@ -1167,6 +1293,154 @@
       ],
       "type": "object"
     },
+    "ReportFormat": {
+      "description": "File format of a written report.",
+      "oneOf": [
+        {
+          "const": "pdf",
+          "description": "PDF.",
+          "type": "string"
+        },
+        {
+          "const": "xlsx",
+          "description": "Spreadsheet (XLSX).",
+          "type": "string"
+        }
+      ]
+    },
+    "ReportInfo": {
+      "description": "Report header and approval data (M3 decision 1). All text; empty means not set.",
+      "properties": {
+        "approved_by": {
+          "description": "Who approved the report.",
+          "type": "string"
+        },
+        "company_name": {
+          "description": "Name of the issuing company (the shop).",
+          "type": "string"
+        },
+        "inspected_by": {
+          "description": "Who inspected the parts.",
+          "type": "string"
+        },
+        "remarks": {
+          "description": "Remarks printed on the report.",
+          "type": "string"
+        },
+        "report_date": {
+          "description": "Report date as `YYYY-MM-DD`, or empty.",
+          "type": "string"
+        },
+        "report_number": {
+          "description": "Report number.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "report_number",
+        "report_date",
+        "company_name",
+        "inspected_by",
+        "approved_by",
+        "remarks"
+      ],
+      "type": "object"
+    },
+    "ReportKind": {
+      "description": "Which document a report is (FR-EXP-04).",
+      "oneOf": [
+        {
+          "const": "check_sheet",
+          "description": "Characteristic list with empty result columns for printing.",
+          "type": "string"
+        },
+        {
+          "const": "inspection_report",
+          "description": "Results, verdicts and approval.",
+          "type": "string"
+        }
+      ]
+    },
+    "ResultSource": {
+      "description": "Where a result came from (data model \"Result source\"). Serialized as `{ \"type\": \"manual\" }`\nso the import source of M7 (file and row) can be added without a format change.",
+      "oneOf": [
+        {
+          "description": "Typed or pasted by the user.",
+          "properties": {
+            "type": {
+              "const": "manual",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ResultType": {
+      "description": "How a characteristic is measured (FR-MEA-06, M3 decision 4).",
+      "oneOf": [
+        {
+          "const": "auto",
+          "description": "Variable if the characteristic has a limit, otherwise attribute (default).",
+          "type": "string"
+        },
+        {
+          "const": "variable",
+          "description": "A measured value compared with the limits.",
+          "type": "string"
+        },
+        {
+          "const": "attribute",
+          "description": "OK or not OK, for go/no go and visual checks.",
+          "type": "string"
+        }
+      ]
+    },
+    "ResultValue": {
+      "description": "What was measured (FR-MEA-02, FR-MEA-06). Serialized as\n`{ \"type\": \"variable\", \"value\": \"12.10\" }` or `{ \"type\": \"attribute\", \"value\": \"ok\" }`.",
+      "oneOf": [
+        {
+          "description": "A measured value in the unit of the characteristic, with the decimals as typed\n(decision 8, rule 5).",
+          "properties": {
+            "type": {
+              "const": "variable",
+              "type": "string"
+            },
+            "value": {
+              "description": "The value; its scale is kept (`12.10` stays `12.10`).",
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "An attribute check.",
+          "properties": {
+            "type": {
+              "const": "attribute",
+              "type": "string"
+            },
+            "value": {
+              "$ref": "#/$defs/AttributeValue",
+              "description": "OK or not OK."
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "RevisionId": {
       "format": "uuid",
       "type": "string"
@@ -1195,6 +1469,48 @@
           "type": "string"
         }
       ]
+    },
+    "Sample": {
+      "description": "One measured part (data model `Sample`, FR-MEA-01). Empty text means not set.",
+      "properties": {
+        "comment": {
+          "description": "Free text.",
+          "type": "string"
+        },
+        "date": {
+          "description": "Measuring date as `YYYY-MM-DD`, or empty.",
+          "type": "string"
+        },
+        "gauges": {
+          "description": "Gauges and instruments used, free text.",
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/SampleId",
+          "description": "Stable ID, never changes."
+        },
+        "inspector": {
+          "description": "Who measured the part (D-27).",
+          "type": "string"
+        },
+        "serial": {
+          "description": "Serial number or other part identifier: trimmed, not empty, unique within the project\n(case sensitive, decision 6).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "serial",
+        "date",
+        "inspector",
+        "gauges",
+        "comment"
+      ],
+      "type": "object"
+    },
+    "SampleId": {
+      "format": "uuid",
+      "type": "string"
     },
     "Scale": {
       "description": "Drawing scale as printed in the title block, e.g. `1:2` (FR-DOC-05).",
@@ -1482,6 +1798,26 @@
       ],
       "type": "object"
     },
+    "TemplateRef": {
+      "description": "A report template, by id and version (FR-EXP-06, M3 decision 10).",
+      "properties": {
+        "id": {
+          "description": "Template id, e.g. `dimo-default`.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Template version.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "type": "object"
+    },
     "TextSource": {
       "description": "Where the text of a source region came from (data model `SourceRegion`).",
       "oneOf": [
@@ -1751,14 +2087,39 @@
       "$ref": "#/$defs/ProjectInfo",
       "description": "Part and order data."
     },
+    "issued_reports": {
+      "description": "Reports exported as issued, oldest first (D-23, M3 decision 17).",
+      "items": {
+        "$ref": "#/$defs/IssuedReport"
+      },
+      "type": "array"
+    },
     "numbering": {
       "$ref": "#/$defs/Numbering",
       "description": "Numbering state."
+    },
+    "report_info": {
+      "$ref": "#/$defs/ReportInfo",
+      "description": "Report header and approval data (M3 decision 1)."
+    },
+    "results": {
+      "description": "Measurement results, at most one per sample and characteristic, sorted by sample order\nand then by characteristic placement order (M3 decision 1). Commands keep the order.",
+      "items": {
+        "$ref": "#/$defs/MeasurementResult"
+      },
+      "type": "array"
     },
     "revisions": {
       "description": "Imported drawing files, oldest first. Old revisions stay for traceability.",
       "items": {
         "$ref": "#/$defs/DrawingRevision"
+      },
+      "type": "array"
+    },
+    "samples": {
+      "description": "Measured parts; the order is the column order of the grid and the reports (FR-MEA-01).",
+      "items": {
+        "$ref": "#/$defs/Sample"
       },
       "type": "array"
     },
@@ -1774,7 +2135,11 @@
     "characteristics",
     "balloons",
     "numbering",
-    "settings"
+    "settings",
+    "samples",
+    "results",
+    "report_info",
+    "issued_reports"
   ],
   "title": "Project",
   "type": "object"

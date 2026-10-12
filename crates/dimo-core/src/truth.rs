@@ -18,7 +18,7 @@ use rust_decimal::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::characteristic::{CharacteristicKind, ToleranceRule, Unit};
+use crate::characteristic::{CharacteristicKind, Length, ToleranceRule, Unit};
 use crate::decimal::decimal_schema;
 use crate::geometry::{OrientedBox, Size};
 use crate::project::ToleranceSettings;
@@ -137,6 +137,11 @@ pub struct TruthCharacteristic {
     /// Why this entry is uncertain and what the owner should check. Absent when certain.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub review_note: Option<String>,
+    /// Shorter leg of an angle on the part, when the expected limits depend on it (ISO 2768-1
+    /// table 3). Evaluation enters it as the user would on the proposal card (T2.9a). Only for
+    /// angles; absent otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shorter_leg: Option<Length>,
 }
 
 /// Errors from loading a truth file.
@@ -263,6 +268,14 @@ fn check_characteristic(
 
     if c.fit.as_deref().is_some_and(|fit| !is_fit(fit)) {
         push("fit must look like H7 or js6".to_string());
+    }
+    if let Some(leg) = c.shorter_leg {
+        if c.kind != CharacteristicKind::Angle {
+            push("shorter_leg is only for angles".to_string());
+        }
+        if !leg.unit.is_length() || leg.value <= Decimal::ZERO {
+            push("shorter_leg must be a positive length in mm or in".to_string());
+        }
     }
     check_values(c, push);
 }
