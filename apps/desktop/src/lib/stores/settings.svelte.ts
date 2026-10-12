@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: "system",
   locale: null,
   user_name: "",
+  company_name: "",
   export: { language: "en", pdf_balloons: "page_content" },
 };
 

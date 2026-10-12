@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { RejectReason } from "$lib/ipc/bindings";
+import { rejectReasonText } from "./i18n";
 import { m } from "./paraglide/messages.js";
 import { locales } from "./paraglide/runtime.js";
 
@@ -31,5 +33,23 @@ describe("i18n (FR-SET-04)", () => {
     expect(m.sample_greeting({}, { locale: "de" })).toBe(
       "Lege ein Projekt aus einer Zeichnung an oder öffne ein Projekt.",
     );
+  });
+
+  it("translates the sample, date and result refusals added in T3.1", () => {
+    const reasons: RejectReason[] = [
+      "unknown_sample",
+      "unknown_revision",
+      "empty_serial",
+      "duplicate_serial",
+      "too_many_samples",
+      "invalid_sample_count",
+      "invalid_date",
+      "invalid_result",
+      "result_type_conflict",
+    ];
+    for (const reason of reasons) {
+      expect(rejectReasonText(reason), reason).toMatch(/\S/);
+    }
+    expect(m.refusal_invalid_date({}, { locale: "de" })).toContain("Datum");
   });
 });

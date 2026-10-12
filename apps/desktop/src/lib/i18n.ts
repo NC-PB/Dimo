@@ -349,8 +349,7 @@ export function unitLabel(unit: Unit | null): string {
 
 /**
  * Translated text for the reasons of a refused command that need one, `null` for the others
- * (the caller then shows Rust's English message). The sample and result reasons of T3.1 get
- * their texts with the measurement grid (T3.4, T3.5).
+ * (the caller then shows Rust's English message).
  */
 export function rejectReasonText(reason: RejectReason): string | null {
   switch (reason) {
@@ -362,6 +361,24 @@ export function rejectReasonText(reason: RejectReason): string | null {
       return m.refusal_invalid_move_target();
     case "unknown_characteristic":
       return m.refusal_unknown_characteristic();
+    case "unknown_sample":
+      return m.refusal_unknown_sample();
+    case "unknown_revision":
+      return m.refusal_unknown_revision();
+    case "empty_serial":
+      return m.refusal_empty_serial();
+    case "duplicate_serial":
+      return m.refusal_duplicate_serial();
+    case "too_many_samples":
+      return m.refusal_too_many_samples();
+    case "invalid_sample_count":
+      return m.refusal_invalid_sample_count();
+    case "invalid_date":
+      return m.refusal_invalid_date();
+    case "invalid_result":
+      return m.refusal_invalid_result();
+    case "result_type_conflict":
+      return m.refusal_result_type_conflict();
     case "unknown_balloon":
     case "unknown_sheet":
     case "invalid_geometry":
@@ -371,15 +388,6 @@ export function rejectReasonText(reason: RejectReason): string | null {
     case "nothing_to_undo":
     case "nothing_to_redo":
     case "internal":
-    case "unknown_sample":
-    case "unknown_revision":
-    case "empty_serial":
-    case "duplicate_serial":
-    case "too_many_samples":
-    case "invalid_sample_count":
-    case "invalid_date":
-    case "invalid_result":
-    case "result_type_conflict":
       return null;
   }
 }

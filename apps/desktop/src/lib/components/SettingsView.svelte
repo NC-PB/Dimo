@@ -109,6 +109,23 @@
   </fieldset>
 
   <fieldset class={sectionClass}>
+    <legend class="px-1 font-semibold">{m.settings_reports()}</legend>
+    <label class="flex flex-wrap items-center gap-2">
+      <span class="w-48">{m.company_name_label()}</span>
+      <input
+        class="{fieldClass} w-64"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        aria-describedby="company-name-hint"
+        value={settings.company_name}
+        onchange={(e) => void settingsStore.update({ company_name: e.currentTarget.value })}
+      />
+    </label>
+    <p id="company-name-hint" class="text-xs text-text-muted">{m.company_name_hint()}</p>
+  </fieldset>
+
+  <fieldset class={sectionClass}>
     <legend class="px-1 font-semibold">{m.settings_balloon_defaults()}</legend>
     {#if style === null}
       <p class="text-text-muted">{m.settings_no_project()}</p>

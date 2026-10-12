@@ -16,6 +16,11 @@ folder. The last export options ([Exports](exports.md)) are stored there too.
 - **User name**: recorded with every change of a project. Leave it empty to use the user name
   of the operating system, which the field shows in grey.
 
+## Reports
+
+- **Company name**: printed on reports. When you open a project whose report data has no company
+  name yet, Dimo copies it from here ([Project and report details](project-details.md)).
+
 ## Balloon style of this project
 
 Shown while a project is open. Shape, size, line width, outline color and leader line of all

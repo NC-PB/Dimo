@@ -23,10 +23,11 @@ Grenzwerte in der Merkmalstabelle ein.
 | [Merkmalstabelle](characteristics.md) | Werte, Auswahl, Bearbeiten, Reihenfolge ändern |
 | [Blätter: Drehung, Einheit und Maßstab](sheets.md) | Eigenschaften jedes Blatts |
 | [Nummerierungsstrategien, Zonen und Ansichten](numbering.md) | Nach Zone, Ansicht oder Art nummerieren, Vorschau, Unternummern, gesperrte Nummerierung |
+| [Projekt- und Berichtsdaten](project-details.md) | Teil, Kunde, Revisionsstand, Zeichnungs-Hash, Berichtskopf und Freigabefelder |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
-| [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Ballonstil, Toleranzen |
+| [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Firmenname, Ballonstil, Toleranzen |
 | [Tastenkürzel](shortcuts.md) | Alle Tasten für macOS sowie Windows und Linux |
 
 Drücke in der App jederzeit **?**, um die Tastenkürzel zu sehen.

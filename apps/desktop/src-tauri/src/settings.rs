@@ -13,9 +13,12 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager, WebviewWindow};
 
+use dimo_core::{Command, ReportInfo};
+
 use crate::env::os_user_name;
 use crate::ipc::CommandError;
-use crate::project::{MAIN_WINDOW, SessionState};
+use crate::project::{MAIN_WINDOW, SessionState, emit_patched, with_session};
+use crate::session::ProjectPatched;
 
 /// File name of the settings in the app config directory.
 pub const SETTINGS_FILE: &str = "settings.json";
@@ -95,6 +98,9 @@ pub struct AppSettings {
     pub locale: Option<String>,
     /// Name recorded in the audit log (D-27); empty uses the operating system user name.
     pub user_name: String,
+    /// Name of the issuing company, copied into the report info of a project when that is
+    /// empty (M3 decision 15). Empty means not set.
+    pub company_name: String,
     /// Export options used last.
     pub export: ExportPreferences,
 }
@@ -105,6 +111,7 @@ impl AppSettings {
     #[must_use]
     pub fn normalized(mut self) -> Self {
         self.user_name = self.user_name.trim().to_owned();
+        self.company_name = self.company_name.trim().to_owned();
         self.locale = self.locale.and_then(|locale| {
             let locale = locale.trim().to_owned();
             let ok = !locale.is_empty()
@@ -280,9 +287,68 @@ pub async fn set_app_settings(
     })?
 }
 
+/// The report info with `company` as company name, if the project has none yet and a company
+/// is set; `None` when nothing is to be copied (M3 decision 15).
+#[must_use]
+pub fn with_default_company(info: &ReportInfo, company: &str) -> Option<ReportInfo> {
+    let company = company.trim();
+    if company.is_empty() || !info.company_name.trim().is_empty() {
+        return None;
+    }
+    Some(ReportInfo {
+        company_name: company.to_owned(),
+        ..info.clone()
+    })
+}
+
+/// Copies the company name of the app settings into the report info of the open project, if
+/// the project has no company name yet (M3 decision 15). One undoable `update_report_info`;
+/// nothing changes, and the patch is empty, when the project has a company name or no company
+/// is set.
+#[tauri::command]
+#[specta::specta]
+pub async fn fill_report_company(app: AppHandle) -> Result<ProjectPatched, CommandError> {
+    with_session(app, |app, session| {
+        let company = app.state::<SettingsState>().get().company_name;
+        let current = session
+            .project()
+            .ok_or(CommandError::NoProject)?
+            .report_info
+            .clone();
+        // Writing the unchanged info is a no-op with an empty patch.
+        let info = with_default_company(&current, &company).unwrap_or(current);
+        Ok(emit_patched(
+            app,
+            session.execute(Command::UpdateReportInfo { info })?,
+        ))
+    })
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn company_is_copied_only_into_an_empty_field() {
+        let empty = ReportInfo::default();
+        let filled = with_default_company(&empty, "  Muster GmbH ").unwrap();
+        assert_eq!(filled.company_name, "Muster GmbH");
+        assert_eq!(
+            ReportInfo {
+                company_name: String::new(),
+                ..filled.clone()
+            },
+            empty
+        );
+        assert_eq!(with_default_company(&filled, "Other"), None);
+        assert_eq!(with_default_company(&empty, "  "), None);
+        let spaces = ReportInfo {
+            company_name: "  ".into(),
+            ..ReportInfo::default()
+        };
+        assert!(with_default_company(&spaces, "Muster").is_some());
+    }
 
     #[test]
     fn missing_and_broken_files_give_defaults() {
@@ -301,6 +367,7 @@ mod tests {
             theme: Theme::Dark,
             locale: Some("de".into()),
             user_name: "Anna Muster".into(),
+            company_name: "Muster GmbH".into(),
             export: ExportPreferences {
                 language: ReportLanguage::De,
                 pdf_balloons: PdfBalloons::Annotations,
@@ -328,9 +395,11 @@ mod tests {
         let settings = AppSettings {
             locale: Some(" de-CH ".into()),
             user_name: "  Anna ".into(),
+            company_name: " Muster ".into(),
             ..AppSettings::default()
         }
         .normalized();
+        assert_eq!(settings.company_name, "Muster");
         assert_eq!(settings.locale.as_deref(), Some("de-CH"));
         assert_eq!(settings.user_name, "Anna");
         for bad in ["", "../x", "de_CH", &"x".repeat(36)] {
