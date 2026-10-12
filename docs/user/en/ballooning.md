@@ -41,6 +41,12 @@ gets **No tolerance defined**, and you enter its limits in the table ([Tolerance
 [Characteristic table](characteristics.md)). Text that is not a
 dimension, such as a note, is stored as requirement text only.
 
+Typing a new value into a balloon that already has one reads it again and replaces nominal,
+deviations, limits, fit and rule, also limits you had entered by hand. Text that is not read as a
+dimension changes only the requirement text; the other values stay as they are. Editing the
+**Requirement** cell in the table also stores only the text; to read it again, select the
+characteristic and use **Re-interpret selected** ([Tolerances](tolerances.md)).
+
 ## Box select
 
 On a drawing with PDF text, Dimo reads the text for you.
@@ -52,18 +58,28 @@ On a drawing with PDF text, Dimo reads the text for you.
    the rule. Printed deviations always win; when they differ from the fit table, the
    explanation says so. Notes point out what Dimo could not decide, for example an angle whose
    shorter leg it does not know.
-3. Check the values. You can correct the requirement text (Dimo reads it again) and the kind.
+3. Check the values. You can correct the requirement text and the kind. Dimo reads edited text
+   again when you leave the field or accept.
 4. Press **Enter** or **Accept**. The balloon appears up and to the right of the box, like a
    placed balloon, with the values of the card. **Escape** or **Discard** closes the card
    without changing anything.
 
 - Nothing is added before you accept. Accepting is one step for ⌘Z, also when the box held
   several dimensions.
-- A box around several dimensions above each other gives one proposal for each.
+- You do not have to wait for the card: keys typed right after the box go into the requirement
+  text of the card, **Enter** accepts and **Escape** discards. The card also closes without a
+  change when you click or drag a new box on the drawing.
+- A box around several dimensions above each other gives one proposal for each. If the lines do
+  not all read as dimensions on their own, the whole box is read as one text, for example a note
+  over several lines.
+- A callout with a quantity such as `4X` can become one characteristic per feature; see
+  [Numbering strategies, zones and views](numbering.md).
+- While numbering is locked, the new numbers follow the selected characteristic, as for a placed
+  balloon.
 - A number in a rectangular frame is read as a basic dimension, a value in parentheses as a
   reference dimension. Both are marked as not inspected.
 - If Dimo cannot read the text as a dimension, the card says so and accepting stores the text
-  only.
+  only. The kind is **Note** if the text has a word of three or more letters, else **Other**.
 - If the box holds no PDF text (a scanned drawing), a balloon is placed and the value field
   opens, as with a click.
 - The box is stored with the characteristic as its source region, so you can find later where

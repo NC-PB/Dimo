@@ -11,6 +11,9 @@
 #   3. Crash recovery: an unsaved project is killed with SIGKILL and restored at the next start.
 #   4. Numbering strategies: place five balloons, draw a zone grid frame and a view, preview and
 #      apply "sheet, zone, reading order" and "clockwise per view", undo.
+#   5. Tolerance settings (T2.10): a box select without a general tolerance is discarded with
+#      Escape, the project gets ISO 2768-1 class m, the same box is accepted with the general
+#      limits, and a typed balloon is read again with "Re-interpret selected".
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -278,6 +281,35 @@ expect "numbering: clockwise per view applied" "P1:5 P2:2 P3:4 P4:1 P5:3" \
   "$(numbers_of "$(report numbering "views applied")")"
 expect "numbering: undo restores the zone numbers in one step" "$(numbers_of "$zones")" \
   "$(numbers_of "$(report numbering undone)")"
+
+step "5. tolerance settings, box select and re-interpret (T2.10)"
+run_app tolerance "$SCRIPTS/tolerance.json" term home5 \
+  DIMO_DEV_OPEN="$DRAWING" DIMO_DEV_SAVE_AS="$WORK/tolerance.dimo"
+card_of() { { grep -o 'card \[[^]]*\]' <<<"$1" || true; } | head -1; }
+expect "box select without a general tolerance: rule no_tolerance_defined, no limits" \
+  'card ["50" -/- no_tolerance_defined]' \
+  "$(card_of "$(report tolerance 'proposed without general')")"
+discarded=$(report tolerance discarded)
+expect "Escape discards the card and adds nothing" "card [] 1 balloons" \
+  "$({ grep -oE 'card \[[^]]*\]|[0-9]+ balloons' <<<"$discarded" || true; } | head -2 | tr '\n' ' ' | sed 's/ $//')"
+expect "box select with ISO 2768-1 class m: general limits" \
+  'card ["50" 50.3/49.7 general]' \
+  "$(card_of "$(report tolerance 'proposed with general')")"
+TOL="$WORK/tolerance.dimo"
+if [[ -s "$TOL" ]]; then
+  TJSON=$(unzip -p "$TOL" project.json)
+  tjq() { jq -r "$1" <<<"$TJSON"; }
+  expect "tolerance: general tolerance stored in the project settings" "iso-2768-1 m" \
+    "$(tjq '.settings.tolerance.general | "\(.table.id) \(.class)"')"
+  expect "tolerance: accepted box select has the general limits from a draft table" \
+    "50 50.3 49.7 general true box_select" \
+    "$(tjq '.characteristics[] | select(.requirement_text == "50") | "\(.requirement_text) \(.upper_limit) \(.lower_limit) \(.derivation.rule.rule) \(.derivation.draft) \(.origin)"')"
+  expect "tolerance: typed value read again with the new setting" \
+    "Ø8 8.2 7.8 general" \
+    "$(tjq '.characteristics[] | select(.requirement_text == "Ø8") | "\(.requirement_text) \(.upper_limit) \(.lower_limit) \(.derivation.rule.rule)"')"
+else
+  fail "missing or empty: $TOL"
+fi
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

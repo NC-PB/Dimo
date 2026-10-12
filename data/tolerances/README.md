@@ -119,9 +119,9 @@ to ZC end at 500 mm.
 ### Custom tables (FR-TOL-07)
 
 A company table uses `kind = "custom"`, any id that is not taken, and `symmetric` parts. Name the
-company document in `source`. Put the file into the user tables folder; Dimo validates it on
-load and refuses it with the file name and the line or the part and row of the problem. A
-project that uses a custom table stores a copy, so it opens with the same limits elsewhere.
+company document in `source`. Import the file in the tolerance settings ("Import table"); Dimo
+validates it and refuses it with the file name and the line or the part and row of the problem.
+A project that uses a custom table stores a copy, so it opens with the same limits elsewhere.
 
 ## Test vectors
 

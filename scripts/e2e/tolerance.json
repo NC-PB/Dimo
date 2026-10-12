@@ -1,0 +1,47 @@
+[
+  { "mark": "tolerance flow start" },
+  { "key": "b" },
+  { "click": [413.6, 159], "pause": false },
+  { "keys": "Ø8\n" },
+  { "wait": 300 },
+  {
+    "drag": [
+      [212, 304],
+      [234, 324]
+    ]
+  },
+  { "wait": 600 },
+  { "report": "proposed without general" },
+  { "key": "Escape" },
+  { "wait": 300 },
+  { "report": "discarded" },
+
+  { "show": "settings" },
+  { "wait": 500 },
+  { "select": ["General tolerance", "iso-2768-1"] },
+  { "wait": 500 },
+  { "select": ["Class", "m"] },
+  { "wait": 500 },
+  { "show": "drawing" },
+  { "wait": 300 },
+
+  {
+    "drag": [
+      [212, 304],
+      [234, 324]
+    ]
+  },
+  { "wait": 600 },
+  { "report": "proposed with general" },
+  { "key": "Enter" },
+  { "wait": 500 },
+
+  { "row": 1 },
+  { "button": "Re-interpret selected (1)" },
+  { "wait": 500 },
+  { "report": "reinterpreted" },
+
+  { "button": "Save as" },
+  { "wait": 800 },
+  { "report": "final" }
+]

@@ -42,6 +42,13 @@ werden so markiert. Ein Maß ohne Toleranz erhält seine Grenzwerte aus der Allg
 den Regeln des Projekts; ohne sie erhält es **Keine Toleranz festgelegt**, und du trägst seine
 Grenzwerte in der Tabelle ein ([Toleranzen](tolerances.md), [Merkmalstabelle](characteristics.md)).
 
+Tippst du einen neuen Wert in einen Ballon, der schon einen hat, liest Dimo ihn erneut und ersetzt
+Nennmaß, Abmaße, Grenzwerte, Passung und Regel, auch von Hand eingegebene Grenzwerte. Text, der
+nicht als Maß gelesen wird, ändert nur den Anforderungstext; die übrigen Werte bleiben, wie sie
+sind. Auch das Bearbeiten der Zelle **Anforderung** in der Tabelle speichert nur den Text; um ihn
+erneut zu lesen, wähle das Merkmal aus und nimm **Ausgewählte neu auswerten**
+([Toleranzen](tolerances.md)).
+
 ## Rahmenauswahl
 
 Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
@@ -53,19 +60,29 @@ Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
    sie stammen, und eine Erklärung dazu. Aufgedruckte Abmaße gelten immer; weichen sie von der
    Passungstabelle ab, sagt die Erklärung das. Hinweise nennen, was Dimo nicht entscheiden
    konnte, etwa einen Winkel, dessen kürzeren Schenkel es nicht kennt.
-3. Prüfe die Werte. Den Anforderungstext (Dimo liest ihn erneut) und die Art kannst du
-   korrigieren.
+3. Prüfe die Werte. Den Anforderungstext und die Art kannst du korrigieren. Dimo liest geänderten
+   Text erneut, wenn du das Feld verlässt oder übernimmst.
 4. Drücke **Enter** oder **Übernehmen**. Der Ballon erscheint rechts oberhalb des Rahmens wie ein
    gesetzter Ballon, mit den Werten der Karte. **Escape** oder **Verwerfen** schließt die Karte,
    ohne etwas zu ändern.
 
 - Vor dem Übernehmen wird nichts hinzugefügt. Übernehmen ist ein Schritt für ⌘Z, auch wenn der
   Rahmen mehrere Maße enthielt.
-- Ein Rahmen um mehrere Maße übereinander ergibt für jedes einen Vorschlag.
+- Du musst nicht auf die Karte warten: Tasten, die du gleich nach dem Rahmen tippst, landen im
+  Anforderungstext der Karte, **Enter** übernimmt und **Escape** verwirft. Die Karte schließt auch
+  ohne Änderung, wenn du auf der Zeichnung klickst oder einen neuen Rahmen ziehst.
+- Ein Rahmen um mehrere Maße übereinander ergibt für jedes einen Vorschlag. Lassen sich die Zeilen
+  nicht alle für sich als Maß lesen, wird der ganze Rahmen als ein Text gelesen, zum Beispiel ein
+  Hinweis über mehrere Zeilen.
+- Eine Angabe mit Anzahl wie `4X` kann zu einem Merkmal je Element werden; siehe
+  [Nummerierungsstrategien, Zonen und Ansichten](numbering.md).
+- Bei gesperrter Nummerierung folgen die neuen Nummern dem ausgewählten Merkmal, wie bei einem
+  gesetzten Ballon.
 - Eine Zahl in einem rechteckigen Rahmen wird als theoretisch genaues Maß gelesen, ein Wert in
   Klammern als Hilfsmaß. Beide werden als nicht zu prüfen markiert.
 - Kann Dimo den Text nicht als Maß lesen, sagt die Karte das, und Übernehmen speichert nur den
-  Text.
+  Text. Die Art ist **Hinweis**, wenn der Text ein Wort mit drei oder mehr Buchstaben enthält,
+  sonst **Sonstiges**.
 - Enthält der Rahmen keinen PDF-Text (gescannte Zeichnung), wird ein Ballon gesetzt und das
   Wertfeld öffnet sich wie bei einem Klick.
 - Der Rahmen wird als Quellbereich beim Merkmal gespeichert, so findest du später, woher der

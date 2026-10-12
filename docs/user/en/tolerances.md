@@ -38,15 +38,25 @@ Open **Settings** (⌘,) while a project is open. The section **Tolerances of th
 the rules of this project. They are stored in the project file, and every change is one undo step.
 
 - **General tolerance**: the table and class for dimensions without a tolerance, for example
-  ISO 2768-1 class m. Fit tables are not offered here.
+  ISO 2768-1 class m. The choice lists the general tables and the custom tables of the
+  project; fit tables are not offered here.
 - **Drawing rule (custom table)**: a custom table of the project that applies before the general
   tolerance.
 - **Decimal place rules**: one tolerance per number of decimal places, for example 2 places ±0.05.
-  Type the places and the tolerance and choose **Add rule**. Each number of places has one rule.
-- **Rounding after unit conversion**: decimal places for values converted to mm or inch.
+  Type the places and the tolerance and choose **Add rule**. Each number of places has one rule,
+  and the tolerance is plus and minus the value you type. A rule applies to sizes written as
+  decimals without a tolerance, by the number of decimal places as written (`12.50` has two). You
+  can change the tolerance of a rule in its field, and remove a rule with the ✕ button.
+- **Rounding after unit conversion**: decimal places for limits that have to be converted to mm
+  or inch, for example a size written in inch under a general tolerance, whose table is in mm.
+  The defaults are 3 places for mm and 4 for inch. Limits are rounded inward, so they are never
+  wider than the table, and the explanation says that a conversion took place. Whole numbers
+  from 0 to 10 are accepted.
 - **Custom tables**: **Import table…** reads a table file of your own (TOML, in the format of the
   tables shipped with Dimo). Dimo checks the whole file before it is used. If it is refused, the
-  reason is shown with the line of the file where Dimo can tell it. An imported table is copied
+  reason is shown with the line of the file where Dimo can tell it. The file format is described
+  in `data/tolerances/README.md` of the Dimo sources, next to the tables shipped with Dimo. An
+  imported table is copied
   into the project, so the project does not need the file afterwards, and it is kept after a
   crash even before you save. Importing a table with the same id again replaces it, and the
   settings that use it switch to the new version.
@@ -65,6 +75,7 @@ of it is one step of undo.
 - Characteristics whose text is empty or is not a dimension are left unchanged.
 - Kind, quantity and the **Inspect** box stay as you set them. A characteristic whose text was
   never read before gets them from the text.
+- If you changed the **Requirement** text in the table, re-interpreting reads the new text.
 
 The line under the button says how many were read again, kept or not readable.
 
@@ -86,11 +97,29 @@ Markers next to the rule. Each one has its own shape, so they can be told apart 
 | **(Ref)** with round ends | Reference dimension: no limits |
 | **Basic** in a square frame | Basic (theoretically exact) dimension: no limits |
 
+Some notes are only shown on the card of a box select and are not stored: a fit pair such as
+`H7/g6` names a hole and a shaft, so Dimo gives no limits and asks you to capture them as two
+characteristics. The other notes of the table are stored with the characteristic:
+
+- The written deviations differ from the fit table; the written ones are used.
+- The fit is not in the fit table, so there are no limits from it.
+- The size is outside the ranges of a table, so that rule gave no limits.
+
+## Limits you enter yourself
+
+When you type a nominal value, a deviation or a limit in the table and the limits change because
+of it, the rule becomes **Entered by hand**. These limits are kept when you re-interpret, and
+the explanation only says that they were entered by hand. If you delete every deviation and limit, the rule is
+removed and the characteristic can be read again.
+
 ## Draft tables
 
 The tables shipped with Dimo are drafts until their values have been checked against the printed
 standard. Limits from a draft table work like any other but carry the **Draft** marker in the
 table, in the side panel and on the box select card. A custom table you import can be a draft too.
+The settings show the marker next to a table that is a draft. Check limits from a draft table
+against your own standard before you rely on them. A table stops being a draft only when its
+file is marked as verified by the person who checked each value; Dimo never changes that itself.
 
 ## Reference and basic dimensions
 
