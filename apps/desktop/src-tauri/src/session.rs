@@ -176,6 +176,18 @@ pub struct ExportSnapshot {
     pub modified: dimo_core::Timestamp,
     /// The drawing file of the current revision, when the export needs it.
     pub drawing: Option<Vec<u8>>,
+    /// Session and patch revision the copy was taken at. An issued report is recorded only if
+    /// the project is still in this state when the file is written (M3 decision 17).
+    pub state: SnapshotState,
+}
+
+/// Where in the history of the app session a snapshot was taken.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SnapshotState {
+    /// [`AppSession::session`].
+    pub session: u32,
+    /// Patch revision within the session.
+    pub revision: u32,
 }
 
 /// A project that is open in the app.
@@ -389,7 +401,54 @@ impl AppSession {
             project: open.project.project().clone(),
             modified: open.project.modified(),
             drawing,
+            state: SnapshotState {
+                session: self.session,
+                revision: open.revision,
+            },
         })
+    }
+
+    /// `info` with an empty company name taken from the app settings and an empty "inspected
+    /// by" taken from the audit user (D-27), as an issued report export fills them (M3
+    /// decision 15). Fields that are set stay as they are.
+    pub fn issued_report_info(&self, info: &ReportInfo) -> ReportInfo {
+        let mut filled = info.clone();
+        if filled.company_name.trim().is_empty() {
+            filled.company_name.clone_from(&self.company_name);
+        }
+        if filled.inspected_by.trim().is_empty() {
+            filled.inspected_by = self.env.user_name();
+        }
+        filled
+    }
+
+    /// Records a report written from the snapshot taken at `state` as issued (D-23, M3
+    /// decision 17): locks the numbering if it is not locked yet, stores `info` (the report
+    /// info as printed, see [`Self::issued_report_info`]) and adds the [`dimo_core::IssuedReport`],
+    /// all as one undo step. Returns `None` and changes nothing if the project changed since
+    /// the snapshot, because the file then no longer shows the project.
+    pub fn record_issued_report(
+        &mut self,
+        state: SnapshotState,
+        info: ReportInfo,
+        report: Command,
+    ) -> Result<Option<ProjectPatched>, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        if self.session != state.session || open.revision != state.revision {
+            return Ok(None);
+        }
+        let project = open.project.project();
+        let mut commands = Vec::new();
+        if !project.is_numbering_locked() {
+            commands.push(Command::LockNumbering {
+                reason: dimo_core::LockReason::IssuedReport,
+            });
+        }
+        if project.report_info != info {
+            commands.push(Command::UpdateReportInfo { info });
+        }
+        commands.push(report);
+        self.execute(Command::Batch { commands }).map(Some)
     }
 
     fn owner(&mut self) -> LockOwner {

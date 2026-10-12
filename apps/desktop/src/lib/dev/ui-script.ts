@@ -52,7 +52,7 @@ import { boxSelect } from "$lib/stores/box-select.svelte";
 import { devTools } from "./dev-tools.svelte";
 import { measurementStore } from "$lib/stores/measurement.svelte";
 import { documentStore } from "$lib/stores/document.svelte";
-import { EXPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
+import { EXPORT_FORMATS, REPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
 import { numberingStore } from "$lib/stores/numbering.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
@@ -196,9 +196,11 @@ function exportState(format: ExportFormat): string {
     case "running":
       return `${format} running ${String(job.fraction)}`;
     case "done":
-      return `${format} done ${job.fileName}`;
+      return `${format} done ${job.fileName}${job.issued ? ` issued ${job.issued.state}` : ""}`;
     case "failed":
       return `${format} failed ${job.error.kind}`;
+    case "cancelled":
+      return `${format} cancelled`;
   }
 }
 
@@ -222,7 +224,10 @@ function report(label: string): string {
   const rows = [...document.querySelectorAll('[role="row"][aria-selected="true"]')]
     .map((r) => String(Number(r.getAttribute("aria-rowindex")) - 1))
     .join(",");
-  const exports = EXPORT_FORMATS.map(exportState).join(", ");
+  // Report exports (T3.8) are listed only once they ran, so the list of the M1 flow stays as is.
+  const exports = [...EXPORT_FORMATS, ...REPORT_FORMATS.filter((f) => exportStore.job(f) !== null)]
+    .map(exportState)
+    .join(", ");
   const theme = document.documentElement.dataset.theme ?? "-";
   // The open proposal card of box select (T2.6): text, limits and rule of each proposal.
   const card = boxSelect.proposals

@@ -1,7 +1,11 @@
 /**
- * Exports of the open project (T1.9, FR-EXP-01, FR-EXP-09). Rust asks for the file, runs the
- * export as a background job and reports `job-progress` and `job-finished`; this store keeps
- * the state of the last job per format for the export view.
+ * Exports of the open project (T1.9, FR-EXP-01, FR-EXP-09; reports T3.8, FR-EXP-04). Rust asks
+ * for the file, runs the export as a background job and reports `job-progress` and
+ * `job-finished`; this store keeps the state of the last job per format for the export view.
+ *
+ * Reports exported as issued first ask Rust for warnings (draft tables, open results, limits
+ * changed since the last issued report, M3 decision 17); the view shows them and the user
+ * confirms or goes back. They never block the export.
  */
 
 import {
@@ -10,31 +14,64 @@ import {
   type CommandError,
   type ExportFormat,
   type ExportRequest,
+  type IssuedRecord,
   type JobFinished,
   type JobProgress,
+  type ReportFormat,
+  type ReportKind,
+  type ReportWarnings,
 } from "$lib/ipc/bindings";
 import { settingsStore } from "./settings.svelte";
 
 /** Result shape of the generated command functions. */
 type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
 
+/** The drawing and list exports, one card each. */
 export const EXPORT_FORMATS: readonly ExportFormat[] = ["ballooned_pdf", "csv", "xlsx"];
+
+/** The reports, one card each with a format choice. */
+export const REPORT_KINDS: readonly ReportKind[] = ["check_sheet", "inspection_report"];
+
+/** Every report export, for the dev script report. */
+export const REPORT_FORMATS: readonly ExportFormat[] = [
+  "check_sheet_pdf",
+  "check_sheet_xlsx",
+  "inspection_report_pdf",
+  "inspection_report_xlsx",
+];
+
+/** The export format of report `kind` in file `format`. */
+export function reportExport(kind: ReportKind, format: ReportFormat): ExportFormat {
+  return `${kind}_${format}`;
+}
 
 /** State of one export job. */
 export type JobState =
   | { state: "running"; fraction: number }
-  | { state: "done"; fileName: string }
-  | { state: "failed"; error: CommandError };
+  | { state: "done"; fileName: string; issued: IssuedRecord | null }
+  | { state: "failed"; error: CommandError }
+  | { state: "cancelled" };
+
+/** Warnings waiting for the user before an issued report export. */
+export interface PendingWarnings {
+  kind: ReportKind;
+  format: ExportFormat;
+  warnings: ReportWarnings;
+}
 
 /** What the store needs from Rust, replaceable in tests. */
 export interface ExportApi {
   exportProject: (request: ExportRequest) => Promise<Result<number | null>>;
+  cancelJob: (id: number) => Promise<boolean>;
+  reportExportWarnings: (kind: ReportKind) => Promise<Result<ReportWarnings>>;
   onProgress: (handler: (p: JobProgress) => void) => Promise<() => void>;
   onFinished: (handler: (f: JobFinished) => void) => Promise<() => void>;
 }
 
 const tauriApi: ExportApi = {
   exportProject: (request) => commands.exportProject(request),
+  cancelJob: (id) => commands.cancelJob(id),
+  reportExportWarnings: (kind) => commands.reportExportWarnings(kind),
   onProgress: (handler) => events.jobProgress.listen((e) => handler(e.payload)),
   onFinished: (handler) => events.jobFinished.listen((e) => handler(e.payload)),
 };
@@ -48,8 +85,10 @@ export class ExportStore {
   asking = $state<Partial<Record<ExportFormat, boolean>>>({});
   /** Errors from starting an export (before a job exists). */
   startError = $state<Partial<Record<ExportFormat, CommandError>>>({});
-  /** Export as issued: locks the numbering first (D-23). */
+  /** Export as issued: locks the numbering (D-23); reports are also recorded. */
   issued = $state(false);
+  /** Warnings shown before an issued report export, until confirmed or dismissed. */
+  pending = $state<PendingWarnings | null>(null);
   readonly #api: ExportApi;
 
   constructor(api: ExportApi = tauriApi) {
@@ -63,12 +102,7 @@ export class ExportStore {
         this.#set(p.id, { state: "running", fraction: p.fraction ?? 0 });
       }),
       this.#api.onFinished((f) => {
-        this.#set(
-          f.id,
-          f.outcome.state === "done"
-            ? { state: "done", fileName: f.outcome.file_name }
-            : { state: "failed", error: f.outcome.error },
-        );
+        this.#set(f.id, finishedState(f));
       }),
     ]);
     return () => {
@@ -101,6 +135,15 @@ export class ExportStore {
     return this.asking[format] === true || this.job(format)?.state === "running";
   }
 
+  /** The export format of report `kind` in the remembered file format. */
+  reportFormat(kind: ReportKind): ExportFormat {
+    const prefs = settingsStore.current.export;
+    return reportExport(
+      kind,
+      kind === "check_sheet" ? prefs.check_sheet_format : prefs.inspection_report_format,
+    );
+  }
+
   /** Asks for a file and starts the export with the stored options. */
   async start(format: ExportFormat): Promise<void> {
     if (this.busy(format)) {
@@ -114,6 +157,7 @@ export class ExportStore {
         format,
         language: prefs.language,
         pdf_balloons: prefs.pdf_balloons,
+        blank_columns: prefs.blank_columns,
         issued: this.issued,
       });
       if (result.status === "error") {
@@ -126,6 +170,65 @@ export class ExportStore {
     } finally {
       this.asking[format] = false;
     }
+  }
+
+  /**
+   * Exports report `kind` in its remembered format. Exported as issued, Rust's warnings are
+   * shown first (`pending`) when there are any.
+   */
+  async startReport(kind: ReportKind): Promise<void> {
+    const format = this.reportFormat(kind);
+    if (this.busy(format)) {
+      return;
+    }
+    this.pending = null;
+    if (this.issued) {
+      this.startError[format] = undefined;
+      const result = await this.#api.reportExportWarnings(kind);
+      if (result.status === "error") {
+        this.startError[format] = result.error;
+        return;
+      }
+      const w = result.data;
+      if (w.draft_limits || w.open_results || w.limits_changed) {
+        this.pending = { kind, format, warnings: w };
+        return;
+      }
+    }
+    await this.start(format);
+  }
+
+  /** The user confirmed the warnings: export anyway. */
+  async confirmPending(): Promise<void> {
+    const pending = this.pending;
+    this.pending = null;
+    if (pending) {
+      await this.start(pending.format);
+    }
+  }
+
+  /** The user went back from the warnings. */
+  dismissPending(): void {
+    this.pending = null;
+  }
+
+  /** Asks Rust to stop the running job of `format` before its next step. */
+  async cancel(format: ExportFormat): Promise<void> {
+    const id = this.latest[format];
+    if (id !== undefined && this.job(format)?.state === "running") {
+      await this.#api.cancelJob(id);
+    }
+  }
+}
+
+function finishedState(f: JobFinished): JobState {
+  switch (f.outcome.state) {
+    case "done":
+      return { state: "done", fileName: f.outcome.file_name, issued: f.outcome.issued };
+    case "failed":
+      return { state: "failed", error: f.outcome.error };
+    case "cancelled":
+      return { state: "cancelled" };
   }
 }
 

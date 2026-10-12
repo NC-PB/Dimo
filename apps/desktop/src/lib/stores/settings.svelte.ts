@@ -21,7 +21,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   locale: null,
   user_name: "",
   company_name: "",
-  export: { language: "en", pdf_balloons: "page_content" },
+  export: {
+    language: "en",
+    pdf_balloons: "page_content",
+    blank_columns: 3,
+    check_sheet_format: "pdf",
+    inspection_report_format: "pdf",
+  },
 };
 
 /** The commands the store needs, replaceable in tests. */

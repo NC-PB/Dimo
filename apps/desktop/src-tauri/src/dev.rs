@@ -21,6 +21,8 @@
 //!   not start again.
 //! - `DIMO_DEV_EXPORT_DIR=<dir>`: exports skip the save dialog and write their suggested file
 //!   name into this directory (T1.9), so a UI script can click the export buttons.
+//! - `DIMO_DEV_EXPORT_DELAY_MS=<ms>`: export jobs wait this long before each step (build,
+//!   render, write), so a UI script can cancel a running export (T3.8).
 //!
 //! - `DIMO_DEV_SAVE_AS=<path>`: "save as" (and "save" of a project without a file) skips the
 //!   save dialog and saves to this path (T1.10).
@@ -62,6 +64,18 @@ pub fn dev_open_requested() -> bool {
 pub fn dev_export_dir() -> Option<PathBuf> {
     if cfg!(debug_assertions) {
         var("DIMO_DEV_EXPORT_DIR").map(PathBuf::from)
+    } else {
+        None
+    }
+}
+
+/// Debug builds started with `DIMO_DEV_EXPORT_DELAY_MS`: how long export jobs wait before each
+/// step. `None` in release builds.
+pub fn dev_export_delay() -> Option<std::time::Duration> {
+    if cfg!(debug_assertions) {
+        var("DIMO_DEV_EXPORT_DELAY_MS")
+            .and_then(|ms| ms.parse().ok())
+            .map(std::time::Duration::from_millis)
     } else {
         None
     }

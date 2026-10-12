@@ -62,6 +62,16 @@ export const commands = {
 	 */
 	exportProject: (request: ExportRequest) => typedError<number | null, CommandError>(__TAURI_INVOKE("export_project", { request })),
 	/**
+	 *  Asks the export job `id` to stop before its next step. Returns false if no such job runs
+	 *  (it may just have ended); the job then ends with its normal outcome.
+	 */
+	cancelJob: (id: JobId) => __TAURI_INVOKE<boolean>("cancel_job", { id }),
+	/**
+	 *  The warnings to confirm before report `kind` of the open project is exported as issued
+	 *  (M3 decision 17). They never block the export.
+	 */
+	reportExportWarnings: (kind: ReportKind) => typedError<ReportWarnings, CommandError>(__TAURI_INVOKE("report_export_warnings", { kind })),
+	/**
 	 *  Box select: proposals for the text inside `region` of `sheet` (FR-REC-01, FR-REC-02), with
 	 *  explanations in `language`. Changes nothing; accept them with the `accept_proposals`
 	 *  document command (ADR 0006). An empty list means the region holds no PDF text.
@@ -1084,25 +1094,50 @@ export type ExportFormat =
 /**  The characteristic list as CSV (FR-EXP-09). */
 "csv" | 
 /**  The characteristic list as an Excel workbook. */
-"xlsx";
+"xlsx" | 
+/**  The check sheet as PDF (FR-EXP-04). */
+"check_sheet_pdf" | 
+/**  The check sheet as an Excel workbook. */
+"check_sheet_xlsx" | 
+/**  The inspection report as PDF (FR-EXP-04). */
+"inspection_report_pdf" | 
+/**  The inspection report as an Excel workbook. */
+"inspection_report_xlsx";
 
 /**  The export options used last, offered again in the export view. */
 export type ExportPreferences = {
-	/**  Header language of the characteristic list. */
+	/**  Language of the characteristic list headers and of the reports (D-32). */
 	language: ReportLanguage,
 	/**  Balloons as page content or annotations. */
 	pdf_balloons: PdfBalloons,
+	/**
+	 *  Blank result columns of a check sheet for a project without samples, 1 to 10
+	 *  (M3 decision 12).
+	 */
+	blank_columns: number,
+	/**  File format of the check sheet. */
+	check_sheet_format: ReportFormat,
+	/**  File format of the inspection report. */
+	inspection_report_format: ReportFormat,
 };
 
 /**  An export the user asked for. */
 export type ExportRequest = {
 	/**  What to export. */
 	format: ExportFormat,
-	/**  Header language of the characteristic list (D-32); ignored for the PDF. */
+	/**
+	 *  Language of the characteristic list headers and of the reports (D-32); ignored for the
+	 *  ballooned PDF.
+	 */
 	language: ReportLanguage,
-	/**  Balloons as page content or annotations (D-33); only for the PDF. */
+	/**  Balloons as page content or annotations (D-33); only for the ballooned PDF. */
 	pdf_balloons: PdfBalloons,
-	/**  Export as issued: locks the numbering first (D-23). */
+	/**
+	 *  Blank result columns of a check sheet for a project without samples, 1 to 10 (M3
+	 *  decision 12); ignored otherwise.
+	 */
+	blank_columns: number,
+	/**  Export as issued (D-23): locks the numbering; a report is also recorded as issued. */
 	issued: boolean,
 };
 
@@ -1234,6 +1269,20 @@ export type InterpreterNote =
 /**  A fit pair such as `H7/g6` names two features; no limits. */
 "fit_pair";
 
+/**  What happened to the "issued" record of a report exported as issued (M3 decision 17). */
+export type IssuedRecord = 
+/**  Numbering locked and report recorded, as one undo step. */
+{ state: "recorded" } | 
+/**
+ *  The project changed while the job ran, so the file no longer shows it: nothing was
+ *  recorded. The file was written.
+ */
+{ state: "project_changed" } | 
+/**  The record was refused; the file was written. */
+{ state: "refused"; 
+/**  Why. */
+error: CommandError };
+
 /**  Record of a report exported as issued (data model `IssuedReport`, D-23, M3 decision 17). */
 export type IssuedReport = {
 	/**  Which document. */
@@ -1271,11 +1320,15 @@ export type JobOutcome =
 /**  The file was written. */
 { state: "done"; 
 /**  File name of the written file, without the directory. */
-file_name: string } | 
+file_name: string; 
+/**  For a report exported as issued: whether it was recorded. `null` otherwise. */
+issued: IssuedRecord | null } | 
 /**  Nothing was written. */
 { state: "failed"; 
 /**  Why. */
-error: CommandError };
+error: CommandError } | 
+/**  Cancelled with `cancel_job`; nothing was written. */
+{ state: "cancelled" };
 
 /**  Progress of a long running job, emitted as a Tauri event (05 Architecture, IPC). */
 export type JobProgress = {
@@ -1857,6 +1910,25 @@ export type ReportLanguage =
 "en" | 
 /**  German. */
 "de";
+
+/**
+ *  Warnings before a report is exported as issued (M3 decision 17). They never block the
+ *  export; the user confirms them.
+ */
+export type ReportWarnings = {
+	/**  Limits of at least one printed characteristic come from a draft table (D-43). */
+	draft_limits: boolean,
+	/**
+	 *  Inspection report: results are missing or not evaluated, or there are no samples, so
+	 *  the overall verdict is open. Always false for the check sheet.
+	 */
+	open_results: boolean,
+	/**
+	 *  Limits or result type of a characteristic changed after the last issued report (M3
+	 *  decision 16).
+	 */
+	limits_changed: boolean,
+};
 
 /**  One cell of the measurement grid: a sample and a characteristic. */
 export type ResultCell = {
