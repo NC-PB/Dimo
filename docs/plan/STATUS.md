@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.4 and T3.6 done; T3.5 and T3.7 running, T3.8 after T3.5
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.4, T3.6 and T3.7 done; T3.5 running, T3.8 after T3.5
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
@@ -71,7 +71,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.4 Project and report details | done | Project and report panel in the Drawing side panel, company name in Settings; new projects start with company name and audit user as inspector (set by Rust at creation, no undo step). Owner: check German wording. Measure view placement moves to T3.5 |
 | T3.5 Measurement grid | in progress | Wave 2 |
 | T3.6 Report model and default templates | done | `ReportModel::build` (all values preformatted, codes for verdicts and rules), schema `docs/schema/report-data.schema.json`, `dimo-default` v1 (check sheet, inspection report, `labels.toml` en/de), PDF text snapshots in dimo-cli. Clean room audit passed. Owner: German labels (Prüfblatt, Prüfbericht, Änderungsstand, Geprüft von, Freigegeben von, i.O./n.i.O.) and empty "Approved by" date |
-| T3.7 XLSX check sheet and inspection report | in progress | Wave 3 |
+| T3.7 XLSX check sheet and inspection report | done | `dimo_report::render_xlsx` from the same `ReportModel`, labels from `labels.toml`, number cells with typed scale, marks in number formats plus fill, A4 landscape with repeated rows and columns, 6 sample columns per printed page, fixed properties and ZIP times. Owner: open the sample workbooks in a spreadsheet program (repair prompt, glyphs, print preview) |
 | T3.8 Report export in the app | todo | Wave 3 |
 | T3.9 Follow-ups from waves 2 and 3 | todo | Wave 4 |
 | T3.10 User guide and manual test | todo | Wave 4 |
@@ -94,6 +94,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-12 | XLSX reports: sheet named after the localized document title from `labels.toml` (replaces "Report" in M3 decision 13); verdict marks in number formats (✓ ✗ ○, `-` for open) with fills green, red, yellow, grey; fail bold with a medium border; frozen columns A and B, no frozen header row; more than 6 samples print at 60 % with a page break every 6 sample columns; header parts capped to stay under 255 characters. Per sample counts missing, added in T3.9 | M3 decisions 9, 12, 13 | T3.7, agent |
 | 2026-10-12 | Report templates: labels in `labels.toml` inside the template set (optional `labels` key in `template.toml`, reused by XLSX); verdicts, rules and attribute results passed as codes, the template owns the words; 6 samples per column block, each block on a new page; "Inspected by" date is the report date, "Approved by" date stays empty; fallback date is the manifest modification date passed by the caller (UTC calendar date); check sheet data carries no verdicts and has an "Inspected by" line; ligatures off; German verdicts i.O./n.i.O.; data `format_version` 1, raised only when a field is removed or changes meaning | M3 decisions 9 to 15, D-32 | T3.6, agent |
 | 2026-10-12 | Release profile: fat LTO, `codegen-units = 1`, `opt-level = "s"` for Typst and its heaviest dependencies (stripped app 50.7 MB to 37.0 MB in the spike). Seventh deny ignore RUSTSEC-2024-0449 (unsafe-libyaml unmaintained, through serde_yaml in Typst) accepted | T3.2 measurements | owner |
 | 2026-10-12 | Typst integration: 0.15.1 with `typst-layout` as direct dependency (`PagedDocument` not re-exported); language as `sys.inputs.lang`, data always `/data.json` (reserved); PDF creation date only from the request, none if not given; PDF id is SHA-256 of all render inputs; Open Sans lacks `⌀` and check/cross/circle glyphs, so templates map `⌀` to `Ø` and draw verdict marks as shapes; Typst cannot be cancelled mid render (about 0.2 s for 300 x 10), T3.8 cancels between steps; PDF text snapshots deferred to T3.6 (dimo-report cannot use dimo-pdf) | D-30, NFR-SEC-05, FR-EXP-11 | T3.2, agent |
