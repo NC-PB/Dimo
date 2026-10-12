@@ -4,7 +4,7 @@
 //! frontend calls [`measurement_state`] after each patch: verdicts are computed, never stored
 //! (M3 decision 2), and never decided in TypeScript (rule 2).
 
-use dimo_core::MeasurementState;
+use dimo_core::{CharId, MeasurementState};
 use tauri::AppHandle;
 
 use crate::ipc::CommandError;
@@ -26,4 +26,13 @@ pub fn state_of(session: &AppSession) -> Result<MeasurementState, CommandError> 
         .project()
         .map(dimo_core::measurement_state)
         .ok_or(CommandError::NoProject)
+}
+
+/// Characteristics whose limits or result type changed after the last issued report, in
+/// placement order; empty without an issued report (M3 decision 16). The measurement grid marks
+/// them with a hint. Computed from the audit log in Rust (rule 2).
+#[tauri::command]
+#[specta::specta]
+pub async fn changed_since_issued_report(app: AppHandle) -> Result<Vec<CharId>, CommandError> {
+    with_session(app, |_, session| session.changed_since_issued_report()).await
 }

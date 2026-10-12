@@ -45,6 +45,11 @@ export class DevToolsStore {
   tableResult = $state<FrameStats | null>(null);
   /** Scroll element of the characteristic table, set by the table while it is shown. */
   tableScroller: HTMLElement | null = null;
+  /**
+   * Times in ms from a cell commit in the measurement grid to the first frame with Rust's new
+   * verdicts (T3.5 large project check), in order; the UI script report prints their mean.
+   */
+  commitTimes: number[] = [];
 
   /** Number of dummy balloons on each sheet: one per anchor when anchors are set. */
   get shownCount(): number {

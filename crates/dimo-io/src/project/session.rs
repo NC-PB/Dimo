@@ -204,6 +204,15 @@ impl ProjectSession {
         history
     }
 
+    /// Characteristics whose limits or result type changed after the last issued report, from
+    /// the whole audit log, flushed or not (M3 decision 16).
+    pub fn changed_since_issued_report(&self) -> Vec<CharId> {
+        dimo_core::changed_since_issued_report(
+            self.document.project(),
+            self.file.audit.iter().chain(self.document.audit()),
+        )
+    }
+
     /// Keeps a custom tolerance table file for the project and returns its hash. It is saved
     /// once the tolerance settings list it (M2 decision 4); validate it with `dimo-tolerance`
     /// first. Until the next save, the journal holds it with the first entry whose settings list

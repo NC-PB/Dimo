@@ -10,6 +10,7 @@
   import Viewport from "$lib/components/Viewport.svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { m } from "$lib/i18n";
+  import MeasureView from "$lib/measure/MeasureView.svelte";
   import TablePanel from "$lib/table/TablePanel.svelte";
   import { appInfo } from "$lib/stores/app-info.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
@@ -69,7 +70,9 @@
     </div>
     <SidePanel />
   </div>
-  {#if view.current === "export"}
+  {#if view.current === "measure"}
+    <MeasureView />
+  {:else if view.current === "export"}
     <ExportView />
   {:else if view.current === "settings"}
     <SettingsView />

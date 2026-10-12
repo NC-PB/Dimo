@@ -28,6 +28,7 @@ fn main() {
         "set_shorter_leg",
         "import_tolerance_table",
         "measurement_state",
+        "changed_since_issued_report",
         "app_settings",
         "set_app_settings",
         "dev_startup",

@@ -21,13 +21,25 @@
     label: string;
     /** Select the whole text when the editor opens (else the caret goes to the end). */
     selectAll: boolean;
+    /** Enter confirms and moves down, Shift+Enter up (measurement grid, M3 decision 7). */
+    enterMoves?: boolean;
     onInput: (text: string) => void;
     onCommit: (move: EditMove) => void;
     onCancel: () => void;
   }
 
-  let { text, pending, invalid, numeric, label, selectAll, onInput, onCommit, onCancel }: Props =
-    $props();
+  let {
+    text,
+    pending,
+    invalid,
+    numeric,
+    label,
+    selectAll,
+    enterMoves = false,
+    onInput,
+    onCommit,
+    onCancel,
+  }: Props = $props();
 
   function focusOnMount(element: HTMLInputElement) {
     untrack(() => {
@@ -48,7 +60,7 @@
     let move: EditMove | null = null;
     switch (event.key) {
       case "Enter":
-        move = "none";
+        move = enterMoves ? (event.shiftKey ? "up" : "down") : "none";
         break;
       case "Tab":
         move = event.shiftKey ? "previous" : "next";

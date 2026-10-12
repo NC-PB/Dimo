@@ -3,7 +3,8 @@
 The **Drawing** view is where you work. It shows the sheet in the middle, the characteristic table
 under it ([Characteristic table](characteristics.md)) and a side panel on the right. The buttons
 **Drawing**, **Review**, **Measure**, **Export** and **Settings** at the top switch the view. The
-Drawing view is also ⌘1. **Review** and **Measure** are placeholders in this version.
+Drawing view is also ⌘1, the Measure view ⌘3 ([Entering results](measuring.md)). **Review** is a
+placeholder in this version.
 
 ## Zoom
 

@@ -58,7 +58,8 @@ pub use evaluation::{
 };
 pub use geometry::{OrientedBox, Point, Rect, Size};
 pub use history::{
-    ChangeSource, CharacteristicField, HistoryAction, HistoryEntry, characteristic_history,
+    ChangeSource, CharacteristicField, HistoryAction, HistoryEntry, changed_since_issued_report,
+    characteristic_history,
 };
 pub use id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
 pub use measurement::{

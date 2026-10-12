@@ -106,6 +106,18 @@ drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks 
   a `pass`, `fail` or `open` verdict per row, per sample and for the report. Rows are the
   measured characteristics in number order, cells follow the sample order. Call it again after
   each `project-patched` event; the frontend never compares values with limits (rule 2).
+- Measurement grid (T3.5, `src/lib/measure/`): `MeasureView` refreshes `measurementStore`
+  (`stores/measurement.svelte.ts`) after every project change, and asks for
+  `changed_since_issued_report` (decision 16 hint marker) only when a report was issued. Rows
+  come from `measurement_state`, not from a frontend filter. Rows are virtualized
+  (`RowVirtualizer`), sample columns are windowed by hand (fixed width), the left columns are
+  sticky. Every commit is one `set_results` (typed text, Rust parses it); the active cell moves on
+  at once and a refused value is opened again with the reason. Cmd/Ctrl+V moves the focus to a
+  hidden text field for the browser's paste, whose `paste` event the grid handles; the dev UI
+  script steps `cell` and `paste` drive it. Grid keys are the `grid` scope of `shortcuts.ts`. In
+  `tauri dev`, `devTools.commitTimes` holds commit to repaint times and the UI script report
+  prints their mean; `node scripts/dev-characteristics.mjs 300 out.json 10` makes a 300 by 10
+  project for the check.
 - Balloon sizes: `viewport/balloons.ts` follows `dimo_core::BalloonMetrics` with the generated
   `BALLOON_METRICS`. The Rust test `balloon_layout` writes `balloon-layout.fixture.json`, and
   `balloons.test.ts` checks the viewport against it, so viewport and ballooned PDF agree.

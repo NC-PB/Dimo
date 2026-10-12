@@ -3,8 +3,8 @@
 Die Ansicht **Zeichnung** ist der Ort, an dem du arbeitest. Sie zeigt das Blatt in der Mitte, die
 Merkmalstabelle darunter ([Merkmalstabelle](characteristics.md)) und eine Seitenleiste rechts. Die
 Schaltflächen **Zeichnung**, **Prüfen**, **Messen**, **Export** und **Einstellungen** oben wechseln
-die Ansicht. Die Ansicht Zeichnung erreichst du auch mit ⌘1. **Prüfen** und **Messen** sind in
-dieser Version Platzhalter.
+die Ansicht. Die Ansicht Zeichnung erreichst du auch mit ⌘1, die Ansicht Messen mit ⌘3
+([Ergebnisse eingeben](measuring.md)). **Prüfen** ist in dieser Version ein Platzhalter.
 
 ## Zoomen
 

@@ -15,6 +15,7 @@ use crate::document::{AuditAction, AuditEntry};
 use crate::env::Timestamp;
 use crate::id::CharId;
 use crate::patch::Change;
+use crate::project::Project;
 
 /// What made a change (FR-CHR-10).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
@@ -233,6 +234,62 @@ fn history_entry(entry: &AuditEntry, id: CharId) -> Option<HistoryEntry> {
         after: last.map(|c| Box::new(c.clone())),
         fields,
     })
+}
+
+/// Characteristics whose limits or result type changed after the last issued report (M3
+/// decision 16), in placement order. Empty when no report was issued.
+///
+/// `audit` is the whole audit log, oldest first. The issue point is the last entry that
+/// inserted the record [`Project::issued_reports`] ends with (an undone and redone export
+/// counts from the redo). A characteristic is listed when its current limits (value and written
+/// form) or its effective result type differ from its state at that point; characteristics
+/// created after it were not on the report and are not listed. Changes that were reverted
+/// later (by hand or by undo) are not listed, since the states are compared, not the entries.
+pub fn changed_since_issued_report<'a>(
+    project: &Project,
+    audit: impl IntoIterator<Item = &'a AuditEntry>,
+) -> Vec<CharId> {
+    let Some(last) = project.issued_reports.last() else {
+        return Vec::new();
+    };
+    let audit: Vec<&AuditEntry> = audit.into_iter().collect();
+    let issued = audit.iter().rposition(|entry| {
+        entry.changes.iter().any(
+            |change| matches!(change, Change::IssuedReportInserted { report, .. } if report == last),
+        )
+    });
+    let Some(issued) = issued else {
+        return Vec::new();
+    };
+    // State at the issue point: the state before the first later change of each
+    // characteristic; `None` if it did not exist then.
+    let mut at_issue: std::collections::HashMap<CharId, Option<&Characteristic>> =
+        std::collections::HashMap::new();
+    for change in audit[issued + 1..].iter().flat_map(|e| &e.changes) {
+        let (id, before) = match change {
+            Change::CharacteristicChanged { before, .. } => (before.id, Some(&**before)),
+            Change::CharacteristicRemoved { characteristic, .. } => {
+                (characteristic.id, Some(&**characteristic))
+            }
+            Change::CharacteristicInserted { characteristic, .. } => (characteristic.id, None),
+            _ => continue,
+        };
+        at_issue.entry(id).or_insert(before);
+    }
+    project
+        .characteristics
+        .iter()
+        .filter(|now| match at_issue.get(&now.id) {
+            Some(Some(then)) => {
+                !same_decimal(then.upper_limit, now.upper_limit)
+                    || !same_decimal(then.lower_limit, now.lower_limit)
+                    || then.effective_result_type() != now.effective_result_type()
+            }
+            // Unchanged since the issue, or created after it.
+            Some(None) | None => false,
+        })
+        .map(|c| c.id)
+        .collect()
 }
 
 /// The source if `command` names characteristic `id` (or created it); `None` if `id` only

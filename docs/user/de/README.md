@@ -24,6 +24,7 @@ Grenzwerte in der Merkmalstabelle ein.
 | [Blätter: Drehung, Einheit und Maßstab](sheets.md) | Eigenschaften jedes Blatts |
 | [Nummerierungsstrategien, Zonen und Ansichten](numbering.md) | Nach Zone, Ansicht oder Art nummerieren, Vorschau, Unternummern, gesperrte Nummerierung |
 | [Projekt- und Berichtsdaten](project-details.md) | Teil, Kunde, Revisionsstand, Zeichnungs-Hash, Berichtskopf und Freigabefelder |
+| [Ergebnisse eingeben](measuring.md) | Muster, Messwerttabelle, Eingabe mit der Tastatur, Einfügen, Markierungen für i.O. und n.i.O., Ergebnisarten |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
@@ -167,6 +168,7 @@ wird. Die Einstellungen bleiben für den nächsten Start erhalten. Die Toleranzr
 
 - Öffne das Projekt später mit **Projekt öffnen** (⌘O) und mache weiter. Jede Änderung, die du
   gemacht hast, steht im Änderungsprotokoll im Projekt.
-- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung, Prüfergebnisse und
-  Berichte. Die Ansichten **Prüfen** und **Messen** zeigen einen
-  Hinweis, dass sie in einer späteren Version folgen.
+- Gib die gemessenen Werte deiner Teile in der Ansicht **Messen** (⌘3) ein, siehe
+  [Ergebnisse eingeben](measuring.md).
+- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung und Prüfberichte. Die
+  Ansicht **Prüfen** zeigt einen Hinweis, dass sie in einer späteren Version folgt.
