@@ -10,6 +10,8 @@
   }
 
   let { projectStore = appProject }: Props = $props();
+  /** Prefix of element IDs: the panel is shown in the Drawing and the Measure view. */
+  const uid = $props.id();
 
   /**
    * Project and report details (T3.4, FR-RVC-04, FR-DOC-07, M3 decisions 1 and 15): part data,
@@ -124,8 +126,8 @@
 </script>
 
 {#if project && revision}
-  <section class="flex flex-col gap-3" aria-labelledby="project-details-title">
-    <h2 id="project-details-title" class="text-sm font-semibold text-text">
+  <section class="flex flex-col gap-3" aria-labelledby="{uid}-project-details-title">
+    <h2 id="{uid}-project-details-title" class="text-sm font-semibold text-text">
       {m.project_details_title()}
     </h2>
 
@@ -164,19 +166,19 @@
         />
       </label>
       <div class={labelClass}>
-        <span id="drawing-file-label">{m.field_drawing_file()}</span>
+        <span id="{uid}-drawing-file-label">{m.field_drawing_file()}</span>
         <span
           class="break-all text-sm text-text"
-          aria-labelledby="drawing-file-label"
+          aria-labelledby="{uid}-drawing-file-label"
           data-testid="drawing-file">{revision.file_name}</span
         >
       </div>
       <div class={labelClass}>
-        <span id="drawing-sha-label">{m.field_drawing_sha()}</span>
+        <span id="{uid}-drawing-sha-label">{m.field_drawing_sha()}</span>
         <div class="flex items-start gap-2">
           <code
             class="min-w-0 flex-1 break-all text-xs text-text"
-            aria-labelledby="drawing-sha-label"
+            aria-labelledby="{uid}-drawing-sha-label"
             data-testid="drawing-sha">{revision.sha256}</code
           >
           <button
@@ -210,10 +212,10 @@
         </label>
       {/each}
       <div class={labelClass}>
-        <label for="report-date">{m.field_report_date()}</label>
+        <label for="{uid}-report-date">{m.field_report_date()}</label>
         <div class="flex items-center gap-2">
           <input
-            id="report-date"
+            id="{uid}-report-date"
             type="date"
             class={fieldClass}
             value={project.report_info.report_date}

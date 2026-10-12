@@ -20,3 +20,14 @@ export function without<T>(
   }
   return { set: next, changed };
 }
+
+/** Position of every key in `keys`, for lookups in a parallel list. Callers must not mutate it. */
+export function indexMap<K>(keys: Iterable<K>): ReadonlyMap<K, number> {
+  const map = new Map<K, number>();
+  let i = 0;
+  for (const key of keys) {
+    map.set(key, i);
+    i += 1;
+  }
+  return map;
+}

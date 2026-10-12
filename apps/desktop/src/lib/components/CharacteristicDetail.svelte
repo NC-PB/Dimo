@@ -2,7 +2,7 @@
   /**
    * Detail panel of the active characteristic (T2.8): its tolerance rule with markers and the
    * explanation Rust builds in the UI language (FR-TOL-08), the shorter leg of an angle (T2.9a),
-   * the inspect flag (FR-CHR-08), the change history (FR-CHR-10), and re-interpretation of the
+   * the inspect flag (FR-CHR-08), the result type (FR-MEA-06, T3.5), the change history (FR-CHR-10), and re-interpretation of the
    * selection after a settings change.
    */
   import {
@@ -14,7 +14,8 @@
     ruleLabel,
     unitLabel,
   } from "$lib/i18n";
-  import type { HistoryEntry } from "$lib/ipc/bindings";
+  import type { HistoryEntry, ResultType } from "$lib/ipc/bindings";
+  import { resultTypeLabel } from "$lib/measure/labels";
   import { explainLanguage } from "$lib/stores/box-select.svelte";
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection as appSelection, type SelectionStore } from "$lib/stores/selection.svelte";
@@ -113,6 +114,23 @@
       tab = tab === "tolerance" ? "history" : "tolerance";
       document.getElementById(`detail-tab-${tab}`)?.focus();
     }
+  }
+
+  /**
+   * Overrides the result type (M3 decision 4). Rust refuses it while results of the other type
+   * exist; the refusal shows in the project messages and the picker goes back.
+   */
+  async function setResultType(select: HTMLSelectElement) {
+    if (c === null) {
+      return;
+    }
+    const id = c.id;
+    await project.execute({
+      type: "set_result_type",
+      ids: [id],
+      result_type: select.value as ResultType,
+    });
+    select.value = project.characteristicById.get(id)?.result_type ?? select.value;
   }
 
   async function setInspect(inspect: boolean) {
@@ -259,6 +277,18 @@
               onchange={(e) => void setInspect(e.currentTarget.checked)}
             />
             {m.detail_inspect()}
+          </label>
+          <label class="flex items-center gap-1.5 text-xs">
+            {m.field_result_type()}
+            <select
+              class="rounded border border-border bg-surface px-1 py-0.5 text-xs text-text"
+              value={c.result_type}
+              onchange={(e) => void setResultType(e.currentTarget)}
+            >
+              {#each ["auto", "variable", "attribute"] as const as type (type)}
+                <option value={type}>{resultTypeLabel(type)}</option>
+              {/each}
+            </select>
           </label>
         </div>
       {:else}

@@ -128,6 +128,8 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.show_shortcuts();
     case "show_drawing":
       return m.show_drawing();
+    case "show_measure":
+      return m.show_measure();
     case "show_export":
       return m.show_export();
     case "show_settings":
@@ -164,6 +166,44 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.table_move_up();
     case "table_move_down":
       return m.table_move_down();
+    case "grid_up":
+      return m.grid_up();
+    case "grid_down":
+      return m.grid_down();
+    case "grid_left":
+      return m.grid_left();
+    case "grid_right":
+      return m.grid_right();
+    case "grid_next_row":
+      return m.grid_next_row();
+    case "grid_previous_row":
+      return m.grid_previous_row();
+    case "grid_next_sample":
+      return m.grid_next_sample();
+    case "grid_previous_sample":
+      return m.grid_previous_sample();
+    case "grid_first_sample":
+      return m.grid_first_sample();
+    case "grid_last_sample":
+      return m.grid_last_sample();
+    case "grid_first_row":
+      return m.grid_first_row();
+    case "grid_last_row":
+      return m.grid_last_row();
+    case "grid_edit":
+      return m.grid_edit();
+    case "grid_clear":
+      return m.grid_clear();
+    case "grid_cancel":
+      return m.grid_cancel();
+    case "grid_ok":
+      return m.grid_ok();
+    case "grid_not_ok":
+      return m.grid_not_ok();
+    case "grid_toggle":
+      return m.grid_toggle();
+    case "grid_paste":
+      return m.grid_paste();
   }
 }
 

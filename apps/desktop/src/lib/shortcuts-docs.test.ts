@@ -23,6 +23,7 @@ const GROUPS = {
   anywhere: (s: Shortcut) => (s.scope ?? "global") === "global" && s.anyView === true,
   drawing: (s: Shortcut) => (s.scope ?? "global") === "global" && s.anyView !== true,
   table: (s: Shortcut) => s.scope === "table",
+  measure: (s: Shortcut) => s.scope === "grid",
 } as const;
 
 type Group = keyof typeof GROUPS;

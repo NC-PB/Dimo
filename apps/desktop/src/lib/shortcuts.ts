@@ -34,6 +34,7 @@ export type ShortcutAction =
   | "cancel"
   | "show_shortcuts"
   | "show_drawing"
+  | "show_measure"
   | "show_export"
   | "show_settings"
   | "table_up"
@@ -51,15 +52,34 @@ export type ShortcutAction =
   | "table_edit"
   | "table_cancel"
   | "table_move_up"
-  | "table_move_down";
+  | "table_move_down"
+  | "grid_up"
+  | "grid_down"
+  | "grid_left"
+  | "grid_right"
+  | "grid_next_row"
+  | "grid_previous_row"
+  | "grid_next_sample"
+  | "grid_previous_sample"
+  | "grid_first_sample"
+  | "grid_last_sample"
+  | "grid_first_row"
+  | "grid_last_row"
+  | "grid_edit"
+  | "grid_clear"
+  | "grid_cancel"
+  | "grid_ok"
+  | "grid_not_ok"
+  | "grid_toggle"
+  | "grid_paste";
 
 /**
  * Where a shortcut acts. `global` shortcuts are handled by the window (`Shortcuts.svelte`),
  * `table` shortcuts only while the characteristic table has focus (T1.7). Keys used in both
  * scopes (arrows, Enter, Escape, Cmd+A) act on the table while it has focus; the window then
- * leaves them alone.
+ * leaves them alone. `grid` shortcuts act while the measurement grid has focus (T3.5).
  */
-export type ShortcutScope = "global" | "table";
+export type ShortcutScope = "global" | "table" | "grid";
 
 /**
  * One key combination. `key` is compared with `KeyboardEvent.key` (letters case insensitive).
@@ -110,6 +130,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   // Views (D-50).
   { action: "show_drawing", keys: [{ key: "1", mod: true }], anyView: true },
+  { action: "show_measure", keys: [{ key: "3", mod: true }], anyView: true },
   { action: "show_export", keys: [{ key: "e", mod: true }], anyView: true },
   { action: "show_settings", keys: [{ key: ",", mod: true }], anyView: true },
   { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }] },
@@ -171,6 +192,41 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { action: "table_cancel", keys: [{ key: "Escape" }], scope: "table" },
   { action: "table_move_up", keys: [{ key: "ArrowUp", alt: true }], scope: "table" },
   { action: "table_move_down", keys: [{ key: "ArrowDown", alt: true }], scope: "table" },
+  // Measurement grid (T3.5, M3 decision 7), active while the grid has focus. Enter, Tab and
+  // their Shift variants also confirm a value being typed.
+  { action: "grid_up", keys: [{ key: "ArrowUp" }], scope: "grid" },
+  { action: "grid_down", keys: [{ key: "ArrowDown" }], scope: "grid" },
+  { action: "grid_left", keys: [{ key: "ArrowLeft" }], scope: "grid" },
+  { action: "grid_right", keys: [{ key: "ArrowRight" }], scope: "grid" },
+  { action: "grid_next_row", keys: [{ key: "Enter", shift: false }], scope: "grid" },
+  { action: "grid_previous_row", keys: [{ key: "Enter", shift: true }], scope: "grid" },
+  { action: "grid_next_sample", keys: [{ key: "Tab", shift: false }], scope: "grid" },
+  { action: "grid_previous_sample", keys: [{ key: "Tab", shift: true }], scope: "grid" },
+  { action: "grid_first_sample", keys: [{ key: "Home" }], scope: "grid" },
+  { action: "grid_last_sample", keys: [{ key: "End" }], scope: "grid" },
+  {
+    action: "grid_first_row",
+    keys: [
+      { key: "ArrowUp", mod: true },
+      { key: "Home", mod: true },
+    ],
+    scope: "grid",
+  },
+  {
+    action: "grid_last_row",
+    keys: [
+      { key: "ArrowDown", mod: true },
+      { key: "End", mod: true },
+    ],
+    scope: "grid",
+  },
+  { action: "grid_edit", keys: [{ key: "F2" }], scope: "grid" },
+  { action: "grid_clear", keys: [{ key: "Delete" }, { key: "Backspace" }], scope: "grid" },
+  { action: "grid_cancel", keys: [{ key: "Escape" }], scope: "grid" },
+  { action: "grid_ok", keys: [{ key: "o" }, { key: "+" }], scope: "grid" },
+  { action: "grid_not_ok", keys: [{ key: "n" }, { key: "x" }], scope: "grid" },
+  { action: "grid_toggle", keys: [{ key: " " }], scope: "grid" },
+  { action: "grid_paste", keys: [{ key: "v", mod: true }], scope: "grid" },
 ];
 
 /** The parts of a keyboard event the matcher needs. */
@@ -239,6 +295,7 @@ const KEY_NAMES: Record<string, string> = {
   " ": "Space",
   Enter: "↵",
   Delete: "Del",
+  Tab: "⇥",
   Backspace: "⌫",
   Escape: "Esc",
 };

@@ -113,6 +113,9 @@
       case "show_drawing":
         view.set("drawing");
         break;
+      case "show_measure":
+        view.set("measure");
+        break;
       case "show_export":
         view.set("export");
         break;
@@ -140,7 +143,7 @@
     );
   }
 
-  /** Whether the characteristic table (an ARIA grid) has the focus. */
+  /** Whether the characteristic table or the measurement grid (ARIA grids) has the focus. */
   function tableFocused(target: EventTarget | null): boolean {
     return target instanceof HTMLElement && target.closest('[role="grid"]') !== null;
   }
@@ -198,10 +201,10 @@
         </thead>
         <tbody>
           {#each SHORTCUTS as shortcut, i (shortcut.action)}
-            {#if shortcut.scope === "table" && SHORTCUTS[i - 1]?.scope !== "table"}
+            {#if shortcut.scope !== undefined && SHORTCUTS[i - 1]?.scope !== shortcut.scope}
               <tr>
                 <th colspan="2" scope="colgroup" class="pt-3 pb-1 text-left font-semibold">
-                  {m.table_shortcuts_title()}
+                  {shortcut.scope === "grid" ? m.grid_shortcuts_title() : m.table_shortcuts_title()}
                 </th>
               </tr>
             {/if}

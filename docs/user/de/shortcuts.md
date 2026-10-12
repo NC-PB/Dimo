@@ -25,6 +25,7 @@ Diese wirken in jeder Ansicht.
 | Rückgängig | `⌘Z` | `Ctrl+Z` |
 | Wiederholen | `⇧⌘Z` oder `⌘Y` | `Ctrl+Shift+Z` oder `Ctrl+Y` |
 | Zeichnung anzeigen | `⌘1` | `Ctrl+1` |
+| Messwerte anzeigen | `⌘3` | `Ctrl+3` |
 | Export anzeigen | `⌘E` | `Ctrl+E` |
 | Einstellungen anzeigen | `⌘,` | `Ctrl+,` |
 | Tastenkürzel anzeigen | `?` | `?` |
@@ -86,6 +87,34 @@ Zeichnung.
 | Tabelle: Bearbeiten abbrechen | `Esc` | `Esc` |
 | Tabelle: Auswahl nach oben verschieben | `⌥↑` | `Alt+↑` |
 | Tabelle: Auswahl nach unten verschieben | `⌥↓` | `Alt+↓` |
+<!-- /shortcuts -->
+
+## Messwerttabelle
+
+Gilt, solange die Messwerttabelle der Ansicht Messen den Fokus hat. Ein getipptes Zeichen beginnt die Eingabe in der aktiven Zelle. `O`, `+`, `N` und `X` setzen bei einem Gut/Schlecht-Merkmal i.O. oder n.i.O. und gehen zum nächsten Merkmal; in einer Messwertzelle werden sie wie jedes andere Zeichen getippt.
+
+<!-- shortcuts:measure -->
+| Aktion | macOS | Windows und Linux |
+|---|---|---|
+| Messwerte: Zelle nach oben | `↑` | `↑` |
+| Messwerte: Zelle nach unten | `↓` | `↓` |
+| Messwerte: Zelle nach links | `←` | `←` |
+| Messwerte: Zelle nach rechts | `→` | `→` |
+| Messwerte: bestätigen und zum nächsten Merkmal | `↵` | `↵` |
+| Messwerte: bestätigen und zum vorherigen Merkmal | `⇧↵` | `Shift+↵` |
+| Messwerte: bestätigen und zum nächsten Muster | `⇥` | `⇥` |
+| Messwerte: bestätigen und zum vorherigen Muster | `⇧⇥` | `Shift+⇥` |
+| Messwerte: erstes Muster | `Home` | `Home` |
+| Messwerte: letztes Muster | `End` | `End` |
+| Messwerte: erstes Merkmal | `⌘↑` oder `⌘Home` | `Ctrl+↑` oder `Ctrl+Home` |
+| Messwerte: letztes Merkmal | `⌘↓` oder `⌘End` | `Ctrl+↓` oder `Ctrl+End` |
+| Messwerte: Wert bearbeiten | `F2` | `F2` |
+| Messwerte: Ergebnis löschen | `Del` oder `⌫` | `Del` oder `⌫` |
+| Messwerte: Eingabe abbrechen | `Esc` | `Esc` |
+| Messwerte: i.O. (Gut/Schlecht-Merkmal) | `O` oder `+` | `O` oder `+` |
+| Messwerte: n.i.O. (Gut/Schlecht-Merkmal) | `N` oder `X` | `N` oder `X` |
+| Messwerte: zwischen i.O. und n.i.O. wechseln | `Space` | `Space` |
+| Messwerte: Wertebereich einfügen | `⌘V` | `Ctrl+V` |
 <!-- /shortcuts -->
 
 ## Karte der Rahmenauswahl und getippte Werte
