@@ -223,15 +223,15 @@ fn container_layout_is_fixed() {
         let entry = archive.by_index(i).unwrap();
         assert_eq!(entry.compression(), zip::CompressionMethod::Stored);
         assert_eq!(entry.unix_mode(), Some(0o100_644));
-        // The time of the last audit entry, 2026-03-01T08:09:59.999Z, at 2 s resolution.
+        // The time of the last audit entry, 2026-03-02T08:00:00Z, at 2 s resolution.
         let time = entry.last_modified().unwrap();
         assert_eq!(
             (time.year(), time.month(), time.day()),
-            (2026, 3, 1),
+            (2026, 3, 2),
             "{}",
             entry.name()
         );
-        assert_eq!((time.hour(), time.minute(), time.second()), (8, 9, 58));
+        assert_eq!((time.hour(), time.minute(), time.second()), (8, 0, 0));
     }
 }
 
@@ -261,7 +261,7 @@ fn manifest_and_audit_content() {
     let audit = String::from_utf8(entries[2].1.clone()).unwrap();
     assert_eq!(audit.lines().count(), file.audit.len());
     assert!(audit.ends_with('\n'));
-    assert_eq!(SCHEMA_VERSION, 2);
+    assert_eq!(SCHEMA_VERSION, 3);
 }
 
 #[test]
@@ -369,7 +369,7 @@ fn newer_schema_versions_are_refused_and_left_untouched() {
             error,
             ProjectError::NewerVersion {
                 found: 99,
-                supported: 2
+                supported: 3
             }
         ),
         "{error}"

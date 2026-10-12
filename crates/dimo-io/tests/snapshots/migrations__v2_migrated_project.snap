@@ -166,7 +166,8 @@ expression: migrated
         }
       ],
       "comment": "",
-      "shorter_leg": null
+      "shorter_leg": null,
+      "result_type": "auto"
     },
     {
       "id": "00000000-0000-0000-0000-00000000000a",
@@ -227,7 +228,8 @@ expression: migrated
         }
       ],
       "comment": "",
-      "shorter_leg": null
+      "shorter_leg": null,
+      "result_type": "auto"
     },
     {
       "id": "00000000-0000-0000-0000-000000000006",
@@ -299,7 +301,8 @@ expression: migrated
         }
       ],
       "comment": "check twice",
-      "shorter_leg": null
+      "shorter_leg": null,
+      "result_type": "auto"
     }
   ],
   "balloons": [
@@ -435,5 +438,16 @@ expression: migrated
         }
       ]
     }
-  }
+  },
+  "samples": [],
+  "results": [],
+  "report_info": {
+    "report_number": "",
+    "report_date": "",
+    "company_name": "",
+    "inspected_by": "",
+    "approved_by": "",
+    "remarks": ""
+  },
+  "issued_reports": []
 }

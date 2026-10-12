@@ -53,7 +53,7 @@ pub use session::{OpenReport, ProjectSession};
 /// The `format` value in every manifest.
 pub const FORMAT_NAME: &str = "dimo-project";
 /// The schema version this build writes and the highest it reads (NFR-REL-03).
-pub const SCHEMA_VERSION: u32 = 2;
+pub const SCHEMA_VERSION: u32 = 3;
 /// File extension of project files, without the dot.
 pub const EXTENSION: &str = "dimo";
 /// Version of the Dimo build, written to the manifest.
