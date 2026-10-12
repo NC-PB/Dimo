@@ -44,7 +44,7 @@ use tauri_specta::Event;
 
 use crate::ipc::{CommandError, JobId, JobProgress, tile_service};
 use crate::project::{SessionState, emit, emit_patched, with_session};
-use crate::session::{AppSession, ExportSnapshot};
+use crate::session::{AppSession, ExportSnapshot, ProjectPatched};
 use crate::settings::{PdfBalloons, ReportLanguage};
 use crate::tiles::TileState;
 
@@ -464,7 +464,8 @@ pub async fn report_export_warnings(
 }
 
 /// Asks the export job `id` to stop before its next step. Returns false if no such job runs
-/// (it may just have ended); the job then ends with its normal outcome.
+/// (it may just have ended). A job that is already writing its file finishes it and ends
+/// with its normal outcome.
 #[tauri::command]
 #[specta::specta]
 #[allow(
@@ -478,27 +479,43 @@ pub fn cancel_job(jobs: State<'_, JobRegistry>, id: JobId) -> bool {
 /// The report info printed on a report exported as issued, `None` for other exports.
 type IssuedInfo = Option<ReportInfo>;
 
+/// What an export starts from.
+#[derive(Debug)]
+pub struct ExportStart {
+    /// The copy the job renders.
+    pub snapshot: ExportSnapshot,
+    /// For a report exported as issued: the report info it prints, recorded after the write.
+    pub issued: IssuedInfo,
+    /// For an issued drawing or list export: the patch of the numbering lock, to emit.
+    pub lock: Option<ProjectPatched>,
+}
+
 /// Takes the snapshot of an export. For an issued drawing or list export the numbering is
-/// locked first; for an issued report the snapshot gets the filled report info.
-fn take_snapshot(
-    app: &AppHandle,
+/// locked first (T1.9); a report is not changed here, its snapshot gets the filled report info
+/// and the lock follows after the write (M3 decisions 15 and 17).
+pub fn take_snapshot(
     session: &mut AppSession,
     request: ExportRequest,
-) -> Result<(ExportSnapshot, IssuedInfo), CommandError> {
+) -> Result<ExportStart, CommandError> {
     let report = request.format.report();
-    if request.issued && report.is_none() {
-        let patched = session.execute(Command::LockNumbering {
+    let lock = if request.issued && report.is_none() {
+        Some(session.execute(Command::LockNumbering {
             reason: LockReason::IssuedReport,
-        })?;
-        emit_patched(app, patched);
-    }
+        })?)
+    } else {
+        None
+    };
     let mut snapshot = session.export_snapshot(request.format == ExportFormat::BalloonedPdf)?;
-    let info = (request.issued && report.is_some()).then(|| {
+    let issued = (request.issued && report.is_some()).then(|| {
         let filled = session.issued_report_info(&snapshot.project.report_info);
         snapshot.project.report_info = filled.clone();
         filled
     });
-    Ok((snapshot, info))
+    Ok(ExportStart {
+        snapshot,
+        issued,
+        lock,
+    })
 }
 
 /// Asks for the target file and starts the export as a background job. Returns `null` if the
@@ -543,10 +560,17 @@ pub async fn export_project(
         file.path().to_path_buf()
     };
     let path = with_extension(path, format);
-    let (snapshot, issued) = with_session(app.clone(), move |app, session| {
-        take_snapshot(app, session, request)
+    let ExportStart {
+        snapshot,
+        issued,
+        lock,
+    } = with_session(app.clone(), move |_, session| {
+        take_snapshot(session, request)
     })
     .await?;
+    if let Some(patched) = lock {
+        emit_patched(&app, patched);
+    }
     let id = next_job_id();
     let cancel = app.state::<JobRegistry>().start(id);
     let job_app = app.clone();

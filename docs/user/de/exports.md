@@ -82,6 +82,9 @@ Dinge in einem Schritt:
    geschriebenen Datei und den Exportzeitpunkt. Der Exportzeitpunkt steht nur im Projekt, nicht im
    Bericht.
 
+Das Vermerken ist eine Änderung am Projekt. Ein Bericht ohne Berichtsdatum trägt deshalb bei einem
+erneuten Export ein späteres Datum; gib ein Berichtsdatum ein, damit es fest bleibt.
+
 ⌘Z macht alle drei auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als freigegeben
 vermerkt“. Hast du das Projekt während des Exports geändert, wird die Datei geschrieben, aber
 nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann erneut.

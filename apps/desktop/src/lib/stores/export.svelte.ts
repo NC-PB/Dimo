@@ -57,6 +57,8 @@ export interface PendingWarnings {
   kind: ReportKind;
   format: ExportFormat;
   warnings: ReportWarnings;
+  /** Export as issued, as chosen when the warnings were asked for. */
+  issued: boolean;
 }
 
 /** What the store needs from Rust, replaceable in tests. */
@@ -144,8 +146,11 @@ export class ExportStore {
     );
   }
 
-  /** Asks for a file and starts the export with the stored options. */
-  async start(format: ExportFormat): Promise<void> {
+  /**
+   * Asks for a file and starts the export with the stored options; `issued` defaults to the
+   * check box.
+   */
+  async start(format: ExportFormat, issued: boolean = this.issued): Promise<void> {
     if (this.busy(format)) {
       return;
     }
@@ -158,7 +163,7 @@ export class ExportStore {
         language: prefs.language,
         pdf_balloons: prefs.pdf_balloons,
         blank_columns: prefs.blank_columns,
-        issued: this.issued,
+        issued,
       });
       if (result.status === "error") {
         this.startError[format] = result.error;
@@ -191,7 +196,7 @@ export class ExportStore {
       }
       const w = result.data;
       if (w.draft_limits || w.open_results || w.limits_changed) {
-        this.pending = { kind, format, warnings: w };
+        this.pending = { kind, format, warnings: w, issued: true };
         return;
       }
     }
@@ -203,7 +208,7 @@ export class ExportStore {
     const pending = this.pending;
     this.pending = null;
     if (pending) {
-      await this.start(pending.format);
+      await this.start(pending.format, pending.issued);
     }
   }
 

@@ -78,6 +78,9 @@ written:
    format, the drawing revision and its SHA-256, the SHA-256 of the written file and the export
    time. The export time is kept in the project only, it is not printed in the report.
 
+Recording is a change of the project. A report without a report date therefore prints a later
+date when you export it again; enter a report date to keep it fixed.
+
 ⌘Z undoes all three at once. Below the export Dimo confirms "Recorded as issued". If you changed
 the project while the export ran, the file is written but nothing is recorded, because the file
 no longer shows the project; export again.

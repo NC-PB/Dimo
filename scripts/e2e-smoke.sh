@@ -21,6 +21,7 @@
 #      each, saved; verdicts from the app and results from project.json.
 #   8. Report export (T3.8): the saved measurement project is opened twice, each time the
 #      inspection report is exported as PDF and XLSX; both runs give byte identical files.
+#      A third run cancels the export and leaves no file.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -398,6 +399,15 @@ done
 expect "report: PDF file header" "%PDF" "$(head -c 4 "$WORK/out8a/measure_inspection-report.pdf" 2>/dev/null || true)"
 expect "app: both report exports finished" "yes" \
   "$(yesno grep -q 'inspection_report_pdf done measure_inspection-report.pdf, inspection_report_xlsx done measure_inspection-report.xlsx' <<<"$(report report-a exported)")"
+# Cancel (NFR-PERF-06): each job step waits 1.5 s, the export is cancelled during the first.
+mkdir -p "$WORK/out8c"
+if [[ -s "$MEA" ]]; then
+  run_app report-cancel "$SCRIPTS/report-cancel.json" term home8c \
+    DIMO_DEV_OPEN="$MEA" DIMO_DEV_EXPORT_DIR="$WORK/out8c" DIMO_DEV_EXPORT_DELAY_MS=1500
+fi
+expect "report: cancelled export reported" "yes" \
+  "$(yesno grep -q 'inspection_report_pdf cancelled' <<<"$(report report-cancel cancelled)")"
+expect "report: cancelled export left no file" "0" "$(find "$WORK/out8c" -type f | wc -l | tr -d ' ')"
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

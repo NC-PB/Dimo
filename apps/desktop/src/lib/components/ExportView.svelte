@@ -329,6 +329,9 @@
                   type="button"
                   class={buttonClass}
                   onclick={() => void exportStore.confirmPending()}
+                  {@attach (el: HTMLButtonElement) => {
+                    el.focus();
+                  }}
                 >
                   {m.export_warnings_confirm()}
                 </button>

@@ -17,7 +17,7 @@ use dimo_core::{
 };
 use dimo_desktop::export::{
     ExportFormat, ExportRequest, JobStop, REPORT_TEMPLATE, render, report_template,
-    report_warnings, run_steps,
+    report_warnings, run_steps, take_snapshot,
 };
 use dimo_desktop::session::AppSession;
 use dimo_desktop::settings::{PdfBalloons, ReportLanguage};
@@ -131,8 +131,7 @@ fn reports_are_byte_identical_when_exported_twice() {
             assert!(first.starts_with(magic), "{format:?}");
         }
     }
-    // The check sheet of a project with samples prints their serials, not blank columns, and
-    // the language changes the file.
+    // The language changes the file.
     let en = render(
         &snapshot,
         &request(ExportFormat::InspectionReportXlsx, ReportLanguage::En),
@@ -215,6 +214,46 @@ fn warnings_name_open_results_and_never_apply_to_blank_check_sheets() {
             .unwrap()
             .limits_changed
     );
+}
+
+#[test]
+fn snapshots_lock_drawing_exports_at_once_and_fill_issued_reports_only() {
+    let Some(tiles) = service() else { return };
+    let mut session = session(&tiles);
+    let mut blank = session.project().unwrap().report_info.clone();
+    blank.company_name = String::new();
+    blank.inspected_by = String::new();
+    session
+        .execute(Command::UpdateReportInfo { info: blank })
+        .unwrap();
+    let issued = |format| ExportRequest {
+        issued: true,
+        ..request(format, ReportLanguage::En)
+    };
+
+    // A report exported as issued changes nothing yet; its snapshot prints the filled info.
+    let start = take_snapshot(&mut session, issued(ExportFormat::InspectionReportPdf)).unwrap();
+    assert!(start.lock.is_none());
+    assert!(!session.project().unwrap().is_numbering_locked());
+    let info = start.issued.unwrap();
+    assert_eq!(info.company_name, "Muster GmbH");
+    assert_eq!(info.inspected_by, "Anna");
+    assert_eq!(start.snapshot.project.report_info, info);
+    assert_eq!(session.project().unwrap().report_info.company_name, "");
+
+    // Not issued: nothing filled.
+    let plain = take_snapshot(
+        &mut session,
+        request(ExportFormat::CheckSheetPdf, ReportLanguage::En),
+    )
+    .unwrap();
+    assert!(plain.issued.is_none() && plain.lock.is_none());
+    assert_eq!(plain.snapshot.project.report_info.company_name, "");
+
+    // An issued list export locks at once, as in T1.9.
+    let list = take_snapshot(&mut session, issued(ExportFormat::Csv)).unwrap();
+    assert!(list.lock.is_some() && list.issued.is_none());
+    assert!(list.snapshot.project.is_numbering_locked());
 }
 
 #[test]

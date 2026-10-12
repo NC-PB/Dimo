@@ -154,6 +154,7 @@ describe("report exports (T3.8)", () => {
       kind: "check_sheet",
       format: "check_sheet_pdf",
       warnings: { ...NO_WARNINGS, open_results: true },
+      issued: true,
     });
     expect(rust.requests).toEqual([]);
     store.dismissPending();
@@ -161,6 +162,8 @@ describe("report exports (T3.8)", () => {
     expect(rust.requests).toEqual([]);
 
     await store.startReport("check_sheet");
+    // Unticking the box while the warnings are open does not change what was confirmed.
+    store.issued = false;
     await store.confirmPending();
     expect(store.pending).toBeNull();
     expect(rust.requests.map((r) => [r.format, r.issued])).toEqual([["check_sheet_pdf", true]]);

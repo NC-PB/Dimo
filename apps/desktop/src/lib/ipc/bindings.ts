@@ -63,7 +63,8 @@ export const commands = {
 	exportProject: (request: ExportRequest) => typedError<number | null, CommandError>(__TAURI_INVOKE("export_project", { request })),
 	/**
 	 *  Asks the export job `id` to stop before its next step. Returns false if no such job runs
-	 *  (it may just have ended); the job then ends with its normal outcome.
+	 *  (it may just have ended). A job that is already writing its file finishes it and ends
+	 *  with its normal outcome.
 	 */
 	cancelJob: (id: JobId) => __TAURI_INVOKE<boolean>("cancel_job", { id }),
 	/**
