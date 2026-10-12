@@ -1,0 +1,14 @@
+[
+  { "mark": "details flow start" },
+  { "wait": 800 },
+  { "fill": ["Part number", "4711-B"] },
+  { "fill": ["Customer", "Muster AG"] },
+  { "fill": ["Revision", " C "] },
+  { "fill": ["Report number", "IR-7"] },
+  { "fill": ["Inspected by", "Anna"] },
+  { "wait": 500 },
+  { "report": "details filled" },
+  { "button": "Save as" },
+  { "wait": 800 },
+  { "report": "final" }
+]

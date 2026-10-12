@@ -14,6 +14,8 @@
 #   5. Tolerance settings (T2.10): a box select without a general tolerance is discarded with
 #      Escape, the project gets ISO 2768-1 class m, the same box is accepted with the general
 #      limits, and a typed balloon is read again with "Re-interpret selected".
+#   6. Project and report details (T3.4): part, revision and report fields are typed into the
+#      side panel and saved; the company name comes from the settings.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -309,6 +311,26 @@ if [[ -s "$TOL" ]]; then
     "$(tjq '.characteristics[] | select(.requirement_text == "Ø8") | "\(.requirement_text) \(.upper_limit) \(.lower_limit) \(.derivation.rule.rule)"')"
 else
   fail "missing or empty: $TOL"
+fi
+
+step "6. project and report details (T3.4)"
+# The company name is set in the settings of this run only; the new project gets it by itself.
+mkdir -p "$WORK/home6/config"
+echo '{"locale":"en","company_name":"Muster GmbH"}' >"$WORK/home6/config/settings.json"
+run_app details "$SCRIPTS/details.json" term home6 \
+  DIMO_DEV_OPEN="$DRAWING" DIMO_DEV_SAVE_AS="$WORK/details.dimo"
+DET="$WORK/details.dimo"
+if [[ -s "$DET" ]]; then
+  DJSON=$(unzip -p "$DET" project.json)
+  djq() { jq -r "$1" <<<"$DJSON"; }
+  expect "details: part data stored" "4711-B Muster AG" \
+    "$(djq '"\(.info.part_number) \(.info.customer)"')"
+  expect "details: revision label stored trimmed" "C" "$(djq '.revisions[0].label')"
+  expect "details: report fields stored, company name copied from the settings" \
+    "IR-7 Anna Muster GmbH" \
+    "$(djq '"\(.report_info.report_number) \(.report_info.inspected_by) \(.report_info.company_name)"')"
+else
+  fail "missing or empty: $DET"
 fi
 
 step "result"
