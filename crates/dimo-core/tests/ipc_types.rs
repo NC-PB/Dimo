@@ -5,14 +5,15 @@
 #![cfg(feature = "specta")]
 #![allow(clippy::unwrap_used)] // Helpers of a test crate; rust.md allows unwrap in tests.
 
-use dimo_core::{AuditEntry, Command, Patch, Project};
+use dimo_core::{AuditEntry, Command, MeasurementState, Patch, Project};
 
 fn export() -> String {
     let types = specta::Types::default()
         .register::<Command>()
         .register::<Patch>()
         .register::<Project>()
-        .register::<AuditEntry>();
+        .register::<AuditEntry>()
+        .register::<MeasurementState>();
     // The unified format fails if a type would need separate serialize and deserialize shapes.
     specta_typescript::Typescript::default()
         .export(&types, specta_serde::Format)
@@ -31,6 +32,8 @@ fn domain_types_export_to_typescript() {
         "export type Timestamp = string",
         "export type Color = string",
         "\"field\": \"nominal\"",
+        "export type MeasurementState =",
+        "export type Verdict =",
     ] {
         assert!(ts.contains(expected), "missing {expected:?} in:\n{ts}");
     }

@@ -9,7 +9,7 @@
 //! - Automation returns [`proposal::Proposal`]s; only an accept command turns them into
 //!   characteristics (ADR 0006).
 //! - Samples and results ([`measurement`]) and report data ([`report`]) are part of the
-//!   project (M3); verdicts are computed, never stored.
+//!   project (M3); verdicts are computed by [`evaluation`], never stored.
 //! - [`history::characteristic_history`] reads the change history of one characteristic from
 //!   the audit log (FR-CHR-10).
 //!
@@ -22,6 +22,7 @@ pub mod decimal;
 pub mod derivation;
 pub mod document;
 pub mod env;
+pub mod evaluation;
 pub mod geometry;
 pub mod history;
 pub mod id;
@@ -51,6 +52,10 @@ pub use derivation::{
 };
 pub use document::{AuditAction, AuditEntry, Document};
 pub use env::{Environment, FixedEnvironment, Timestamp};
+pub use evaluation::{
+    MeasurementState, OverallVerdict, RowState, SampleState, Verdict, VerdictCounts, evaluate,
+    measured_characteristics, measurement_state,
+};
 pub use geometry::{OrientedBox, Point, Rect, Size};
 pub use history::{
     ChangeSource, CharacteristicField, HistoryAction, HistoryEntry, characteristic_history,

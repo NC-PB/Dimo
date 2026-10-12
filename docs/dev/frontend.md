@@ -101,6 +101,11 @@ drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks 
   `explain_characteristic` and `characteristic_history` feed the detail panel
   (`CharacteristicDetail.svelte`). Markers of a derivation are drawn by `ToleranceBadges.svelte`
   only, each with its own shape.
+- Verdicts (T3.3): `measurement_state` returns the verdict of every cell (`pass`, `fail`,
+  `not_evaluated`, `missing`), the effective result type and draft mark per row, and counts with
+  a `pass`, `fail` or `open` verdict per row, per sample and for the report. Rows are the
+  measured characteristics in number order, cells follow the sample order. Call it again after
+  each `project-patched` event; the frontend never compares values with limits (rule 2).
 - Balloon sizes: `viewport/balloons.ts` follows `dimo_core::BalloonMetrics` with the generated
   `BALLOON_METRICS`. The Rust test `balloon_layout` writes `balloon-layout.fixture.json`, and
   `balloons.test.ts` checks the viewport against it, so viewport and ballooned PDF agree.

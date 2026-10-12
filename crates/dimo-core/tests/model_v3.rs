@@ -239,7 +239,9 @@ fn set_results_parses_by_type_as_one_undo_step() {
             &mut env,
         )
         .unwrap();
-    assert_eq!(patch.changes.len(), 5);
+    // Five results, and the first result of each `auto` characteristic pins its type (T3.3,
+    // tests/evaluation.rs).
+    assert_eq!(patch.changes.len(), 8);
     assert_eq!(
         grid(doc.project()),
         [["v9.950", "ok", "-"], ["v-0.5", "not_ok", "v10.05"]]
@@ -553,9 +555,15 @@ fn result_type_is_refused_while_results_of_the_other_type_exist() {
             assert_eq!(*doc.project(), before);
         } else {
             result.unwrap();
+            // `auto` with results keeps the pinned effective type (T3.3).
+            let stored = if result_type == ResultType::Auto {
+                ResultType::Variable
+            } else {
+                result_type
+            };
             assert_eq!(
                 doc.project().characteristic(id).unwrap().result_type,
-                result_type
+                stored
             );
         }
     }

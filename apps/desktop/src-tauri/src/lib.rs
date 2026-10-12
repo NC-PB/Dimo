@@ -7,6 +7,7 @@ pub mod dev;
 pub mod env;
 pub mod export;
 pub mod ipc;
+pub mod measurement;
 pub mod numbering;
 pub mod project;
 pub mod recognition;
@@ -22,7 +23,7 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, numbering.rs, tolerance.rs, dev.rs). \
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, numbering.rs, tolerance.rs, measurement.rs, dev.rs). \
 Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
@@ -59,6 +60,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             tolerance::reinterpret_characteristics,
             tolerance::set_shorter_leg,
             tolerance::import_tolerance_table,
+            measurement::measurement_state,
             settings::app_settings,
             settings::set_app_settings,
             dev::dev_startup,

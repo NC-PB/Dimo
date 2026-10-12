@@ -210,6 +210,7 @@ pub enum Command {
     /// Sets the results of cells from typed or pasted text, as one undo step (FR-MEA-02, M3
     /// decisions 7 and 8). Each text is parsed by the effective result type of its
     /// characteristic; empty text clears the cell. Refused as a whole if one text is invalid.
+    /// A result on an `auto` characteristic pins it to the effective type in the same step.
     SetResults {
         /// Cells in order; a later entry for the same cell wins.
         results: Vec<ResultEntry>,
@@ -220,7 +221,8 @@ pub enum Command {
         cells: Vec<ResultCell>,
     },
     /// Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
-    /// characteristic has results of the other type; nothing is converted.
+    /// characteristic has results of the other type; nothing is converted. `auto` on a
+    /// characteristic with results keeps its effective type pinned.
     SetResultType {
         /// Characteristics to change.
         ids: Vec<CharId>,
@@ -1279,13 +1281,29 @@ fn set_results(tx: &mut Tx<'_>, entries: &[ResultEntry]) -> Result<(), CommandEr
         let Some(characteristic) = tx.project.characteristic(cell.characteristic) else {
             return Err(CommandError::UnknownCharacteristic(cell.characteristic));
         };
+        let effective = characteristic.effective_result_type();
         let value =
-            parse_result(&entry.text, characteristic.effective_result_type()).map_err(|error| {
-                CommandError::InvalidResult {
-                    characteristic: cell.characteristic,
-                    error,
-                }
+            parse_result(&entry.text, effective).map_err(|error| CommandError::InvalidResult {
+                characteristic: cell.characteristic,
+                error,
             })?;
+        // M3 decision 4 (owner addition): a result pins an `auto` characteristic to its
+        // effective type in the same undo step, so a later limit change never flips it.
+        if characteristic.result_type == ResultType::Auto {
+            // Only a project file written before pinning existed can hold results on an
+            // `auto` characteristic; never mix types in one row.
+            if tx
+                .project
+                .results_of(cell.characteristic)
+                .any(|r| r.value.result_type() != effective)
+            {
+                return Err(CommandError::ResultTypeConflict(cell.characteristic));
+            }
+            let before = Box::new(characteristic.clone());
+            let mut after = before.clone();
+            after.result_type = effective;
+            tx.push(Change::CharacteristicChanged { before, after })?;
+        }
         let comment = match &entry.comment {
             Some(comment) => comment.clone(),
             None => tx
@@ -1319,12 +1337,18 @@ fn set_result_type(
         let mut after = before.clone();
         after.result_type = result_type;
         let effective = after.effective_result_type();
+        let has_results = tx.project.results_of(id).next().is_some();
         if tx
             .project
             .results_of(id)
             .any(|r| r.value.result_type() != effective)
         {
             return Err(CommandError::ResultTypeConflict(id));
+        }
+        // M3 decision 4: `auto` never holds while results exist, else a later limit change
+        // would flip the type under them. Back to `auto` keeps the pinned effective type.
+        if has_results {
+            after.result_type = effective;
         }
         if after != before {
             tx.push(Change::CharacteristicChanged { before, after })?;
