@@ -35,3 +35,21 @@
   v(1.5mm)
   text(size: 6.5pt, L.blank_note)
 }
+
+// Who measured the parts, filled in by hand on the printed sheet.
+#v(4mm)
+#block(breakable: false, width: 100%)[
+  #table(
+    columns: (32mm, 60mm, 28mm, 1fr),
+    rows: (auto, 12mm),
+    align: left + horizon,
+    th(""),
+    th(L.name),
+    th(L.date),
+    th(L.signature),
+    text(weight: "bold", L.inspected_by),
+    data.signatures.inspected_by.name,
+    [],
+    [],
+  )
+]

@@ -21,7 +21,7 @@ dimo-default/
 |---|---|
 | `id` | Template id, recorded with every issued report |
 | `version` | Template version, increased whenever the output changes |
-| `labels` | Optional. Label file of the set, a TOML table per language with the same keys |
+| `labels` | Optional. Label file of the set, a TOML table per language with the same keys. Rust reads it for the spreadsheet reports; the Typst documents load the same file themselves (`toml("/labels.toml")` in `dimo-default`) |
 | `[[documents]]` | `name` (selected when rendering) and `main` (the Typst file compiled for it) |
 
 A document is a Typst file. It is compiled in a sandbox: it can read the
@@ -47,7 +47,8 @@ first page (FR-RVC-04, FR-DOC-07).
 
 - **Check sheet**: the characteristics to inspect with empty result columns, for printing. One
   column per sample with its serial, or blank columns (1 to 10, default 3) when the project has
-  no samples yet.
+  no samples yet. Below the table one "Inspected by" line with the name and empty fields for
+  date and signature.
 - **Inspection report**: summary (overall verdict and the number of results per verdict), one
   line per sample (serial, date, inspector, gauges, comment, counts, verdict), the
   characteristic table with the results and their marks, remarks and the signature block
@@ -94,6 +95,9 @@ All values are strings unless noted. Empty text means not set.
 | `flags` | `draft_limits`, `open_results`, `blank_samples` (booleans) |
 
 Only characteristics that are inspected and not rejected are rows (M3 decision 5).
+
+A check sheet never reports results: every cell is `none` with verdict `missing`, every group
+verdict is `open` and all counts are `missing`, whatever results the project holds.
 
 ### `header`
 

@@ -108,3 +108,65 @@ fn check_sheet_without_samples_has_blank_columns() {
     assert!(!text.contains("Part 4"), "{text}");
     assert!(text.contains("Write the serial number"), "{text}");
 }
+
+/// Text of each page separately.
+fn pages(text: &str) -> Vec<&str> {
+    text.split("--- page ").skip(1).collect()
+}
+
+/// Decision 12: twelve samples print in two column blocks, the second with its own heading and
+/// the serials 7 to 12.
+#[test]
+fn twelve_samples_print_in_two_column_blocks() {
+    let Some(engine) = engine() else { return };
+    let project = fixture::with_samples(12);
+    for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
+        let text = pdf_text(&engine, render(&project, kind, Language::En));
+        assert!(text.contains("Samples 1 to 6 of 12"), "{kind:?}: {text}");
+        let second = text
+            .find("Samples 7 to 12 of 12")
+            .unwrap_or_else(|| panic!("{kind:?}: second block missing: {text}"));
+        let block = &text[second..];
+        assert!(
+            block.contains("Part 7 Part 8 Part 9 Part 10 Part 11 Part 12"),
+            "{block}"
+        );
+        assert!(
+            block.contains("S-007 S-008 S-009 S-010 S-011 S-012"),
+            "{block}"
+        );
+        assert!(!block.contains("S-006"), "{block}");
+    }
+}
+
+/// 300 rows by 10 samples: every page carries the page header with page x of y, and every page
+/// with characteristic rows starts them below a repeated table header.
+#[test]
+fn large_report_repeats_page_and_table_headers() {
+    let Some(engine) = engine() else { return };
+    let project = fixture::large(300, 10);
+    for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
+        let text = pdf_text(&engine, render(&project, kind, Language::De));
+        let pages = pages(&text);
+        let count = pages.len();
+        assert!(count >= 10, "{kind:?}: {count} pages");
+        for (i, page) in pages.iter().enumerate() {
+            assert!(
+                page.contains(&format!("{} von {count}", i + 1)),
+                "{kind:?} page {}: {page}",
+                i + 1
+            );
+            assert!(page.contains("BR-2041"), "{kind:?} page {}", i + 1);
+            if page.contains("±0.05") {
+                assert!(
+                    page.contains("Nr. Anforderung Nennmaß"),
+                    "{kind:?} page {} has rows without the table header: {page}",
+                    i + 1
+                );
+            }
+        }
+        // Second column block with samples 7 to 10.
+        assert!(text.contains("Teile 7 bis 10 von 10"), "{kind:?}");
+        assert!(text.contains("S-007 S-008 S-009 S-010"), "{kind:?}");
+    }
+}

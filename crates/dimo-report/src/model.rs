@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use dimo_core::{
     AttributeValue, CharId, Characteristic, CharacteristicKind, Classification, DerivationRule,
     MeasurementResult, MeasurementState, OverallVerdict, Project, ReportKind, ResultType,
-    ResultValue, SampleId, TableRef, Timestamp, Unit, Verdict, VerdictCounts,
+    ResultValue, RowState, SampleId, TableRef, Timestamp, Unit, Verdict, VerdictCounts,
     measured_characteristics, measurement_state,
 };
 use schemars::JsonSchema;
@@ -53,7 +53,8 @@ pub struct ReportOptions {
     /// 1 to [`MAX_BLANK_COLUMNS`]. Ignored otherwise.
     pub blank_columns: u8,
     /// Date used when the report info has no report date: the project modification date from
-    /// the project file (decision 14). Never the clock.
+    /// the project file (decision 14). Never the clock. Its UTC calendar date is printed, so a
+    /// file saved late in the evening in Europe may show the next day.
     pub fallback_date: Option<Timestamp>,
 }
 
@@ -379,7 +380,12 @@ impl ReportModel {
             language: options.language,
         };
         let check_sheet = options.kind == ReportKind::CheckSheet;
-        let state = measurement_state(project);
+        let state = if check_sheet {
+            // Nothing is printed as measured on a check sheet: every cell counts as missing.
+            unmeasured(measurement_state(project))
+        } else {
+            measurement_state(project)
+        };
         let header = header(project, options);
 
         let blank_samples = check_sheet && project.samples.is_empty();
@@ -415,13 +421,7 @@ impl ReportModel {
                         })
                         .collect()
                 };
-                fmt.row(
-                    c,
-                    row_state.draft,
-                    row_state.verdict,
-                    row_state.counts,
-                    cells,
-                )
+                fmt.row(c, row_state, cells)
             })
             .collect();
 
@@ -558,6 +558,28 @@ fn header(project: &Project, options: &ReportOptions) -> Header {
         report_number: info.report_number.clone(),
         report_date,
     }
+}
+
+/// The evaluation with every cell missing and every group open, for a check sheet: its data
+/// never reports a verdict, whatever results the project holds.
+fn unmeasured(mut state: MeasurementState) -> MeasurementState {
+    let missing = |n: usize| VerdictCounts {
+        missing: u32::try_from(n).unwrap_or(u32::MAX),
+        ..VerdictCounts::default()
+    };
+    let (rows, samples) = (state.rows.len(), state.samples.len());
+    for row in &mut state.rows {
+        row.cells.iter_mut().for_each(|c| *c = Verdict::Missing);
+        row.counts = missing(samples);
+        row.verdict = OverallVerdict::Open;
+    }
+    for sample in &mut state.samples {
+        sample.counts = missing(rows);
+        sample.verdict = OverallVerdict::Open;
+    }
+    state.counts = missing(rows.saturating_mul(samples));
+    state.verdict = OverallVerdict::Open;
+    state
 }
 
 /// `count` blank check sheet columns for a project without samples.
@@ -734,6 +756,8 @@ impl Formatter {
     /// A deviation with an explicit sign: `+0.1`, `-0.2`, `0`.
     fn deviation(&self, value: Option<rust_decimal::Decimal>) -> String {
         value.map_or_else(String::new, |v| {
+            // A zero deviation prints without sign, also when stored as -0.
+            let v = if v.is_zero() { v.abs() } else { v };
             if v.is_sign_positive() && !v.is_zero() {
                 format!("+{}", self.decimal(v))
             } else {
@@ -782,14 +806,7 @@ impl Formatter {
         }
     }
 
-    fn row(
-        &self,
-        c: &Characteristic,
-        draft: bool,
-        verdict: OverallVerdict,
-        row_counts: VerdictCounts,
-        cells: Vec<Cell>,
-    ) -> Row {
+    fn row(&self, c: &Characteristic, state: &RowState, cells: Vec<Cell>) -> Row {
         Row {
             number: c.number.to_string(),
             kind: c.kind,
@@ -807,16 +824,17 @@ impl Formatter {
                 .derivation
                 .as_ref()
                 .map_or_else(String::new, |d| self.rule_detail(&d.rule)),
-            draft,
+            draft: state.draft,
             method: c.inspection.method.clone(),
             gauge: c.inspection.gauge.clone(),
             classification: c.classification,
-            result_type: match c.effective_result_type() {
+            // The evaluation holds the effective type, never auto.
+            result_type: match state.result_type {
                 ResultType::Attribute => MeasureType::Attribute,
                 ResultType::Variable | ResultType::Auto => MeasureType::Variable,
             },
-            verdict: group_verdict(verdict),
-            counts: counts(row_counts),
+            verdict: group_verdict(state.verdict),
+            counts: counts(state.counts),
             cells,
         }
     }
@@ -868,6 +886,7 @@ mod tests {
         assert_eq!(de.deviation(Some(d("-0.2"))), "-0,2");
         assert_eq!(en.deviation(Some(d("0"))), "0");
         assert_eq!(en.deviation(None), "");
+        assert_eq!(en.deviation(Some(-d("0.00"))), "0.00");
     }
 
     #[test]

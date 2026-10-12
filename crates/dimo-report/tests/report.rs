@@ -149,6 +149,22 @@ fn check_sheet_with_samples_prints_serials_and_no_results() {
     let serials: Vec<&str> = model.samples.iter().map(|s| s.serial.as_str()).collect();
     assert_eq!(serials, ["S-001", "S-002", "S-003"]);
     assert!(!model.flags.blank_samples && !model.flags.open_results);
+    // The fixture has failing results; a check sheet reports none of them.
+    assert_eq!(model.summary.verdict, GroupVerdict::Open);
+    assert_eq!(model.summary.counts.missing, "24");
+    assert_eq!(model.summary.counts.fail, "0");
+    assert!(
+        model
+            .samples
+            .iter()
+            .all(|s| s.verdict == GroupVerdict::Open)
+    );
+    assert!(
+        model
+            .rows
+            .iter()
+            .all(|r| r.verdict == GroupVerdict::Open && r.counts.missing == "3")
+    );
     for row in &model.rows {
         assert_eq!(row.cells.len(), 3);
         assert!(
