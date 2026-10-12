@@ -21,8 +21,8 @@
 //! 5. Marks legend, notes, remarks, signature fields.
 //!
 //! Page header and footer carry the company, title, part, report number, date, drawing and page
-//! numbers. The document properties are constant and the ZIP entries take their time from the
-//! creation date, so equal models give identical bytes (rule 11).
+//! numbers. The document properties are constant and the ZIP entries carry the fixed DOS
+//! epoch time (1980-01-01), so equal models give identical bytes (rule 11).
 
 use std::fmt::Write as _;
 
@@ -50,7 +50,7 @@ const MAX_NUMBER_DIGITS: usize = 15;
 const MAX_SHEET_NAME: usize = 31;
 
 /// Longest text of one part of the page header or footer (Excel allows 255 characters in all).
-const MAX_HEADER_PART: usize = 60;
+const MAX_HEADER_PART: usize = 36;
 
 /// Print scale when the samples are printed in column blocks.
 const BLOCK_PRINT_SCALE: u16 = 60;
@@ -238,8 +238,7 @@ impl<'a> Builder<'a> {
         }
         let (first_head, data_start) = self.table_header(sheet, row)?;
         let after_table = self.table_rows(sheet, data_start, result_col)?;
-        row = self.footer_block(sheet, after_table + 1)?;
-        let _ = row;
+        self.footer_block(sheet, after_table + 1)?;
 
         self.print_setup(sheet, title, first_head, data_start - 1)?;
         sheet.set_freeze_panes(0, 2)?;
@@ -576,7 +575,7 @@ impl<'a> Builder<'a> {
         sheet.write_string_with_format(row, 1, labels.get("approval")?, &bold)?;
         sheet.merge_range(row, 2, row, 4, labels.get("name")?, &head)?;
         sheet.merge_range(row, 5, row, 6, labels.get("date")?, &head)?;
-        sheet.merge_range(row, 7, row, 9, labels.get("signature")?, &head)?;
+        sheet.write_string_with_format(row, 7, labels.get("signature")?, &head)?;
         row += 1;
         let sigs = &model.signatures;
         let mut lines = vec![("inspected_by", &sigs.inspected_by)];
@@ -588,7 +587,7 @@ impl<'a> Builder<'a> {
             sheet.write_string_with_format(row, 1, labels.get(key)?, &bold)?;
             sheet.merge_range(row, 2, row, 4, &sig.name, &boxed)?;
             sheet.merge_range(row, 5, row, 6, &sig.date, &boxed)?;
-            sheet.merge_range(row, 7, row, 9, "", &boxed)?;
+            sheet.write_blank(row, 7, &boxed)?;
             sheet.set_row_height(row, 32.0)?;
             row += 1;
         }
@@ -776,7 +775,19 @@ fn escape(text: &str) -> String {
     text.replace('&', "&&")
 }
 
-/// Escaped text cut to [`MAX_HEADER_PART`] characters.
+/// Escaped text of at most [`MAX_HEADER_PART`] characters (after escaping, so the whole header
+/// stays below the 255 characters Excel allows).
 fn cut(text: &str) -> String {
-    escape(&text.chars().take(MAX_HEADER_PART).collect::<String>())
+    let mut out = String::new();
+    for c in text.chars() {
+        let add = if c == '&' { 2 } else { 1 };
+        if out.chars().count() + add > MAX_HEADER_PART {
+            break;
+        }
+        if c == '&' {
+            out.push('&');
+        }
+        out.push(c);
+    }
+    out
 }

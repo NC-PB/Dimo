@@ -199,6 +199,26 @@ fn a_template_without_labels_is_refused() {
     ));
 }
 
+/// Long and `&` containing header fields keep the page header within Excel's 255 characters.
+#[test]
+fn long_header_fields_keep_the_page_header() {
+    let mut project = fixture::project();
+    project.info.part_name = "A&B ".repeat(80);
+    project.info.customer = "&".repeat(300);
+    project.report_info.company_name = "Company & Sons ".repeat(30);
+    let bytes = xlsx(&project, ReportKind::InspectionReport, Language::En);
+    let sheet = read_entry(&bytes, "xl/worksheets/sheet1.xml");
+    let start = sheet.find("<oddHeader>").expect("header") + "<oddHeader>".len();
+    let end = sheet.find("</oddHeader>").expect("header end");
+    let header = sheet[start..end].replace("&amp;", "&");
+    assert!(
+        header.chars().count() <= 255,
+        "{} chars",
+        header.chars().count()
+    );
+    assert!(sheet.contains("<oddFooter>"));
+}
+
 #[test]
 fn large_report_300_rows_by_10_samples() {
     let project = fixture::large(300, 10);
