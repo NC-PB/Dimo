@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; waves 1 and 2 running: T3.1 to T3.4 done, T3.5 and T3.6 next
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.4 and T3.6 done; T3.5 and T3.7 running, T3.8 after T3.5
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
@@ -69,9 +69,9 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.2 Typst report rendering | done | `dimo_report::render_pdf` with a sandboxed Typst world (template files, `/data.json`, Open Sans Regular and Bold only), embedded template sets, placeholder `dimo-default`. Typst 0.15.1, 166 crates, 7 advisories ignored with reasons, lock age ok. Spike numbers in `spikes/typst-report/RESULTS.md` (accepted by the owner) |
 | T3.3 Evaluation and verdicts | done | `dimo_core::evaluation` (verdicts, summaries, overall), result type pinning, query `measurement_state` (300 x 10 cells: 5.4 ms mean quiet, test asserts fastest of 30 under 20 ms). Two property tests at 10,000 cases |
 | T3.4 Project and report details | done | Project and report panel in the Drawing side panel, company name in Settings; new projects start with company name and audit user as inspector (set by Rust at creation, no undo step). Owner: check German wording. Measure view placement moves to T3.5 |
-| T3.5 Measurement grid | todo | Wave 2 |
-| T3.6 Report model and default templates | todo | Wave 2 |
-| T3.7 XLSX check sheet and inspection report | todo | Wave 3 |
+| T3.5 Measurement grid | in progress | Wave 2 |
+| T3.6 Report model and default templates | done | `ReportModel::build` (all values preformatted, codes for verdicts and rules), schema `docs/schema/report-data.schema.json`, `dimo-default` v1 (check sheet, inspection report, `labels.toml` en/de), PDF text snapshots in dimo-cli. Clean room audit passed. Owner: German labels (Prüfblatt, Prüfbericht, Änderungsstand, Geprüft von, Freigegeben von, i.O./n.i.O.) and empty "Approved by" date |
+| T3.7 XLSX check sheet and inspection report | in progress | Wave 3 |
 | T3.8 Report export in the app | todo | Wave 3 |
 | T3.9 Follow-ups from waves 2 and 3 | todo | Wave 4 |
 | T3.10 User guide and manual test | todo | Wave 4 |
@@ -94,6 +94,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-12 | Report templates: labels in `labels.toml` inside the template set (optional `labels` key in `template.toml`, reused by XLSX); verdicts, rules and attribute results passed as codes, the template owns the words; 6 samples per column block, each block on a new page; "Inspected by" date is the report date, "Approved by" date stays empty; fallback date is the manifest modification date passed by the caller (UTC calendar date); check sheet data carries no verdicts and has an "Inspected by" line; ligatures off; German verdicts i.O./n.i.O.; data `format_version` 1, raised only when a field is removed or changes meaning | M3 decisions 9 to 15, D-32 | T3.6, agent |
 | 2026-10-12 | Release profile: fat LTO, `codegen-units = 1`, `opt-level = "s"` for Typst and its heaviest dependencies (stripped app 50.7 MB to 37.0 MB in the spike). Seventh deny ignore RUSTSEC-2024-0449 (unsafe-libyaml unmaintained, through serde_yaml in Typst) accepted | T3.2 measurements | owner |
 | 2026-10-12 | Typst integration: 0.15.1 with `typst-layout` as direct dependency (`PagedDocument` not re-exported); language as `sys.inputs.lang`, data always `/data.json` (reserved); PDF creation date only from the request, none if not given; PDF id is SHA-256 of all render inputs; Open Sans lacks `⌀` and check/cross/circle glyphs, so templates map `⌀` to `Ø` and draw verdict marks as shapes; Typst cannot be cancelled mid render (about 0.2 s for 300 x 10), T3.8 cancels between steps; PDF text snapshots deferred to T3.6 (dimo-report cannot use dimo-pdf) | D-30, NFR-SEC-05, FR-EXP-11 | T3.2, agent |
 | 2026-10-12 | Evaluation: an empty group is `open`; a cell is evaluated by the kind of the stored value, a variable value without limits is `not_evaluated`; every set result on an `auto` characteristic pins it, clearing pins nothing; `SetResultType auto` with results stores the effective type; rows carry `draft` for limits from draft tables; rows sorted by display number. Timing test asserts the fastest of 30 runs (machine load from parallel agents) | M3 decisions 2 to 5 | T3.3, agent |
