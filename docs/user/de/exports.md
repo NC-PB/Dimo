@@ -50,20 +50,48 @@ Prüfmittel. Der Kopf jeder Seite zeigt Firma, Teil, Kunde, Auftrag, Zeichnungsd
 Berichtsnummer, Datum und Seite. Die Werte stammen aus
 [Projekt- und Berichtsdaten](project-details.md).
 
-- **Prüfblatt**: leere Ergebnisspalten zum Ausdrucken und Ausfüllen von Hand. Hat das Projekt
-  Muster, gibt es eine Spalte je Muster mit seiner Seriennummer; ohne Muster die in den Optionen
-  eingestellte Zahl leerer Ergebnisspalten.
-- **Prüfbericht**: Übersicht (Gesamtergebnis und Anzahl i.O., n.i.O., nicht bewertet und
-  fehlend), die Muster mit Datum, Prüfer, Prüfmitteln und ihrem Ergebnis, die Ergebnisse mit
-  ihren Zeichen, Bemerkungen und die Unterschriften (geprüft von, freigegeben von). Wie die
-  Bewertungen entstehen, steht unter [Ergebnisse eingeben](measuring.md).
+- **Prüfblatt**: leere Ergebnisspalten zum Ausdrucken und Ausfüllen von Hand und eine Zeile für
+  den Prüfer. Hat das Projekt Muster, gibt es eine Spalte je Muster mit seiner Seriennummer; ohne
+  Muster die in den Optionen eingestellte Zahl leerer Ergebnisspalten, mit dem Hinweis, die
+  Seriennummer jedes Teils in den Spaltenkopf zu schreiben. Das Prüfblatt zeigt keine
+  Bewertungen.
+- **Prüfbericht**: eine Übersicht (Gesamtergebnis, Anzahl der Merkmale und Muster sowie Anzahl
+  i.O., n.i.O., nicht bewertet und fehlend), ein Musterblock mit einer Zeile je Muster
+  (Seriennummer, Datum, Prüfer, Prüfmittel, Bemerkung, seine eigenen Zahlen und seine Bewertung),
+  die Ergebnistabelle mit dem Zeichen jeder Bewertung und der Bewertung jeder Zeile, eine Legende
+  der Zeichen, Bemerkungen und der Unterschriftenblock. Wie die Bewertungen entstehen, steht unter
+  [Ergebnisse eingeben](measuring.md).
+
+Der Unterschriftenblock hat zwei Zeilen, **Geprüft von** und **Freigegeben von**, jeweils mit Name,
+Datum und einem leeren Feld für die handschriftliche Unterschrift. Die Namen kommen aus den
+Berichtsfeldern. Das Datum bei „Geprüft von“ ist das Berichtsdatum; das Datum bei „Freigegeben von“
+bleibt leer und wird von Hand eingetragen. Digitale Signaturen gibt es nicht. Ist das
+Gesamtergebnis offen, sagt der Bericht, dass nicht alle Ergebnisse erfasst und bewertet sind.
+Nicht bestandene Zellen und Muster haben einen fetten Rand.
 
 Wähle unter **Format** jedes Berichts **PDF** oder **Excel**. Beide enthalten dieselben Werte.
-Das PDF ist A4 quer; mehr als sechs Muster werden in Blöcken von sechs Spalten gedruckt. Die
-Excel-Datei hat ein Blatt mit dem Namen des Berichts, Zahlen als Zahlenzellen mit den
-eingegebenen Stellen und die Zeichen als Text mit farbiger Füllung.
 
-Grenzen aus Toleranztabellen, die noch Entwürfe sind, sind im Bericht mit einer Fußnote markiert.
+- **PDF**: A4 quer, Kopf auf jeder Seite, Tabellenkopf auf jeder Seite wiederholt. Bei mehr als
+  sechs Mustern wird die Tabelle in Blöcken von sechs Musterspalten gedruckt, jeder Block auf
+  einer neuen Seite, mit wiederholten Merkmalsspalten und einer Überschrift wie „Teile 7 bis 12
+  von 12“.
+- **Excel**: ein Blatt mit dem Namen des Berichts. Werte sind Zahlenzellen mit den eingegebenen
+  Stellen; das Zeichen (✓ ✗ ○) gehört zum Zellformat, die Zelle bleibt also eine Zahl.
+  Bewertungen und i.O.-/n.i.O.-Ergebnisse sind Text mit dem Zeichen. Die Zellen haben zusätzlich
+  eine Füllfarbe (grün, rot, gelb, grau für offen). Die Spalten A und B sind fixiert. Das Blatt ist
+  für A4 quer eingerichtet, mit auf jeder gedruckten Seite wiederholten Kopfzeilen; bei mehr als
+  sechs Mustern wird mit 60 Prozent gedruckt, mit einem Seitenumbruch nach jeweils sechs
+  Musterspalten und wiederholten Merkmalsspalten. Der Prüfbericht enthält für jedes Muster die
+  Anzahl i.O., n.i.O., nicht bewertet und fehlend, wie das PDF.
+
+Die Wörter auf den Berichten richten sich nach der Berichtssprache des Exports (Englisch oder
+Deutsch), nicht nach der Sprache der App. Auf Deutsch heißen die Bewertungen **i.O.** und
+**n.i.O.**, auf Englisch **Pass** und **Fail**. In den deutschen Berichten heißen die Muster
+„Teile“, und der Revisionsstand heißt „Änderungsstand“.
+
+Grenzen aus Toleranztabellen, die noch Entwürfe sind, sind in der Regelspalte mit einem Stern
+markiert, und der Bericht sagt in einer Fußnote, dass diese Grenzen aus einer Entwurfstabelle
+stammen und noch nicht verifiziert sind.
 
 Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es leer, gilt das Datum der
 letzten Änderung am Projekt. Es hängt nie vom Tag des Exports ab, dasselbe Projekt ergibt also
@@ -76,7 +104,8 @@ Dinge in einem Schritt:
 
 1. Die Nummerierung wird gesperrt, falls sie es noch nicht ist.
 2. Ein leerer Firmenname wird aus den **Einstellungen** ergänzt und ein leeres „geprüft von“ mit
-   deinem Benutzernamen. Der Bericht zeigt diese Werte bereits.
+   deinem Benutzernamen. Der Bericht zeigt diese Werte bereits. Ein normaler Export druckt das
+   Projekt, wie es ist, und lässt leere Felder leer.
 3. Das Projekt vermerkt den freigegebenen Bericht: welcher Bericht, die Vorlage und ihre Version,
    das Dateiformat, den Änderungsstand der Zeichnung und deren SHA-256, den SHA-256 der
    geschriebenen Datei und den Exportzeitpunkt. Der Exportzeitpunkt steht nur im Projekt, nicht im
@@ -91,8 +120,10 @@ nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann er
 
 Vor einem Export als freigegeben warnt Dimo, wenn Grenzen aus Entwurfstabellen stammen, wenn
 Ergebnisse fehlen oder nicht bewertet sind (Prüfbericht) oder wenn sich Grenzen oder
-Ergebnisarten nach dem letzten freigegebenen Bericht geändert haben. Du kannst trotzdem
-exportieren oder zurückgehen. Die Warnungen verhindern den Export nie.
+Ergebnisarten nach dem letzten freigegebenen Bericht geändert haben
+([Wenn sich Grenzmaße ändern](measuring.md#wenn-sich-grenzmaße-ändern)). Du kannst trotzdem
+exportieren oder zurückgehen. Die Warnungen verhindern den Export nie. Beide Berichte können
+freigegeben werden, als PDF und als Excel; jede freigegebene Datei wird für sich vermerkt.
 
 ## PDF mit Ballons
 

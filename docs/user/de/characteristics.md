@@ -67,7 +67,9 @@ lesen. Einzelheiten: [Toleranzen](tolerances.md).
 
 Die Tabelle hat keine Löschtaste. Wähle die Zeilen aus und verwende **Löschen** in der
 Werkzeugleiste über der Zeichnung, oder wähle die Ballons auf der Zeichnung aus und drücke
-**Entfernen**. Die Ballons werden mit ihren Merkmalen gelöscht, und ⌘Z holt alles zurück.
+**Entfernen**. Die Ballons werden mit ihren Merkmalen gelöscht, und ⌘Z holt alles zurück. Eingegebene Ergebnisse
+eines Merkmals werden im selben Schritt mitgelöscht, ohne Rückfrage, und ⌘Z bringt sie zurück
+([Ergebnisse eingeben](measuring.md)).
 
 ## Reihenfolge ändern
 

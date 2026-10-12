@@ -13,7 +13,7 @@
 | Box select (M2 exit criterion) | box select with the tolerance engine on every truth region of the corpus and of synth seeds 1 to 40, per callout category; fails below 99 percent of the common callouts, limits required (angles under a general tolerance read with the shorter leg of the truth, as typed on the card). Report: `cargo run -p dimo-cli -- eval box-select` | `dimo-detect/src/evaluation.rs`, `dimo-detect/tests/box_select_corpus.rs`, `dimo-cli/tests/box_select_evaluation.rs`, run by `check.sh` in CI |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
 | Frontend units | Vitest | `apps/desktop/src/**/*.test.ts` |
-| End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` |
+| End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` to `m3` |
 | User guide shortcut reference | vitest compares the generated tables in `docs/user/<lang>/shortcuts.md` with `shortcuts.ts` and the message files; a mismatch prints the tables to paste | `apps/desktop/src/lib/shortcuts-docs.test.ts` |
 | Performance | timed harness with a synthetic 50 sheet PDF, run by `scripts/perf.sh` (release build, takes minutes, not in CI) | `crates/dimo-pdf/examples/perf.rs`, generator `dimo-synth --stress`, results in `docs/perf/` |
 
@@ -59,7 +59,7 @@ measurements and screenshots.
 ```
 
 It builds the app and the `text_runs` example, starts the Vite dev server (port 1420 must be
-free, so stop `tauri dev` first), and runs the app three times. The window opens on screen and
+free, so stop `tauri dev` first), and runs the app several times. The window opens on screen and
 the test needs a desktop session. It is not part of `check.sh`.
 
 1. Main flow on `corpus/drawings/test_drawing_1.pdf`: place five balloons (one by dragging a box,
@@ -76,6 +76,16 @@ the test needs a desktop session. It is not part of `check.sh`.
 4. Numbering (`scripts/e2e/numbering.json`): place five balloons, draw a zone grid frame, preview
    and apply "sheet, zone, reading order", draw a view, preview and apply "clockwise per view",
    undo. The ghost numbers of each preview must equal the numbers the apply then gives.
+5. Tolerance settings (`tolerance.json`): box select without and with a general tolerance, and
+   re-interpret.
+6. Project and report details (`details.json`): fields typed into the side panel, company name
+   and inspector from the settings.
+7. Measurement grid (`measure.json`, `measure-setup.json`): three samples, one column typed with
+   the keyboard only, a 5 by 3 block pasted (a synthetic paste event), undone and redone.
+8. Report export (`report-export.json`, `report-cancel.json`): the inspection report as PDF and
+   XLSX twice (byte identical), a cancelled export that leaves no file. The PDF text is read
+   back with PDFium (`text_runs`): overall verdict, summary counts and the verdict of each
+   sample; the XLSX shared strings hold the verdict words.
 
 Work happens in a temporary folder below the target directory with its own `DIMO_DEV_HOME`, so
 your settings and your own unsaved work are untouched. The language is forced to English because
@@ -89,7 +99,9 @@ the script compares.
 
 What the script cannot reach (native file dialogs, the close prompt, pinch zoom feel, looking at
 the result) is in `docs/dev/manual-test-m1.md`. Run it before a release and after changes to
-dialogs, window events or viewport gestures.
+dialogs, window events or viewport gestures. `docs/dev/manual-test-m2.md` covers box select and
+the tolerance views, `docs/dev/manual-test-m3.md` the measurement grid with the real clipboard,
+the reports in a spreadsheet program and in print, and the German wording.
 
 ### Other platforms
 

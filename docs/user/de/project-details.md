@@ -40,6 +40,13 @@ ihn auf jeden Bericht.
 | Freigegeben von | Wer den Bericht freigegeben hat |
 | Bemerkungen | Freier Text, der auf dem Bericht steht |
 
+„Geprüft von“ und „Freigegeben von“ stehen im Unterschriftenblock des Prüfberichts. Das Datum bei
+„Geprüft von“ ist das Berichtsdatum; „Freigegeben von“ bekommt kein Datum, das schreibst du von
+Hand. Das ist getrennt vom Prüfer jedes Musters, den du im Bereich **Muster** der Seitenleiste einstellst
+([Ergebnisse eingeben](measuring.md)). Ist das Berichtsdatum leer, druckt der Bericht das Datum der
+letzten Änderung am Projekt ([Exporte](exports.md)). Das Feld **Revisionsstand** heißt auf den
+deutschen Berichten „Änderungsstand“.
+
 Leere Felder bleiben auf dem Bericht leer. Ein neues Projekt beginnt mit dem Firmennamen aus den Einstellungen und mit dem Benutzernamen der Einstellungen (oder deines Systems) als Prüfer. Dimo ändert ein bestehendes Projekt nicht, wenn du es öffnest.
 
 ### Firmenname

@@ -47,20 +47,41 @@ gauge. The header on every page shows the company, part, customer, order, drawin
 revision, the start of the SHA-256 of the drawing file (in full on the first page), report
 number, date and page. The values come from [Project and report details](project-details.md).
 
-- **Check sheet**: empty result columns to print and fill in by hand. With samples in the
-  project there is one column per sample with its serial; without samples the number of blank
-  result columns set in the options.
-- **Inspection report**: summary (overall result and counts of pass, fail, not evaluated and
-  missing), the samples with date, inspector, gauges and their result, the results with their
-  marks, remarks and the signature block (inspected by, approved by). How verdicts are found is
-  explained in [Entering results](measuring.md).
+- **Check sheet**: empty result columns to print and fill in by hand, and a line for the
+  inspector. With samples in the project there is one column per sample with its serial; without
+  samples the number of blank result columns set in the options, with a note to write the serial
+  of each part in the column head. The check sheet shows no verdicts.
+- **Inspection report**: a summary (overall verdict, number of characteristics and samples, and
+  counts of pass, fail, not evaluated and missing), a sample block with one line per sample (serial,
+  date, inspector, gauges, comment, its own counts and verdict), the table of results with the
+  mark of every verdict and the verdict of every row, a legend of the marks, remarks, and the
+  signature block. How verdicts are found is explained in [Entering results](measuring.md).
 
-Choose **PDF** or **Excel** under **Format** of each report. Both contain the same values. The
-PDF is A4 landscape; more than six samples are printed in blocks of six columns. The Excel file
-has one sheet named after the report, numbers as number cells with the digits you typed, and
-the marks as text with a colored fill.
+The signature block has two lines, **Inspected by** and **Approved by**, each with name, date and
+an empty field for a handwritten signature. The names come from the report fields. The date of
+"Inspected by" is the report date; the date of "Approved by" stays empty to be written by hand.
+There are no digital signatures. If the overall verdict is open, the report says that not every
+result is entered and evaluated. The failing cells and the failing samples have a bold border.
 
-Limits from tolerance tables that are still drafts are marked in the report with a footnote.
+Choose **PDF** or **Excel** under **Format** of each report. Both contain the same values.
+
+- **PDF**: A4 landscape, header on every page, table header repeated on every page. With more than
+  six samples the table is printed in blocks of six sample columns, each block on a new page, with
+  the characteristic columns repeated and a heading such as "Samples 7 to 12 of 12".
+- **Excel**: one sheet named after the report. Values are number cells with the digits you typed;
+  the mark (✓ ✗ ○) is part of the cell format, so the cell stays a number. Verdicts and OK / not OK
+  results are text with the mark. Cells have a colored fill as well (green, red, yellow, grey for
+  open). Columns A and B are frozen. The sheet is set up for A4 landscape with the header rows
+  repeated on every printed page; with more than six samples it prints at 60 percent with a page
+  break after every six sample columns, and the characteristic columns repeat. The inspection
+  report carries the counts of pass, fail, not evaluated and missing for every sample, as the PDF.
+
+Words on the reports follow the report language of the export (English or German), not the
+language of the app. In German the verdicts read **i.O.** and **n.i.O.**, in English **Pass** and
+**Fail**.
+
+Limits from tolerance tables that are still drafts are marked in the rule column with an asterisk
+and the report says in a footnote that these limits are from a draft table and not yet verified.
 
 The date printed on a report is the report date of the project. If it is empty, the date of the
 last change of the project is used. It never depends on the day you export, so the same project
@@ -73,7 +94,8 @@ written:
 
 1. The numbering is locked, if it is not locked yet.
 2. An empty company name is filled in from **Settings** and an empty "inspected by" with your
-   user name. The report already shows these values.
+   user name. The report already shows these values. A normal export prints the project as it
+   is and leaves empty fields empty.
 3. The project records the issued report: which report, the template and its version, the file
    format, the drawing revision and its SHA-256, the SHA-256 of the written file and the export
    time. The export time is kept in the project only, it is not printed in the report.
@@ -87,7 +109,9 @@ no longer shows the project; export again.
 
 Before an issued export Dimo warns when limits come from draft tables, when results are missing
 or not evaluated (inspection report), or when limits or result types changed after the last
-issued report. You can export anyway or go back. The warnings never prevent the export.
+issued report ([When limits change](measuring.md#when-limits-change)). You can export anyway or
+go back. The warnings never prevent the export. Both reports can be issued, as PDF and as Excel;
+every issued file is recorded on its own.
 
 ## Ballooned PDF
 
