@@ -23,6 +23,7 @@ in the characteristic table.
 | [Sheets: rotation, unit and scale](sheets.md) | Properties of every sheet |
 | [Numbering strategies, zones and views](numbering.md) | Number by zone, view or type, preview, sub-numbers, locked numbering |
 | [Project and report details](project-details.md) | Part, customer, revision, drawing hash, report header and approval fields |
+| [Entering results](measuring.md) | Samples, the measurement grid, keyboard entry, pasting, pass/fail marks, result types |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
 | [Exports](exports.md) | Ballooned PDF, CSV and Excel list, issued drawings |
 | [Tolerances](tolerances.md) | Rules, general tolerance, custom tables, explanations, draft tables, history |
@@ -152,6 +153,7 @@ start. The tolerance rules of the project (step 3) are in the same view. Details
 
 - Open the project later with **Open project** (⌘O) and carry on. Every change you made is recorded
   in the change log inside the project.
-- Not yet in this version: searching the drawing automatically, inspection results and
-  reports. The **Review** and **Measure** views show a note that they
-  come in a later version.
+- Enter the measured values of your parts in the **Measure** view (⌘3), see
+  [Entering results](measuring.md).
+- Not yet in this version: searching the drawing automatically and inspection reports. The
+  **Review** view shows a note that it comes in a later version.

@@ -2,7 +2,7 @@
 
 Das Feld **Projekt und Bericht** in der Seitenleiste enthält die Daten, die Teil, Zeichnung und
 Prüfbericht kennzeichnen. Es ist sichtbar, solange ein Projekt offen ist, unterhalb der
-Blatteigenschaften. Die Daten liegen im Projekt und stehen in Kopfzeile und Unterschriftsblock der
+Blatteigenschaften und in der Seitenleiste der Ansicht Messen. Die Daten liegen im Projekt und stehen in Kopfzeile und Unterschriftsblock der
 Berichte.
 
 Jedes Feld wird gespeichert, wenn du es verlässt oder Enter drückst. Jede Änderung ist ein Schritt

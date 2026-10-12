@@ -6,210 +6,165 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 
 /** Commands */
 export const commands = {
-  /**  Returns version, build profile and PDFium availability of the running app. */
-  appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
-  /**
-   *  Declares the tiles of a document the viewport still wants. Queued tile requests outside
-   *  `ranges` are answered with `204 No Content` and not rendered; an empty list cancels every
-   *  queued request of the document. See "Cancellation" in `dimo_pdf::tiles`.
-   */
-  setTileInterest: (doc: string, ranges: TileRange[]) =>
-    typedError<null, CommandError>(__TAURI_INVOKE("set_tile_interest", { doc, ranges })),
-  /**
-   *  The current project, for a frontend that just started listening to the project events.
-   *  Also hands out, once, the notice of a project restored at startup.
-   */
-  projectState: () => typedError<ProjectLoaded, CommandError>(__TAURI_INVOKE("project_state")),
-  /**
-   *  Lets the user pick a PDF and creates a new, unsaved project from it (FR-DOC-07).
-   *  Returns `false` if the dialog was cancelled. Unsaved changes of the open project are
-   *  refused with `unsaved_changes` unless `discard` is set; ask the user first.
-   */
-  newProject: (discard: boolean) =>
-    typedError<boolean, CommandError>(__TAURI_INVOKE("new_project", { discard })),
-  /**
-   *  Lets the user pick a project file and opens it. Returns `false` if the dialog was
-   *  cancelled. `discard` as for [`new_project`].
-   */
-  openProject: (discard: boolean) =>
-    typedError<boolean, CommandError>(__TAURI_INVOKE("open_project", { discard })),
-  /**
-   *  Saves the project. A project without a file asks for one like [`save_project_as`].
-   *  Returns `false` if that dialog was cancelled.
-   */
-  saveProject: () => typedError<boolean, CommandError>(__TAURI_INVOKE("save_project")),
-  /**
-   *  Lets the user choose a file and saves the project there; it becomes the project file.
-   *  Returns `false` if the dialog was cancelled.
-   */
-  saveProjectAs: () => typedError<boolean, CommandError>(__TAURI_INVOKE("save_project_as")),
-  /**
-   *  Answer to `close-requested`: closes the project, dropping unsaved changes if `discard` is
-   *  set, then closes the window. Without `discard`, unsaved changes are refused.
-   */
-  confirmClose: (discard: boolean) =>
-    typedError<null, CommandError>(__TAURI_INVOKE("confirm_close", { discard })),
-  /**
-   *  Executes a document command as one undo step (05 Architecture, principle 1). The result is
-   *  also sent as `project-patched`; the store applies whichever arrives first (same revision).
-   *  A command that changes nothing returns an empty patch with the unchanged revision.
-   */
-  execute: (command: Command) =>
-    typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("execute", { command })),
-  /**  Undoes the last command (NFR-REL-02). Also sent as `project-patched`. */
-  undo: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("undo")),
-  /**  Applies the last undone command again. Also sent as `project-patched`. */
-  redo: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("redo")),
-  /**
-   *  Asks for the target file and starts the export as a background job. Returns `null` if the
-   *  dialog was cancelled, else the job ID; progress and result follow as `job-progress` and
-   *  `job-finished` events.
-   */
-  exportProject: (request: ExportRequest) =>
-    typedError<number | null, CommandError>(__TAURI_INVOKE("export_project", { request })),
-  /**
-   *  Box select: proposals for the text inside `region` of `sheet` (FR-REC-01, FR-REC-02), with
-   *  explanations in `language`. Changes nothing; accept them with the `accept_proposals`
-   *  document command (ADR 0006). An empty list means the region holds no PDF text.
-   */
-  proposeFromRegion: (
-    sheet: SheetId,
-    region: OrientedBox,
-    placement: BalloonPlacement,
-    language: ExplainLanguage,
-  ) =>
-    typedError<ProposalView[], CommandError>(
-      __TAURI_INVOKE("propose_from_region", { sheet, region, placement, language }),
-    ),
-  /**
-   *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
-   *  in `language`. `shorter_leg` is the shorter leg of an angle (T2.9a): text typed in the unit
-   *  of the sheet (empty means none, other text that is not a positive number is refused), or a
-   *  leg already stored, which keeps its unit; `null` means none. Changes nothing; the frontend
-   *  sets the returned values with one `update_fields` command, or applies them to a proposal.
-   */
-  readCalloutText: (
-    sheet: SheetId,
-    text: string,
-    shorterLeg:
-      /**  Text just typed in the leg field, in the unit of the sheet; empty means no leg. */
-      | { kind: "typed"; value: string }
-      /**
-       *  A leg already stored on the characteristic or proposal, used with its own unit, so a
-       *  later change of the sheet unit does not change it.
-       */
-      | { kind: "stored"; value: Length }
-      | null,
-    language: ExplainLanguage,
-  ) =>
-    typedError<TypedCallout, CommandError>(
-      __TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language }),
-    ),
-  /**  The order and numbers `strategy` would give, without changing the project (FR-BAL-05). */
-  previewNumbering: (strategy: NumberingStrategy) =>
-    typedError<NumberingPreview, CommandError>(__TAURI_INVOKE("preview_numbering", { strategy })),
-  /**
-   *  A default zone grid, or a grid with one axis relabelled, and the label scheme of each axis
-   *  (T2.7a, D-21). Changes nothing; the editor stores the grid with `set_zone_grid`.
-   */
-  zoneGridForm: (edit: ZoneGridEdit) => __TAURI_INVOKE<ZoneGridForm>("zone_grid_form", { edit }),
-  /**
-   *  The tolerance tables the project settings can name: shipped tables and the custom tables of
-   *  the open project, with their classes and draft state (M2 decision 2, D-43).
-   */
-  toleranceTables: () =>
-    typedError<ToleranceTableInfo[], CommandError>(__TAURI_INVOKE("tolerance_tables")),
-  /**
-   *  The explanation of the limits of characteristic `id` in `language` (FR-TOL-08); `null` if
-   *  it has no derivation. Built by Rust from the stored derivation, never stored itself.
-   */
-  explainCharacteristic: (id: CharId, language: ExplainLanguage) =>
-    typedError<string | null, CommandError>(
-      __TAURI_INVOKE("explain_characteristic", { id, language }),
-    ),
-  /**  Change history of characteristic `id` from the audit log, oldest first (FR-CHR-10). */
-  characteristicHistory: (id: CharId) =>
-    typedError<HistoryEntry[], CommandError>(__TAURI_INVOKE("characteristic_history", { id })),
-  /**
-   *  Reads the characteristics `ids` again with the current tolerance settings, as one undo
-   *  step. Characteristics with limits edited by hand are left unchanged (T2.8).
-   */
-  reinterpretCharacteristics: (ids: CharId[]) =>
-    typedError<Reinterpreted, CommandError>(__TAURI_INVOKE("reinterpret_characteristics", { ids })),
-  /**
-   *  Sets the shorter leg of an angle (T2.9a) as typed in the unit of its sheet, `null` or empty
-   *  text to remove it, and reads its requirement text again with it as one undo step. Limits
-   *  entered by hand stay; the outcome says so. Text that is not a positive number is refused.
-   */
-  setShorterLeg: (id: CharId, leg: string | null) =>
-    typedError<LegSet, CommandError>(__TAURI_INVOKE("set_shorter_leg", { id, leg })),
-  /**
-   *  Lets the user pick a custom tolerance table file and imports it (FR-TOL-07). Rust reads and
-   *  checks the file; a refused file is reported with its line where known.
-   */
-  importToleranceTable: () =>
-    typedError<TableImport, CommandError>(__TAURI_INVOKE("import_tolerance_table")),
-  /**
-   *  Verdicts per cell and summaries per characteristic, per sample and for the report of the
-   *  open project (FR-MEA-03, M3 decisions 3 and 5): measured characteristics in number order,
-   *  samples in column order.
-   */
-  measurementState: () =>
-    typedError<MeasurementState, CommandError>(__TAURI_INVOKE("measurement_state")),
-  /**
-   *  Characteristics whose limits or result type changed after the last issued report, in
-   *  placement order; empty without an issued report (M3 decision 16). The measurement grid marks
-   *  them with a hint. Computed from the audit log in Rust (rule 2).
-   */
-  changedSinceIssuedReport: () =>
-    typedError<CharId[], CommandError>(__TAURI_INVOKE("changed_since_issued_report")),
-  /**  The settings of the user and the operating system user name. */
-  appSettings: () => __TAURI_INVOKE<SettingsView>("app_settings"),
-  /**
-   *  Stores the settings, writes them to the settings file and applies the audit user name and
-   *  the window theme at once. Returns the stored settings (blanks trimmed).
-   */
-  setAppSettings: (settings: AppSettings) =>
-    typedError<SettingsView, CommandError>(__TAURI_INVOKE("set_app_settings", { settings })),
-  /**
-   *  Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
-   *  builds: always the empty default.
-   */
-  devStartup: () => typedError<DevStartup, CommandError>(__TAURI_INVOKE("dev_startup")),
-  /**
-   *  Debug builds: writes the frame times of a scripted pan to the terminal of `tauri dev`.
-   *  Release builds: does nothing.
-   */
-  devReportFrameTimes: (report: FrameTimeReport) =>
-    __TAURI_INVOKE<void>("dev_report_frame_times", { report }),
-  /**
-   *  Debug builds: writes one line from the webview's UI script to the terminal of `tauri dev`.
-   *  Release builds: does nothing.
-   */
-  devLog: (message: string) => __TAURI_INVOKE<void>("dev_log", { message }),
+	/**  Returns version, build profile and PDFium availability of the running app. */
+	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	/**
+	 *  Declares the tiles of a document the viewport still wants. Queued tile requests outside
+	 *  `ranges` are answered with `204 No Content` and not rendered; an empty list cancels every
+	 *  queued request of the document. See "Cancellation" in `dimo_pdf::tiles`.
+	 */
+	setTileInterest: (doc: string, ranges: TileRange[]) => typedError<null, CommandError>(__TAURI_INVOKE("set_tile_interest", { doc, ranges })),
+	/**
+	 *  The current project, for a frontend that just started listening to the project events.
+	 *  Also hands out, once, the notice of a project restored at startup.
+	 */
+	projectState: () => typedError<ProjectLoaded, CommandError>(__TAURI_INVOKE("project_state")),
+	/**
+	 *  Lets the user pick a PDF and creates a new, unsaved project from it (FR-DOC-07).
+	 *  Returns `false` if the dialog was cancelled. Unsaved changes of the open project are
+	 *  refused with `unsaved_changes` unless `discard` is set; ask the user first.
+	 */
+	newProject: (discard: boolean) => typedError<boolean, CommandError>(__TAURI_INVOKE("new_project", { discard })),
+	/**
+	 *  Lets the user pick a project file and opens it. Returns `false` if the dialog was
+	 *  cancelled. `discard` as for [`new_project`].
+	 */
+	openProject: (discard: boolean) => typedError<boolean, CommandError>(__TAURI_INVOKE("open_project", { discard })),
+	/**
+	 *  Saves the project. A project without a file asks for one like [`save_project_as`].
+	 *  Returns `false` if that dialog was cancelled.
+	 */
+	saveProject: () => typedError<boolean, CommandError>(__TAURI_INVOKE("save_project")),
+	/**
+	 *  Lets the user choose a file and saves the project there; it becomes the project file.
+	 *  Returns `false` if the dialog was cancelled.
+	 */
+	saveProjectAs: () => typedError<boolean, CommandError>(__TAURI_INVOKE("save_project_as")),
+	/**
+	 *  Answer to `close-requested`: closes the project, dropping unsaved changes if `discard` is
+	 *  set, then closes the window. Without `discard`, unsaved changes are refused.
+	 */
+	confirmClose: (discard: boolean) => typedError<null, CommandError>(__TAURI_INVOKE("confirm_close", { discard })),
+	/**
+	 *  Executes a document command as one undo step (05 Architecture, principle 1). The result is
+	 *  also sent as `project-patched`; the store applies whichever arrives first (same revision).
+	 *  A command that changes nothing returns an empty patch with the unchanged revision.
+	 */
+	execute: (command: Command) => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("execute", { command })),
+	/**  Undoes the last command (NFR-REL-02). Also sent as `project-patched`. */
+	undo: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("undo")),
+	/**  Applies the last undone command again. Also sent as `project-patched`. */
+	redo: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("redo")),
+	/**
+	 *  Asks for the target file and starts the export as a background job. Returns `null` if the
+	 *  dialog was cancelled, else the job ID; progress and result follow as `job-progress` and
+	 *  `job-finished` events.
+	 */
+	exportProject: (request: ExportRequest) => typedError<number | null, CommandError>(__TAURI_INVOKE("export_project", { request })),
+	/**
+	 *  Box select: proposals for the text inside `region` of `sheet` (FR-REC-01, FR-REC-02), with
+	 *  explanations in `language`. Changes nothing; accept them with the `accept_proposals`
+	 *  document command (ADR 0006). An empty list means the region holds no PDF text.
+	 */
+	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement, language: ExplainLanguage) => typedError<ProposalView[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement, language })),
+	/**
+	 *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
+	 *  in `language`. `shorter_leg` is the shorter leg of an angle (T2.9a): text typed in the unit
+	 *  of the sheet (empty means none, other text that is not a positive number is refused), or a
+	 *  leg already stored, which keeps its unit; `null` means none. Changes nothing; the frontend
+	 *  sets the returned values with one `update_fields` command, or applies them to a proposal.
+	 */
+	readCalloutText: (sheet: SheetId, text: string, shorterLeg: 
+/**  Text just typed in the leg field, in the unit of the sheet; empty means no leg. */
+{ kind: "typed"; value: string } | 
+/**
+ *  A leg already stored on the characteristic or proposal, used with its own unit, so a
+ *  later change of the sheet unit does not change it.
+ */
+{ kind: "stored"; value: Length } | null, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language })),
+	/**  The order and numbers `strategy` would give, without changing the project (FR-BAL-05). */
+	previewNumbering: (strategy: NumberingStrategy) => typedError<NumberingPreview, CommandError>(__TAURI_INVOKE("preview_numbering", { strategy })),
+	/**
+	 *  A default zone grid, or a grid with one axis relabelled, and the label scheme of each axis
+	 *  (T2.7a, D-21). Changes nothing; the editor stores the grid with `set_zone_grid`.
+	 */
+	zoneGridForm: (edit: ZoneGridEdit) => __TAURI_INVOKE<ZoneGridForm>("zone_grid_form", { edit }),
+	/**
+	 *  The tolerance tables the project settings can name: shipped tables and the custom tables of
+	 *  the open project, with their classes and draft state (M2 decision 2, D-43).
+	 */
+	toleranceTables: () => typedError<ToleranceTableInfo[], CommandError>(__TAURI_INVOKE("tolerance_tables")),
+	/**
+	 *  The explanation of the limits of characteristic `id` in `language` (FR-TOL-08); `null` if
+	 *  it has no derivation. Built by Rust from the stored derivation, never stored itself.
+	 */
+	explainCharacteristic: (id: CharId, language: ExplainLanguage) => typedError<string | null, CommandError>(__TAURI_INVOKE("explain_characteristic", { id, language })),
+	/**  Change history of characteristic `id` from the audit log, oldest first (FR-CHR-10). */
+	characteristicHistory: (id: CharId) => typedError<HistoryEntry[], CommandError>(__TAURI_INVOKE("characteristic_history", { id })),
+	/**
+	 *  Reads the characteristics `ids` again with the current tolerance settings, as one undo
+	 *  step. Characteristics with limits edited by hand are left unchanged (T2.8).
+	 */
+	reinterpretCharacteristics: (ids: CharId[]) => typedError<Reinterpreted, CommandError>(__TAURI_INVOKE("reinterpret_characteristics", { ids })),
+	/**
+	 *  Sets the shorter leg of an angle (T2.9a) as typed in the unit of its sheet, `null` or empty
+	 *  text to remove it, and reads its requirement text again with it as one undo step. Limits
+	 *  entered by hand stay; the outcome says so. Text that is not a positive number is refused.
+	 */
+	setShorterLeg: (id: CharId, leg: string | null) => typedError<LegSet, CommandError>(__TAURI_INVOKE("set_shorter_leg", { id, leg })),
+	/**
+	 *  Lets the user pick a custom tolerance table file and imports it (FR-TOL-07). Rust reads and
+	 *  checks the file; a refused file is reported with its line where known.
+	 */
+	importToleranceTable: () => typedError<TableImport, CommandError>(__TAURI_INVOKE("import_tolerance_table")),
+	/**
+	 *  Verdicts per cell and summaries per characteristic, per sample and for the report of the
+	 *  open project (FR-MEA-03, M3 decisions 3 and 5): measured characteristics in number order,
+	 *  samples in column order.
+	 */
+	measurementState: () => typedError<MeasurementState, CommandError>(__TAURI_INVOKE("measurement_state")),
+	/**
+	 *  Characteristics whose limits or result type changed after the last issued report, in
+	 *  placement order; empty without an issued report (M3 decision 16). The measurement grid marks
+	 *  them with a hint. Computed from the audit log in Rust (rule 2).
+	 */
+	changedSinceIssuedReport: () => typedError<CharId[], CommandError>(__TAURI_INVOKE("changed_since_issued_report")),
+	/**  The settings of the user and the operating system user name. */
+	appSettings: () => __TAURI_INVOKE<SettingsView>("app_settings"),
+	/**
+	 *  Stores the settings, writes them to the settings file and applies the audit user name and
+	 *  the window theme at once. Returns the stored settings (blanks trimmed).
+	 */
+	setAppSettings: (settings: AppSettings) => typedError<SettingsView, CommandError>(__TAURI_INVOKE("set_app_settings", { settings })),
+	/**
+	 *  Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
+	 *  builds: always the empty default.
+	 */
+	devStartup: () => typedError<DevStartup, CommandError>(__TAURI_INVOKE("dev_startup")),
+	/**
+	 *  Debug builds: writes the frame times of a scripted pan to the terminal of `tauri dev`.
+	 *  Release builds: does nothing.
+	 */
+	devReportFrameTimes: (report: FrameTimeReport) => __TAURI_INVOKE<void>("dev_report_frame_times", { report }),
+	/**
+	 *  Debug builds: writes one line from the webview's UI script to the terminal of `tauri dev`.
+	 *  Release builds: does nothing.
+	 */
+	devLog: (message: string) => __TAURI_INVOKE<void>("dev_log", { message }),
 };
 
 /** Events */
 export const events = {
-  closeRequested: makeEvent<CloseRequested>("close-requested"),
-  jobFinished: makeEvent<JobFinished>("job-finished"),
-  jobProgress: makeEvent<JobProgress>("job-progress"),
-  projectLoaded: makeEvent<ProjectLoaded>("project-loaded"),
-  projectPatched: makeEvent<ProjectPatched>("project-patched"),
-  projectStatusChanged: makeEvent<ProjectStatusChanged>("project-status-changed"),
+	closeRequested: makeEvent<CloseRequested>("close-requested"),
+	jobFinished: makeEvent<JobFinished>("job-finished"),
+	jobProgress: makeEvent<JobProgress>("job-progress"),
+	projectLoaded: makeEvent<ProjectLoaded>("project-loaded"),
+	projectPatched: makeEvent<ProjectPatched>("project-patched"),
+	projectStatusChanged: makeEvent<ProjectStatusChanged>("project-status-changed"),
 };
 
 /* Constants */
-export const BALLOON_METRICS = {
-  box_padding_share: 0.25,
-  circle_text_share: 0.78,
-  digit_em: 0.6,
-  flag_min_width_share: 1.5,
-  flag_point_share: 0.5,
-  font_share: 0.5,
-  narrow_em: 0.3,
-  units_per_mm: 2.834645669291339,
-} as const;
+export const BALLOON_METRICS = {"box_padding_share":0.25,"circle_text_share":0.78,"digit_em":0.6,"flag_min_width_share":1.5,"flag_point_share":0.5,"font_share":0.5,"narrow_em":0.3,"units_per_mm":2.834645669291339} as const;
 
 export const MAX_TILE_ZOOM = 5 as const;
 
@@ -220,53 +175,51 @@ export const TILE_SIZE = 512 as const;
 /* Types */
 /**  Static facts about the running app, shown in the UI and in bug reports. */
 export type AppInfo = {
-  /**  App version from the workspace manifest, for example `0.1.0`. */
-  version: string;
-  /**  Build profile of the running binary. */
-  build_profile: BuildProfile;
-  /**  Whether the PDFium library could be loaded. Without it no drawing can be opened. */
-  pdfium_available: boolean;
+	/**  App version from the workspace manifest, for example `0.1.0`. */
+	version: string,
+	/**  Build profile of the running binary. */
+	build_profile: BuildProfile,
+	/**  Whether the PDFium library could be loaded. Without it no drawing can be opened. */
+	pdfium_available: boolean,
 };
 
 /**  Settings of the user. */
 export type AppSettings = {
-  /**  Color theme. */
-  theme: Theme;
-  /**  UI language tag such as `en` or `de`; `null` follows the operating system. */
-  locale: string | null;
-  /**  Name recorded in the audit log (D-27); empty uses the operating system user name. */
-  user_name: string;
-  /**
-   *  Name of the issuing company. New projects start with it in their report info (M3
-   *  decision 15). Empty means not set.
-   */
-  company_name: string;
-  /**  Export options used last. */
-  export: ExportPreferences;
+	/**  Color theme. */
+	theme: Theme,
+	/**  UI language tag such as `en` or `de`; `null` follows the operating system. */
+	locale: string | null,
+	/**  Name recorded in the audit log (D-27); empty uses the operating system user name. */
+	user_name: string,
+	/**
+	 *  Name of the issuing company. New projects start with it in their report info (M3
+	 *  decision 15). Empty means not set.
+	 */
+	company_name: string,
+	/**  Export options used last. */
+	export: ExportPreferences,
 };
 
 /**  Result of a go/no go or visual check (FR-MEA-06). */
-export type AttributeValue =
-  /**  The requirement is met. */
-  | "ok"
-  /**  The requirement is not met. */
-  | "not_ok";
+export type AttributeValue = 
+/**  The requirement is met. */
+"ok" | 
+/**  The requirement is not met. */
+"not_ok";
 
 /**  Autosave state of the open project (NFR-REL-01). */
-export type Autosave =
-  /**  No changes since the project was opened or saved. */
-  | { state: "clean" }
-  /**  Unsaved changes, all written to the autosave journal. */
-  | { state: "journaled" }
-  /**
-   *  Unsaved changes that are not in a journal: the last write failed, or there is no
-   *  place for a journal. The timer retries.
-   */
-  | {
-      state: "failed";
-      /**  Why, for the user and for bug reports. */
-      message: string;
-    };
+export type Autosave = 
+/**  No changes since the project was opened or saved. */
+{ state: "clean" } | 
+/**  Unsaved changes, all written to the autosave journal. */
+{ state: "journaled" } | 
+/**
+ *  Unsaved changes that are not in a journal: the last write failed, or there is no
+ *  place for a journal. The timer retries.
+ */
+{ state: "failed"; 
+/**  Why, for the user and for bug reports. */
+message: string };
 
 /**
  *  Label scheme of one axis: the kind and whether it counts from the far end (numbers right to
@@ -274,469 +227,429 @@ export type Autosave =
  *  bottom.
  */
 export type AxisScheme = {
-  /**  Letters or numbers. */
-  kind: LabelKind;
-  /**  Counted from the far end. */
-  reversed: boolean;
+	/**  Letters or numbers. */
+	kind: LabelKind,
+	/**  Counted from the far end. */
+	reversed: boolean,
 };
 
 /**  A balloon on a sheet that marks a characteristic (data model `Balloon`). */
 export type Balloon = {
-  /**  Stable ID. */
-  id: BalloonId;
-  /**  The characteristic this balloon marks. The number shown is the characteristic number. */
-  characteristic: CharId;
-  /**  Sheet the balloon is drawn on. */
-  sheet: SheetId;
-  /**  Center of the balloon in sheet space. */
-  position: Point;
-  /**  End of the leader line in sheet space, on the feature. */
-  anchor: Point;
-  /**  Deviations from the project default style. */
-  style: BalloonStyleOverride;
+	/**  Stable ID. */
+	id: BalloonId,
+	/**  The characteristic this balloon marks. The number shown is the characteristic number. */
+	characteristic: CharId,
+	/**  Sheet the balloon is drawn on. */
+	sheet: SheetId,
+	/**  Center of the balloon in sheet space. */
+	position: Point,
+	/**  End of the leader line in sheet space, on the feature. */
+	anchor: Point,
+	/**  Deviations from the project default style. */
+	style: BalloonStyleOverride,
 };
 
 /**
  *  ID of a [`Balloon`](crate::balloon::Balloon).
- *
+ * 
  *  Serialized as a hyphenated lowercase UUID string.
  */
 export type BalloonId = string;
 
 /**  New position of one balloon. */
 export type BalloonMove = {
-  /**  The balloon. */
-  id: BalloonId;
-  /**  New center. */
-  position: Point;
-  /**  New leader anchor; `null` keeps the current one. */
-  anchor: Point | null;
+	/**  The balloon. */
+	id: BalloonId,
+	/**  New center. */
+	position: Point,
+	/**  New leader anchor; `null` keeps the current one. */
+	anchor: Point | null,
 };
 
 /**  Where the balloon of an accepted proposal goes. */
 export type BalloonPlacement = {
-  /**  Balloon center in sheet space. */
-  position: Point;
-  /**  Leader anchor on the feature in sheet space. */
-  anchor: Point;
+	/**  Balloon center in sheet space. */
+	position: Point,
+	/**  Leader anchor on the feature in sheet space. */
+	anchor: Point,
 };
 
 /**  Outline shape of a balloon. */
-export type BalloonShape =
-  /**  Circle (D-24 default). */
-  | "circle"
-  /**  Flag: a rectangle with a pointed side. */
-  | "flag"
-  /**  Rectangle. */
-  | "rectangle";
+export type BalloonShape = 
+/**  Circle (D-24 default). */
+"circle" | 
+/**  Flag: a rectangle with a pointed side. */
+"flag" | 
+/**  Rectangle. */
+"rectangle";
 
 /**
  *  How balloons are drawn (D-24). The project holds one default, balloons may override parts.
- *
+ * 
  *  Sizes are millimeters on the sheet printed at its nominal paper size; multiply by
  *  [`UNITS_PER_MM`] for sheet units. Because they live in sheet space they scale with the sheet.
  */
 export type BalloonStyle = {
-  /**  Outline shape. */
-  shape: BalloonShape;
-  /**  Diameter of a circle, height of a flag or rectangle, in mm. */
-  size_mm: number | null;
-  /**  Outline width in mm. */
-  outline_mm: number | null;
-  /**  Outline and leader color. */
-  outline_color: Color;
-  /**  Fill color. */
-  fill_color: Color;
-  /**  Color of the number. */
-  text_color: Color;
-  /**  Whether a leader line is drawn from the balloon to its anchor. */
-  leader: boolean;
+	/**  Outline shape. */
+	shape: BalloonShape,
+	/**  Diameter of a circle, height of a flag or rectangle, in mm. */
+	size_mm: number | null,
+	/**  Outline width in mm. */
+	outline_mm: number | null,
+	/**  Outline and leader color. */
+	outline_color: Color,
+	/**  Fill color. */
+	fill_color: Color,
+	/**  Color of the number. */
+	text_color: Color,
+	/**  Whether a leader line is drawn from the balloon to its anchor. */
+	leader: boolean,
 };
 
 /**  Per balloon deviations from the project default style. `null` means "use the default". */
 export type BalloonStyleOverride = {
-  /**  Outline shape. */
-  shape: BalloonShape | null;
-  /**  Size in mm. */
-  size_mm: number | null;
-  /**  Outline width in mm. */
-  outline_mm: number | null;
-  /**  Outline and leader color. */
-  outline_color: Color | null;
-  /**  Fill color. */
-  fill_color: Color | null;
-  /**  Number color. */
-  text_color: Color | null;
-  /**  Leader line on or off. */
-  leader: boolean | null;
+	/**  Outline shape. */
+	shape: BalloonShape | null,
+	/**  Size in mm. */
+	size_mm: number | null,
+	/**  Outline width in mm. */
+	outline_mm: number | null,
+	/**  Outline and leader color. */
+	outline_color: Color | null,
+	/**  Fill color. */
+	fill_color: Color | null,
+	/**  Number color. */
+	text_color: Color | null,
+	/**  Leader line on or off. */
+	leader: boolean | null,
 };
 
 /**  Cargo profile the running binary was built with. */
-export type BuildProfile =
-  /**  Built without optimizations, with debug assertions (`tauri dev`). */
-  | "debug"
-  /**  Optimized release build. */
-  | "release";
+export type BuildProfile = 
+/**  Built without optimizations, with debug assertions (`tauri dev`). */
+"debug" | 
+/**  Optimized release build. */
+"release";
 
 /**  One primitive change of a project. */
-export type Change =
-  /**  A characteristic was inserted at `index` of `Project::characteristics`. */
-  | {
-      type: "characteristic_inserted";
-      /**  Position in the placement order. */
-      index: number;
-      /**  The new characteristic. */
-      characteristic: Characteristic;
-    }
-  /**  The characteristic at `index` was removed. */
-  | {
-      type: "characteristic_removed";
-      /**  Position before removal. */
-      index: number;
-      /**  The removed characteristic. */
-      characteristic: Characteristic;
-    }
-  /**  Fields or the number of a characteristic changed. The ID stays the same. */
-  | {
-      type: "characteristic_changed";
-      /**  State before. */
-      before: Characteristic;
-      /**  State after. */
-      after: Characteristic;
-    }
-  /**  A balloon was inserted at `index` of `Project::balloons`. */
-  | {
-      type: "balloon_inserted";
-      /**  Position in the balloon list. */
-      index: number;
-      /**  The new balloon. */
-      balloon: Balloon;
-    }
-  /**  The balloon at `index` was removed. */
-  | {
-      type: "balloon_removed";
-      /**  Position before removal. */
-      index: number;
-      /**  The removed balloon. */
-      balloon: Balloon;
-    }
-  /**  Position, anchor or style of a balloon changed. The ID stays the same. */
-  | {
-      type: "balloon_changed";
-      /**  State before. */
-      before: Balloon;
-      /**  State after. */
-      after: Balloon;
-    }
-  /**  The placement order of characteristics changed (same IDs, new order). */
-  | {
-      type: "order_changed";
-      /**  Characteristic IDs in the order before. */
-      before: CharId[];
-      /**  Characteristic IDs in the order after. */
-      after: CharId[];
-    }
-  /**  Rotation, unit or scale of a sheet changed. */
-  | {
-      type: "sheet_changed";
-      /**  State before. */
-      before: Sheet;
-      /**  State after. */
-      after: Sheet;
-    }
-  /**  The numbering lock changed. */
-  | {
-      type: "numbering_changed";
-      /**  State before. */
-      before: Numbering;
-      /**  State after. */
-      after: Numbering;
-    }
-  /**  Project settings changed. */
-  | {
-      type: "settings_changed";
-      /**  State before. */
-      before: ProjectSettings;
-      /**  State after. */
-      after: ProjectSettings;
-    }
-  /**  Part and order data changed. */
-  | {
-      type: "info_changed";
-      /**  State before. */
-      before: ProjectInfo;
-      /**  State after. */
-      after: ProjectInfo;
-    }
-  /**  A sample was inserted at `index` of `Project::samples`. */
-  | {
-      type: "sample_inserted";
-      /**  Position in the sample order. */
-      index: number;
-      /**  The new sample. */
-      sample: Sample;
-    }
-  /**  The sample at `index` was removed. It has no results left. */
-  | {
-      type: "sample_removed";
-      /**  Position before removal. */
-      index: number;
-      /**  The removed sample. */
-      sample: Sample;
-    }
-  /**  Serial, date, inspector, gauges or comment of a sample changed. The ID stays the same. */
-  | {
-      type: "sample_changed";
-      /**  State before. */
-      before: Sample;
-      /**  State after. */
-      after: Sample;
-    }
-  /**  The sample order changed (same IDs, new order). Results follow the new order. */
-  | {
-      type: "sample_order_changed";
-      /**  Sample IDs in the order before. */
-      before: SampleId[];
-      /**  Sample IDs in the order after. */
-      after: SampleId[];
-    }
-  /**
-   *  The result of one cell was set, changed or cleared. `Project::results` stays sorted by
-   *  sample and placement order, so the position follows from the cell.
-   */
-  | {
-      type: "result_changed";
-      /**  The cell. */
-      cell: ResultCell;
-      /**  State before; `null` if the cell had no result. */
-      before: MeasurementResult | null;
-      /**  State after; `null` if the result was cleared. */
-      after: MeasurementResult | null;
-    }
-  /**  Report header and approval data changed. */
-  | {
-      type: "report_info_changed";
-      /**  State before. */
-      before: ReportInfo;
-      /**  State after. */
-      after: ReportInfo;
-    }
-  /**  The label of a drawing revision changed. */
-  | {
-      type: "revision_label_changed";
-      /**  The revision. */
-      revision: RevisionId;
-      /**  Label before. */
-      before: string;
-      /**  Label after. */
-      after: string;
-    }
-  /**  An issued report record was inserted at `index` of `Project::issued_reports`. */
-  | {
-      type: "issued_report_inserted";
-      /**  Position in the list. */
-      index: number;
-      /**  The record. */
-      report: IssuedReport;
-    }
-  /**  The issued report record at `index` was removed. */
-  | {
-      type: "issued_report_removed";
-      /**  Position before removal. */
-      index: number;
-      /**  The record. */
-      report: IssuedReport;
-    };
+export type Change = 
+/**  A characteristic was inserted at `index` of `Project::characteristics`. */
+{ type: "characteristic_inserted"; 
+/**  Position in the placement order. */
+index: number; 
+/**  The new characteristic. */
+characteristic: Characteristic } | 
+/**  The characteristic at `index` was removed. */
+{ type: "characteristic_removed"; 
+/**  Position before removal. */
+index: number; 
+/**  The removed characteristic. */
+characteristic: Characteristic } | 
+/**  Fields or the number of a characteristic changed. The ID stays the same. */
+{ type: "characteristic_changed"; 
+/**  State before. */
+before: Characteristic; 
+/**  State after. */
+after: Characteristic } | 
+/**  A balloon was inserted at `index` of `Project::balloons`. */
+{ type: "balloon_inserted"; 
+/**  Position in the balloon list. */
+index: number; 
+/**  The new balloon. */
+balloon: Balloon } | 
+/**  The balloon at `index` was removed. */
+{ type: "balloon_removed"; 
+/**  Position before removal. */
+index: number; 
+/**  The removed balloon. */
+balloon: Balloon } | 
+/**  Position, anchor or style of a balloon changed. The ID stays the same. */
+{ type: "balloon_changed"; 
+/**  State before. */
+before: Balloon; 
+/**  State after. */
+after: Balloon } | 
+/**  The placement order of characteristics changed (same IDs, new order). */
+{ type: "order_changed"; 
+/**  Characteristic IDs in the order before. */
+before: CharId[]; 
+/**  Characteristic IDs in the order after. */
+after: CharId[] } | 
+/**  Rotation, unit or scale of a sheet changed. */
+{ type: "sheet_changed"; 
+/**  State before. */
+before: Sheet; 
+/**  State after. */
+after: Sheet } | 
+/**  The numbering lock changed. */
+{ type: "numbering_changed"; 
+/**  State before. */
+before: Numbering; 
+/**  State after. */
+after: Numbering } | 
+/**  Project settings changed. */
+{ type: "settings_changed"; 
+/**  State before. */
+before: ProjectSettings; 
+/**  State after. */
+after: ProjectSettings } | 
+/**  Part and order data changed. */
+{ type: "info_changed"; 
+/**  State before. */
+before: ProjectInfo; 
+/**  State after. */
+after: ProjectInfo } | 
+/**  A sample was inserted at `index` of `Project::samples`. */
+{ type: "sample_inserted"; 
+/**  Position in the sample order. */
+index: number; 
+/**  The new sample. */
+sample: Sample } | 
+/**  The sample at `index` was removed. It has no results left. */
+{ type: "sample_removed"; 
+/**  Position before removal. */
+index: number; 
+/**  The removed sample. */
+sample: Sample } | 
+/**  Serial, date, inspector, gauges or comment of a sample changed. The ID stays the same. */
+{ type: "sample_changed"; 
+/**  State before. */
+before: Sample; 
+/**  State after. */
+after: Sample } | 
+/**  The sample order changed (same IDs, new order). Results follow the new order. */
+{ type: "sample_order_changed"; 
+/**  Sample IDs in the order before. */
+before: SampleId[]; 
+/**  Sample IDs in the order after. */
+after: SampleId[] } | 
+/**
+ *  The result of one cell was set, changed or cleared. `Project::results` stays sorted by
+ *  sample and placement order, so the position follows from the cell.
+ */
+{ type: "result_changed"; 
+/**  The cell. */
+cell: ResultCell; 
+/**  State before; `null` if the cell had no result. */
+before: MeasurementResult | null; 
+/**  State after; `null` if the result was cleared. */
+after: MeasurementResult | null } | 
+/**  Report header and approval data changed. */
+{ type: "report_info_changed"; 
+/**  State before. */
+before: ReportInfo; 
+/**  State after. */
+after: ReportInfo } | 
+/**  The label of a drawing revision changed. */
+{ type: "revision_label_changed"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  Label before. */
+before: string; 
+/**  Label after. */
+after: string } | 
+/**  An issued report record was inserted at `index` of `Project::issued_reports`. */
+{ type: "issued_report_inserted"; 
+/**  Position in the list. */
+index: number; 
+/**  The record. */
+report: IssuedReport } | 
+/**  The issued report record at `index` was removed. */
+{ type: "issued_report_removed"; 
+/**  Position before removal. */
+index: number; 
+/**  The record. */
+report: IssuedReport };
 
 /**  What made a change (FR-CHR-10). */
-export type ChangeSource =
-  /**  The user changed this characteristic. */
-  | "manual"
-  /**
-   *  A rule changed it as a consequence, e.g. renumbering after a delete, or limits from a
-   *  tolerance rule.
-   */
-  | "rule"
-  /**  It came from recognition: an accepted proposal (ADR 0006). */
-  | "recognition";
+export type ChangeSource = 
+/**  The user changed this characteristic. */
+"manual" | 
+/**
+ *  A rule changed it as a consequence, e.g. renumbering after a delete, or limits from a
+ *  tolerance rule.
+ */
+"rule" | 
+/**  It came from recognition: an accepted proposal (ADR 0006). */
+"recognition";
 
 /**
  *  ID of a [`Characteristic`](crate::characteristic::Characteristic).
- *
+ * 
  *  Serialized as a hyphenated lowercase UUID string.
  */
 export type CharId = string;
 
 /**
  *  One inspectable characteristic (data model 07, FR-CHR-01, FR-CHR-02).
- *
+ * 
  *  Optional values are written as `null` in `project.json`, so every key is always present.
  */
 export type Characteristic = {
-  /**  Stable ID, never changes (FR-BAL-09). */
-  id: CharId;
-  /**
-   *  Display number such as `12`, `12.1` or `12A`. Follows the placement order while
-   *  numbering is unlocked (D-21); kept when numbering is locked, where added characteristics
-   *  are numbered by the insert policy (D-23, FR-BAL-11).
-   */
-  number: string;
-  /**  What the characteristic describes. */
-  kind: CharacteristicKind;
-  /**  Text as it appears on the drawing. */
-  requirement_text: string;
-  /**  Nominal value. */
-  nominal: string | null;
-  /**  Unit of nominal, deviations and limits. */
-  unit: Unit | null;
-  /**  Upper deviation, kept for display. */
-  upper_dev: string | null;
-  /**  Lower deviation, kept for display. */
-  lower_dev: string | null;
-  /**  Upper limit, always stored explicitly. */
-  upper_limit: string | null;
-  /**  Lower limit, always stored explicitly. */
-  lower_limit: string | null;
-  /**  Fit designation such as `H7`. */
-  fit: string | null;
-  /**
-   *  Which rule produced the limits (FR-TOL-08). `null` if no rule was recorded, e.g. for a
-   *  characteristic without values.
-   */
-  derivation: ToleranceDerivation | null;
-  /**  Number of features the characteristic stands for, from `4X` or `2 PL` (D-22). At least 1. */
-  quantity: number;
-  /**  Importance class. */
-  classification: Classification;
-  /**  How the characteristic is inspected. */
-  inspection: Inspection;
-  /**  False for reference and basic dimensions (D-25). */
-  inspect: boolean;
-  /**  Review state. */
-  status: CharacteristicStatus;
-  /**  How the characteristic came into the project. */
-  origin: Origin;
-  /**  Regions of the drawing the characteristic was read from (FR-CHR-09). */
-  sources: SourceRegion[];
-  /**  Free text. */
-  comment: string;
-  /**
-   *  Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It
-   *  selects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.
-   *  Written as `null` when absent (files of schema version 2 without the key get `null` from
-   *  the migration to version 3).
-   */
-  shorter_leg: Length | null;
-  /**
-   *  How the characteristic is measured (FR-MEA-06, M3 decision 4). Changed only with
-   *  [`Command::SetResultType`](crate::command::Command::SetResultType).
-   */
-  result_type: ResultType;
+	/**  Stable ID, never changes (FR-BAL-09). */
+	id: CharId,
+	/**
+	 *  Display number such as `12`, `12.1` or `12A`. Follows the placement order while
+	 *  numbering is unlocked (D-21); kept when numbering is locked, where added characteristics
+	 *  are numbered by the insert policy (D-23, FR-BAL-11).
+	 */
+	number: string,
+	/**  What the characteristic describes. */
+	kind: CharacteristicKind,
+	/**  Text as it appears on the drawing. */
+	requirement_text: string,
+	/**  Nominal value. */
+	nominal: string | null,
+	/**  Unit of nominal, deviations and limits. */
+	unit: Unit | null,
+	/**  Upper deviation, kept for display. */
+	upper_dev: string | null,
+	/**  Lower deviation, kept for display. */
+	lower_dev: string | null,
+	/**  Upper limit, always stored explicitly. */
+	upper_limit: string | null,
+	/**  Lower limit, always stored explicitly. */
+	lower_limit: string | null,
+	/**  Fit designation such as `H7`. */
+	fit: string | null,
+	/**
+	 *  Which rule produced the limits (FR-TOL-08). `null` if no rule was recorded, e.g. for a
+	 *  characteristic without values.
+	 */
+	derivation: ToleranceDerivation | null,
+	/**  Number of features the characteristic stands for, from `4X` or `2 PL` (D-22). At least 1. */
+	quantity: number,
+	/**  Importance class. */
+	classification: Classification,
+	/**  How the characteristic is inspected. */
+	inspection: Inspection,
+	/**  False for reference and basic dimensions (D-25). */
+	inspect: boolean,
+	/**  Review state. */
+	status: CharacteristicStatus,
+	/**  How the characteristic came into the project. */
+	origin: Origin,
+	/**  Regions of the drawing the characteristic was read from (FR-CHR-09). */
+	sources: SourceRegion[],
+	/**  Free text. */
+	comment: string,
+	/**
+	 *  Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It
+	 *  selects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.
+	 *  Written as `null` when absent (files of schema version 2 without the key get `null` from
+	 *  the migration to version 3).
+	 */
+	shorter_leg: Length | null,
+	/**
+	 *  How the characteristic is measured (FR-MEA-06, M3 decision 4). Changed only with
+	 *  [`Command::SetResultType`](crate::command::Command::SetResultType).
+	 */
+	result_type: ResultType,
 };
 
 /**  A field of a characteristic, to list what changed. */
-export type CharacteristicField =
-  /**  Display number. */
-  | "number"
-  /**  Kind. */
-  | "kind"
-  /**  Requirement text. */
-  | "requirement_text"
-  /**  Nominal. */
-  | "nominal"
-  /**  Unit. */
-  | "unit"
-  /**  Upper deviation. */
-  | "upper_dev"
-  /**  Lower deviation. */
-  | "lower_dev"
-  /**  Upper limit. */
-  | "upper_limit"
-  /**  Lower limit. */
-  | "lower_limit"
-  /**  Fit. */
-  | "fit"
-  /**  Tolerance derivation. */
-  | "derivation"
-  /**  Quantity. */
-  | "quantity"
-  /**  Classification. */
-  | "classification"
-  /**  Inspection method, gauge, sampling or frequency. */
-  | "inspection"
-  /**  Inspect flag. */
-  | "inspect"
-  /**  Review state. */
-  | "status"
-  /**  Origin. */
-  | "origin"
-  /**  Source regions. */
-  | "sources"
-  /**  Comment. */
-  | "comment"
-  /**  Shorter leg of an angle. */
-  | "shorter_leg"
-  /**  Result type (FR-MEA-06). */
-  | "result_type";
+export type CharacteristicField = 
+/**  Display number. */
+"number" | 
+/**  Kind. */
+"kind" | 
+/**  Requirement text. */
+"requirement_text" | 
+/**  Nominal. */
+"nominal" | 
+/**  Unit. */
+"unit" | 
+/**  Upper deviation. */
+"upper_dev" | 
+/**  Lower deviation. */
+"lower_dev" | 
+/**  Upper limit. */
+"upper_limit" | 
+/**  Lower limit. */
+"lower_limit" | 
+/**  Fit. */
+"fit" | 
+/**  Tolerance derivation. */
+"derivation" | 
+/**  Quantity. */
+"quantity" | 
+/**  Classification. */
+"classification" | 
+/**  Inspection method, gauge, sampling or frequency. */
+"inspection" | 
+/**  Inspect flag. */
+"inspect" | 
+/**  Review state. */
+"status" | 
+/**  Origin. */
+"origin" | 
+/**  Source regions. */
+"sources" | 
+/**  Comment. */
+"comment" | 
+/**  Shorter leg of an angle. */
+"shorter_leg" | 
+/**  Result type (FR-MEA-06). */
+"result_type";
 
 /**  What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01). */
-export type CharacteristicKind =
-  /**  Linear size or distance. */
-  | "linear"
-  /**  Diameter (`Ø`, `⌀`, `DIA`). */
-  | "diameter"
-  /**  Radius (`R`). */
-  | "radius"
-  /**  Spherical radius (`SR`). */
-  | "spherical_radius"
-  /**  Angle. */
-  | "angle"
-  /**  Chamfer, e.g. `1x45°`. */
-  | "chamfer"
-  /**  Thread, e.g. `M8x1.25-6H`. */
-  | "thread"
-  /**  Counterbore. */
-  | "counterbore"
-  /**  Countersink. */
-  | "countersink"
-  /**  Depth of a hole or pocket. */
-  | "depth"
-  /**  Surface texture requirement. */
-  | "surface_texture"
-  /**  Geometric tolerance (feature control frame). */
-  | "geometric"
-  /**  Text note with an inspectable requirement. */
-  | "note"
-  /**  Flag note, linked from a flag symbol. */
-  | "flag_note"
-  /**  Material or process requirement, e.g. hardness or coating. */
-  | "material_process"
-  /**  Anything else. Default for a characteristic placed by hand before its kind is known. */
-  | "other";
+export type CharacteristicKind = 
+/**  Linear size or distance. */
+"linear" | 
+/**  Diameter (`Ø`, `⌀`, `DIA`). */
+"diameter" | 
+/**  Radius (`R`). */
+"radius" | 
+/**  Spherical radius (`SR`). */
+"spherical_radius" | 
+/**  Angle. */
+"angle" | 
+/**  Chamfer, e.g. `1x45°`. */
+"chamfer" | 
+/**  Thread, e.g. `M8x1.25-6H`. */
+"thread" | 
+/**  Counterbore. */
+"counterbore" | 
+/**  Countersink. */
+"countersink" | 
+/**  Depth of a hole or pocket. */
+"depth" | 
+/**  Surface texture requirement. */
+"surface_texture" | 
+/**  Geometric tolerance (feature control frame). */
+"geometric" | 
+/**  Text note with an inspectable requirement. */
+"note" | 
+/**  Flag note, linked from a flag symbol. */
+"flag_note" | 
+/**  Material or process requirement, e.g. hardness or coating. */
+"material_process" | 
+/**  Anything else. Default for a characteristic placed by hand before its kind is known. */
+"other";
 
 /**  Review state of a characteristic (data model `status`). */
-export type CharacteristicStatus =
-  /**  Suggested by automation, not yet reviewed. */
-  | "proposed"
-  /**  Accepted by the user. Characteristics placed by hand start here. */
-  | "accepted"
-  /**  Checked by a second look. */
-  | "verified"
-  /**  Kept for traceability but not inspected. */
-  | "rejected";
+export type CharacteristicStatus = 
+/**  Suggested by automation, not yet reviewed. */
+"proposed" | 
+/**  Accepted by the user. Characteristics placed by hand start here. */
+"accepted" | 
+/**  Checked by a second look. */
+"verified" | 
+/**  Kept for traceability but not inspected. */
+"rejected";
 
 /**  Importance class of a characteristic (FR-CHR-02). Default `none` (D-26). */
-export type Classification =
-  /**  Critical characteristic. */
-  | "critical"
-  /**  Major characteristic. */
-  | "major"
-  /**  Minor characteristic. */
-  | "minor"
-  /**  Key characteristic. */
-  | "key"
-  /**  Not classified. */
-  | "none";
+export type Classification = 
+/**  Critical characteristic. */
+"critical" | 
+/**  Major characteristic. */
+"major" | 
+/**  Minor characteristic. */
+"minor" | 
+/**  Key characteristic. */
+"key" | 
+/**  Not classified. */
+"none";
 
 /**
  *  The user asked to close the window while the project has unsaved changes. The frontend asks
@@ -748,455 +661,365 @@ export type CloseRequested = null;
 export type Color = string;
 
 /**  A change the user asks for. Every command is undoable as one step. */
-export type Command =
-  /**
-   *  Adds a characteristic with one balloon (FR-BAL-01). Unlocked: at the end of the
-   *  placement order, numbered by it (D-21). Locked: numbered by the insert policy and placed
-   *  in number order (D-23, FR-BAL-11).
-   */
-  | {
-      type: "add_characteristic";
-      /**  Sheet the balloon and region are on. */
-      sheet: SheetId;
-      /**  Balloon center. */
-      position: Point;
-      /**  Leader anchor on the feature. */
-      anchor: Point;
-      /**  Region the user drew around the callout, if any (FR-CHR-09). */
-      region: OrientedBox | null;
-      /**  Initial field values. */
-      values: FieldValue[];
-      /**
-       *  Anchor of the sub-number and letter insert policies while locked: the new number
-       *  follows this characteristic. `null` uses the highest number. Not used while unlocked
-       *  and by the next free policy, but it must name an existing characteristic.
-       */
-      insert_after: CharId | null;
-    }
-  /**
-   *  Turns proposals into accepted characteristics with one balloon each, as one undo step
-   *  (ADR 0006, FR-REC-02). Numbered like [`Command::AddCharacteristic`], in the given order.
-   */
-  | {
-      type: "accept_proposals";
-      /**  Proposals to accept, possibly edited by the user. */
-      proposals: Proposal[];
-      /**  Anchor of the locked insert policies, as for [`Command::AddCharacteristic`]. */
-      insert_after: CharId | null;
-    }
-  /**
-   *  Sets field values on one or more characteristics (FR-CHR-02). While unlocked, a copy of a
-   *  repeated feature whose kind or text changes leaves its sub-number group (D-22).
-   */
-  | {
-      type: "update_fields";
-      /**  Characteristics to change. */
-      ids: CharId[];
-      /**  Values, applied in order. */
-      values: FieldValue[];
-    }
-  /**  Moves balloons and optionally their leader anchors (FR-BAL-12 group move). */
-  | {
-      type: "move_balloons";
-      /**  One entry per balloon. */
-      moves: BalloonMove[];
-    }
-  /**  Deletes characteristics with their balloons (FR-BAL-12 group delete). */
-  | {
-      type: "delete_characteristics";
-      /**  Characteristics to delete. */
-      ids: CharId[];
-    }
-  /**
-   *  Sets style overrides on balloons; fields left `null` keep their current override
-   *  (FR-BAL-12 group restyle).
-   */
-  | {
-      type: "restyle_balloons";
-      /**  Balloons to restyle. */
-      ids: BalloonId[];
-      /**  Overrides to set. */
-      style: BalloonStyleOverride;
-    }
-  /**  Removes all style overrides, so the balloons use the project default again. */
-  | {
-      type: "reset_balloon_style";
-      /**  Balloons to reset. */
-      ids: BalloonId[];
-    }
-  /**
-   *  Moves characteristics in the placement order and renumbers (renumber by drag, D-21).
-   *  The moved characteristics keep their relative order. Refused while numbering is locked.
-   */
-  | {
-      type: "move_characteristics";
-      /**  Characteristics to move. */
-      ids: CharId[];
-      /**  Insert them before this characteristic; `null` moves them to the end. */
-      before: CharId | null;
-    }
-  /**  Sets view rotation, unit or scale of a sheet; `null` keeps the current value (FR-DOC-05). */
-  | {
-      type: "update_sheet";
-      /**  The sheet. */
-      sheet: SheetId;
-      /**  New rotation. */
-      rotation: Rotation | null;
-      /**  New length unit, `mm` or `in`. */
-      unit: Unit | null;
-      /**  New scale. */
-      scale: Scale | null;
-    }
-  /**  Sets or removes the zone grid of a sheet (M2 decision 1, D-21). */
-  | {
-      type: "set_zone_grid";
-      /**  The sheet. */
-      sheet: SheetId;
-      /**  New grid; `null` removes it. */
-      grid: ZoneGrid | null;
-    }
-  /**  Replaces the view rectangles of a sheet (M2 decision 1). */
-  | {
-      type: "set_views";
-      /**  The sheet. */
-      sheet: SheetId;
-      /**  All views of the sheet, in order. */
-      views: SheetView[];
-    }
-  /**
-   *  Sets the numbering strategy, multi-instance numbering and locked insert policy
-   *  (FR-BAL-04, FR-BAL-07, FR-BAL-11). The order does not change. While unlocked, a change of
-   *  multi-instance numbering renumbers groups as sub-numbers or plain numbers (D-22).
-   */
-  | {
-      type: "set_numbering_settings";
-      /**  New settings. */
-      settings: NumberingSettings;
-    }
-  /**
-   *  Sets the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). Limits
-   *  of existing characteristics do not change.
-   */
-  | {
-      type: "set_tolerance_settings";
-      /**  New settings. */
-      settings: ToleranceSettings;
-    }
-  /**
-   *  Reorders and renumbers all characteristics by a numbering strategy as one undo step, and
-   *  makes it the strategy of the project (FR-BAL-04, D-21). The result equals
-   *  [`numbering::preview`](crate::numbering::preview) (FR-BAL-05). Refused while numbering is
-   *  locked (D-23).
-   */
-  | {
-      type: "apply_numbering";
-      /**  The strategy. */
-      strategy: NumberingStrategy;
-    }
-  /**  Locks numbering (FR-BAL-10). No change if already locked. */
-  | {
-      type: "lock_numbering";
-      /**  Why. */
-      reason: LockReason;
-    }
-  /**  Unlocks numbering and renumbers by placement order. No change if not locked. */
-  | { type: "unlock_numbering" }
-  /**  Sets the project default balloon style. */
-  | {
-      type: "set_default_balloon_style";
-      /**  New default. */
-      style: BalloonStyle;
-    }
-  /**  Replaces part and order data. */
-  | {
-      type: "update_project_info";
-      /**  New data. */
-      info: ProjectInfo;
-    }
-  /**
-   *  Adds `count` samples (1 to 100) at the end of the sample order (FR-MEA-01, M3
-   *  decision 6). Serials continue the highest plain number, the inspector is the audit user
-   *  (D-27), other fields are empty. Refused above 500 samples per project.
-   */
-  | {
-      type: "add_samples";
-      /**  How many samples to add. */
-      count: number;
-    }
-  /**
-   *  Replaces serial, date, inspector, gauges and comment of the sample with the same ID. The
-   *  serial is trimmed, must not be empty and must be unique; the date is `YYYY-MM-DD` or
-   *  empty (M3 decision 6).
-   */
-  | {
-      type: "update_sample";
-      /**  The sample with its new values. */
-      sample: Sample;
-    }
-  /**  Deletes samples with their results (M3 decision 16). */
-  | {
-      type: "delete_samples";
-      /**  Samples to delete. */
-      ids: SampleId[];
-    }
-  /**  Moves samples in the column order. The moved samples keep their relative order. */
-  | {
-      type: "move_samples";
-      /**  Samples to move. */
-      ids: SampleId[];
-      /**  Insert them before this sample; `null` moves them to the end. */
-      before: SampleId | null;
-    }
-  /**
-   *  Sets the results of cells from typed or pasted text, as one undo step (FR-MEA-02, M3
-   *  decisions 7 and 8). Each text is parsed by the effective result type of its
-   *  characteristic; empty text clears the cell. Refused as a whole if one text is invalid.
-   *  A result on an `auto` characteristic pins it to the effective type in the same step.
-   */
-  | {
-      type: "set_results";
-      /**  Cells in order; a later entry for the same cell wins. */
-      results: ResultEntry[];
-    }
-  /**  Clears the results of cells. Cells without a result are left as they are. */
-  | {
-      type: "clear_results";
-      /**  Cells to clear. */
-      cells: ResultCell[];
-    }
-  /**
-   *  Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
-   *  characteristic has results of the other type; nothing is converted. `auto` on a
-   *  characteristic with results keeps its effective type pinned.
-   */
-  | {
-      type: "set_result_type";
-      /**  Characteristics to change. */
-      ids: CharId[];
-      /**  New result type. */
-      result_type: ResultType;
-    }
-  /**
-   *  Replaces the report header and approval data (M3 decision 1). The report date is
-   *  `YYYY-MM-DD` or empty.
-   */
-  | {
-      type: "update_report_info";
-      /**  New data. */
-      info: ReportInfo;
-    }
-  /**  Sets the label of a drawing revision, trimmed (FR-RVC-04). */
-  | {
-      type: "update_revision_label";
-      /**  The revision. */
-      revision: RevisionId;
-      /**  New label; empty if unknown. */
-      label: string;
-    }
-  /**
-   *  Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
-   *  are those of the current revision, the time comes from the environment clock. Exports
-   *  send it in a batch with [`Command::LockNumbering`], so lock and record are one undo
-   *  step.
-   */
-  | {
-      type: "record_issued_report";
-      /**  Which document. */
-      kind: ReportKind;
-      /**  The template it was rendered with. */
-      template: TemplateRef;
-      /**  File format. */
-      format: ReportFormat;
-      /**  SHA-256 of the written file. */
-      output_sha256: Sha256Hex;
-    }
-  /**  Several commands as one undo step. If one fails, none is applied. */
-  | {
-      type: "batch";
-      /**  Commands in order. */
-      commands: Command[];
-    };
+export type Command = 
+/**
+ *  Adds a characteristic with one balloon (FR-BAL-01). Unlocked: at the end of the
+ *  placement order, numbered by it (D-21). Locked: numbered by the insert policy and placed
+ *  in number order (D-23, FR-BAL-11).
+ */
+{ type: "add_characteristic"; 
+/**  Sheet the balloon and region are on. */
+sheet: SheetId; 
+/**  Balloon center. */
+position: Point; 
+/**  Leader anchor on the feature. */
+anchor: Point; 
+/**  Region the user drew around the callout, if any (FR-CHR-09). */
+region: OrientedBox | null; 
+/**  Initial field values. */
+values: FieldValue[]; 
+/**
+ *  Anchor of the sub-number and letter insert policies while locked: the new number
+ *  follows this characteristic. `null` uses the highest number. Not used while unlocked
+ *  and by the next free policy, but it must name an existing characteristic.
+ */
+insert_after: CharId | null } | 
+/**
+ *  Turns proposals into accepted characteristics with one balloon each, as one undo step
+ *  (ADR 0006, FR-REC-02). Numbered like [`Command::AddCharacteristic`], in the given order.
+ */
+{ type: "accept_proposals"; 
+/**  Proposals to accept, possibly edited by the user. */
+proposals: Proposal[]; 
+/**  Anchor of the locked insert policies, as for [`Command::AddCharacteristic`]. */
+insert_after: CharId | null } | 
+/**
+ *  Sets field values on one or more characteristics (FR-CHR-02). While unlocked, a copy of a
+ *  repeated feature whose kind or text changes leaves its sub-number group (D-22).
+ */
+{ type: "update_fields"; 
+/**  Characteristics to change. */
+ids: CharId[]; 
+/**  Values, applied in order. */
+values: FieldValue[] } | 
+/**  Moves balloons and optionally their leader anchors (FR-BAL-12 group move). */
+{ type: "move_balloons"; 
+/**  One entry per balloon. */
+moves: BalloonMove[] } | 
+/**  Deletes characteristics with their balloons (FR-BAL-12 group delete). */
+{ type: "delete_characteristics"; 
+/**  Characteristics to delete. */
+ids: CharId[] } | 
+/**
+ *  Sets style overrides on balloons; fields left `null` keep their current override
+ *  (FR-BAL-12 group restyle).
+ */
+{ type: "restyle_balloons"; 
+/**  Balloons to restyle. */
+ids: BalloonId[]; 
+/**  Overrides to set. */
+style: BalloonStyleOverride } | 
+/**  Removes all style overrides, so the balloons use the project default again. */
+{ type: "reset_balloon_style"; 
+/**  Balloons to reset. */
+ids: BalloonId[] } | 
+/**
+ *  Moves characteristics in the placement order and renumbers (renumber by drag, D-21).
+ *  The moved characteristics keep their relative order. Refused while numbering is locked.
+ */
+{ type: "move_characteristics"; 
+/**  Characteristics to move. */
+ids: CharId[]; 
+/**  Insert them before this characteristic; `null` moves them to the end. */
+before: CharId | null } | 
+/**  Sets view rotation, unit or scale of a sheet; `null` keeps the current value (FR-DOC-05). */
+{ type: "update_sheet"; 
+/**  The sheet. */
+sheet: SheetId; 
+/**  New rotation. */
+rotation: Rotation | null; 
+/**  New length unit, `mm` or `in`. */
+unit: Unit | null; 
+/**  New scale. */
+scale: Scale | null } | 
+/**  Sets or removes the zone grid of a sheet (M2 decision 1, D-21). */
+{ type: "set_zone_grid"; 
+/**  The sheet. */
+sheet: SheetId; 
+/**  New grid; `null` removes it. */
+grid: ZoneGrid | null } | 
+/**  Replaces the view rectangles of a sheet (M2 decision 1). */
+{ type: "set_views"; 
+/**  The sheet. */
+sheet: SheetId; 
+/**  All views of the sheet, in order. */
+views: SheetView[] } | 
+/**
+ *  Sets the numbering strategy, multi-instance numbering and locked insert policy
+ *  (FR-BAL-04, FR-BAL-07, FR-BAL-11). The order does not change. While unlocked, a change of
+ *  multi-instance numbering renumbers groups as sub-numbers or plain numbers (D-22).
+ */
+{ type: "set_numbering_settings"; 
+/**  New settings. */
+settings: NumberingSettings } | 
+/**
+ *  Sets the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). Limits
+ *  of existing characteristics do not change.
+ */
+{ type: "set_tolerance_settings"; 
+/**  New settings. */
+settings: ToleranceSettings } | 
+/**
+ *  Reorders and renumbers all characteristics by a numbering strategy as one undo step, and
+ *  makes it the strategy of the project (FR-BAL-04, D-21). The result equals
+ *  [`numbering::preview`](crate::numbering::preview) (FR-BAL-05). Refused while numbering is
+ *  locked (D-23).
+ */
+{ type: "apply_numbering"; 
+/**  The strategy. */
+strategy: NumberingStrategy } | 
+/**  Locks numbering (FR-BAL-10). No change if already locked. */
+{ type: "lock_numbering"; 
+/**  Why. */
+reason: LockReason } | 
+/**  Unlocks numbering and renumbers by placement order. No change if not locked. */
+{ type: "unlock_numbering" } | 
+/**  Sets the project default balloon style. */
+{ type: "set_default_balloon_style"; 
+/**  New default. */
+style: BalloonStyle } | 
+/**  Replaces part and order data. */
+{ type: "update_project_info"; 
+/**  New data. */
+info: ProjectInfo } | 
+/**
+ *  Adds `count` samples (1 to 100) at the end of the sample order (FR-MEA-01, M3
+ *  decision 6). Serials continue the highest plain number, the inspector is the audit user
+ *  (D-27), other fields are empty. Refused above 500 samples per project.
+ */
+{ type: "add_samples"; 
+/**  How many samples to add. */
+count: number } | 
+/**
+ *  Replaces serial, date, inspector, gauges and comment of the sample with the same ID. The
+ *  serial is trimmed, must not be empty and must be unique; the date is `YYYY-MM-DD` or
+ *  empty (M3 decision 6).
+ */
+{ type: "update_sample"; 
+/**  The sample with its new values. */
+sample: Sample } | 
+/**  Deletes samples with their results (M3 decision 16). */
+{ type: "delete_samples"; 
+/**  Samples to delete. */
+ids: SampleId[] } | 
+/**  Moves samples in the column order. The moved samples keep their relative order. */
+{ type: "move_samples"; 
+/**  Samples to move. */
+ids: SampleId[]; 
+/**  Insert them before this sample; `null` moves them to the end. */
+before: SampleId | null } | 
+/**
+ *  Sets the results of cells from typed or pasted text, as one undo step (FR-MEA-02, M3
+ *  decisions 7 and 8). Each text is parsed by the effective result type of its
+ *  characteristic; empty text clears the cell. Refused as a whole if one text is invalid.
+ *  A result on an `auto` characteristic pins it to the effective type in the same step.
+ */
+{ type: "set_results"; 
+/**  Cells in order; a later entry for the same cell wins. */
+results: ResultEntry[] } | 
+/**  Clears the results of cells. Cells without a result are left as they are. */
+{ type: "clear_results"; 
+/**  Cells to clear. */
+cells: ResultCell[] } | 
+/**
+ *  Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
+ *  characteristic has results of the other type; nothing is converted. `auto` on a
+ *  characteristic with results keeps its effective type pinned.
+ */
+{ type: "set_result_type"; 
+/**  Characteristics to change. */
+ids: CharId[]; 
+/**  New result type. */
+result_type: ResultType } | 
+/**
+ *  Replaces the report header and approval data (M3 decision 1). The report date is
+ *  `YYYY-MM-DD` or empty.
+ */
+{ type: "update_report_info"; 
+/**  New data. */
+info: ReportInfo } | 
+/**  Sets the label of a drawing revision, trimmed (FR-RVC-04). */
+{ type: "update_revision_label"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  New label; empty if unknown. */
+label: string } | 
+/**
+ *  Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
+ *  are those of the current revision, the time comes from the environment clock. Exports
+ *  send it in a batch with [`Command::LockNumbering`], so lock and record are one undo
+ *  step.
+ */
+{ type: "record_issued_report"; 
+/**  Which document. */
+kind: ReportKind; 
+/**  The template it was rendered with. */
+template: TemplateRef; 
+/**  File format. */
+format: ReportFormat; 
+/**  SHA-256 of the written file. */
+output_sha256: Sha256Hex } | 
+/**  Several commands as one undo step. If one fails, none is applied. */
+{ type: "batch"; 
+/**  Commands in order. */
+commands: Command[] };
 
 /**  Error of a command: a machine readable kind and a message for logs and bug reports. */
-export type CommandError =
-  /**  The PDFium library could not be loaded at startup; no drawing can be opened. */
-  | {
-      kind: "pdfium_unavailable";
-      /**  Why loading failed. */
-      message: string;
-    }
-  /**  A file could not be read. */
-  | {
-      kind: "io";
-      /**  The operating system error. */
-      message: string;
-    }
-  /**  The file is not a PDF that PDFium can open. */
-  | {
-      kind: "invalid_document";
-      /**  The PDFium error. */
-      message: string;
-    }
-  /**  An argument is malformed, for example a document id that is not a content hash. */
-  | {
-      kind: "invalid_argument";
-      /**  What is wrong. */
-      message: string;
-    }
-  /**  The action needs an open project. */
-  | { kind: "no_project" }
-  /**  The open project has unsaved changes and the caller did not allow discarding them. */
-  | { kind: "unsaved_changes" }
-  /**  Another Dimo instance has the project open. */
-  | {
-      kind: "in_use";
-      /**  User name of the other instance, if known. */
-      user: string | null;
-    }
-  /**  The project was written by a newer Dimo (NFR-REL-04). The file is left untouched. */
-  | {
-      kind: "newer_version";
-      /**  Schema version in the file. */
-      found: number;
-      /**  Highest schema version this build reads. */
-      supported: number;
-    }
-  /**  The project file could not be read or written. */
-  | {
-      kind: "project";
-      /**  What went wrong. */
-      message: string;
-    }
-  /**  An export could not be produced or written; no file was left behind. */
-  | {
-      kind: "export";
-      /**  What went wrong. */
-      message: string;
-    }
-  /**  The document command was refused; the project is unchanged. */
-  | {
-      kind: "rejected";
-      /**  Machine readable reason, for the frontend to translate. */
-      reason: RejectReason;
-      /**  Why, in English, for logs and bug reports. */
-      message: string;
-    };
+export type CommandError = 
+/**  The PDFium library could not be loaded at startup; no drawing can be opened. */
+{ kind: "pdfium_unavailable"; 
+/**  Why loading failed. */
+message: string } | 
+/**  A file could not be read. */
+{ kind: "io"; 
+/**  The operating system error. */
+message: string } | 
+/**  The file is not a PDF that PDFium can open. */
+{ kind: "invalid_document"; 
+/**  The PDFium error. */
+message: string } | 
+/**  An argument is malformed, for example a document id that is not a content hash. */
+{ kind: "invalid_argument"; 
+/**  What is wrong. */
+message: string } | 
+/**  The action needs an open project. */
+{ kind: "no_project" } | 
+/**  The open project has unsaved changes and the caller did not allow discarding them. */
+{ kind: "unsaved_changes" } | 
+/**  Another Dimo instance has the project open. */
+{ kind: "in_use"; 
+/**  User name of the other instance, if known. */
+user: string | null } | 
+/**  The project was written by a newer Dimo (NFR-REL-04). The file is left untouched. */
+{ kind: "newer_version"; 
+/**  Schema version in the file. */
+found: number; 
+/**  Highest schema version this build reads. */
+supported: number } | 
+/**  The project file could not be read or written. */
+{ kind: "project"; 
+/**  What went wrong. */
+message: string } | 
+/**  An export could not be produced or written; no file was left behind. */
+{ kind: "export"; 
+/**  What went wrong. */
+message: string } | 
+/**  The document command was refused; the project is unchanged. */
+{ kind: "rejected"; 
+/**  Machine readable reason, for the frontend to translate. */
+reason: RejectReason; 
+/**  Why, in English, for logs and bug reports. */
+message: string };
 
 /**
  *  A custom tolerance table stored in the project container as `tolerances/<id>.toml`
  *  (FR-TOL-07, M2 decision 4).
  */
 export type CustomTable = {
-  /**  Table id and version as in the file. */
-  table: TableRef;
-  /**  SHA-256 of the stored file, checked when the project is opened. */
-  sha256: Sha256Hex;
+	/**  Table id and version as in the file. */
+	table: TableRef,
+	/**  SHA-256 of the stored file, checked when the project is opened. */
+	sha256: Sha256Hex,
 };
 
 /**  Decimal place rule: a nominal written with `places` decimals gets `±tolerance` (FR-TOL-06). */
 export type DecimalPlaceRule = {
-  /**  Decimal places of the nominal, 0 to 10. */
-  places: number;
-  /**  Symmetric tolerance, positive. */
-  tolerance: string;
+	/**  Decimal places of the nominal, 0 to 10. */
+	places: number,
+	/**  Symmetric tolerance, positive. */
+	tolerance: string,
 };
 
 /**
  *  A remark on a derivation that the user should see, without changing the limits (spec 08
  *  stage 7).
  */
-export type DerivationHint =
-  /**  The printed deviations differ from the fit table. The printed ones were kept. */
-  | {
-      hint: "fit_deviations_differ";
-      /**  The fit as written. */
-      fit: string;
-      /**  Upper deviation of the fit table. */
-      table_upper_dev: string | null;
-      /**  Lower deviation of the fit table. */
-      table_lower_dev: string | null;
-    }
-  /**  The fit is not in the fit table; no limits from it. */
-  | {
-      hint: "unknown_fit";
-      /**  The fit as written. */
-      fit: string;
-    }
-  /**  The size is outside the ranges of the table that would apply. */
-  | {
-      hint: "size_outside_table";
-      /**  The table. */
-      table: TableRef;
-    }
-  /**  Reference dimension, not toleranced and not inspected by default (D-25, FR-CHR-08). */
-  | { hint: "reference_dimension" }
-  /**  Basic (theoretically exact) dimension, not inspected by default (D-25, FR-CHR-08). */
-  | { hint: "basic_dimension" };
+export type DerivationHint = 
+/**  The printed deviations differ from the fit table. The printed ones were kept. */
+{ hint: "fit_deviations_differ"; 
+/**  The fit as written. */
+fit: string; 
+/**  Upper deviation of the fit table. */
+table_upper_dev: string | null; 
+/**  Lower deviation of the fit table. */
+table_lower_dev: string | null } | 
+/**  The fit is not in the fit table; no limits from it. */
+{ hint: "unknown_fit"; 
+/**  The fit as written. */
+fit: string } | 
+/**  The size is outside the ranges of the table that would apply. */
+{ hint: "size_outside_table"; 
+/**  The table. */
+table: TableRef } | 
+/**  Reference dimension, not toleranced and not inspected by default (D-25, FR-CHR-08). */
+{ hint: "reference_dimension" } | 
+/**  Basic (theoretically exact) dimension, not inspected by default (D-25, FR-CHR-08). */
+{ hint: "basic_dimension" };
 
 /**  The rule that produced the limits, with its parameters (FR-TOL-01 precedence, FR-TOL-08). */
-export type DerivationRule =
-  /**  Tolerance written on the callout: deviations, `±`, limits, `MIN` or `MAX`. */
-  | { rule: "explicit" }
-  /**  Fit designation expanded with a fit table (FR-TOL-04). */
-  | {
-      rule: "fit";
-      /**  The fit table, e.g. `iso-286`. */
-      table: TableRef;
-      /**  The designation as written, e.g. `H7` or `H7/g6`. */
-      fit: string;
-      /**  Size step of the table the nominal lies in. */
-      range: SizeRange | null;
-    }
-  /**  Drawing specific rule, such as a custom table assigned to the project as drawing rule. */
-  | {
-      rule: "drawing_rule";
-      /**  Where the value came from. */
-      lookup: TableLookup;
-    }
-  /**  General tolerance standard by size range, e.g. ISO 2768-m (FR-TOL-02). */
-  | {
-      rule: "general";
-      /**  Where the value came from. */
-      lookup: TableLookup;
-    }
-  /**  Decimal place rule, e.g. `X.XX ±0.05` (FR-TOL-06). */
-  | {
-      rule: "decimal_rule";
-      /**  Decimal places of the nominal as written. */
-      places: number;
-      /**  Symmetric tolerance of the rule. */
-      tolerance: string;
-    }
-  /**  General tolerance from a custom table of the user (FR-TOL-07). */
-  | {
-      rule: "custom_table";
-      /**  Where the value came from. */
-      lookup: TableLookup;
-    }
-  /**  No tolerance on the callout and no general rule: no limits, flagged for review. */
-  | { rule: "no_tolerance_defined" }
-  /**  Limits typed or edited by hand. Never re-interpreted automatically. */
-  | { rule: "manual" };
+export type DerivationRule = 
+/**  Tolerance written on the callout: deviations, `±`, limits, `MIN` or `MAX`. */
+{ rule: "explicit" } | 
+/**  Fit designation expanded with a fit table (FR-TOL-04). */
+{ rule: "fit"; 
+/**  The fit table, e.g. `iso-286`. */
+table: TableRef; 
+/**  The designation as written, e.g. `H7` or `H7/g6`. */
+fit: string; 
+/**  Size step of the table the nominal lies in. */
+range: SizeRange | null } | 
+/**  Drawing specific rule, such as a custom table assigned to the project as drawing rule. */
+{ rule: "drawing_rule"; 
+/**  Where the value came from. */
+lookup: TableLookup } | 
+/**  General tolerance standard by size range, e.g. ISO 2768-m (FR-TOL-02). */
+{ rule: "general"; 
+/**  Where the value came from. */
+lookup: TableLookup } | 
+/**  Decimal place rule, e.g. `X.XX ±0.05` (FR-TOL-06). */
+{ rule: "decimal_rule"; 
+/**  Decimal places of the nominal as written. */
+places: number; 
+/**  Symmetric tolerance of the rule. */
+tolerance: string } | 
+/**  General tolerance from a custom table of the user (FR-TOL-07). */
+{ rule: "custom_table"; 
+/**  Where the value came from. */
+lookup: TableLookup } | 
+/**  No tolerance on the callout and no general rule: no limits, flagged for review. */
+{ rule: "no_tolerance_defined" } | 
+/**  Limits typed or edited by hand. Never re-interpreted automatically. */
+{ rule: "manual" };
 
 /**  What a debug build should do at startup, read from the `DIMO_DEV_*` environment variables. */
 export type DevStartup = {
-  /**
-   *  The project after `DIMO_DEV_OPEN` and `DIMO_DEV_SCRIPT`, `None` if `DIMO_DEV_OPEN` is
-   *  unset or was handled by an earlier call.
-   */
-  project: ProjectLoaded | null;
-  /**  Number of dummy balloons per sheet, zero for none. */
-  balloons: number;
-  /**  Fixed balloon anchors in sheet space; empty for random positions. */
-  anchors: SheetPoint[];
-  /**  Zero based sheet to show first, from `DIMO_DEV_SHEET`. */
-  sheet: number;
-  /**  Start view from `DIMO_DEV_VIEW`; `None` fits the sheet. */
-  view: DevView | null;
-  /**  Whether to run the scripted pan and report frame times. */
-  pan_check: boolean;
-  /**  Text of the `DIMO_DEV_UI_SCRIPT` file, played by the webview after loading. */
-  ui_script: string | null;
+	/**
+	 *  The project after `DIMO_DEV_OPEN` and `DIMO_DEV_SCRIPT`, `None` if `DIMO_DEV_OPEN` is
+	 *  unset or was handled by an earlier call.
+	 */
+	project: ProjectLoaded | null,
+	/**  Number of dummy balloons per sheet, zero for none. */
+	balloons: number,
+	/**  Fixed balloon anchors in sheet space; empty for random positions. */
+	anchors: SheetPoint[],
+	/**  Zero based sheet to show first, from `DIMO_DEV_SHEET`. */
+	sheet: number,
+	/**  Start view from `DIMO_DEV_VIEW`; `None` fits the sheet. */
+	view: DevView | null,
+	/**  Whether to run the scripted pan and report frame times. */
+	pan_check: boolean,
+	/**  Text of the `DIMO_DEV_UI_SCRIPT` file, played by the webview after loading. */
+	ui_script: string | null,
 };
 
 /**
@@ -1204,36 +1027,36 @@ export type DevStartup = {
  *  in the viewport center.
  */
 export type DevView = {
-  /**  Zoom in percent of the printed size. */
-  percent: number | null;
-  /**  Sheet point in the viewport center. */
-  center: SheetPoint;
+	/**  Zoom in percent of the printed size. */
+	percent: number | null,
+	/**  Sheet point in the viewport center. */
+	center: SheetPoint,
 };
 
 /**  The drawing of a project as the viewport needs it. */
 export type DocumentInfo = {
-  /**  Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs. */
-  doc: string;
-  /**  File name of the drawing without the directory. */
-  name: string;
-  /**  Sheets in order; the index is the `{sheet}` part of tile URLs. */
-  sheets: SheetInfo[];
+	/**  Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs. */
+	doc: string,
+	/**  File name of the drawing without the directory. */
+	name: string,
+	/**  Sheets in order; the index is the `{sheet}` part of tile URLs. */
+	sheets: SheetInfo[],
 };
 
 /**  One imported drawing file (data model `DrawingRevision`, FR-DOC-07). */
 export type DrawingRevision = {
-  /**  Stable ID. */
-  id: RevisionId;
-  /**  Revision label from the title block or the user, e.g. `B`. Empty if unknown. */
-  label: string;
-  /**  File name at import, without directories. */
-  file_name: string;
-  /**  SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`. */
-  sha256: Sha256Hex;
-  /**  When the file was imported. */
-  imported_at: Timestamp;
-  /**  Sheets in page order. */
-  sheets: Sheet[];
+	/**  Stable ID. */
+	id: RevisionId,
+	/**  Revision label from the title block or the user, e.g. `B`. Empty if unknown. */
+	label: string,
+	/**  File name at import, without directories. */
+	file_name: string,
+	/**  SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`. */
+	sha256: Sha256Hex,
+	/**  When the file was imported. */
+	imported_at: Timestamp,
+	/**  Sheets in page order. */
+	sheets: Sheet[],
 };
 
 /**
@@ -1241,265 +1064,261 @@ export type DrawingRevision = {
  *  "job ID and engine versions"), for example the callout parser or the tolerance engine.
  */
 export type EngineVersion = {
-  /**  Engine name, such as `dimo-notation`. */
-  name: string;
-  /**  Engine version, such as the crate version. */
-  version: string;
+	/**  Engine name, such as `dimo-notation`. */
+	name: string,
+	/**  Engine version, such as the crate version. */
+	version: string,
 };
 
 /**  Language of explanations, the UI language of the frontend. */
-export type ExplainLanguage =
-  /**  English. */
-  | "en"
-  /**  German. */
-  | "de";
+export type ExplainLanguage = 
+/**  English. */
+"en" | 
+/**  German. */
+"de";
 
 /**  What to export. */
-export type ExportFormat =
-  /**  A copy of the drawing with the balloons (FR-EXP-01). */
-  | "ballooned_pdf"
-  /**  The characteristic list as CSV (FR-EXP-09). */
-  | "csv"
-  /**  The characteristic list as an Excel workbook. */
-  | "xlsx";
+export type ExportFormat = 
+/**  A copy of the drawing with the balloons (FR-EXP-01). */
+"ballooned_pdf" | 
+/**  The characteristic list as CSV (FR-EXP-09). */
+"csv" | 
+/**  The characteristic list as an Excel workbook. */
+"xlsx";
 
 /**  The export options used last, offered again in the export view. */
 export type ExportPreferences = {
-  /**  Header language of the characteristic list. */
-  language: ReportLanguage;
-  /**  Balloons as page content or annotations. */
-  pdf_balloons: PdfBalloons;
+	/**  Header language of the characteristic list. */
+	language: ReportLanguage,
+	/**  Balloons as page content or annotations. */
+	pdf_balloons: PdfBalloons,
 };
 
 /**  An export the user asked for. */
 export type ExportRequest = {
-  /**  What to export. */
-  format: ExportFormat;
-  /**  Header language of the characteristic list (D-32); ignored for the PDF. */
-  language: ReportLanguage;
-  /**  Balloons as page content or annotations (D-33); only for the PDF. */
-  pdf_balloons: PdfBalloons;
-  /**  Export as issued: locks the numbering first (D-23). */
-  issued: boolean;
+	/**  What to export. */
+	format: ExportFormat,
+	/**  Header language of the characteristic list (D-32); ignored for the PDF. */
+	language: ReportLanguage,
+	/**  Balloons as page content or annotations (D-33); only for the PDF. */
+	pdf_balloons: PdfBalloons,
+	/**  Export as issued: locks the numbering first (D-23). */
+	issued: boolean,
 };
 
 /**
  *  One field value of a characteristic, used by commands that create or edit characteristics.
- *
+ * 
  *  Serialized as `{ "field": "nominal", "value": "12.5" }`.
  */
-export type FieldValue =
-  /**  Kind. */
-  | { field: "kind"; value: CharacteristicKind }
-  /**  Requirement text; leading and trailing white space is removed. */
-  | { field: "requirement_text"; value: string }
-  /**  Nominal value. */
-  | { field: "nominal"; value: OptionalDecimal }
-  /**  Unit. */
-  | { field: "unit"; value: Unit | null }
-  /**  Upper deviation. */
-  | { field: "upper_dev"; value: OptionalDecimal }
-  /**  Lower deviation. */
-  | { field: "lower_dev"; value: OptionalDecimal }
-  /**  Upper limit. */
-  | { field: "upper_limit"; value: OptionalDecimal }
-  /**  Lower limit. */
-  | { field: "lower_limit"; value: OptionalDecimal }
-  /**  Fit designation; empty text clears it. */
-  | { field: "fit"; value: string | null }
-  /**  Quantity, at least 1. */
-  | { field: "quantity"; value: number }
-  /**  Classification. */
-  | { field: "classification"; value: Classification }
-  /**  Inspection method. */
-  | { field: "inspection_method"; value: string }
-  /**  Gauge. */
-  | { field: "gauge"; value: string }
-  /**  Sampling plan. */
-  | { field: "sampling"; value: string }
-  /**  Inspection frequency. */
-  | { field: "frequency"; value: string }
-  /**  Whether the characteristic is inspected. */
-  | { field: "inspect"; value: boolean }
-  /**  Review state. */
-  | { field: "status"; value: CharacteristicStatus }
-  /**  Comment. */
-  | { field: "comment"; value: string }
-  /**  Which rule produced the limits (FR-TOL-08), set together with the limits it explains. */
-  | { field: "derivation"; value: ToleranceDerivation | null }
-  /**  Shorter leg of an angle (T2.9a), set together with the limits it gives. */
-  | { field: "shorter_leg"; value: Length | null };
+export type FieldValue = 
+/**  Kind. */
+{ field: "kind"; value: CharacteristicKind } | 
+/**  Requirement text; leading and trailing white space is removed. */
+{ field: "requirement_text"; value: string } | 
+/**  Nominal value. */
+{ field: "nominal"; value: OptionalDecimal } | 
+/**  Unit. */
+{ field: "unit"; value: Unit | null } | 
+/**  Upper deviation. */
+{ field: "upper_dev"; value: OptionalDecimal } | 
+/**  Lower deviation. */
+{ field: "lower_dev"; value: OptionalDecimal } | 
+/**  Upper limit. */
+{ field: "upper_limit"; value: OptionalDecimal } | 
+/**  Lower limit. */
+{ field: "lower_limit"; value: OptionalDecimal } | 
+/**  Fit designation; empty text clears it. */
+{ field: "fit"; value: string | null } | 
+/**  Quantity, at least 1. */
+{ field: "quantity"; value: number } | 
+/**  Classification. */
+{ field: "classification"; value: Classification } | 
+/**  Inspection method. */
+{ field: "inspection_method"; value: string } | 
+/**  Gauge. */
+{ field: "gauge"; value: string } | 
+/**  Sampling plan. */
+{ field: "sampling"; value: string } | 
+/**  Inspection frequency. */
+{ field: "frequency"; value: string } | 
+/**  Whether the characteristic is inspected. */
+{ field: "inspect"; value: boolean } | 
+/**  Review state. */
+{ field: "status"; value: CharacteristicStatus } | 
+/**  Comment. */
+{ field: "comment"; value: string } | 
+/**  Which rule produced the limits (FR-TOL-08), set together with the limits it explains. */
+{ field: "derivation"; value: ToleranceDerivation | null } | 
+/**  Shorter leg of an angle (T2.9a), set together with the limits it gives. */
+{ field: "shorter_leg"; value: Length | null };
 
 /**  Frame times measured by the viewport during a scripted pan (NFR-PERF-02). */
 export type FrameTimeReport = {
-  /**  Dummy balloons on the sheet during the measurement. */
-  balloons: number;
-  /**  Number of measured frames. */
-  frames: number;
-  /**  Mean frame time in milliseconds. */
-  mean_ms: number | null;
-  /**  95th percentile frame time in milliseconds. */
-  p95_ms: number | null;
-  /**  Longest frame in milliseconds. */
-  max_ms: number | null;
-  /**  Device pixel ratio of the window. */
-  device_pixel_ratio: number | null;
-  /**  Viewport size in CSS pixels, width and height. */
-  viewport: [number | null, number | null];
+	/**  Dummy balloons on the sheet during the measurement. */
+	balloons: number,
+	/**  Number of measured frames. */
+	frames: number,
+	/**  Mean frame time in milliseconds. */
+	mean_ms: number | null,
+	/**  95th percentile frame time in milliseconds. */
+	p95_ms: number | null,
+	/**  Longest frame in milliseconds. */
+	max_ms: number | null,
+	/**  Device pixel ratio of the window. */
+	device_pixel_ratio: number | null,
+	/**  Viewport size in CSS pixels, width and height. */
+	viewport: [(number | null), (number | null)],
 };
 
 /**  Whether the entry is a command, an undo or a redo. */
-export type HistoryAction =
-  /**  A command was executed. */
-  | "command"
-  /**  A command was undone. */
-  | "undo"
-  /**  An undone command was applied again. */
-  | "redo";
+export type HistoryAction = 
+/**  A command was executed. */
+"command" | 
+/**  A command was undone. */
+"undo" | 
+/**  An undone command was applied again. */
+"redo";
 
 /**  One step in the history of a characteristic (FR-CHR-10). */
 export type HistoryEntry = {
-  /**  When. */
-  timestamp: Timestamp;
-  /**  Who (D-27). */
-  user: string;
-  /**  Command, undo or redo. */
-  action: HistoryAction;
-  /**  The command that was executed, undone or redone. */
-  command: Command;
-  /**  What made the change. */
-  source: ChangeSource;
-  /**  State before; `null` if the entry created the characteristic. */
-  before: Characteristic | null;
-  /**  State after; `null` if the entry removed the characteristic. */
-  after: Characteristic | null;
-  /**  Fields that changed; empty when the characteristic was created or removed. */
-  fields: CharacteristicField[];
+	/**  When. */
+	timestamp: Timestamp,
+	/**  Who (D-27). */
+	user: string,
+	/**  Command, undo or redo. */
+	action: HistoryAction,
+	/**  The command that was executed, undone or redone. */
+	command: Command,
+	/**  What made the change. */
+	source: ChangeSource,
+	/**  State before; `null` if the entry created the characteristic. */
+	before: Characteristic | null,
+	/**  State after; `null` if the entry removed the characteristic. */
+	after: Characteristic | null,
+	/**  Fields that changed; empty when the characteristic was created or removed. */
+	fields: CharacteristicField[],
 };
 
 /**
  *  Number given to a characteristic added while numbering is locked (FR-BAL-11, D-23).
- *
+ * 
  *  Sub-numbers and letters follow the characteristic the new one is inserted after (the
  *  anchor). Numbers given while locked are never given again, even after a delete, so an issued
  *  number never changes meaning.
  */
-export type InsertPolicy =
-  /**  One more than the highest base number ever given: after `12` comes `13` (default). */
-  | "next_free"
-  /**  Next sub-number of the anchor's base number: after `12` comes `12.1`, then `12.2`. */
-  | "sub_number"
-  /**  Next letter of the anchor's number: after `12` comes `12A`, then `12B`. */
-  | "letter_suffix";
+export type InsertPolicy = 
+/**  One more than the highest base number ever given: after `12` comes `13` (default). */
+"next_free" | 
+/**  Next sub-number of the anchor's base number: after `12` comes `12.1`, then `12.2`. */
+"sub_number" | 
+/**  Next letter of the anchor's number: after `12` comes `12A`, then `12B`. */
+"letter_suffix";
 
 /**  How a characteristic is inspected (FR-CHR-02). Empty text means not set. */
 export type Inspection = {
-  /**  Inspection method, e.g. `CMM` or `visual`. */
-  method: string;
-  /**  Gauge or measuring instrument. */
-  gauge: string;
-  /**  Sampling plan, e.g. `100%` or `5 per lot`. */
-  sampling: string;
-  /**  Inspection frequency. */
-  frequency: string;
+	/**  Inspection method, e.g. `CMM` or `visual`. */
+	method: string,
+	/**  Gauge or measuring instrument. */
+	gauge: string,
+	/**  Sampling plan, e.g. `100%` or `5 per lot`. */
+	sampling: string,
+	/**  Inspection frequency. */
+	frequency: string,
 };
 
 /**  Something the tolerance engine could not decide, shown with a proposal, never stored. */
-export type InterpreterNote =
-  /**  An angle whose shorter leg is unknown, so angular general tolerances cannot apply. */
-  | "shorter_leg_unknown"
-  /**  A fit pair such as `H7/g6` names two features; no limits. */
-  | "fit_pair";
+export type InterpreterNote = 
+/**  An angle whose shorter leg is unknown, so angular general tolerances cannot apply. */
+"shorter_leg_unknown" | 
+/**  A fit pair such as `H7/g6` names two features; no limits. */
+"fit_pair";
 
 /**  Record of a report exported as issued (data model `IssuedReport`, D-23, M3 decision 17). */
 export type IssuedReport = {
-  /**  Which document. */
-  kind: ReportKind;
-  /**  The template it was rendered with. */
-  template: TemplateRef;
-  /**  The drawing revision that was current. */
-  revision: RevisionId;
-  /**  SHA-256 of that revision's drawing file (FR-DOC-07). */
-  drawing_sha256: Sha256Hex;
-  /**
-   *  When it was exported, from the environment clock. Project data only; never written into
-   *  the report file (FR-EXP-11).
-   */
-  exported_at: Timestamp;
-  /**  SHA-256 of the written file. */
-  output_sha256: Sha256Hex;
-  /**  File format. */
-  format: ReportFormat;
+	/**  Which document. */
+	kind: ReportKind,
+	/**  The template it was rendered with. */
+	template: TemplateRef,
+	/**  The drawing revision that was current. */
+	revision: RevisionId,
+	/**  SHA-256 of that revision's drawing file (FR-DOC-07). */
+	drawing_sha256: Sha256Hex,
+	/**
+	 *  When it was exported, from the environment clock. Project data only; never written into
+	 *  the report file (FR-EXP-11).
+	 */
+	exported_at: Timestamp,
+	/**  SHA-256 of the written file. */
+	output_sha256: Sha256Hex,
+	/**  File format. */
+	format: ReportFormat,
 };
 
 /**  A background job ended. Event `job-finished`; sent once per job, after its last progress. */
 export type JobFinished = {
-  /**  The job. */
-  id: JobId;
-  /**  Result. */
-  outcome: JobOutcome;
+	/**  The job. */
+	id: JobId,
+	/**  Result. */
+	outcome: JobOutcome,
 };
 
 /**  Identifier of a background job within one app session. */
 export type JobId = number;
 
 /**  How a job ended. */
-export type JobOutcome =
-  /**  The file was written. */
-  | {
-      state: "done";
-      /**  File name of the written file, without the directory. */
-      file_name: string;
-    }
-  /**  Nothing was written. */
-  | {
-      state: "failed";
-      /**  Why. */
-      error: CommandError;
-    };
+export type JobOutcome = 
+/**  The file was written. */
+{ state: "done"; 
+/**  File name of the written file, without the directory. */
+file_name: string } | 
+/**  Nothing was written. */
+{ state: "failed"; 
+/**  Why. */
+error: CommandError };
 
 /**  Progress of a long running job, emitted as a Tauri event (05 Architecture, IPC). */
 export type JobProgress = {
-  /**  Job the progress belongs to. */
-  id: JobId;
-  /**  Completed share of the work, from 0.0 to 1.0. */
-  fraction: number | null;
-  /**  Short description of the current step, shown next to the progress bar. */
-  message: string;
+	/**  Job the progress belongs to. */
+	id: JobId,
+	/**  Completed share of the work, from 0.0 to 1.0. */
+	fraction: number | null,
+	/**  Short description of the current step, shown next to the progress bar. */
+	message: string,
 };
 
 /**  How the labels of one axis are written. */
-export type LabelKind =
-  /**  `A, B, ..., Z, AA, AB, ...` */
-  | "letters"
-  /**  `1, 2, 3, ...` */
-  | "numbers";
+export type LabelKind = 
+/**  `A, B, ..., Z, AA, AB, ...` */
+"letters" | 
+/**  `1, 2, 3, ...` */
+"numbers";
 
 /**  The shorter leg sent with a callout text (T2.9a). */
-export type LegInput =
-  /**  Text just typed in the leg field, in the unit of the sheet; empty means no leg. */
-  | { kind: "typed"; value: string }
-  /**
-   *  A leg already stored on the characteristic or proposal, used with its own unit, so a
-   *  later change of the sheet unit does not change it.
-   */
-  | { kind: "stored"; value: Length };
+export type LegInput = 
+/**  Text just typed in the leg field, in the unit of the sheet; empty means no leg. */
+{ kind: "typed"; value: string } | 
+/**
+ *  A leg already stored on the characteristic or proposal, used with its own unit, so a
+ *  later change of the sheet unit does not change it.
+ */
+{ kind: "stored"; value: Length };
 
 /**  What setting the shorter leg did with the limits (T2.9a). */
-export type LegOutcome =
-  /**  The text was read again with the leg; limits and rule follow it. */
-  | "interpreted"
-  /**  Limits entered by hand were kept; only the leg is stored. */
-  | "manual_kept"
-  /**  The requirement text is empty or not a callout; only the leg is stored. */
-  | "unreadable";
+export type LegOutcome = 
+/**  The text was read again with the leg; limits and rule follow it. */
+"interpreted" | 
+/**  Limits entered by hand were kept; only the leg is stored. */
+"manual_kept" | 
+/**  The requirement text is empty or not a callout; only the leg is stored. */
+"unreadable";
 
 /**  Result of setting the shorter leg of a characteristic (T2.9a). */
 export type LegSet = {
-  /**  The change as one undo step, also sent as `project-patched`. */
-  patched: ProjectPatched;
-  /**  What happened to the limits. */
-  outcome: LegOutcome;
+	/**  The change as one undo step, also sent as `project-patched`. */
+	patched: ProjectPatched,
+	/**  What happened to the limits. */
+	outcome: LegOutcome,
 };
 
 /**
@@ -1507,36 +1326,36 @@ export type LegSet = {
  *  `{ "value": "40", "unit": "mm" }`.
  */
 export type Length = {
-  /**  The value in `unit`. */
-  value: string;
-  /**  A length unit: `mm` or `in`. */
-  unit: Unit;
+	/**  The value in `unit`. */
+	value: string,
+	/**  A length unit: `mm` or `in`. */
+	unit: Unit,
 };
 
 /**  Why numbering was locked (FR-BAL-10). */
-export type LockReason =
-  /**  The user locked it. */
-  | "manual"
-  /**  A report was exported as issued (D-23). */
-  | "issued_report";
+export type LockReason = 
+/**  The user locked it. */
+"manual" | 
+/**  A report was exported as issued (D-23). */
+"issued_report";
 
 /**
  *  The result of one sample for one characteristic (data model `Result`, M3 decision 1).
- *
+ * 
  *  Holds only what the user entered. The verdict is computed from the value and the current
  *  limits of the characteristic (M3 decision 2).
  */
 export type MeasurementResult = {
-  /**  The measured part. */
-  sample: SampleId;
-  /**  The characteristic. */
-  characteristic: CharId;
-  /**  The value. */
-  value: ResultValue;
-  /**  Where the value came from. */
-  source: ResultSource;
-  /**  Free text. */
-  comment: string;
+	/**  The measured part. */
+	sample: SampleId,
+	/**  The characteristic. */
+	characteristic: CharId,
+	/**  The value. */
+	value: ResultValue,
+	/**  Where the value came from. */
+	source: ResultSource,
+	/**  Free text. */
+	comment: string,
 };
 
 /**
@@ -1544,79 +1363,79 @@ export type MeasurementResult = {
  *  and the inspection report prints.
  */
 export type MeasurementState = {
-  /**  Measured characteristics in number order (decision 5). */
-  rows: RowState[];
-  /**  Samples in column order. */
-  samples: SampleState[];
-  /**  Cells per verdict over the whole grid. */
-  counts: VerdictCounts;
-  /**  Overall verdict of the report. */
-  verdict: OverallVerdict;
+	/**  Measured characteristics in number order (decision 5). */
+	rows: RowState[],
+	/**  Samples in column order. */
+	samples: SampleState[],
+	/**  Cells per verdict over the whole grid. */
+	counts: VerdictCounts,
+	/**  Overall verdict of the report. */
+	verdict: OverallVerdict,
 };
 
 /**  How a callout for several features (`4X`, `2 PL`) is numbered (FR-BAL-07, D-22). */
-export type MultiInstance =
-  /**  One balloon with the quantity (default, D-22). */
-  | "quantity"
-  /**  One number per feature as sub-numbers, `5.1`, `5.2`. */
-  | "sub_number";
+export type MultiInstance = 
+/**  One balloon with the quantity (default, D-22). */
+"quantity" | 
+/**  One number per feature as sub-numbers, `5.1`, `5.2`. */
+"sub_number";
 
 /**  One characteristic with the number a strategy gives it. */
 export type NumberedCharacteristic = {
-  /**  The characteristic. */
-  id: CharId;
-  /**  Its number under the strategy. */
-  number: string;
+	/**  The characteristic. */
+	id: CharId,
+	/**  Its number under the strategy. */
+	number: string,
 };
 
 /**
  *  Numbering state of the project (D-21, D-23).
- *
+ * 
  *  Unlocked: numbers always follow the placement order, `1..=n` with sub-numbers for
  *  multi-instance groups when the project uses them (D-22), and every add, delete or move
  *  renumbers. Locked: numbers never change, deletions leave gaps, moves are refused and added
  *  characteristics are numbered by [`NumberingSettings::insert_when_locked`].
  */
 export type Numbering = {
-  /**  The lock, if numbering is locked. */
-  lock: NumberingLock | null;
+	/**  The lock, if numbering is locked. */
+	lock: NumberingLock | null,
 };
 
 /**  State of a numbering lock (FR-BAL-10, D-23). */
 export type NumberingLock = {
-  /**  Why the numbering was locked. */
-  reason: LockReason;
-  /**  When it was locked. */
-  locked_at: Timestamp;
-  /**  Who locked it (D-27). */
-  locked_by: string;
-  /**  Highest base number given so far, including numbers of deleted characteristics. */
-  highest_number: number;
-  /**
-   *  Sub-numbered and lettered numbers present when locking (D-22) or given while locked,
-   *  including those of deleted characteristics, sorted (FR-BAL-11).
-   */
-  given: string[];
+	/**  Why the numbering was locked. */
+	reason: LockReason,
+	/**  When it was locked. */
+	locked_at: Timestamp,
+	/**  Who locked it (D-27). */
+	locked_by: string,
+	/**  Highest base number given so far, including numbers of deleted characteristics. */
+	highest_number: number,
+	/**
+	 *  Sub-numbered and lettered numbers present when locking (D-22) or given while locked,
+	 *  including those of deleted characteristics, sorted (FR-BAL-11).
+	 */
+	given: string[],
 };
 
 /**  What applying a strategy would do, without changing anything (FR-BAL-05). */
 export type NumberingPreview = {
-  /**  The strategy. */
-  strategy: NumberingStrategy;
-  /**  All characteristics in the new placement order with their new numbers. */
-  entries: NumberedCharacteristic[];
-  /**  Number of characteristics whose number would change. */
-  changed: number;
+	/**  The strategy. */
+	strategy: NumberingStrategy,
+	/**  All characteristics in the new placement order with their new numbers. */
+	entries: NumberedCharacteristic[],
+	/**  Number of characteristics whose number would change. */
+	changed: number,
 };
 
 /**  Numbering settings of a project (FR-BAL-04, FR-BAL-07, FR-BAL-11). */
 export type NumberingSettings = {
-  /**  Numbering strategy (D-21). */
-  strategy: NumberingStrategy;
-  /**  Numbering of multi-instance callouts (D-22). */
-  multi_instance: MultiInstance;
-  /**  How characteristics added while numbering is locked are numbered (D-23). */
-  insert_when_locked: InsertPolicy;
+	/**  Numbering strategy (D-21). */
+	strategy: NumberingStrategy,
+	/**  Numbering of multi-instance callouts (D-22). */
+	multi_instance: MultiInstance,
+	/**  How characteristics added while numbering is locked are numbered (D-23). */
+	insert_when_locked: InsertPolicy,
 };
 
 /**
@@ -1624,38 +1443,38 @@ export type NumberingSettings = {
  *  [`Command::ApplyNumbering`](crate::command::Command::ApplyNumbering); the rules are in
  *  [`numbering`](crate::numbering).
  */
-export type NumberingStrategy =
-  /**
-   *  Sheet, then zone, then reading order inside the zone (top to bottom, left to right).
-   *  Without a zone grid, reading order on the sheet. Default for new projects (D-21).
-   */
-  | "sheet_zone"
-  /**  View by view, reading order inside each view. */
-  | "view"
-  /**  View by view, clockwise around the view center starting at 12 o'clock. */
-  | "view_clockwise"
-  /**  Grouped by characteristic kind. */
-  | "kind"
-  /**  The current placement order; the user reorders by hand. */
-  | "manual";
+export type NumberingStrategy = 
+/**
+ *  Sheet, then zone, then reading order inside the zone (top to bottom, left to right).
+ *  Without a zone grid, reading order on the sheet. Default for new projects (D-21).
+ */
+"sheet_zone" | 
+/**  View by view, reading order inside each view. */
+"view" | 
+/**  View by view, clockwise around the view center starting at 12 o'clock. */
+"view_clockwise" | 
+/**  Grouped by characteristic kind. */
+"kind" | 
+/**  The current placement order; the user reorders by hand. */
+"manual";
 
 /**  What opening a project found worth telling the user. */
 export type OpenNotice = {
-  /**  A project that was never saved was restored from the autosave folder after a crash. */
-  restored_unsaved: boolean;
-  /**  Changes replayed from the autosave journal after a crash. */
-  recovered_changes: number;
-  /**  The last change before the crash was written incompletely and dropped. */
-  dropped_incomplete_change: boolean;
-  /**  A journal that did not fit the project was moved to this file and not applied. */
-  set_aside_journal: string | null;
-  /**  The file had this older schema version and was converted (NFR-REL-03). */
-  migrated_from: number | null;
+	/**  A project that was never saved was restored from the autosave folder after a crash. */
+	restored_unsaved: boolean,
+	/**  Changes replayed from the autosave journal after a crash. */
+	recovered_changes: number,
+	/**  The last change before the crash was written incompletely and dropped. */
+	dropped_incomplete_change: boolean,
+	/**  A journal that did not fit the project was moved to this file and not applied. */
+	set_aside_journal: string | null,
+	/**  The file had this older schema version and was converted (NFR-REL-03). */
+	migrated_from: number | null,
 };
 
 /**
  *  An optional exact decimal that serializes as a decimal string or `null`.
- *
+ * 
  *  Used where a `#[serde(with)]` field attribute is not possible, such as the content of an
  *  adjacently tagged enum variant.
  */
@@ -1663,122 +1482,122 @@ export type OptionalDecimal = string | null;
 
 /**  Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`). */
 export type OrientedBox = {
-  /**  Center of the box. */
-  center: Point;
-  /**  Size of the box before rotation. */
-  size: Size;
-  /**
-   *  Rotation in degrees, counterclockwise as seen on the sheet, in the range (-180, 180].
-   *  `0` is text read left to right, `90` is text read bottom to top.
-   */
-  angle: number | null;
+	/**  Center of the box. */
+	center: Point,
+	/**  Size of the box before rotation. */
+	size: Size,
+	/**
+	 *  Rotation in degrees, counterclockwise as seen on the sheet, in the range (-180, 180].
+	 *  `0` is text read left to right, `90` is text read bottom to top.
+	 */
+	angle: number | null,
 };
 
 /**  How a characteristic came into the project (data model `origin`). */
-export type Origin =
-  /**  Placed by hand. */
-  | "manual"
-  /**  Read from a box the user drew (M2). */
-  | "box_select"
-  /**  Accepted from automatic detection (M4). */
-  | "auto_detect"
-  /**  Carried over from an earlier drawing revision (M6). */
-  | "carried_over";
+export type Origin = 
+/**  Placed by hand. */
+"manual" | 
+/**  Read from a box the user drew (M2). */
+"box_select" | 
+/**  Accepted from automatic detection (M4). */
+"auto_detect" | 
+/**  Carried over from an earlier drawing revision (M6). */
+"carried_over";
 
 /**  Verdict of a group of cells: a sample, a characteristic or the whole report (decision 3). */
-export type OverallVerdict =
-  /**  Every cell passes. */
-  | "pass"
-  /**  At least one cell fails. */
-  | "fail"
-  /**  No cell fails, but some are missing or not evaluated, or there are no cells. */
-  | "open";
+export type OverallVerdict = 
+/**  Every cell passes. */
+"pass" | 
+/**  At least one cell fails. */
+"fail" | 
+/**  No cell fails, but some are missing or not evaluated, or there are no cells. */
+"open";
 
 /**  Something the parser assumed that the user should check (spec 08 stage 6). */
-export type ParseHint =
-  /**
-   *  The unit inch was read from the notation (fraction or no leading zero), not from an
-   *  explicit unit marker (D-20).
-   */
-  | "inch_from_notation"
-  /**  Tolerance lines stacked above each other were joined. */
-  | "stacked_lines_joined"
-  /**  A decimal comma was read as decimal point. */
-  | "decimal_comma";
+export type ParseHint = 
+/**
+ *  The unit inch was read from the notation (fraction or no leading zero), not from an
+ *  explicit unit marker (D-20).
+ */
+"inch_from_notation" | 
+/**  Tolerance lines stacked above each other were joined. */
+"stacked_lines_joined" | 
+/**  A decimal comma was read as decimal point. */
+"decimal_comma";
 
 /**  A callout text that could not be parsed (spec 08 stage 6). */
 export type ParseIssue = {
-  /**  Byte position in the raw text where parsing stopped. */
-  position: number;
-  /**  What the parser expected there, in English. */
-  expected: string;
+	/**  Byte position in the raw text where parsing stopped. */
+	position: number,
+	/**  What the parser expected there, in English. */
+	expected: string,
 };
 
 /**  What one command, undo or redo changed. Sent to the frontend after every command. */
 export type Patch = {
-  /**  Changes in the order they were applied. Empty if nothing changed. */
-  changes: Change[];
+	/**  Changes in the order they were applied. Empty if nothing changed. */
+	changes: Change[],
 };
 
 /**  How balloons are written into the ballooned PDF (D-33). */
-export type PdfBalloons =
-  /**  Vector graphics in the page content (default). */
-  | "page_content"
-  /**  One annotation per balloon, which PDF viewers can hide. */
-  | "annotations";
+export type PdfBalloons = 
+/**  Vector graphics in the page content (default). */
+"page_content" | 
+/**  One annotation per balloon, which PDF viewers can hide. */
+"annotations";
 
 /**  A point in sheet space. */
 export type Point = {
-  /**  Distance from the left sheet edge in PDF user units. */
-  x: number | null;
-  /**  Distance from the top sheet edge in PDF user units. */
-  y: number | null;
+	/**  Distance from the left sheet edge in PDF user units. */
+	x: number | null,
+	/**  Distance from the top sheet edge in PDF user units. */
+	y: number | null,
 };
 
 /**
  *  A Dimo project (data model `Project`).
- *
+ * 
  *  Change it only through [`Document::execute`](crate::document::Document::execute), so every
  *  change is undoable and audited (ADR 0001, NFR-REL-02).
  */
 export type Project = {
-  /**  Part and order data. */
-  info: ProjectInfo;
-  /**  Imported drawing files, oldest first. Old revisions stay for traceability. */
-  revisions: DrawingRevision[];
-  /**  The revision that is ballooned. */
-  current_revision: RevisionId;
-  /**  Characteristics in placement order (D-21). */
-  characteristics: Characteristic[];
-  /**  Balloons in placement order. */
-  balloons: Balloon[];
-  /**  Numbering state. */
-  numbering: Numbering;
-  /**  Project settings. */
-  settings: ProjectSettings;
-  /**  Measured parts; the order is the column order of the grid and the reports (FR-MEA-01). */
-  samples: Sample[];
-  /**
-   *  Measurement results, at most one per sample and characteristic, sorted by sample order
-   *  and then by characteristic placement order (M3 decision 1). Commands keep the order.
-   */
-  results: MeasurementResult[];
-  /**  Report header and approval data (M3 decision 1). */
-  report_info: ReportInfo;
-  /**  Reports exported as issued, oldest first (D-23, M3 decision 17). */
-  issued_reports: IssuedReport[];
+	/**  Part and order data. */
+	info: ProjectInfo,
+	/**  Imported drawing files, oldest first. Old revisions stay for traceability. */
+	revisions: DrawingRevision[],
+	/**  The revision that is ballooned. */
+	current_revision: RevisionId,
+	/**  Characteristics in placement order (D-21). */
+	characteristics: Characteristic[],
+	/**  Balloons in placement order. */
+	balloons: Balloon[],
+	/**  Numbering state. */
+	numbering: Numbering,
+	/**  Project settings. */
+	settings: ProjectSettings,
+	/**  Measured parts; the order is the column order of the grid and the reports (FR-MEA-01). */
+	samples: Sample[],
+	/**
+	 *  Measurement results, at most one per sample and characteristic, sorted by sample order
+	 *  and then by characteristic placement order (M3 decision 1). Commands keep the order.
+	 */
+	results: MeasurementResult[],
+	/**  Report header and approval data (M3 decision 1). */
+	report_info: ReportInfo,
+	/**  Reports exported as issued, oldest first (D-23, M3 decision 17). */
+	issued_reports: IssuedReport[],
 };
 
 /**  Descriptive data of the inspected part. Empty text means not set. */
 export type ProjectInfo = {
-  /**  Part number. */
-  part_number: string;
-  /**  Part name. */
-  part_name: string;
-  /**  Customer. */
-  customer: string;
-  /**  Order or purchase reference. */
-  order_reference: string;
+	/**  Part number. */
+	part_number: string,
+	/**  Part name. */
+	part_name: string,
+	/**  Customer. */
+	customer: string,
+	/**  Order or purchase reference. */
+	order_reference: string,
 };
 
 /**
@@ -1786,60 +1605,60 @@ export type ProjectInfo = {
  *  of `project_state`.
  */
 export type ProjectLoaded = {
-  /**  Increases with every load or close; patches name the session they belong to. */
-  session: number;
-  /**  The project, `null` when none is open. */
-  snapshot: ProjectSnapshot | null;
-  /**  Shown once to the user, for example after crash recovery. */
-  notice: OpenNotice | null;
+	/**  Increases with every load or close; patches name the session they belong to. */
+	session: number,
+	/**  The project, `null` when none is open. */
+	snapshot: ProjectSnapshot | null,
+	/**  Shown once to the user, for example after crash recovery. */
+	notice: OpenNotice | null,
 };
 
 /**  A command, undo or redo changed the project. Event `project-patched`. */
 export type ProjectPatched = {
-  /**  Session the patch belongs to. */
-  session: number;
-  /**  Revision after the patch: the previous revision plus one. */
-  revision: number;
-  /**  What changed. */
-  patch: Patch;
-  /**  State after the patch. */
-  status: ProjectStatus;
+	/**  Session the patch belongs to. */
+	session: number,
+	/**  Revision after the patch: the previous revision plus one. */
+	revision: number,
+	/**  What changed. */
+	patch: Patch,
+	/**  State after the patch. */
+	status: ProjectStatus,
 };
 
 /**  Project wide settings. */
 export type ProjectSettings = {
-  /**  Default balloon style (D-24). */
-  balloon_style: BalloonStyle;
-  /**  How characteristics are numbered (D-21, D-22, D-23). */
-  numbering: NumberingSettings;
-  /**  Tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). */
-  tolerance: ToleranceSettings;
+	/**  Default balloon style (D-24). */
+	balloon_style: BalloonStyle,
+	/**  How characteristics are numbered (D-21, D-22, D-23). */
+	numbering: NumberingSettings,
+	/**  Tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). */
+	tolerance: ToleranceSettings,
 };
 
 /**  Everything the frontend shows of an open project. */
 export type ProjectSnapshot = {
-  /**  Number of patches applied since the project was loaded. */
-  revision: number;
-  /**  The project state. */
-  project: Project;
-  /**  The drawing of the current revision, opened for tile rendering. */
-  drawing: DocumentInfo;
-  /**  File, undo and autosave state. */
-  status: ProjectStatus;
+	/**  Number of patches applied since the project was loaded. */
+	revision: number,
+	/**  The project state. */
+	project: Project,
+	/**  The drawing of the current revision, opened for tile rendering. */
+	drawing: DocumentInfo,
+	/**  File, undo and autosave state. */
+	status: ProjectStatus,
 };
 
 /**  File, undo and autosave state of the open project, for toolbar and title. */
 export type ProjectStatus = {
-  /**  File name of the project without the directory; `null` until it is saved. */
-  file_name: string | null;
-  /**  True if there are changes that are not in the project file. */
-  modified: boolean;
-  /**  True if undo has a step. */
-  can_undo: boolean;
-  /**  True if redo has a step. */
-  can_redo: boolean;
-  /**  Autosave state. */
-  autosave: Autosave;
+	/**  File name of the project without the directory; `null` until it is saved. */
+	file_name: string | null,
+	/**  True if there are changes that are not in the project file. */
+	modified: boolean,
+	/**  True if undo has a step. */
+	can_undo: boolean,
+	/**  True if redo has a step. */
+	can_redo: boolean,
+	/**  Autosave state. */
+	autosave: Autosave,
 };
 
 /**
@@ -1847,350 +1666,346 @@ export type ProjectStatus = {
  *  on the timer. Event `project-status-changed`.
  */
 export type ProjectStatusChanged = {
-  /**  Session the status belongs to. */
-  session: number;
-  /**  The new state. */
-  status: ProjectStatus;
+	/**  Session the status belongs to. */
+	session: number,
+	/**  The new state. */
+	status: ProjectStatus,
 };
 
 /**
  *  A suggested characteristic (data model `Proposal`, ADR 0006): characteristic fields plus
  *  source region, origin, balloon placement, parse hints, job ID and engine versions.
- *
+ * 
  *  The frontend may change the fields before accepting, like any typed value. Limits are stored
  *  as proposed, they are not derived again from nominal and deviations.
  */
 export type Proposal = {
-  /**  What the characteristic describes. */
-  kind: CharacteristicKind;
-  /**  Text as read from the drawing. */
-  requirement_text: string;
-  /**  Nominal value. */
-  nominal: string | null;
-  /**  Unit of nominal, deviations and limits. */
-  unit: Unit | null;
-  /**  Upper deviation. */
-  upper_dev: string | null;
-  /**  Lower deviation. */
-  lower_dev: string | null;
-  /**  Upper limit. */
-  upper_limit: string | null;
-  /**  Lower limit. */
-  lower_limit: string | null;
-  /**  Fit designation such as `H7`. */
-  fit: string | null;
-  /**  Which rule produced the limits (FR-TOL-08). */
-  derivation: ToleranceDerivation | null;
-  /**  Number of features, from `4X` or `2 PL`. At least 1. */
-  quantity: number;
-  /**  False for reference and basic dimensions (D-25, FR-CHR-08). */
-  inspect: boolean;
-  /**  Region and text the proposal was read from (FR-CHR-09). */
-  source: SourceRegion;
-  /**  How the proposal was made, e.g. `box_select`. */
-  origin: Origin;
-  /**  Where the balloon goes when accepted. */
-  placement: BalloonPlacement;
-  /**  Why the text could not be parsed, if it could not. Such a proposal has no limits. */
-  parse_error: ParseIssue | null;
-  /**  Assumptions of the parser to check. */
-  parse_hints: ParseHint[];
-  /**
-   *  The recognition job that made the proposal, if it ran as a job or was numbered like one.
-   *  Proposals of one box selection share it. Missing in audit entries written before T2.6,
-   *  which read as `null`.
-   */
-  job_id?: number | null;
-  /**
-   *  Engines that made the proposal, in pipeline order (parser, then interpreter). Missing in
-   *  audit entries written before T2.6, which read as empty.
-   */
-  engines?: EngineVersion[];
-  /**
-   *  Shorter leg of an angle entered on the card (T2.9a), in the unit of the sheet. Stored on
-   *  the accepted characteristic. Missing in audit entries written before T2.9a, which read
-   *  as `null`.
-   */
-  shorter_leg?: Length | null;
+	/**  What the characteristic describes. */
+	kind: CharacteristicKind,
+	/**  Text as read from the drawing. */
+	requirement_text: string,
+	/**  Nominal value. */
+	nominal: string | null,
+	/**  Unit of nominal, deviations and limits. */
+	unit: Unit | null,
+	/**  Upper deviation. */
+	upper_dev: string | null,
+	/**  Lower deviation. */
+	lower_dev: string | null,
+	/**  Upper limit. */
+	upper_limit: string | null,
+	/**  Lower limit. */
+	lower_limit: string | null,
+	/**  Fit designation such as `H7`. */
+	fit: string | null,
+	/**  Which rule produced the limits (FR-TOL-08). */
+	derivation: ToleranceDerivation | null,
+	/**  Number of features, from `4X` or `2 PL`. At least 1. */
+	quantity: number,
+	/**  False for reference and basic dimensions (D-25, FR-CHR-08). */
+	inspect: boolean,
+	/**  Region and text the proposal was read from (FR-CHR-09). */
+	source: SourceRegion,
+	/**  How the proposal was made, e.g. `box_select`. */
+	origin: Origin,
+	/**  Where the balloon goes when accepted. */
+	placement: BalloonPlacement,
+	/**  Why the text could not be parsed, if it could not. Such a proposal has no limits. */
+	parse_error: ParseIssue | null,
+	/**  Assumptions of the parser to check. */
+	parse_hints: ParseHint[],
+	/**
+	 *  The recognition job that made the proposal, if it ran as a job or was numbered like one.
+	 *  Proposals of one box selection share it. Missing in audit entries written before T2.6,
+	 *  which read as `null`.
+	 */
+	job_id?: number | null,
+	/**
+	 *  Engines that made the proposal, in pipeline order (parser, then interpreter). Missing in
+	 *  audit entries written before T2.6, which read as empty.
+	 */
+	engines?: EngineVersion[],
+	/**
+	 *  Shorter leg of an angle entered on the card (T2.9a), in the unit of the sheet. Stored on
+	 *  the accepted characteristic. Missing in audit entries written before T2.9a, which read
+	 *  as `null`.
+	 */
+	shorter_leg?: Length | null,
 };
 
 /**  A proposal of box select with what the card shows besides it. */
 export type ProposalView = {
-  /**  The proposal, to edit and accept. */
-  proposal: Proposal;
-  /**  Explanation of the limits in the requested language, `null` without a derivation. */
-  explanation: string | null;
-  /**  What the engine could not decide. */
-  notes: InterpreterNote[];
+	/**  The proposal, to edit and accept. */
+	proposal: Proposal,
+	/**  Explanation of the limits in the requested language, `null` without a derivation. */
+	explanation: string | null,
+	/**  What the engine could not decide. */
+	notes: InterpreterNote[],
 };
 
 /**  One end of a size range, as in the table row (exact decimals, rule 5). */
 export type RangeBound = {
-  /**  The bound in the table's size unit. */
-  value: string;
-  /**  Whether the bound belongs to the range. */
-  inclusive: boolean;
+	/**  The bound in the table's size unit. */
+	value: string,
+	/**  Whether the bound belongs to the range. */
+	inclusive: boolean,
 };
 
 /**  Axis aligned rectangle in sheet space, for example a drawing frame or a view (M2 decision 1). */
 export type Rect = {
-  /**  Top left corner. */
-  origin: Point;
-  /**  Width and height. */
-  size: Size;
+	/**  Top left corner. */
+	origin: Point,
+	/**  Width and height. */
+	size: Size,
 };
 
 /**  Result of re-interpreting characteristics (T2.8). */
 export type Reinterpreted = {
-  /**  The change as one undo step, also sent as `project-patched`; empty if nothing changed. */
-  patched: ProjectPatched;
-  /**  Characteristics read again with the current settings. */
-  reinterpreted: number;
-  /**  Characteristics with limits edited by hand, left unchanged. */
-  skipped_manual: number;
-  /**  Characteristics whose text is empty or not a callout, left unchanged. */
-  skipped_unreadable: number;
+	/**  The change as one undo step, also sent as `project-patched`; empty if nothing changed. */
+	patched: ProjectPatched,
+	/**  Characteristics read again with the current settings. */
+	reinterpreted: number,
+	/**  Characteristics with limits edited by hand, left unchanged. */
+	skipped_manual: number,
+	/**  Characteristics whose text is empty or not a callout, left unchanged. */
+	skipped_unreadable: number,
 };
 
 /**
  *  Why a document command was refused: the variants of [`dimo_core::CommandError`] the user can
  *  run into, without their details.
  */
-export type RejectReason =
-  /**  A characteristic of the command does not exist. */
-  | "unknown_characteristic"
-  /**  A balloon of the command does not exist. */
-  | "unknown_balloon"
-  /**  A sheet of the command does not exist. */
-  | "unknown_sheet"
-  /**  The command would change locked numbers (D-23). */
-  | "numbering_locked"
-  /**  A position or region is not valid. */
-  | "invalid_geometry"
-  /**  A balloon style size is not valid. */
-  | "invalid_style"
-  /**  A sheet unit, scale, zone grid or view is not valid. */
-  | "invalid_sheet_setting"
-  /**  Project settings break their rules, e.g. tolerance or numbering settings. */
-  | "invalid_project_setting"
-  /**  Characteristics cannot be moved before one of themselves. */
-  | "invalid_move_target"
-  /**  Quantity 0. */
-  | "zero_quantity"
-  /**  A sample of the command does not exist. */
-  | "unknown_sample"
-  /**  A drawing revision of the command does not exist. */
-  | "unknown_revision"
-  /**  A sample serial is empty (M3 decision 6). */
-  | "empty_serial"
-  /**  Another sample has this serial (M3 decision 6). */
-  | "duplicate_serial"
-  /**  A project holds at most 500 samples (M3 decision 6). */
-  | "too_many_samples"
-  /**  Samples are added 1 to 100 at once (M3 decision 6). */
-  | "invalid_sample_count"
-  /**  A date is neither empty nor `YYYY-MM-DD`. */
-  | "invalid_date"
-  /**  A typed result does not fit the result type of its characteristic (M3 decisions 7, 8). */
-  | "invalid_result"
-  /**  The result type cannot change while results of the other type exist (M3 decision 4). */
-  | "result_type_conflict"
-  /**  Undo without history. */
-  | "nothing_to_undo"
-  /**  Redo without history. */
-  | "nothing_to_redo"
-  /**  Internal inconsistency; a bug. */
-  | "internal";
+export type RejectReason = 
+/**  A characteristic of the command does not exist. */
+"unknown_characteristic" | 
+/**  A balloon of the command does not exist. */
+"unknown_balloon" | 
+/**  A sheet of the command does not exist. */
+"unknown_sheet" | 
+/**  The command would change locked numbers (D-23). */
+"numbering_locked" | 
+/**  A position or region is not valid. */
+"invalid_geometry" | 
+/**  A balloon style size is not valid. */
+"invalid_style" | 
+/**  A sheet unit, scale, zone grid or view is not valid. */
+"invalid_sheet_setting" | 
+/**  Project settings break their rules, e.g. tolerance or numbering settings. */
+"invalid_project_setting" | 
+/**  Characteristics cannot be moved before one of themselves. */
+"invalid_move_target" | 
+/**  Quantity 0. */
+"zero_quantity" | 
+/**  A sample of the command does not exist. */
+"unknown_sample" | 
+/**  A drawing revision of the command does not exist. */
+"unknown_revision" | 
+/**  A sample serial is empty (M3 decision 6). */
+"empty_serial" | 
+/**  Another sample has this serial (M3 decision 6). */
+"duplicate_serial" | 
+/**  A project holds at most 500 samples (M3 decision 6). */
+"too_many_samples" | 
+/**  Samples are added 1 to 100 at once (M3 decision 6). */
+"invalid_sample_count" | 
+/**  A date is neither empty nor `YYYY-MM-DD`. */
+"invalid_date" | 
+/**  A typed result does not fit the result type of its characteristic (M3 decisions 7, 8). */
+"invalid_result" | 
+/**  The result type cannot change while results of the other type exist (M3 decision 4). */
+"result_type_conflict" | 
+/**  Undo without history. */
+"nothing_to_undo" | 
+/**  Redo without history. */
+"nothing_to_redo" | 
+/**  Internal inconsistency; a bug. */
+"internal";
 
 /**  File format of a written report. */
-export type ReportFormat =
-  /**  PDF. */
-  | "pdf"
-  /**  Spreadsheet (XLSX). */
-  | "xlsx";
+export type ReportFormat = 
+/**  PDF. */
+"pdf" | 
+/**  Spreadsheet (XLSX). */
+"xlsx";
 
 /**  Report header and approval data (M3 decision 1). All text; empty means not set. */
 export type ReportInfo = {
-  /**  Report number. */
-  report_number: string;
-  /**  Report date as `YYYY-MM-DD`, or empty. */
-  report_date: string;
-  /**  Name of the issuing company (the shop). */
-  company_name: string;
-  /**  Who inspected the parts. */
-  inspected_by: string;
-  /**  Who approved the report. */
-  approved_by: string;
-  /**  Remarks printed on the report. */
-  remarks: string;
+	/**  Report number. */
+	report_number: string,
+	/**  Report date as `YYYY-MM-DD`, or empty. */
+	report_date: string,
+	/**  Name of the issuing company (the shop). */
+	company_name: string,
+	/**  Who inspected the parts. */
+	inspected_by: string,
+	/**  Who approved the report. */
+	approved_by: string,
+	/**  Remarks printed on the report. */
+	remarks: string,
 };
 
 /**  Which document a report is (FR-EXP-04). */
-export type ReportKind =
-  /**  Characteristic list with empty result columns for printing. */
-  | "check_sheet"
-  /**  Results, verdicts and approval. */
-  | "inspection_report";
+export type ReportKind = 
+/**  Characteristic list with empty result columns for printing. */
+"check_sheet" | 
+/**  Results, verdicts and approval. */
+"inspection_report";
 
 /**  Language of column headers and fixed texts in exports, chosen per export (D-32). */
-export type ReportLanguage =
-  /**  English. */
-  | "en"
-  /**  German. */
-  | "de";
+export type ReportLanguage = 
+/**  English. */
+"en" | 
+/**  German. */
+"de";
 
 /**  One cell of the measurement grid: a sample and a characteristic. */
 export type ResultCell = {
-  /**  The sample (column). */
-  sample: SampleId;
-  /**  The characteristic (row). */
-  characteristic: CharId;
+	/**  The sample (column). */
+	sample: SampleId,
+	/**  The characteristic (row). */
+	characteristic: CharId,
 };
 
 /**  One cell to set with [`Command::SetResults`](crate::command::Command::SetResults). */
 export type ResultEntry = {
-  /**  The sample (column). */
-  sample: SampleId;
-  /**  The characteristic (row). */
-  characteristic: CharId;
-  /**
-   *  Text as typed or pasted, parsed by the effective result type of the characteristic
-   *  ([`parse_result`]). Empty or white space only clears the cell.
-   */
-  text: string;
-  /**
-   *  New comment of the result; `null` keeps the current one (empty for a new result). Not
-   *  used when the text clears the cell: the comment goes with the result.
-   */
-  comment: string | null;
+	/**  The sample (column). */
+	sample: SampleId,
+	/**  The characteristic (row). */
+	characteristic: CharId,
+	/**
+	 *  Text as typed or pasted, parsed by the effective result type of the characteristic
+	 *  ([`parse_result`]). Empty or white space only clears the cell.
+	 */
+	text: string,
+	/**
+	 *  New comment of the result; `null` keeps the current one (empty for a new result). Not
+	 *  used when the text clears the cell: the comment goes with the result.
+	 */
+	comment: string | null,
 };
 
 /**
  *  Where a result came from (data model "Result source"). Serialized as `{ "type": "manual" }`
  *  so the import source of M7 (file and row) can be added without a format change.
  */
-export type ResultSource =
-  /**  Typed or pasted by the user. */
-  { type: "manual" };
+export type ResultSource = 
+/**  Typed or pasted by the user. */
+{ type: "manual" };
 
 /**  How a characteristic is measured (FR-MEA-06, M3 decision 4). */
-export type ResultType =
-  /**  Variable if the characteristic has a limit, otherwise attribute (default). */
-  | "auto"
-  /**  A measured value compared with the limits. */
-  | "variable"
-  /**  OK or not OK, for go/no go and visual checks. */
-  | "attribute";
+export type ResultType = 
+/**  Variable if the characteristic has a limit, otherwise attribute (default). */
+"auto" | 
+/**  A measured value compared with the limits. */
+"variable" | 
+/**  OK or not OK, for go/no go and visual checks. */
+"attribute";
 
 /**
  *  What was measured (FR-MEA-02, FR-MEA-06). Serialized as
  *  `{ "type": "variable", "value": "12.10" }` or `{ "type": "attribute", "value": "ok" }`.
  */
-export type ResultValue =
-  /**
-   *  A measured value in the unit of the characteristic, with the decimals as typed
-   *  (decision 8, rule 5).
-   */
-  | {
-      type: "variable";
-      /**  The value; its scale is kept (`12.10` stays `12.10`). */
-      value: string;
-    }
-  /**  An attribute check. */
-  | {
-      type: "attribute";
-      /**  OK or not OK. */
-      value: AttributeValue;
-    };
+export type ResultValue = 
+/**
+ *  A measured value in the unit of the characteristic, with the decimals as typed
+ *  (decision 8, rule 5).
+ */
+{ type: "variable"; 
+/**  The value; its scale is kept (`12.10` stays `12.10`). */
+value: string } | 
+/**  An attribute check. */
+{ type: "attribute"; 
+/**  OK or not OK. */
+value: AttributeValue };
 
 /**
  *  ID of a [`DrawingRevision`](crate::sheet::DrawingRevision).
- *
+ * 
  *  Serialized as a hyphenated lowercase UUID string.
  */
 export type RevisionId = string;
 
 /**
  *  Clockwise rotation used to view a sheet, in 90 degree steps (FR-DOC-05).
- *
+ * 
  *  Only the view rotates. Stored geometry stays in unrotated sheet space (rule 4).
  */
-export type Rotation =
-  /**  Not rotated. */
-  | "deg0"
-  /**  90 degrees clockwise. */
-  | "deg90"
-  /**  180 degrees. */
-  | "deg180"
-  /**  270 degrees clockwise (90 counterclockwise). */
-  | "deg270";
+export type Rotation = 
+/**  Not rotated. */
+"deg0" | 
+/**  90 degrees clockwise. */
+"deg90" | 
+/**  180 degrees. */
+"deg180" | 
+/**  270 degrees clockwise (90 counterclockwise). */
+"deg270";
 
 /**  Evaluation of one measured characteristic over all samples. */
 export type RowState = {
-  /**  The characteristic. */
-  characteristic: CharId;
-  /**  Effective result type: variable or attribute, never auto (decision 4). */
-  result_type: ResultType;
-  /**  True if the limits came from a draft tolerance table (D-43). */
-  draft: boolean;
-  /**  One verdict per sample, in sample order. */
-  cells: Verdict[];
-  /**  Cells per verdict. */
-  counts: VerdictCounts;
-  /**  Fail, pass or open over all samples. */
-  verdict: OverallVerdict;
+	/**  The characteristic. */
+	characteristic: CharId,
+	/**  Effective result type: variable or attribute, never auto (decision 4). */
+	result_type: ResultType,
+	/**  True if the limits came from a draft tolerance table (D-43). */
+	draft: boolean,
+	/**  One verdict per sample, in sample order. */
+	cells: Verdict[],
+	/**  Cells per verdict. */
+	counts: VerdictCounts,
+	/**  Fail, pass or open over all samples. */
+	verdict: OverallVerdict,
 };
 
 /**  One measured part (data model `Sample`, FR-MEA-01). Empty text means not set. */
 export type Sample = {
-  /**  Stable ID, never changes. */
-  id: SampleId;
-  /**
-   *  Serial number or other part identifier: trimmed, not empty, unique within the project
-   *  (case sensitive, decision 6).
-   */
-  serial: string;
-  /**  Measuring date as `YYYY-MM-DD`, or empty. */
-  date: string;
-  /**  Who measured the part (D-27). */
-  inspector: string;
-  /**  Gauges and instruments used, free text. */
-  gauges: string;
-  /**  Free text. */
-  comment: string;
+	/**  Stable ID, never changes. */
+	id: SampleId,
+	/**
+	 *  Serial number or other part identifier: trimmed, not empty, unique within the project
+	 *  (case sensitive, decision 6).
+	 */
+	serial: string,
+	/**  Measuring date as `YYYY-MM-DD`, or empty. */
+	date: string,
+	/**  Who measured the part (D-27). */
+	inspector: string,
+	/**  Gauges and instruments used, free text. */
+	gauges: string,
+	/**  Free text. */
+	comment: string,
 };
 
 /**
  *  ID of a [`Sample`](crate::measurement::Sample), a measured part (FR-MEA-01).
- *
+ * 
  *  Serialized as a hyphenated lowercase UUID string.
  */
 export type SampleId = string;
 
 /**  Evaluation of one sample over all measured characteristics. */
 export type SampleState = {
-  /**  The sample. */
-  sample: SampleId;
-  /**  Cells per verdict. */
-  counts: VerdictCounts;
-  /**  Fail, pass or open for this part. */
-  verdict: OverallVerdict;
+	/**  The sample. */
+	sample: SampleId,
+	/**  Cells per verdict. */
+	counts: VerdictCounts,
+	/**  Fail, pass or open for this part. */
+	verdict: OverallVerdict,
 };
 
 /**  Drawing scale as printed in the title block, e.g. `1:2` (FR-DOC-05). */
 export type Scale = {
-  /**  Length on the drawing. At least 1. */
-  drawing: number;
-  /**  Corresponding length on the part. At least 1. */
-  actual: number;
+	/**  Length on the drawing. At least 1. */
+	drawing: number,
+	/**  Corresponding length on the part. At least 1. */
+	actual: number,
 };
 
 /**  The settings and what the settings view shows next to them. */
 export type SettingsView = {
-  /**  The stored settings. */
-  settings: AppSettings;
-  /**  The operating system user name, used when `user_name` is empty (D-27). */
-  os_user_name: string;
+	/**  The stored settings. */
+	settings: AppSettings,
+	/**  The operating system user name, used when `user_name` is empty (D-27). */
+	os_user_name: string,
 };
 
 /**  SHA-256 of a file as 64 lowercase hex digits (FR-DOC-07). */
@@ -2198,138 +2013,134 @@ export type Sha256Hex = string;
 
 /**  One sheet (PDF page) of a drawing revision. */
 export type Sheet = {
-  /**  Stable ID. */
-  id: SheetId;
-  /**  Zero based page index in the PDF. */
-  index: number;
-  /**  Size in PDF user units, unrotated. */
-  size: Size;
-  /**  View rotation. */
-  rotation: Rotation;
-  /**  How the text is stored. */
-  kind: SheetKind;
-  /**  Resolution of raster sheets. */
-  raster_dpi: number | null;
-  /**
-   *  Length unit of the dimensions on this sheet, `mm` or `in`. Default `mm` (D-20: never
-   *  inferred from the sheet size).
-   */
-  unit: Unit;
-  /**  Drawing scale. */
-  scale: Scale;
-  /**  Zone grid of the drawing frame, defined by hand in M2 (M2 decision 1, D-21). */
-  zone_grid: ZoneGrid | null;
-  /**  Views drawn by hand, in the order the user drew them (M2 decision 1). */
-  views: SheetView[];
+	/**  Stable ID. */
+	id: SheetId,
+	/**  Zero based page index in the PDF. */
+	index: number,
+	/**  Size in PDF user units, unrotated. */
+	size: Size,
+	/**  View rotation. */
+	rotation: Rotation,
+	/**  How the text is stored. */
+	kind: SheetKind,
+	/**  Resolution of raster sheets. */
+	raster_dpi: number | null,
+	/**
+	 *  Length unit of the dimensions on this sheet, `mm` or `in`. Default `mm` (D-20: never
+	 *  inferred from the sheet size).
+	 */
+	unit: Unit,
+	/**  Drawing scale. */
+	scale: Scale,
+	/**  Zone grid of the drawing frame, defined by hand in M2 (M2 decision 1, D-21). */
+	zone_grid: ZoneGrid | null,
+	/**  Views drawn by hand, in the order the user drew them (M2 decision 1). */
+	views: SheetView[],
 };
 
 /**
  *  ID of a [`Sheet`](crate::sheet::Sheet). Unique across all drawing revisions.
- *
+ * 
  *  Serialized as a hyphenated lowercase UUID string.
  */
 export type SheetId = string;
 
 /**  Size of one sheet in sheet units (PDF user units, 1/72 inch). */
 export type SheetInfo = {
-  /**  Width in sheet units. */
-  width: number | null;
-  /**  Height in sheet units. */
-  height: number | null;
+	/**  Width in sheet units. */
+	width: number | null,
+	/**  Height in sheet units. */
+	height: number | null,
 };
 
 /**  How the text of a sheet is stored, which decides the recognition path (FR-DOC-03). */
-export type SheetKind =
-  /**  PDF text objects cover the dimension text. */
-  | "vector_text"
-  /**  Text was exported as curves. */
-  | "vector_outlined"
-  /**  Scanned or image only. */
-  | "raster";
+export type SheetKind = 
+/**  PDF text objects cover the dimension text. */
+"vector_text" | 
+/**  Text was exported as curves. */
+"vector_outlined" | 
+/**  Scanned or image only. */
+"raster";
 
 /**  A point in sheet space (PDF user units, origin top left). */
 export type SheetPoint = {
-  /**  Distance from the left sheet edge. */
-  x: number | null;
-  /**  Distance from the top sheet edge. */
-  y: number | null;
+	/**  Distance from the left sheet edge. */
+	x: number | null,
+	/**  Distance from the top sheet edge. */
+	y: number | null,
 };
 
 /**  A view of the drawing, drawn by hand as a rectangle (M2 decision 1, FR-BAL-04 "per view"). */
 export type SheetView = {
-  /**  Name as printed, e.g. `A-A` or `Detail B`. Empty if none. */
-  label: string;
-  /**  Rectangle around the view, in sheet space. */
-  rect: Rect;
+	/**  Name as printed, e.g. `A-A` or `Detail B`. Empty if none. */
+	label: string,
+	/**  Rectangle around the view, in sheet space. */
+	rect: Rect,
 };
 
 /**  A width and height in PDF user units. */
 export type Size = {
-  /**  Horizontal extent; for an oriented box, along its own x axis before rotation. */
-  width: number | null;
-  /**  Vertical extent; for an oriented box, along its own y axis before rotation. */
-  height: number | null;
+	/**  Horizontal extent; for an oriented box, along its own x axis before rotation. */
+	width: number | null,
+	/**  Vertical extent; for an oriented box, along its own y axis before rotation. */
+	height: number | null,
 };
 
 /**  The size range of the table row a value came from, e.g. "over 30 up to and including 120". */
 export type SizeRange = {
-  /**  Lower bound; `null` means the range starts above zero. */
-  min: RangeBound | null;
-  /**  Upper bound; `null` means the range is open ended. */
-  max: RangeBound | null;
+	/**  Lower bound; `null` means the range starts above zero. */
+	min: RangeBound | null,
+	/**  Upper bound; `null` means the range is open ended. */
+	max: RangeBound | null,
 };
 
 /**  The region of a sheet a characteristic was read from (FR-CHR-09). */
 export type SourceRegion = {
-  /**  Sheet that holds the region. */
-  sheet: SheetId;
-  /**  Oriented box in sheet space. */
-  region: OrientedBox;
-  /**  Where the text came from. */
-  text_source: TextSource;
-  /**  Raw recognized text, if any text was read. */
-  raw_text: string | null;
+	/**  Sheet that holds the region. */
+	sheet: SheetId,
+	/**  Oriented box in sheet space. */
+	region: OrientedBox,
+	/**  Where the text came from. */
+	text_source: TextSource,
+	/**  Raw recognized text, if any text was read. */
+	raw_text: string | null,
 };
 
 /**  A range table and its class column, e.g. ISO 2768-1 class `m` (FR-TOL-02, M2 decision 2). */
 export type TableClass = {
-  /**  The table, shipped or custom. */
-  table: TableRef;
-  /**  The class column, e.g. `m`. */
-  class: string;
+	/**  The table, shipped or custom. */
+	table: TableRef,
+	/**  The class column, e.g. `m`. */
+	class: string,
 };
 
 /**  Result of importing a custom table (FR-TOL-07). */
-export type TableImport =
-  /**  The file dialog was cancelled. */
-  | { result: "cancelled" }
-  /**  The table is stored in the project and listed in its settings (one undo step). */
-  | {
-      result: "imported";
-      /**  The table. */
-      table: TableRef;
-      /**  The change, also sent as `project-patched`. */
-      patched: ProjectPatched;
-    }
-  /**  The file was refused; the project is unchanged. */
-  | {
-      result: "invalid";
-      /**  What is wrong, in English, naming the file. */
-      message: string;
-      /**  Line of the file, counted from 1, if the error has one. */
-      line: number | null;
-    };
+export type TableImport = 
+/**  The file dialog was cancelled. */
+{ result: "cancelled" } | 
+/**  The table is stored in the project and listed in its settings (one undo step). */
+{ result: "imported"; 
+/**  The table. */
+table: TableRef; 
+/**  The change, also sent as `project-patched`. */
+patched: ProjectPatched } | 
+/**  The file was refused; the project is unchanged. */
+{ result: "invalid"; 
+/**  What is wrong, in English, naming the file. */
+message: string; 
+/**  Line of the file, counted from 1, if the error has one. */
+line: number | null };
 
 /**  A value read from a range table: which table, part, column and row (FR-TOL-02, FR-TOL-07). */
 export type TableLookup = {
-  /**  The table. */
-  table: TableRef;
-  /**  Part id in the table, e.g. `linear`, `radius_chamfer` or `angular`. */
-  part: string;
-  /**  Column, e.g. the tolerance class `m`. */
-  class: string;
-  /**  Range of the row that covers the size. */
-  range: SizeRange;
+	/**  The table. */
+	table: TableRef,
+	/**  Part id in the table, e.g. `linear`, `radius_chamfer` or `angular`. */
+	part: string,
+	/**  Column, e.g. the tolerance class `m`. */
+	class: string,
+	/**  Range of the row that covers the size. */
+	range: SizeRange,
 };
 
 /**
@@ -2337,68 +2148,66 @@ export type TableLookup = {
  *  this way; custom tables are also copied into the project (M2 decision 4).
  */
 export type TableRef = {
-  /**  Table id, e.g. `iso-2768-1`. */
-  id: string;
-  /**  Table version. */
-  version: number;
+	/**  Table id, e.g. `iso-2768-1`. */
+	id: string,
+	/**  Table version. */
+	version: number,
 };
 
 /**  What a tolerance table is used for (data/tolerances README). */
-export type TableUse =
-  /**  General tolerances by size range and class. */
-  | "general"
-  /**  ISO system of limits and fits. */
-  | "fit"
-  /**  A table of the user, stored in the project. */
-  | "custom";
+export type TableUse = 
+/**  General tolerances by size range and class. */
+"general" | 
+/**  ISO system of limits and fits. */
+"fit" | 
+/**  A table of the user, stored in the project. */
+"custom";
 
 /**  A report template, by id and version (FR-EXP-06, M3 decision 10). */
 export type TemplateRef = {
-  /**  Template id, e.g. `dimo-default`. */
-  id: string;
-  /**  Template version. */
-  version: number;
+	/**  Template id, e.g. `dimo-default`. */
+	id: string,
+	/**  Template version. */
+	version: number,
 };
 
 /**  Where the text of a source region came from (data model `SourceRegion`). */
-export type TextSource =
-  /**  Region drawn by the user; no text was read. */
-  | { type: "manual" }
-  /**  Text objects of the PDF. */
-  | { type: "pdf_text" }
-  /**  Optical character recognition. */
-  | {
-      type: "ocr";
-      /**  OCR engine name. */
-      engine: string;
-      /**  Model version of the engine. */
-      model_version: string;
-    };
+export type TextSource = 
+/**  Region drawn by the user; no text was read. */
+{ type: "manual" } | 
+/**  Text objects of the PDF. */
+{ type: "pdf_text" } | 
+/**  Optical character recognition. */
+{ type: "ocr"; 
+/**  OCR engine name. */
+engine: string; 
+/**  Model version of the engine. */
+model_version: string };
 
 /**  Color theme of the window (D-51). */
-export type Theme =
-  /**  Light or dark as the operating system says. */
-  | "system"
-  /**  Always light. */
-  | "light"
-  /**  Always dark. */
-  | "dark";
+export type Theme = 
+/**  Light or dark as the operating system says. */
+"system" | 
+/**  Always light. */
+"light" | 
+/**  Always dark. */
+"dark";
 
 /**
  *  Address of one tile, the parts of `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`.
  *  Used by the frontend helper that builds tile URLs.
  */
 export type TileAddress = {
-  /**  Content hash of the document. */
-  doc: string;
-  /**  Zero based sheet index. */
-  sheet: number;
-  /**  Zoom level: `2^zoom` pixels per sheet unit, from `MIN_TILE_ZOOM` to `MAX_TILE_ZOOM`. */
-  zoom: number;
-  /**  Tile column. */
-  x: number;
-  /**  Tile row. */
-  y: number;
+	/**  Content hash of the document. */
+	doc: string,
+	/**  Zero based sheet index. */
+	sheet: number,
+	/**  Zoom level: `2^zoom` pixels per sheet unit, from `MIN_TILE_ZOOM` to `MAX_TILE_ZOOM`. */
+	zoom: number,
+	/**  Tile column. */
+	x: number,
+	/**  Tile row. */
+	y: number,
 };
 
 /**
@@ -2406,23 +2215,23 @@ export type TileAddress = {
  *  (end exclusive) of one sheet at one zoom level.
  */
 export type TileRange = {
-  /**  Zero based sheet index. */
-  sheet: number;
-  /**  Zoom level. */
-  zoom: number;
-  /**  First column. */
-  x0: number;
-  /**  First row. */
-  y0: number;
-  /**  Column after the last one. */
-  x1: number;
-  /**  Row after the last one. */
-  y1: number;
+	/**  Zero based sheet index. */
+	sheet: number,
+	/**  Zoom level. */
+	zoom: number,
+	/**  First column. */
+	x0: number,
+	/**  First row. */
+	y0: number,
+	/**  Column after the last one. */
+	x1: number,
+	/**  Row after the last one. */
+	y1: number,
 };
 
 /**
  *  A point in time as an RFC 3339 UTC string, for example `2026-10-09T14:03:21.250Z`.
- *
+ * 
  *  Kept as text so `dimo-core` needs no date library. Timestamps written by the same provider
  *  have the same format, so they sort chronologically as strings.
  */
@@ -2434,215 +2243,200 @@ export type Timestamp = string;
  *  this (M2 decision 3).
  */
 export type ToleranceDerivation = {
-  /**  The rule and its parameters. */
-  rule: DerivationRule;
-  /**  True if a value came from a table with `status = "draft"`; the UI shows a badge (D-43). */
-  draft: boolean;
-  /**  Remarks for the user. */
-  hints: DerivationHint[];
-  /**  Unit conversion applied, if any. */
-  conversion: UnitConversion | null;
+	/**  The rule and its parameters. */
+	rule: DerivationRule,
+	/**  True if a value came from a table with `status = "draft"`; the UI shows a badge (D-43). */
+	draft: boolean,
+	/**  Remarks for the user. */
+	hints: DerivationHint[],
+	/**  Unit conversion applied, if any. */
+	conversion: UnitConversion | null,
 };
 
 /**
  *  Tolerance settings of a project (M2 decision 2, FR-TOL-01, FR-TOL-06, FR-TOL-09).
- *
+ * 
  *  New projects have no general tolerance, so untoleranced dimensions get "no tolerance
  *  defined" until the user sets one.
  */
 export type ToleranceSettings = {
-  /**  General tolerance standard and class (FR-TOL-02). */
-  general: TableClass | null;
-  /**
-   *  Custom table of the project that applies as drawing specific rule, above the general
-   *  tolerance (FR-TOL-01 level 3).
-   */
-  drawing_rule: TableClass | null;
-  /**  Decimal place rules, sorted by places, at most one per number of places (FR-TOL-06). */
-  decimal_rules: DecimalPlaceRule[];
-  /**  Rounding of unit conversions (FR-TOL-09). */
-  unit_rounding: UnitRounding;
-  /**  Custom tables stored in the project, sorted by id, ids unique (M2 decision 4). */
-  custom_tables: CustomTable[];
+	/**  General tolerance standard and class (FR-TOL-02). */
+	general: TableClass | null,
+	/**
+	 *  Custom table of the project that applies as drawing specific rule, above the general
+	 *  tolerance (FR-TOL-01 level 3).
+	 */
+	drawing_rule: TableClass | null,
+	/**  Decimal place rules, sorted by places, at most one per number of places (FR-TOL-06). */
+	decimal_rules: DecimalPlaceRule[],
+	/**  Rounding of unit conversions (FR-TOL-09). */
+	unit_rounding: UnitRounding,
+	/**  Custom tables stored in the project, sorted by id, ids unique (M2 decision 4). */
+	custom_tables: CustomTable[],
 };
 
 /**  A tolerance table the project settings can name (M2 decision 2). */
 export type ToleranceTableInfo = {
-  /**  Table id and version, as the settings name it. */
-  table: TableRef;
-  /**  Short name from the file. */
-  title: string;
-  /**  What it is used for. */
-  usage: TableUse;
-  /**  True until the owner verified the values (D-43): limits from it get a draft badge. */
-  draft: boolean;
-  /**  Classes to choose from (columns of its general parts); empty for fit tables. */
-  classes: string[];
+	/**  Table id and version, as the settings name it. */
+	table: TableRef,
+	/**  Short name from the file. */
+	title: string,
+	/**  What it is used for. */
+	usage: TableUse,
+	/**  True until the owner verified the values (D-43): limits from it get a draft badge. */
+	draft: boolean,
+	/**  Classes to choose from (columns of its general parts); empty for fit tables. */
+	classes: string[],
 };
 
 /**  Values for text typed into the value field or the card (M2 decision 5). */
 export type TypedCallout = {
-  /**
-   *  Fields to set in one `update_fields` command: the requirement text, and when the text
-   *  parses, kind, nominal, unit, deviations, limits, fit, quantity, inspect, derivation and
-   *  the shorter leg.
-   */
-  values: FieldValue[];
-  /**  Why the text could not be parsed; then `values` holds only the requirement text. */
-  parse_error: ParseIssue | null;
-  /**  Explanation of the limits in the requested language, `null` without a derivation. */
-  explanation: string | null;
-  /**  What the engine could not decide. */
-  notes: InterpreterNote[];
+	/**
+	 *  Fields to set in one `update_fields` command: the requirement text, and when the text
+	 *  parses, kind, nominal, unit, deviations, limits, fit, quantity, inspect, derivation and
+	 *  the shorter leg.
+	 */
+	values: FieldValue[],
+	/**  Why the text could not be parsed; then `values` holds only the requirement text. */
+	parse_error: ParseIssue | null,
+	/**  Explanation of the limits in the requested language, `null` without a derivation. */
+	explanation: string | null,
+	/**  What the engine could not decide. */
+	notes: InterpreterNote[],
 };
 
 /**  Unit of a nominal value and its limits. */
-export type Unit =
-  /**  Millimeter. */
-  | "mm"
-  /**  Inch. */
-  | "in"
-  /**  Degree of angle (decimal degrees). */
-  | "deg";
+export type Unit = 
+/**  Millimeter. */
+"mm" | 
+/**  Inch. */
+"in" | 
+/**  Degree of angle (decimal degrees). */
+"deg";
 
 /**  A unit conversion applied to nominal and limits (FR-TOL-09). */
 export type UnitConversion = {
-  /**  Unit on the drawing. */
-  from: Unit;
-  /**  Unit stored in the characteristic. */
-  to: Unit;
-  /**  Decimal places the converted values were rounded to. */
-  places: number;
+	/**  Unit on the drawing. */
+	from: Unit,
+	/**  Unit stored in the characteristic. */
+	to: Unit,
+	/**  Decimal places the converted values were rounded to. */
+	places: number,
 };
 
 /**  Rounding of values converted between mm and inch (FR-TOL-09). */
 export type UnitRounding = {
-  /**  Decimal places of values converted to mm, 0 to 10. */
-  mm_places: number;
-  /**  Decimal places of values converted to inch, 0 to 10. */
-  inch_places: number;
+	/**  Decimal places of values converted to mm, 0 to 10. */
+	mm_places: number,
+	/**  Decimal places of values converted to inch, 0 to 10. */
+	inch_places: number,
 };
 
 /**  Verdict of one cell: one sample and one characteristic (FR-MEA-03, decision 3). */
-export type Verdict =
-  /**  Within the limits, or attribute OK. */
-  | "pass"
-  /**  Outside a limit, or attribute not OK. */
-  | "fail"
-  /**  A measured value for a characteristic without limits: neither pass nor fail. */
-  | "not_evaluated"
-  /**  No result entered. */
-  | "missing";
+export type Verdict = 
+/**  Within the limits, or attribute OK. */
+"pass" | 
+/**  Outside a limit, or attribute not OK. */
+"fail" | 
+/**  A measured value for a characteristic without limits: neither pass nor fail. */
+"not_evaluated" | 
+/**  No result entered. */
+"missing";
 
 /**  Number of cells per verdict. */
 export type VerdictCounts = {
-  /**  Cells that pass. */
-  pass: number;
-  /**  Cells that fail. */
-  fail: number;
-  /**  Cells with a value but no limits. */
-  not_evaluated: number;
-  /**  Cells without a result. */
-  missing: number;
+	/**  Cells that pass. */
+	pass: number,
+	/**  Cells that fail. */
+	fail: number,
+	/**  Cells with a value but no limits. */
+	not_evaluated: number,
+	/**  Cells without a result. */
+	missing: number,
 };
 
 /**  One axis of a zone grid. */
-export type ZoneAxis =
-  /**  The column labels, left to right. */
-  | "columns"
-  /**  The row labels, top to bottom. */
-  | "rows";
+export type ZoneAxis = 
+/**  The column labels, left to right. */
+"columns" | 
+/**  The row labels, top to bottom. */
+"rows";
 
 /**
  *  The zone grid of a drawing frame: equal columns and rows inside the frame rectangle, with
  *  the labels printed on the frame (D-21 "sheet, then zone").
- *
+ * 
  *  Labels are listed left to right and top to bottom as they appear on the sheet, so grids
  *  numbered from the right or lettered from the bottom are stored as printed.
  */
 export type ZoneGrid = {
-  /**  Inner frame rectangle the zones divide, in sheet space. */
-  frame: Rect;
-  /**  Column labels, left to right, e.g. `1` to `8`. One per column, at least one. */
-  column_labels: string[];
-  /**  Row labels, top to bottom, e.g. `A` to `F`. One per row, at least one. */
-  row_labels: string[];
+	/**  Inner frame rectangle the zones divide, in sheet space. */
+	frame: Rect,
+	/**  Column labels, left to right, e.g. `1` to `8`. One per column, at least one. */
+	column_labels: string[],
+	/**  Row labels, top to bottom, e.g. `A` to `F`. One per row, at least one. */
+	row_labels: string[],
 };
 
 /**  A request of the zone grid editor. */
-export type ZoneGridEdit =
-  /**  The first grid for a sheet of this size, see [`ZoneGrid::default_for`]. */
-  | {
-      type: "default";
-      /**  Sheet size in sheet units. */
-      size: Size;
-    }
-  /**  The grid unchanged, to learn the label schemes of its axes. */
-  | {
-      type: "describe";
-      /**  The grid. */
-      grid: ZoneGrid;
-    }
-  /**  The grid with another count or scheme on one axis, see [`ZoneGrid::with_axis`]. */
-  | {
-      type: "axis";
-      /**  The grid. */
-      grid: ZoneGrid;
-      /**  The axis to change. */
-      axis: ZoneAxis;
-      /**  Number of divisions, clamped to 1 to 100. */
-      count: number;
-      /**  Label scheme; `null` keeps the current one. */
-      scheme: AxisScheme | null;
-    };
+export type ZoneGridEdit = 
+/**  The first grid for a sheet of this size, see [`ZoneGrid::default_for`]. */
+{ type: "default"; 
+/**  Sheet size in sheet units. */
+size: Size } | 
+/**  The grid unchanged, to learn the label schemes of its axes. */
+{ type: "describe"; 
+/**  The grid. */
+grid: ZoneGrid } | 
+/**  The grid with another count or scheme on one axis, see [`ZoneGrid::with_axis`]. */
+{ type: "axis"; 
+/**  The grid. */
+grid: ZoneGrid; 
+/**  The axis to change. */
+axis: ZoneAxis; 
+/**  Number of divisions, clamped to 1 to 100. */
+count: number; 
+/**  Label scheme; `null` keeps the current one. */
+scheme: AxisScheme | null };
 
 /**  A zone grid as the editor shows it: the grid and the label scheme of each axis. */
 export type ZoneGridForm = {
-  /**  The resulting grid. Not stored until it is sent with `set_zone_grid`. */
-  grid: ZoneGrid;
-  /**  Scheme of the column labels, `null` for labels typed by hand. */
-  column_scheme: AxisScheme | null;
-  /**  Scheme of the row labels, `null` for labels typed by hand. */
-  row_scheme: AxisScheme | null;
+	/**  The resulting grid. Not stored until it is sent with `set_zone_grid`. */
+	grid: ZoneGrid,
+	/**  Scheme of the column labels, `null` for labels typed by hand. */
+	column_scheme: AxisScheme | null,
+	/**  Scheme of the row labels, `null` for labels typed by hand. */
+	row_scheme: AxisScheme | null,
 };
 
 /* Tauri Specta runtime */
-async function typedError<T, E>(
-  result: Promise<T>,
-): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
-  try {
-    return { status: "ok", data: await result };
-  } catch (e) {
-    if (e instanceof Error) throw e;
-    return { status: "error", error: e as any };
-  }
+async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
+    try {
+        return { status: "ok", data: await result };
+    } catch (e) {
+        if (e instanceof Error) throw e;
+        return { status: "error", error: e as any };
+    }
 }
 
 type EventEmit<T> = [T] extends [null] ? () => Promise<void> : (payload: T) => Promise<void>;
 
-function makeEvent<T>(
-  name: string,
-  serialize?: (payload: T) => unknown,
-  deserialize?: (payload: any) => T,
-) {
-  const mapEvent = (cb: __TAURI_EVENT.EventCallback<T>) => (event: __TAURI_EVENT.Event<any>) =>
-    cb({ ...event, payload: deserialize ? deserialize(event.payload) : event.payload });
-  const mapPayload = (payload: T) => (serialize ? serialize(payload) : payload);
+function makeEvent<T>(name: string, serialize?: (payload: T) => unknown, deserialize?: (payload: any) => T) {
+    const mapEvent = (cb: __TAURI_EVENT.EventCallback<T>) => (event: __TAURI_EVENT.Event<any>) => cb({ ...event, payload: deserialize ? deserialize(event.payload) : event.payload });
+    const mapPayload = (payload: T) => serialize ? serialize(payload) : payload;
 
-  const base = {
-    listen: (cb: __TAURI_EVENT.EventCallback<T>) => __TAURI_EVENT.listen(name, mapEvent(cb)),
-    once: (cb: __TAURI_EVENT.EventCallback<T>) => __TAURI_EVENT.once(name, mapEvent(cb)),
-    emit: ((payload: T) =>
-      __TAURI_EVENT.emit(name, mapPayload(payload)) as unknown) as EventEmit<T>,
-  };
+    const base = {
+        listen: (cb: __TAURI_EVENT.EventCallback<T>) => __TAURI_EVENT.listen(name, mapEvent(cb)),
+        once: (cb: __TAURI_EVENT.EventCallback<T>) => __TAURI_EVENT.once(name, mapEvent(cb)),
+        emit: ((payload: T) => __TAURI_EVENT.emit(name, mapPayload(payload)) as unknown) as EventEmit<T>
+    };
 
-  const fn = (
-    target: import("@tauri-apps/api/webview").Webview | import("@tauri-apps/api/window").Window,
-  ) => ({
-    listen: (cb: __TAURI_EVENT.EventCallback<T>) => target.listen(name, mapEvent(cb)),
-    once: (cb: __TAURI_EVENT.EventCallback<T>) => target.once(name, mapEvent(cb)),
-    emit: ((payload: T) => target.emit(name, mapPayload(payload)) as unknown) as EventEmit<T>,
-  });
+    const fn = (target: import("@tauri-apps/api/webview").Webview | import("@tauri-apps/api/window").Window) => ({
+        listen: (cb: __TAURI_EVENT.EventCallback<T>) => target.listen(name, mapEvent(cb)),
+        once: (cb: __TAURI_EVENT.EventCallback<T>) => target.once(name, mapEvent(cb)),
+        emit: ((payload: T) => target.emit(name, mapPayload(payload)) as unknown) as EventEmit<T>
+    });
 
-  return Object.assign(fn, base);
+    return Object.assign(fn, base);
 }
+
