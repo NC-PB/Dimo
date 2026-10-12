@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Command, CommandError, ProjectPatched } from "$lib/ipc/bindings";
+import type { Command, CommandError, NumberingPreview, ProjectPatched } from "$lib/ipc/bindings";
 import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
+import { numberingStore } from "$lib/stores/numbering.svelte";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import CharacteristicTable from "./CharacteristicTable.svelte";
@@ -459,5 +460,43 @@ describe("rule column (T2.8)", () => {
     expect(cell(0)?.querySelector('[data-badge="draft"]')).not.toBeNull();
     expect(cell(1)?.querySelector('[data-badge="no_tolerance"] svg')).not.toBeNull();
     expect(cell(1)?.querySelector('[data-badge="draft"]')).toBeNull();
+  });
+});
+
+describe("ghost numbers (T2.7, FR-BAL-05)", () => {
+  afterEach(() => {
+    numberingStore.setPreviewing(false);
+  });
+
+  it("shows the previewed number next to the number, bold only when it changes", async () => {
+    await render(3);
+    expect(target.querySelector(".ghost")).toBeNull();
+
+    numberingStore.previewing = true;
+    numberingStore.preview = {
+      strategy: "view_clockwise",
+      entries: [
+        { id: "c1", number: "2" },
+        { id: "c2", number: "2" },
+      ],
+      changed: 1,
+    } as NumberingPreview;
+    flushSync();
+    await tick();
+
+    const ghost = (n: number) =>
+      target.querySelector<HTMLElement>(`[data-row="${String(n)}"] .ghost`);
+    expect(ghost(0)?.textContent).toBe("→2");
+    expect(ghost(0)?.classList.contains("changed")).toBe(true);
+    expect(ghost(0)?.getAttribute("title")).toBe("New number 2");
+    expect(ghost(1)?.textContent).toBe("→2");
+    expect(ghost(1)?.classList.contains("changed")).toBe(false);
+    // A characteristic without an entry shows no ghost.
+    expect(ghost(2)).toBeNull();
+
+    numberingStore.setPreviewing(false);
+    flushSync();
+    await tick();
+    expect(target.querySelector(".ghost")).toBeNull();
   });
 });
