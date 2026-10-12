@@ -87,3 +87,87 @@ expect_used = "warn"
 # rust.md: tracing, never println! in library code. Binaries allow it locally.
 print_stdout = "warn"
 print_stderr = "warn"
+
+# Release size (owner decision 2026-10-12, measured in spikes/typst-report/RESULTS.md):
+# fat LTO with one codegen unit, and opt-level "s" for Typst and its heaviest dependencies.
+[profile.release]
+lto = "fat"
+codegen-units = 1
+
+[profile.release.package.citationberg]
+opt-level = "s"
+
+[profile.release.package.hayagriva]
+opt-level = "s"
+
+[profile.release.package.hayro]
+opt-level = "s"
+
+[profile.release.package.hayro-interpret]
+opt-level = "s"
+
+[profile.release.package.hayro-jbig2]
+opt-level = "s"
+
+[profile.release.package.hayro-jpeg2000]
+opt-level = "s"
+
+[profile.release.package.hayro-syntax]
+opt-level = "s"
+
+[profile.release.package.krilla]
+opt-level = "s"
+
+[profile.release.package.krilla-svg]
+opt-level = "s"
+
+[profile.release.package.resvg]
+opt-level = "s"
+
+[profile.release.package.syntect]
+opt-level = "s"
+
+[profile.release.package.typst]
+opt-level = "s"
+
+[profile.release.package.typst-assets]
+opt-level = "s"
+
+[profile.release.package.typst-eval]
+opt-level = "s"
+
+[profile.release.package.typst-html]
+opt-level = "s"
+
+[profile.release.package.typst-layout]
+opt-level = "s"
+
+[profile.release.package.typst-library]
+opt-level = "s"
+
+[profile.release.package.typst-pdf]
+opt-level = "s"
+
+[profile.release.package.typst-realize]
+opt-level = "s"
+
+[profile.release.package.typst-svg]
+opt-level = "s"
+
+[profile.release.package.typst-syntax]
+opt-level = "s"
+
+[profile.release.package.typst-timing]
+opt-level = "s"
+
+[profile.release.package.typst-utils]
+opt-level = "s"
+
+[profile.release.package.usvg]
+opt-level = "s"
+
+[profile.release.package.wasmi]
+opt-level = "s"
+
+[profile.release.package.wasmparser]
+opt-level = "s"
