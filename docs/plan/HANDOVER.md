@@ -92,6 +92,10 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
 - **Permissions.** The allow list in `.claude/settings.json` covers routine local commands. `git
   push`, `curl`, `rm -rf`, `cargo add/install`, `pnpm add` still ask. The guard hook enforces the
   hard rules (sign-off, corpus, LICENSE, accepted ADRs, verified tolerance tables).
+- **Parallel agents and PDFium.** Give each agent its own `CARGO_TARGET_DIR=<repo>/target-<task>`
+  (a `.gitignore` with `*` inside, delete it after merging). In a worktree, point the smoke test
+  and tests at PDFium with `DIMO_PDFIUM_PATH` instead of a `vendor` symlink, and never delete
+  files in another agent's worktree while it runs.
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 
