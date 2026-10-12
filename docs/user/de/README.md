@@ -26,7 +26,7 @@ Grenzwerte in der Merkmalstabelle ein.
 | [Projekt- und Berichtsdaten](project-details.md) | Teil, Kunde, Revisionsstand, Zeichnungs-Hash, Berichtskopf und Freigabefelder |
 | [Ergebnisse eingeben](measuring.md) | Muster, Messwerttabelle, Eingabe mit der Tastatur, Einfügen, Markierungen für i.O. und n.i.O., Ergebnisarten |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
-| [Exporte](exports.md) | PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen |
+| [Exporte](exports.md) | Prüfblatt und Prüfbericht, PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen und Berichte |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
 | [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Firmenname, Ballonstil, Toleranzen |
 | [Tastenkürzel](shortcuts.md) | Alle Tasten für macOS sowie Windows und Linux |

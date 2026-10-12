@@ -25,7 +25,7 @@ in the characteristic table.
 | [Project and report details](project-details.md) | Part, customer, revision, drawing hash, report header and approval fields |
 | [Entering results](measuring.md) | Samples, the measurement grid, keyboard entry, pasting, pass/fail marks, result types |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
-| [Exports](exports.md) | Ballooned PDF, CSV and Excel list, issued drawings |
+| [Exports](exports.md) | Check sheet and inspection report, ballooned PDF, CSV and Excel list, issued drawings and reports |
 | [Tolerances](tolerances.md) | Rules, general tolerance, custom tables, explanations, draft tables, history |
 | [Settings](settings.md) | Theme, language, user name, company name, balloon style, tolerances |
 | [Keyboard shortcuts](shortcuts.md) | Every key, for macOS and for Windows and Linux |

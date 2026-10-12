@@ -21,6 +21,8 @@ verwendeten Exportoptionen ([Exporte](exports.md)) liegen dort.
 
 - **Firmenname**: wird auf Berichten gedruckt. Neue Projekte beginnen damit in ihren
   Berichtsdaten. Bestehende Projekte behalten ihren Namen ([Projekt- und Berichtsdaten](project-details.md)).
+  Ein als freigegeben exportierter Bericht trägt ihn in ein Projekt ohne Firmennamen ein
+  ([Exporte](exports.md)).
 
 ## Ballonstil dieses Projekts
 

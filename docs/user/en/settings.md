@@ -20,6 +20,8 @@ folder. The last export options ([Exports](exports.md)) are stored there too.
 
 - **Company name**: printed on reports. New projects start with it in their
   report data. Existing projects keep theirs ([Project and report details](project-details.md)).
+  A report exported as issued fills it into a project whose company name is empty
+  ([Exports](exports.md)).
 
 ## Balloon style of this project
 
