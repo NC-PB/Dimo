@@ -34,6 +34,8 @@
  * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
  *   or the `<select>` whose `aria-label` starts with it.
  * - `reveal`: scrolls the field inside the label that starts with this text into view.
+ * - `fill`: `[label, text]` sets the text field inside the label that starts with this text, as
+ *   typing and leaving the field would (input and change events), e.g. the shorter leg (T2.9a).
  * - `check`: `[label, checked]` sets the check box (or turns on the radio button) inside the
  *   label that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons and selection).
@@ -80,6 +82,7 @@ export type UiStep =
   | { select: [string, string] }
   | { check: [string, boolean] }
   | { reveal: string }
+  | { fill: [string, string] }
   | { wait: number }
   | { mark: string }
   | { report: string };
@@ -217,7 +220,7 @@ function report(label: string): string {
   const card = boxSelect.proposals
     .map(
       (p) =>
-        `"${p.requirement_text}" ${p.upper_limit ?? "-"}/${p.lower_limit ?? "-"} ${p.derivation?.rule.rule ?? "none"}`,
+        `"${p.requirement_text}" ${p.upper_limit ?? "-"}/${p.lower_limit ?? "-"} ${p.derivation?.rule.rule ?? "none"}${p.shorter_leg ? ` leg ${p.shorter_leg.value}` : ""}`,
     )
     .join("; ");
   const ghosts = Object.entries(numberingStore.ghosts)
@@ -330,6 +333,15 @@ async function run(step: UiStep): Promise<void> {
     await sleep(STEP_PAUSE_MS);
   } else if ("reveal" in step) {
     labelled(step.reveal)?.scrollIntoView({ block: "center" });
+    await sleep(STEP_PAUSE_MS);
+  } else if ("fill" in step) {
+    const field = labelled(step.fill[0])?.querySelector<HTMLInputElement>("input[type=text]");
+    if (field) {
+      field.focus({ preventScroll: true });
+      field.value = step.fill[1];
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      field.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     await sleep(STEP_PAUSE_MS);
   } else if ("check" in step) {
     const box = labelled(step.check[0])?.querySelector<HTMLInputElement>(
