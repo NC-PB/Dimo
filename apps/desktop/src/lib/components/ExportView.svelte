@@ -262,24 +262,27 @@
                 <h3 class="font-semibold">{reportTitle(kind)}</h3>
                 <p class="text-text-muted">{reportDescription(kind)}</p>
               </div>
-              <fieldset class="flex flex-wrap items-center gap-3">
-                <legend class="float-left mr-1">{m.export_format()}</legend>
-                {#each REPORT_FILE_FORMATS as option (option.value)}
-                  <label class="flex items-center gap-1">
-                    <input
-                      type="radio"
-                      name="format-{kind}"
-                      value={option.value}
-                      checked={reportFileFormat(kind) === option.value}
-                      disabled={exportStore.busy(format)}
-                      onchange={() => {
-                        setReportFileFormat(kind, option.value);
-                      }}
-                    />
-                    {option.label()}
-                  </label>
-                {/each}
-              </fieldset>
+              <div class="flex flex-wrap items-center gap-2">
+                <span aria-hidden="true">{m.export_format()}</span>
+                <select
+                  class={fieldClass}
+                  aria-label="{reportTitle(kind)}: {m.export_format()}"
+                  value={reportFileFormat(kind)}
+                  disabled={exportStore.busy(format)}
+                  onchange={(e) => {
+                    const value = REPORT_FILE_FORMATS.find(
+                      (f) => f.value === e.currentTarget.value,
+                    )?.value;
+                    if (value) {
+                      setReportFileFormat(kind, value);
+                    }
+                  }}
+                >
+                  {#each REPORT_FILE_FORMATS as option (option.value)}
+                    <option value={option.value}>{option.label()}</option>
+                  {/each}
+                </select>
+              </div>
             </div>
             {#if exportStore.job(format)?.state === "running"}
               <button
