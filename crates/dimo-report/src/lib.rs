@@ -5,7 +5,12 @@
 //! one JSON data file, so templates never compute with numbers or decide pass or fail
 //! (M3 decision 10). The output is deterministic (FR-EXP-11, rule 11): no clock, the PDF
 //! identifier is a hash of the inputs, and the creation date comes from the request.
+//!
+//! [`ReportModel`] (T3.6) builds that data from a project and its evaluation: header, samples,
+//! rows with formatted values and verdicts, summaries, signature block and flags.
+//! [`render_report`] renders a model with the matching document of a template set.
 
+pub mod model;
 mod template;
 mod world;
 
@@ -19,6 +24,10 @@ use typst::foundations::{Datetime, Smart};
 use typst_layout::PagedDocument;
 use typst_pdf::{PdfOptions, Timestamp};
 
+pub use model::{
+    DATA_FORMAT_VERSION, DEFAULT_BLANK_COLUMNS, MAX_BLANK_COLUMNS, ReportModel, ReportOptions,
+    SAMPLES_PER_BLOCK, data_schema_json, document_name,
+};
 pub use template::{DATA_FILE, DocumentSpec, MANIFEST, TemplateSet, bundled_ids};
 
 use world::SandboxWorld;
@@ -114,6 +123,9 @@ pub enum ReportError {
     /// The template set is malformed (manifest, paths).
     #[error("invalid report template: {0}")]
     InvalidTemplate(String),
+    /// The report options are out of range.
+    #[error("invalid report options: {0}")]
+    InvalidOptions(String),
     /// The date is not a valid calendar date.
     #[error("invalid report date {0:?}")]
     InvalidDate(ReportDate),
@@ -176,6 +188,22 @@ pub fn render_pdf(
     // Bound the memory of Typst's global cache across many exports (as the Typst CLI does).
     typst::comemo::evict(10);
     result
+}
+
+/// Renders a report model with the document of `template` that matches its kind
+/// ([`document_name`]), in the model's language, with the report date as PDF creation date
+/// (M3 decision 14).
+pub fn render_report(template: &TemplateSet, model: &ReportModel) -> Result<Vec<u8>, ReportError> {
+    let data = model.to_json()?;
+    render_pdf(
+        template,
+        &RenderRequest {
+            document: document_name(model.document),
+            data: &data,
+            language: model.language(),
+            date: model.date(),
+        },
+    )
 }
 
 /// Stable PDF document identifier: SHA-256 over template id and version, document, language,

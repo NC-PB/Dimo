@@ -1,0 +1,761 @@
+{
+  "$defs": {
+    "Cell": {
+      "description": "One result cell.",
+      "properties": {
+        "comment": {
+          "description": "Comment of the result.",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/CellType",
+          "description": "What the cell holds."
+        },
+        "value": {
+          "description": "Formatted number (variable), `ok` or `not_ok` (attribute), or empty.",
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/CellVerdict",
+          "description": "Verdict of the cell."
+        }
+      },
+      "required": [
+        "type",
+        "value",
+        "verdict",
+        "comment"
+      ],
+      "type": "object"
+    },
+    "CellType": {
+      "description": "What a result cell holds.",
+      "oneOf": [
+        {
+          "const": "none",
+          "description": "No result (and every cell of a check sheet).",
+          "type": "string"
+        },
+        {
+          "const": "variable",
+          "description": "A measured value; `value` is the formatted number.",
+          "type": "string"
+        },
+        {
+          "const": "attribute",
+          "description": "An attribute result; `value` is `ok` or `not_ok`.",
+          "type": "string"
+        }
+      ]
+    },
+    "CellVerdict": {
+      "description": "Verdict of one cell (FR-MEA-03, decision 3).",
+      "oneOf": [
+        {
+          "const": "pass",
+          "description": "Within the limits, or attribute OK.",
+          "type": "string"
+        },
+        {
+          "const": "fail",
+          "description": "Outside a limit, or attribute not OK.",
+          "type": "string"
+        },
+        {
+          "const": "not_evaluated",
+          "description": "A value for a characteristic without limits.",
+          "type": "string"
+        },
+        {
+          "const": "missing",
+          "description": "No result.",
+          "type": "string"
+        }
+      ]
+    },
+    "CharacteristicKind": {
+      "description": "What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01).",
+      "oneOf": [
+        {
+          "const": "linear",
+          "description": "Linear size or distance.",
+          "type": "string"
+        },
+        {
+          "const": "diameter",
+          "description": "Diameter (`Ø`, `⌀`, `DIA`).",
+          "type": "string"
+        },
+        {
+          "const": "radius",
+          "description": "Radius (`R`).",
+          "type": "string"
+        },
+        {
+          "const": "spherical_radius",
+          "description": "Spherical radius (`SR`).",
+          "type": "string"
+        },
+        {
+          "const": "angle",
+          "description": "Angle.",
+          "type": "string"
+        },
+        {
+          "const": "chamfer",
+          "description": "Chamfer, e.g. `1x45°`.",
+          "type": "string"
+        },
+        {
+          "const": "thread",
+          "description": "Thread, e.g. `M8x1.25-6H`.",
+          "type": "string"
+        },
+        {
+          "const": "counterbore",
+          "description": "Counterbore.",
+          "type": "string"
+        },
+        {
+          "const": "countersink",
+          "description": "Countersink.",
+          "type": "string"
+        },
+        {
+          "const": "depth",
+          "description": "Depth of a hole or pocket.",
+          "type": "string"
+        },
+        {
+          "const": "surface_texture",
+          "description": "Surface texture requirement.",
+          "type": "string"
+        },
+        {
+          "const": "geometric",
+          "description": "Geometric tolerance (feature control frame).",
+          "type": "string"
+        },
+        {
+          "const": "note",
+          "description": "Text note with an inspectable requirement.",
+          "type": "string"
+        },
+        {
+          "const": "flag_note",
+          "description": "Flag note, linked from a flag symbol.",
+          "type": "string"
+        },
+        {
+          "const": "material_process",
+          "description": "Material or process requirement, e.g. hardness or coating.",
+          "type": "string"
+        },
+        {
+          "const": "other",
+          "description": "Anything else. Default for a characteristic placed by hand before its kind is known.",
+          "type": "string"
+        }
+      ]
+    },
+    "Classification": {
+      "description": "Importance class of a characteristic (FR-CHR-02). Default `none` (D-26).",
+      "oneOf": [
+        {
+          "const": "critical",
+          "description": "Critical characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "major",
+          "description": "Major characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "minor",
+          "description": "Minor characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "key",
+          "description": "Key characteristic.",
+          "type": "string"
+        },
+        {
+          "const": "none",
+          "description": "Not classified.",
+          "type": "string"
+        }
+      ]
+    },
+    "ColumnBlock": {
+      "description": "A range of sample columns printed together (decision 12). `from` and `to` index the sample\nlist and each row's cells (`to` exclusive); `first` and `last` are the printed positions.",
+      "properties": {
+        "first": {
+          "description": "Position of the first sample, from 1, as text; empty if the block has no samples.",
+          "type": "string"
+        },
+        "from": {
+          "description": "Index of the first sample of the block, from 0.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "last": {
+          "description": "Position of the last sample, as text; empty if the block has no samples.",
+          "type": "string"
+        },
+        "to": {
+          "description": "Index after the last sample of the block.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "from",
+        "to",
+        "first",
+        "last"
+      ],
+      "type": "object"
+    },
+    "Counts": {
+      "description": "Number of cells per verdict, as text.",
+      "properties": {
+        "fail": {
+          "description": "Cells that fail.",
+          "type": "string"
+        },
+        "missing": {
+          "description": "Cells without a result.",
+          "type": "string"
+        },
+        "not_evaluated": {
+          "description": "Cells with a value but no limits.",
+          "type": "string"
+        },
+        "pass": {
+          "description": "Cells that pass.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pass",
+        "fail",
+        "not_evaluated",
+        "missing"
+      ],
+      "type": "object"
+    },
+    "Flags": {
+      "description": "Facts the template shows as notes.",
+      "properties": {
+        "blank_samples": {
+          "description": "The result columns are blank check sheet columns (no samples in the project).",
+          "type": "boolean"
+        },
+        "draft_limits": {
+          "description": "At least one row has limits from a draft table (D-43): print the footnote.",
+          "type": "boolean"
+        },
+        "open_results": {
+          "description": "Inspection report whose overall verdict is open: results missing or not evaluated, or\nno samples.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "draft_limits",
+        "open_results",
+        "blank_samples"
+      ],
+      "type": "object"
+    },
+    "GroupVerdict": {
+      "description": "Verdict of a row, a sample or the whole report (decision 3).",
+      "oneOf": [
+        {
+          "const": "pass",
+          "description": "Every cell passes.",
+          "type": "string"
+        },
+        {
+          "const": "fail",
+          "description": "At least one cell fails.",
+          "type": "string"
+        },
+        {
+          "const": "open",
+          "description": "No cell fails, but some are missing or not evaluated, or there are no cells.",
+          "type": "string"
+        }
+      ]
+    },
+    "Header": {
+      "description": "Header printed on every page (decision 12, FR-RVC-04, FR-DOC-07).",
+      "properties": {
+        "company": {
+          "description": "Issuing company (report info).",
+          "type": "string"
+        },
+        "customer": {
+          "description": "Customer.",
+          "type": "string"
+        },
+        "drawing_file": {
+          "description": "File name of the current drawing revision.",
+          "type": "string"
+        },
+        "order_reference": {
+          "description": "Order or purchase reference.",
+          "type": "string"
+        },
+        "part_name": {
+          "description": "Part name.",
+          "type": "string"
+        },
+        "part_number": {
+          "description": "Part number.",
+          "type": "string"
+        },
+        "report_date": {
+          "description": "Report date `YYYY-MM-DD`: the report info date, else the project modification date,\nelse empty (decision 14).",
+          "type": "string"
+        },
+        "report_number": {
+          "description": "Report number.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Revision label of the current drawing, empty if unknown.",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "Full SHA-256 of the drawing file (64 hex digits), printed on the first page.",
+          "type": "string"
+        },
+        "sha256_short": {
+          "description": "First 16 hex digits of the SHA-256, printed in the page header.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "company",
+        "part_number",
+        "part_name",
+        "customer",
+        "order_reference",
+        "drawing_file",
+        "revision",
+        "sha256",
+        "sha256_short",
+        "report_number",
+        "report_date"
+      ],
+      "type": "object"
+    },
+    "LanguageCode": {
+      "description": "Report language as written into the data (`en`, `de`).",
+      "oneOf": [
+        {
+          "const": "en",
+          "description": "English: decimal point.",
+          "type": "string"
+        },
+        {
+          "const": "de",
+          "description": "German: decimal comma.",
+          "type": "string"
+        }
+      ]
+    },
+    "MeasureType": {
+      "description": "How a row is measured: the effective result type (decision 4).",
+      "oneOf": [
+        {
+          "const": "variable",
+          "description": "A measured value compared with the limits.",
+          "type": "string"
+        },
+        {
+          "const": "attribute",
+          "description": "OK or not OK.",
+          "type": "string"
+        }
+      ]
+    },
+    "ReportKind": {
+      "description": "Which document a report is (FR-EXP-04).",
+      "oneOf": [
+        {
+          "const": "check_sheet",
+          "description": "Characteristic list with empty result columns for printing.",
+          "type": "string"
+        },
+        {
+          "const": "inspection_report",
+          "description": "Results, verdicts and approval.",
+          "type": "string"
+        }
+      ]
+    },
+    "Row": {
+      "description": "One measured characteristic (decision 5), in number order.",
+      "properties": {
+        "cells": {
+          "description": "One cell per entry of `samples`, in the same order.",
+          "items": {
+            "$ref": "#/$defs/Cell"
+          },
+          "type": "array"
+        },
+        "classification": {
+          "$ref": "#/$defs/Classification",
+          "description": "Classification; `none` if not classified."
+        },
+        "counts": {
+          "$ref": "#/$defs/Counts",
+          "description": "Cells per verdict of this row."
+        },
+        "draft": {
+          "description": "True if the limits came from a draft tolerance table (D-43).",
+          "type": "boolean"
+        },
+        "fit": {
+          "description": "Fit designation such as `H7`, or empty.",
+          "type": "string"
+        },
+        "gauge": {
+          "description": "Gauge or instrument.",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/CharacteristicKind",
+          "description": "Kind of characteristic."
+        },
+        "lower_deviation": {
+          "description": "Lower deviation with sign (`-0.2`), or empty.",
+          "type": "string"
+        },
+        "lower_limit": {
+          "description": "Lower limit, formatted, or empty.",
+          "type": "string"
+        },
+        "method": {
+          "description": "Inspection method.",
+          "type": "string"
+        },
+        "nominal": {
+          "description": "Nominal value, formatted, or empty.",
+          "type": "string"
+        },
+        "number": {
+          "description": "Display number (balloon number).",
+          "type": "string"
+        },
+        "quantity": {
+          "description": "Number of features (`4X`), as text.",
+          "type": "string"
+        },
+        "requirement": {
+          "description": "Requirement text as on the drawing.",
+          "type": "string"
+        },
+        "result_type": {
+          "$ref": "#/$defs/MeasureType",
+          "description": "Effective result type."
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Which rule produced the limits; `null` if none was recorded."
+        },
+        "rule_detail": {
+          "description": "Source of the rule without words, such as `ISO 2768-1 m`, `ISO 286 H7` or `±0.05`;\nempty for rules without a table or parameter.",
+          "type": "string"
+        },
+        "unit": {
+          "description": "Unit symbol: `mm`, `in`, `°`, or empty.",
+          "type": "string"
+        },
+        "upper_deviation": {
+          "description": "Upper deviation with sign (`+0.1`), or empty.",
+          "type": "string"
+        },
+        "upper_limit": {
+          "description": "Upper limit, formatted, or empty.",
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/GroupVerdict",
+          "description": "Verdict of the row over all samples."
+        }
+      },
+      "required": [
+        "number",
+        "kind",
+        "requirement",
+        "quantity",
+        "nominal",
+        "upper_deviation",
+        "lower_deviation",
+        "lower_limit",
+        "upper_limit",
+        "unit",
+        "fit",
+        "rule_detail",
+        "draft",
+        "method",
+        "gauge",
+        "classification",
+        "result_type",
+        "verdict",
+        "counts",
+        "cells"
+      ],
+      "type": "object"
+    },
+    "RuleCode": {
+      "description": "Which rule produced the limits (FR-TOL-08), as in `project.json`.",
+      "oneOf": [
+        {
+          "const": "explicit",
+          "description": "Tolerance written on the callout.",
+          "type": "string"
+        },
+        {
+          "const": "fit",
+          "description": "Fit designation and fit table.",
+          "type": "string"
+        },
+        {
+          "const": "drawing_rule",
+          "description": "Drawing specific rule.",
+          "type": "string"
+        },
+        {
+          "const": "general",
+          "description": "General tolerance standard.",
+          "type": "string"
+        },
+        {
+          "const": "decimal_rule",
+          "description": "Decimal place rule.",
+          "type": "string"
+        },
+        {
+          "const": "custom_table",
+          "description": "Custom tolerance table.",
+          "type": "string"
+        },
+        {
+          "const": "no_tolerance_defined",
+          "description": "No tolerance and no general rule: no limits.",
+          "type": "string"
+        },
+        {
+          "const": "manual",
+          "description": "Limits typed by hand.",
+          "type": "string"
+        }
+      ]
+    },
+    "SampleColumn": {
+      "description": "One result column: a sample, or a blank column of a check sheet without samples.",
+      "properties": {
+        "blank": {
+          "description": "True for a blank check sheet column (the project has no samples).",
+          "type": "boolean"
+        },
+        "comment": {
+          "description": "Comment.",
+          "type": "string"
+        },
+        "counts": {
+          "$ref": "#/$defs/Counts",
+          "description": "Cells per verdict of this part."
+        },
+        "date": {
+          "description": "Measuring date `YYYY-MM-DD` or empty.",
+          "type": "string"
+        },
+        "gauges": {
+          "description": "Gauges and instruments used.",
+          "type": "string"
+        },
+        "index": {
+          "description": "Position from 1, as text.",
+          "type": "string"
+        },
+        "inspector": {
+          "description": "Who measured the part.",
+          "type": "string"
+        },
+        "serial": {
+          "description": "Serial number; empty for a blank column.",
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/GroupVerdict",
+          "description": "Verdict of this part over all rows."
+        }
+      },
+      "required": [
+        "index",
+        "serial",
+        "date",
+        "inspector",
+        "gauges",
+        "comment",
+        "blank",
+        "verdict",
+        "counts"
+      ],
+      "type": "object"
+    },
+    "Signature": {
+      "description": "One line of the signature block (decision 15).",
+      "properties": {
+        "date": {
+          "description": "Date `YYYY-MM-DD`, or empty for a date written by hand.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name from the report info, or empty.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "date"
+      ],
+      "type": "object"
+    },
+    "Signatures": {
+      "description": "Signature block: who inspected and who approved (decision 15). No digital signature.",
+      "properties": {
+        "approved_by": {
+          "$ref": "#/$defs/Signature",
+          "description": "Approved by: name; the date stays empty, the approver writes it with the signature."
+        },
+        "inspected_by": {
+          "$ref": "#/$defs/Signature",
+          "description": "Inspected by: name and the report date."
+        }
+      },
+      "required": [
+        "inspected_by",
+        "approved_by"
+      ],
+      "type": "object"
+    },
+    "Summary": {
+      "description": "Overall result of the report (inspection report summary block).",
+      "properties": {
+        "characteristics": {
+          "description": "Number of measured characteristics (rows).",
+          "type": "string"
+        },
+        "counts": {
+          "$ref": "#/$defs/Counts",
+          "description": "Cells per verdict over all rows and samples."
+        },
+        "samples": {
+          "description": "Number of samples (real samples, not blank check sheet columns).",
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/GroupVerdict",
+          "description": "Overall verdict."
+        }
+      },
+      "required": [
+        "verdict",
+        "counts",
+        "characteristics",
+        "samples"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Data of a check sheet or inspection report as passed to report templates (/data.json). Every printed value is text.",
+  "properties": {
+    "column_blocks": {
+      "description": "Column blocks, at least one.",
+      "items": {
+        "$ref": "#/$defs/ColumnBlock"
+      },
+      "type": "array"
+    },
+    "document": {
+      "$ref": "#/$defs/ReportKind",
+      "description": "Which document."
+    },
+    "flags": {
+      "$ref": "#/$defs/Flags",
+      "description": "Notes to print."
+    },
+    "format_version": {
+      "description": "Data format version, [`DATA_FORMAT_VERSION`].",
+      "format": "uint32",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "header": {
+      "$ref": "#/$defs/Header",
+      "description": "Page header."
+    },
+    "language": {
+      "$ref": "#/$defs/LanguageCode",
+      "description": "Report language; also passed to the template as `sys.inputs.lang`."
+    },
+    "remarks": {
+      "description": "Remarks from the report info, line breaks kept.",
+      "type": "string"
+    },
+    "rows": {
+      "description": "Measured characteristics in number order.",
+      "items": {
+        "$ref": "#/$defs/Row"
+      },
+      "type": "array"
+    },
+    "samples": {
+      "description": "Result columns in order.",
+      "items": {
+        "$ref": "#/$defs/SampleColumn"
+      },
+      "type": "array"
+    },
+    "signatures": {
+      "$ref": "#/$defs/Signatures",
+      "description": "Signature block."
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary",
+      "description": "Overall result."
+    }
+  },
+  "required": [
+    "format_version",
+    "document",
+    "language",
+    "header",
+    "summary",
+    "samples",
+    "column_blocks",
+    "rows",
+    "remarks",
+    "signatures",
+    "flags"
+  ],
+  "title": "Dimo report data",
+  "type": "object"
+}

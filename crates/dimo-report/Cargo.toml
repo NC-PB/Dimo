@@ -10,6 +10,8 @@ publish.workspace = true
 
 [dependencies]
 dimo-core.workspace = true
+rust_decimal.workspace = true
+schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
@@ -19,6 +21,10 @@ tracing.workspace = true
 typst.workspace = true
 typst-layout.workspace = true
 typst-pdf.workspace = true
+
+[dev-dependencies]
+boon.workspace = true
+insta.workspace = true
 
 [lints]
 workspace = true
