@@ -19,16 +19,6 @@
   const project = $derived(projectStore.project);
   const revision = $derived(project?.revisions.find((r) => r.id === project.current_revision));
 
-  // M3 decision 15: the company name of the app settings goes into an empty report info once
-  // per opened project, through a command. Undoing it does not bring it back.
-  let filledFor = -1;
-  $effect(() => {
-    if (projectStore.isOpen && filledFor !== projectStore.session) {
-      filledFor = projectStore.session;
-      void projectStore.fillReportCompany();
-    }
-  });
-
   /**
    * Sends a changed field. Afterwards the input shows what the project holds (`read`): Rust's
    * trimmed text, or the old value when Rust refused (the reason appears in the project

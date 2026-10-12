@@ -40,12 +40,12 @@ ihn auf jeden Bericht.
 | Freigegeben von | Wer den Bericht freigegeben hat |
 | Bemerkungen | Freier Text, der auf dem Bericht steht |
 
-Leere Felder bleiben auf dem Bericht leer. Dimo setzt von sich aus kein Datum und keinen Namen ein.
+Leere Felder bleiben auf dem Bericht leer. Ein neues Projekt beginnt mit dem Firmennamen aus den Einstellungen und mit dem Benutzernamen der Einstellungen (oder deines Systems) als Prüfer. Dimo ändert ein bestehendes Projekt nicht, wenn du es öffnest.
 
 ### Firmenname
 
 Trage deinen Firmennamen einmal in den **Einstellungen** unter **Berichte** ein
-([Einstellungen](settings.md)). Öffnest du ein Projekt, dessen Berichtsdaten noch keinen Firmennamen
-haben, kopiert Dimo den Namen aus den Einstellungen in das Feld. Das ist ein Schritt beim
-Rückgängigmachen. Ein Name, der schon im Projekt steht, wird nie ersetzt, und eine spätere Änderung
-der Einstellung ändert bestehende Projekte nicht.
+([Einstellungen](settings.md)). Ein neues Projekt beginnt mit diesem Namen im Feld, als Teil seines
+ersten Zustands (kein Rückgängig-Schritt, das Projekt gilt nicht als geändert). Eine spätere
+Änderung der Einstellung ändert bestehende Projekte nicht; du kannst das Feld in jedem Projekt
+bearbeiten.

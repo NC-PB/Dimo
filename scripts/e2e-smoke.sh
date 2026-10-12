@@ -314,9 +314,10 @@ else
 fi
 
 step "6. project and report details (T3.4)"
-# The company name is set in the settings of this run only; the new project gets it by itself.
+# Company name and user name are set in the settings of this run only; the new project starts
+# with them (M3 decision 15).
 mkdir -p "$WORK/home6/config"
-echo '{"locale":"en","company_name":"Muster GmbH"}' >"$WORK/home6/config/settings.json"
+echo '{"locale":"en","company_name":"Muster GmbH","user_name":"Tester"}' >"$WORK/home6/config/settings.json"
 run_app details "$SCRIPTS/details.json" term home6 \
   DIMO_DEV_OPEN="$DRAWING" DIMO_DEV_SAVE_AS="$WORK/details.dimo"
 DET="$WORK/details.dimo"
@@ -326,9 +327,9 @@ if [[ -s "$DET" ]]; then
   expect "details: part data stored" "4711-B Muster AG" \
     "$(djq '"\(.info.part_number) \(.info.customer)"')"
   expect "details: revision label stored trimmed" "C" "$(djq '.revisions[0].label')"
-  expect "details: report fields stored, company name copied from the settings" \
-    "IR-7 Anna Muster GmbH" \
-    "$(djq '"\(.report_info.report_number) \(.report_info.inspected_by) \(.report_info.company_name)"')"
+  expect "details: report fields stored, company name and inspector from the settings" \
+    "IR-7 Ben Tester Muster GmbH" \
+    "$(djq '"\(.report_info.report_number) \(.report_info.approved_by) \(.report_info.inspected_by) \(.report_info.company_name)"')"
 else
   fail "missing or empty: $DET"
 fi

@@ -40,12 +40,11 @@ prints it on every report.
 | Approved by | Who approved the report |
 | Remarks | Free text printed on the report |
 
-Empty fields stay empty on the report. Dimo does not add a date or a name by itself.
+Empty fields stay empty on the report. A new project starts with the company name from the settings and with the user name of the settings (or of your system) as inspector. Dimo does not change an existing project when you open it.
 
 ### Company name
 
 Enter your company name once in **Settings**, under **Reports**
-([Settings](settings.md)). When you open a project whose report data has no company name yet,
-Dimo copies the name from the settings into the field. This is one step of undo. A name that
-is already in the project is never replaced, and changing the setting later does not change
-existing projects.
+([Settings](settings.md)). A new project starts with that name in the field, as part of its first
+state (it is not a step of undo and does not mark the project as changed). Changing the setting
+later does not change existing projects; you can edit the field in each project.

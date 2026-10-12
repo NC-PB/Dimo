@@ -33,8 +33,6 @@ export interface ProjectCommands {
   execute(command: Command): Promise<Result<ProjectPatched>>;
   undo(): Promise<Result<ProjectPatched>>;
   redo(): Promise<Result<ProjectPatched>>;
-  /** Copies the company name of the app settings into an empty report info (M3 decision 15). */
-  fillReportCompany?(): Promise<Result<ProjectPatched>>;
 }
 
 type Unlisten = () => void;
@@ -378,17 +376,6 @@ export class ProjectStore {
    */
   execute(command: Command): Promise<Patch | undefined> {
     return this.#edit(() => this.#api.execute(command));
-  }
-
-  /**
-   * Asks Rust to copy the company name of the app settings into the report info of the project
-   * when that has none (M3 decision 15). One undoable step, or nothing.
-   */
-  async fillReportCompany(): Promise<void> {
-    const fill = this.#api.fillReportCompany?.bind(this.#api);
-    if (fill) {
-      await this.#edit(fill);
-    }
   }
 
   /** Undoes the last command, if there is one when its turn comes. */

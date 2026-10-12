@@ -63,7 +63,6 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             measurement::measurement_state,
             settings::app_settings,
             settings::set_app_settings,
-            settings::fill_report_company,
             dev::dev_startup,
             dev::dev_report_frame_times,
             dev::dev_log

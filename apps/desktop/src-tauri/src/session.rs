@@ -25,7 +25,7 @@
 
 use std::path::{Path, PathBuf};
 
-use dimo_core::{Command, Environment, Patch, Project, ProjectInfo, Sha256Hex, Size};
+use dimo_core::{Command, Environment, Patch, Project, ProjectInfo, ReportInfo, Sha256Hex, Size};
 use dimo_io::autosave;
 use dimo_io::lock::{LockOwner, ProjectLock};
 use dimo_io::project::{
@@ -259,6 +259,8 @@ impl OpenProject {
 #[derive(Debug)]
 pub struct AppSession {
     env: DesktopEnvironment,
+    /// Company name of the app settings, the report info of new projects starts with it.
+    company_name: String,
     autosave_dir: Option<PathBuf>,
     session: u32,
     open: Option<OpenProject>,
@@ -272,6 +274,7 @@ impl AppSession {
     pub fn new(autosave_dir: Option<PathBuf>) -> Self {
         Self {
             env: DesktopEnvironment::new(),
+            company_name: String::new(),
             autosave_dir,
             session: 0,
             open: None,
@@ -282,6 +285,22 @@ impl AppSession {
     /// Sets the audit user name (D-27, for the settings view of T1.9).
     pub fn set_user_name(&mut self, name: &str) {
         self.env.set_user_name(name);
+    }
+
+    /// Sets the company name that new projects start with in their report info (M3 decision 15).
+    pub fn set_company_name(&mut self, name: &str) {
+        name.trim().clone_into(&mut self.company_name);
+    }
+
+    /// The report info a new project starts with (M3 decision 15): the company name of the app
+    /// settings and the audit user (D-27) as inspector. Part of the initial state, so it is no
+    /// undo step and does not mark the project modified. Opened projects are left alone.
+    fn initial_report_info(&self) -> ReportInfo {
+        ReportInfo {
+            company_name: self.company_name.clone(),
+            inspected_by: self.env.user_name(),
+            ..ReportInfo::default()
+        }
     }
 
     /// The audit user name.
@@ -435,29 +454,43 @@ impl AppSession {
                 return Err(error);
             }
         };
+        let report_info = self.initial_report_info();
         let (project, lock, journal_error) = match self.autosave_base() {
             Ok(Some((base, lock))) => {
-                match ProjectSession::create_autosaved(
+                match ProjectSession::create_autosaved_with_report_info(
                     ProjectInfo::default(),
+                    report_info.clone(),
                     drawing.clone(),
                     &base,
                 ) {
                     Ok(project) => (project, Some(lock), None),
                     Err(error) => {
                         tracing::warn!("new project without autosave: {error}");
-                        let project = ProjectSession::create(ProjectInfo::default(), drawing);
+                        let project = ProjectSession::create_with_report_info(
+                            ProjectInfo::default(),
+                            report_info,
+                            drawing,
+                        );
                         (project, None, Some(error.to_string()))
                     }
                 }
             }
             Ok(None) => (
-                ProjectSession::create(ProjectInfo::default(), drawing),
+                ProjectSession::create_with_report_info(
+                    ProjectInfo::default(),
+                    report_info,
+                    drawing,
+                ),
                 None,
                 None,
             ),
             Err(error) => {
                 tracing::warn!("new project without autosave: {error}");
-                let project = ProjectSession::create(ProjectInfo::default(), drawing);
+                let project = ProjectSession::create_with_report_info(
+                    ProjectInfo::default(),
+                    report_info,
+                    drawing,
+                );
                 (project, None, Some(error.to_string()))
             }
         };

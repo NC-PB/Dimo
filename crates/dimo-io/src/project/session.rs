@@ -21,8 +21,8 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use dimo_core::{
-    AuditEntry, Change, CharId, Command, Document, HistoryEntry, Project, ProjectInfo, Sha256Hex,
-    Timestamp,
+    AuditEntry, Change, CharId, Command, Document, HistoryEntry, Project, ProjectInfo, ReportInfo,
+    Sha256Hex, Timestamp,
 };
 
 use super::error::ProjectError;
@@ -63,8 +63,20 @@ impl ProjectSession {
     /// A new, unsaved project for one imported drawing. The project counts as created at the
     /// drawing's import time.
     pub fn create(info: ProjectInfo, drawing: ImportedDrawing) -> Self {
+        Self::create_with_report_info(info, ReportInfo::default(), drawing)
+    }
+
+    /// Like [`ProjectSession::create`], with the report info the project starts with (M3
+    /// decision 15). It is part of the initial state: no command, no undo step, not modified.
+    pub fn create_with_report_info(
+        info: ProjectInfo,
+        report_info: ReportInfo,
+        drawing: ImportedDrawing,
+    ) -> Self {
         let created = drawing.revision.imported_at.clone();
-        let mut file = ProjectFile::new(Project::new(info, drawing.revision), created);
+        let mut project = Project::new(info, drawing.revision);
+        project.report_info = report_info;
+        let mut file = ProjectFile::new(project, created);
         file.insert_drawing(drawing.bytes);
         Self::from_file(file, None)
     }
@@ -76,7 +88,17 @@ impl ProjectSession {
         drawing: ImportedDrawing,
         base: &Path,
     ) -> Result<Self, ProjectError> {
-        let mut session = Self::create(info, drawing);
+        Self::create_autosaved_with_report_info(info, ReportInfo::default(), drawing, base)
+    }
+
+    /// Like [`ProjectSession::create_autosaved`], with the initial report info.
+    pub fn create_autosaved_with_report_info(
+        info: ProjectInfo,
+        report_info: ReportInfo,
+        drawing: ImportedDrawing,
+        base: &Path,
+    ) -> Result<Self, ProjectError> {
+        let mut session = Self::create_with_report_info(info, report_info, drawing);
         session.file.save(base, Layout::Zip)?;
         session.autosave = Some(base.to_owned());
         Ok(session)
