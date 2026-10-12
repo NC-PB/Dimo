@@ -14,18 +14,19 @@
 //! rotation and stacked text are [`Traits`] across the categories and are reported as extra
 //! rows.
 //!
-//! An angle whose truth has limits from a general tolerance is a **known gap**: ISO 2768-1
-//! selects the angular tolerance by the shorter leg of the angle, which is not written on the
-//! sheet and which box select does not measure in M2 (decision log 2026-10-10, T2.5). The gate
-//! checks such a case against what M2 can do: one proposal with kind, nominal and inspect flag
-//! right, rule `no_tolerance_defined`, no limits, and the note that the shorter leg is unknown.
-//! The strict rate, which wants the limits, is reported next to it.
+//! An angle under a general tolerance needs the length of its shorter leg (ISO 2768-1 table 3),
+//! which is not written on the sheet. The user enters it on the proposal card (T2.9a); the
+//! evaluation does the same with the truth's `shorter_leg`: a proposal with the note that the
+//! leg is unknown is read again with the leg, as the card reads it through
+//! `read_callout_text`. Every common callout is then compared strictly, limits included, and
+//! the gate is the strict rate.
 //!
 //! The category is derived from the truth fields and the requirement text, never from the
 //! proposal, so a misread callout still counts in the category of what is printed.
 
 use std::fmt::Write as _;
 
+use dimo_core::Length;
 use dimo_core::characteristic::{CharacteristicKind, ToleranceRule, Unit};
 use dimo_core::geometry::{OrientedBox, Point, Size};
 use dimo_core::id::SheetId;
@@ -33,14 +34,14 @@ use dimo_core::proposal::{BalloonPlacement, Proposal};
 use dimo_core::truth::{TruthCharacteristic, TruthFile};
 use dimo_core::{Environment as _, FixedEnvironment};
 use dimo_pdf::Document;
-use dimo_tolerance::{ContextError, TableSet, ToleranceContext};
+use dimo_tolerance::{ContextError, Measures, Note, TableSet, ToleranceContext};
 use rust_decimal::Decimal;
 
-use crate::box_select::{BoxSelectContext, Proposed, box_select_with_notes};
+use crate::box_select::{BoxSelectContext, box_select_with_notes};
 use crate::interpret::{Interpreter, ToleranceEngine};
+use crate::read::read_callout;
 
-/// Share of correct common callouts (known gaps left out) the M2 exit criterion asks for, in
-/// percent.
+/// Share of correct common callouts the M2 exit criterion asks for, in percent.
 pub const REQUIRED_PERCENT: u32 = 99;
 
 /// How much the box around a truth region is grown on every side, in PDF user units: a user
@@ -210,13 +211,6 @@ pub fn traits(c: &TruthCharacteristic) -> Traits {
     }
 }
 
-/// True when the truth expects limits that box select cannot derive in M2: an angle with a
-/// general tolerance, which needs the shorter leg of the angle.
-pub fn is_known_gap(c: &TruthCharacteristic) -> bool {
-    classify(c) == Category::AngleGeneral
-        && c.tolerance_rule.is_some_and(ToleranceRule::yields_limits)
-}
-
 /// The result of box select on one truth characteristic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CaseResult {
@@ -228,41 +222,19 @@ pub struct CaseResult {
     pub category: Category,
     /// Traits of the truth entry.
     pub traits: Traits,
-    /// See [`is_known_gap`].
-    pub known_gap: bool,
+    /// True when the truth gives a shorter leg and the proposal was read again with it, as the
+    /// user does on the proposal card (T2.9a).
+    pub leg_entered: bool,
     /// Requirement text of the truth.
     pub text: String,
     /// What differs from the truth; `None` when the proposal matches.
     pub failure: Option<String>,
-    /// For a known gap: what differs from the M2 expectation (no limits, shorter leg note);
-    /// `None` when it matches. Always `None` for other cases.
-    pub gap_failure: Option<String>,
 }
 
 impl CaseResult {
     /// True when the proposal matches the truth, limits included.
     pub fn correct(&self) -> bool {
         self.failure.is_none()
-    }
-
-    /// True when the proposal is what M2 must give: the truth, or for a known gap the truth
-    /// without limits plus the shorter leg note.
-    pub fn gated_correct(&self) -> bool {
-        if self.known_gap {
-            self.gap_failure.is_none()
-        } else {
-            self.correct()
-        }
-    }
-}
-
-/// The M2 expectation for a known gap: the truth without limits, rule `no_tolerance_defined`.
-fn without_limits(c: &TruthCharacteristic) -> TruthCharacteristic {
-    TruthCharacteristic {
-        tolerance_rule: Some(ToleranceRule::NoToleranceDefined),
-        upper_limit: None,
-        lower_limit: None,
-        ..c.clone()
     }
 }
 
@@ -308,8 +280,8 @@ pub fn evaluate_drawing(
         .iter()
         .map(|c| {
             let region = user_box(&c.region);
-            let known_gap = is_known_gap(c);
-            let (failure, gap_failure) = match doc.region_text(c.sheet as usize, region) {
+            let mut leg_entered = false;
+            let failure = match doc.region_text(c.sheet as usize, region) {
                 Ok(text) => {
                     let context = BoxSelectContext {
                         interpreter,
@@ -324,46 +296,54 @@ pub fn evaluate_drawing(
                         job_id: None,
                     };
                     let proposed = box_select_with_notes(sheet, &region, &text, &context);
-                    let proposals: Vec<Proposal> =
-                        proposed.iter().map(|p| p.proposal.clone()).collect();
-                    let gap_failure = known_gap
-                        .then(|| gap_check(&proposed, &proposals, c))
-                        .flatten();
-                    (compare(&proposals, c), gap_failure)
+                    let proposals: Vec<Proposal> = proposed
+                        .into_iter()
+                        .map(|p| match c.shorter_leg {
+                            Some(leg) if p.notes.contains(&Note::ShorterLegUnknown) => {
+                                leg_entered = true;
+                                enter_shorter_leg(p.proposal, leg, interpreter)
+                            }
+                            _ => p.proposal,
+                        })
+                        .collect();
+                    compare(&proposals, c)
                 }
-                Err(e) => {
-                    let message = format!("no region text: {e}");
-                    (Some(message.clone()), known_gap.then_some(message))
-                }
+                Err(e) => Some(format!("no region text: {e}")),
             };
             CaseResult {
                 drawing: drawing.to_owned(),
                 id: c.id.clone(),
                 category: classify(c),
                 traits: traits(c),
-                known_gap,
+                leg_entered,
                 text: c.requirement_text.clone(),
                 failure,
-                gap_failure,
             }
         })
         .collect()
 }
 
-/// The M2 check of a known gap: [`without_limits`] and the shorter leg note.
-fn gap_check(
-    proposed: &[Proposed],
-    proposals: &[Proposal],
-    c: &TruthCharacteristic,
-) -> Option<String> {
-    let mut failure = compare(proposals, &without_limits(c));
-    let noted = proposed
-        .iter()
-        .any(|p| p.notes.contains(&dimo_tolerance::Note::ShorterLegUnknown));
-    if failure.is_none() && !noted {
-        failure = Some("no note that the shorter leg is unknown".to_owned());
+/// The proposal read again with the shorter leg the user enters on the card (T2.9a): the same
+/// reading as `read_callout_text` with the leg, applied to the proposal's tolerance fields.
+fn enter_shorter_leg(mut p: Proposal, leg: Length, interpreter: &dyn Interpreter) -> Proposal {
+    let r = read_callout(
+        &p.requirement_text,
+        false,
+        Unit::Mm,
+        interpreter,
+        &Measures::with_shorter_leg(Some(leg)),
+    );
+    if r.parse_error.is_none() {
+        p.nominal = r.nominal;
+        p.unit = r.unit;
+        p.upper_dev = r.upper_dev;
+        p.lower_dev = r.lower_dev;
+        p.upper_limit = r.upper_limit;
+        p.lower_limit = r.lower_limit;
+        p.derivation = r.derivation;
+        p.shorter_leg = r.shorter_leg;
     }
-    failure
+    p
 }
 
 /// What differs between the proposals and the truth entry; `None` when they match.
@@ -427,17 +407,10 @@ pub struct Tally {
 
 impl Tally {
     fn of<'a>(cases: impl IntoIterator<Item = &'a CaseResult>) -> Self {
-        Self::by(cases, CaseResult::gated_correct)
-    }
-
-    fn by<'a>(
-        cases: impl IntoIterator<Item = &'a CaseResult>,
-        correct: fn(&CaseResult) -> bool,
-    ) -> Self {
         let mut t = Tally::default();
         for case in cases {
             t.count += 1;
-            t.correct += usize::from(correct(case));
+            t.correct += usize::from(case.correct());
         }
         t
     }
@@ -471,23 +444,14 @@ impl Evaluation {
         Tally::of(self.cases.iter().filter(|c| c.category == category))
     }
 
-    /// Tally of all common callouts with the truth limits required, known gaps included.
+    /// Tally of all common callouts with the truth limits required: the exit criterion.
     pub fn strict(&self) -> Tally {
-        Tally::by(
-            self.cases.iter().filter(|c| c.category.is_common()),
-            CaseResult::correct,
-        )
-    }
-
-    /// Tally the exit criterion is checked on: all common callouts, known gaps with the M2
-    /// expectation ([`CaseResult::gated_correct`]).
-    pub fn gated(&self) -> Tally {
         Tally::of(self.cases.iter().filter(|c| c.category.is_common()))
     }
 
-    /// True when the gated tally reaches [`REQUIRED_PERCENT`].
+    /// True when the strict tally reaches [`REQUIRED_PERCENT`].
     pub fn passes(&self) -> bool {
-        self.gated().reaches(REQUIRED_PERCENT)
+        self.strict().reaches(REQUIRED_PERCENT)
     }
 
     /// The report as plain text: one row per category, rows per trait, totals, failures.
@@ -503,7 +467,7 @@ impl Evaluation {
         );
         let _ = writeln!(
             out,
-            "Known gap: an angle under a general tolerance needs the shorter leg of the angle (ISO 2768-1 table 3), which is not on the sheet; box select gives no limits for it in M2. Gated on that (no limits, rule no_tolerance_defined, shorter leg note); the strict row wants the limits."
+            "Angles under a general tolerance need the shorter leg (ISO 2768-1 table 3), which is not on the sheet: the leg of the truth (shorter_leg) is entered as on the proposal card and the proposal read again with it. Gate: the strict row, limits required."
         );
         let _ = writeln!(
             out,
@@ -542,22 +506,15 @@ impl Evaluation {
                     .iter()
                     .filter(|c| c.category.is_common() && has(&c.traits)),
             );
-            row(&mut out, &format!("{label} (gated)"), tally);
+            row(&mut out, label, tally);
         }
-        let gaps = self.cases.iter().filter(|c| c.known_gap);
         row(
             &mut out,
-            "known gap, M2 expectation",
-            Tally::of(gaps.clone()),
-        );
-        row(
-            &mut out,
-            "known gap, with limits",
-            Tally::by(gaps, CaseResult::correct),
+            "shorter leg entered",
+            Tally::of(self.cases.iter().filter(|c| c.leg_entered)),
         );
         let _ = writeln!(out);
         row(&mut out, "common, strict (limits required)", self.strict());
-        row(&mut out, "common, gated", self.gated());
         let _ = writeln!(
             out,
             "Result: {}",
@@ -566,20 +523,12 @@ impl Evaluation {
         let failures: Vec<&CaseResult> = self.cases.iter().filter(|c| !c.correct()).collect();
         if !failures.is_empty() {
             let _ = writeln!(out);
-            let _ = writeln!(
-                out,
-                "Failures against the truth ({}, known gaps marked):",
-                failures.len()
-            );
+            let _ = writeln!(out, "Failures against the truth ({}):", failures.len());
             for c in failures {
-                let gap = match (c.known_gap, &c.gap_failure) {
-                    (false, _) => String::new(),
-                    (true, None) => " [known gap, M2 expectation met]".to_owned(),
-                    (true, Some(f)) => format!(" [known gap, M2 expectation failed: {f}]"),
-                };
+                let leg = if c.leg_entered { " [leg entered]" } else { "" };
                 let _ = writeln!(
                     out,
-                    "  {} {} [{}]{gap} {:?}: {}",
+                    "  {} {} [{}]{leg} {:?}: {}",
                     c.drawing,
                     c.id,
                     c.category.label(),
@@ -623,6 +572,7 @@ mod tests {
             lower_limit: None,
             inspect: true,
             review_note: None,
+            shorter_leg: None,
         }
     }
 
@@ -738,7 +688,7 @@ mod tests {
     }
 
     #[test]
-    fn traits_and_known_gaps() {
+    fn traits_of_the_printed_text() {
         use CharacteristicKind as K;
         let mut c = sized(
             "12,02 11,98",
@@ -756,23 +706,6 @@ mod tests {
                 stacked: true
             }
         );
-        let mut angle = sized(
-            "30°",
-            K::Angle,
-            "30",
-            ToleranceRule::General,
-            Some(("30.5", "29.5")),
-        );
-        angle.unit = Some(Unit::Deg);
-        assert!(is_known_gap(&angle));
-        let untoleranced = sized(
-            "90.0°",
-            K::Angle,
-            "90.0",
-            ToleranceRule::NoToleranceDefined,
-            None,
-        );
-        assert!(!is_known_gap(&untoleranced));
     }
 
     #[test]
