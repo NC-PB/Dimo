@@ -67,6 +67,10 @@ id_type!(
     /// ID of a [`DrawingRevision`](crate::sheet::DrawingRevision).
     RevisionId
 );
+id_type!(
+    /// ID of a [`Sample`](crate::measurement::Sample), a measured part (FR-MEA-01).
+    SampleId
+);
 
 #[cfg(test)]
 mod tests {

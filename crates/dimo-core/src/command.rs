@@ -17,7 +17,12 @@ use crate::characteristic::{
 };
 use crate::env::Environment;
 use crate::geometry::{OrientedBox, Point};
-use crate::id::{BalloonId, CharId, SheetId};
+use crate::id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
+use crate::measurement::{
+    MAX_SAMPLES, MAX_SAMPLES_PER_ADD, MeasurementResult, ResultCell, ResultEntry, ResultParseError,
+    ResultSource, ResultType, Sample, SerialError, check_serial, is_date_or_empty, next_serials,
+    parse_result,
+};
 use crate::number::DisplayNumber;
 use crate::numbering::{numbers_for_order, strategy_order};
 use crate::patch::{Change, ChangeError, invert};
@@ -26,7 +31,8 @@ use crate::project::{
     NumberingStrategy, Project, ProjectInfo, ProjectSettings, ToleranceSettings,
 };
 use crate::proposal::{BalloonPlacement, Proposal};
-use crate::sheet::{Rotation, Scale, Sheet, SheetView, ZoneGrid};
+use crate::report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
+use crate::sheet::{Rotation, Scale, Sha256Hex, Sheet, SheetView, ZoneGrid};
 
 /// New position of one balloon.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -175,6 +181,79 @@ pub enum Command {
         /// New data.
         info: ProjectInfo,
     },
+    /// Adds `count` samples (1 to 100) at the end of the sample order (FR-MEA-01, M3
+    /// decision 6). Serials continue the highest plain number, the inspector is the audit user
+    /// (D-27), other fields are empty. Refused above 500 samples per project.
+    AddSamples {
+        /// How many samples to add.
+        count: u32,
+    },
+    /// Replaces serial, date, inspector, gauges and comment of the sample with the same ID. The
+    /// serial is trimmed, must not be empty and must be unique; the date is `YYYY-MM-DD` or
+    /// empty (M3 decision 6).
+    UpdateSample {
+        /// The sample with its new values.
+        sample: Sample,
+    },
+    /// Deletes samples with their results (M3 decision 16).
+    DeleteSamples {
+        /// Samples to delete.
+        ids: Vec<SampleId>,
+    },
+    /// Moves samples in the column order. The moved samples keep their relative order.
+    MoveSamples {
+        /// Samples to move.
+        ids: Vec<SampleId>,
+        /// Insert them before this sample; `null` moves them to the end.
+        before: Option<SampleId>,
+    },
+    /// Sets the results of cells from typed or pasted text, as one undo step (FR-MEA-02, M3
+    /// decisions 7 and 8). Each text is parsed by the effective result type of its
+    /// characteristic; empty text clears the cell. Refused as a whole if one text is invalid.
+    SetResults {
+        /// Cells in order; a later entry for the same cell wins.
+        results: Vec<ResultEntry>,
+    },
+    /// Clears the results of cells. Cells without a result are left as they are.
+    ClearResults {
+        /// Cells to clear.
+        cells: Vec<ResultCell>,
+    },
+    /// Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
+    /// characteristic has results of the other type; nothing is converted.
+    SetResultType {
+        /// Characteristics to change.
+        ids: Vec<CharId>,
+        /// New result type.
+        result_type: ResultType,
+    },
+    /// Replaces the report header and approval data (M3 decision 1). The report date is
+    /// `YYYY-MM-DD` or empty.
+    UpdateReportInfo {
+        /// New data.
+        info: ReportInfo,
+    },
+    /// Sets the label of a drawing revision, trimmed (FR-RVC-04).
+    UpdateRevisionLabel {
+        /// The revision.
+        revision: RevisionId,
+        /// New label; empty if unknown.
+        label: String,
+    },
+    /// Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
+    /// are those of the current revision, the time comes from the environment clock. Exports
+    /// send it in a batch with [`Command::LockNumbering`], so lock and record are one undo
+    /// step.
+    RecordIssuedReport {
+        /// Which document.
+        kind: ReportKind,
+        /// The template it was rendered with.
+        template: TemplateRef,
+        /// File format.
+        format: ReportFormat,
+        /// SHA-256 of the written file.
+        output_sha256: Sha256Hex,
+    },
     /// Several commands as one undo step. If one fails, none is applied.
     Batch {
         /// Commands in order.
@@ -216,6 +295,35 @@ pub enum CommandError {
     /// A field value cannot be stored.
     #[error(transparent)]
     Field(#[from] FieldError),
+    /// No sample with this ID.
+    #[error("unknown sample {0}")]
+    UnknownSample(SampleId),
+    /// No drawing revision with this ID.
+    #[error("unknown drawing revision {0}")]
+    UnknownRevision(RevisionId),
+    /// A serial that is empty or used by another sample (M3 decision 6).
+    #[error(transparent)]
+    Serial(#[from] SerialError),
+    /// The project would hold more than [`MAX_SAMPLES`] samples (M3 decision 6).
+    #[error("a project holds at most {MAX_SAMPLES} samples")]
+    TooManySamples,
+    /// Samples are added 1 to [`MAX_SAMPLES_PER_ADD`] at once.
+    #[error("add 1 to {MAX_SAMPLES_PER_ADD} samples at once")]
+    InvalidSampleCount,
+    /// A date that is neither empty nor a calendar date `YYYY-MM-DD`.
+    #[error("invalid date {0:?}, expected YYYY-MM-DD")]
+    InvalidDate(String),
+    /// A typed result that does not fit the result type of its characteristic.
+    #[error("invalid result for characteristic {characteristic}: {error}")]
+    InvalidResult {
+        /// The characteristic of the cell.
+        characteristic: CharId,
+        /// Why the text was not accepted.
+        error: ResultParseError,
+    },
+    /// The result type cannot change while results of the other type exist (M3 decision 4).
+    #[error("characteristic {0} has results of the other result type; clear them first")]
+    ResultTypeConflict(CharId),
     /// Undo with an empty undo history.
     #[error("nothing to undo")]
     NothingToUndo,
@@ -268,6 +376,7 @@ pub fn execute(
     }
 }
 
+#[allow(clippy::too_many_lines, reason = "one arm per command, exhaustive")]
 fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<(), CommandError> {
     match command {
         Command::AddCharacteristic {
@@ -366,7 +475,49 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
             }
             Ok(())
         }
+        command @ (Command::AddSamples { .. }
+        | Command::UpdateSample { .. }
+        | Command::DeleteSamples { .. }
+        | Command::MoveSamples { .. }
+        | Command::SetResults { .. }
+        | Command::ClearResults { .. }
+        | Command::SetResultType { .. }
+        | Command::UpdateReportInfo { .. }
+        | Command::UpdateRevisionLabel { .. }
+        | Command::RecordIssuedReport { .. }) => run_measurement(tx, command, env),
         Command::Batch { commands } => commands.iter().try_for_each(|c| run(tx, c, env)),
+    }
+}
+
+/// [`run`] for samples, results and report data (data model version 3, M3 decision 1).
+fn run_measurement(
+    tx: &mut Tx<'_>,
+    command: &Command,
+    env: &mut dyn Environment,
+) -> Result<(), CommandError> {
+    match command {
+        Command::AddSamples { count } => add_samples(tx, *count, env),
+        Command::UpdateSample { sample } => update_sample(tx, sample),
+        Command::DeleteSamples { ids } => delete_samples(tx, ids),
+        Command::MoveSamples { ids, before } => move_samples(tx, ids, *before),
+        Command::SetResults { results } => set_results(tx, results),
+        Command::ClearResults { cells } => cells.iter().try_for_each(|cell| {
+            check_cell(tx.project, *cell)?;
+            set_result(tx, *cell, None)
+        }),
+        Command::SetResultType { ids, result_type } => set_result_type(tx, ids, *result_type),
+        Command::UpdateReportInfo { info } => update_report_info(tx, info),
+        Command::UpdateRevisionLabel { revision, label } => {
+            update_revision_label(tx, *revision, label)
+        }
+        Command::RecordIssuedReport {
+            kind,
+            template,
+            format,
+            output_sha256,
+        } => record_issued_report(tx, *kind, template, *format, output_sha256, env),
+        // `run` sends only the commands above.
+        _ => Ok(()),
     }
 }
 
@@ -816,6 +967,15 @@ fn move_balloons(tx: &mut Tx<'_>, moves: &[BalloonMove]) -> Result<(), CommandEr
 
 fn delete_characteristics(tx: &mut Tx<'_>, ids: &[CharId]) -> Result<(), CommandError> {
     for id in known_chars(tx.project, ids)? {
+        // M3 decision 16: results go with their characteristic, in the same undo step.
+        let cells: Vec<ResultCell> = tx
+            .project
+            .results_of(id)
+            .map(MeasurementResult::cell)
+            .collect();
+        for cell in cells {
+            set_result(tx, cell, None)?;
+        }
         while let Some(index) = tx
             .project
             .balloons
@@ -950,5 +1110,287 @@ fn lock_numbering(
     tx.push(Change::NumberingChanged {
         before: tx.project.numbering.clone(),
         after,
+    })
+}
+
+/// Distinct sample IDs in first seen order, all checked to exist.
+fn known_samples(project: &Project, ids: &[SampleId]) -> Result<Vec<SampleId>, CommandError> {
+    let mut seen = BTreeSet::new();
+    let mut out = Vec::new();
+    for &id in ids {
+        if project.sample(id).is_none() {
+            return Err(CommandError::UnknownSample(id));
+        }
+        if seen.insert(id) {
+            out.push(id);
+        }
+    }
+    Ok(out)
+}
+
+/// Checks that sample and characteristic of a cell exist.
+fn check_cell(project: &Project, cell: ResultCell) -> Result<(), CommandError> {
+    if project.sample(cell.sample).is_none() {
+        return Err(CommandError::UnknownSample(cell.sample));
+    }
+    if project.characteristic(cell.characteristic).is_none() {
+        return Err(CommandError::UnknownCharacteristic(cell.characteristic));
+    }
+    Ok(())
+}
+
+/// Sets or clears the result of one cell; records a change only if value, digits, source or
+/// comment differ.
+fn set_result(
+    tx: &mut Tx<'_>,
+    cell: ResultCell,
+    after: Option<MeasurementResult>,
+) -> Result<(), CommandError> {
+    let before = tx.project.result(cell).cloned();
+    let same = match (&before, &after) {
+        (Some(a), Some(b)) => {
+            a.value.same_as(&b.value) && a.source == b.source && a.comment == b.comment
+        }
+        (None, None) => true,
+        _ => false,
+    };
+    if !same {
+        tx.push(Change::ResultChanged {
+            cell,
+            before,
+            after,
+        })?;
+    }
+    Ok(())
+}
+
+fn add_samples(tx: &mut Tx<'_>, count: u32, env: &mut dyn Environment) -> Result<(), CommandError> {
+    if !(1..=MAX_SAMPLES_PER_ADD).contains(&count) {
+        return Err(CommandError::InvalidSampleCount);
+    }
+    let count = usize::try_from(count).unwrap_or(usize::MAX);
+    if tx.project.samples.len().saturating_add(count) > MAX_SAMPLES {
+        return Err(CommandError::TooManySamples);
+    }
+    for serial in next_serials(&tx.project.samples, count) {
+        let sample = Sample {
+            id: SampleId::from_uuid(env.new_uuid()),
+            serial,
+            date: String::new(),
+            inspector: env.user_name(),
+            gauges: String::new(),
+            comment: String::new(),
+        };
+        tx.push(Change::SampleInserted {
+            index: index_u32(tx.project.samples.len()),
+            sample,
+        })?;
+    }
+    Ok(())
+}
+
+fn update_sample(tx: &mut Tx<'_>, sample: &Sample) -> Result<(), CommandError> {
+    let current = tx
+        .project
+        .sample(sample.id)
+        .ok_or(CommandError::UnknownSample(sample.id))?;
+    let serial = check_serial(&tx.project.samples, &sample.serial, Some(sample.id))?;
+    if !is_date_or_empty(&sample.date) {
+        return Err(CommandError::InvalidDate(sample.date.clone()));
+    }
+    let after = Sample {
+        serial,
+        ..sample.clone()
+    };
+    if *current != after {
+        tx.push(Change::SampleChanged {
+            before: current.clone(),
+            after,
+        })?;
+    }
+    Ok(())
+}
+
+fn delete_samples(tx: &mut Tx<'_>, ids: &[SampleId]) -> Result<(), CommandError> {
+    for id in known_samples(tx.project, ids)? {
+        // M3 decision 16: results go with their sample, in the same undo step.
+        let cells: Vec<ResultCell> = tx
+            .project
+            .results
+            .iter()
+            .filter(|r| r.sample == id)
+            .map(MeasurementResult::cell)
+            .collect();
+        for cell in cells {
+            set_result(tx, cell, None)?;
+        }
+        if let Some(index) = tx.project.samples.iter().position(|s| s.id == id) {
+            let sample = tx.project.samples[index].clone();
+            tx.push(Change::SampleRemoved {
+                index: index_u32(index),
+                sample,
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn move_samples(
+    tx: &mut Tx<'_>,
+    ids: &[SampleId],
+    before: Option<SampleId>,
+) -> Result<(), CommandError> {
+    let moved: BTreeSet<SampleId> = known_samples(tx.project, ids)?.into_iter().collect();
+    if let Some(target) = before {
+        if tx.project.sample(target).is_none() {
+            return Err(CommandError::UnknownSample(target));
+        }
+        if moved.contains(&target) {
+            return Err(CommandError::InvalidMoveTarget);
+        }
+    }
+    let old: Vec<SampleId> = tx.project.samples.iter().map(|s| s.id).collect();
+    let (picked, mut new): (Vec<SampleId>, Vec<SampleId>) =
+        old.iter().copied().partition(|id| moved.contains(id));
+    let at = before
+        .and_then(|target| new.iter().position(|id| *id == target))
+        .unwrap_or(new.len());
+    new.splice(at..at, picked);
+    if new != old {
+        tx.push(Change::SampleOrderChanged {
+            before: old,
+            after: new,
+        })?;
+    }
+    Ok(())
+}
+
+fn set_results(tx: &mut Tx<'_>, entries: &[ResultEntry]) -> Result<(), CommandError> {
+    for entry in entries {
+        let cell = ResultCell {
+            sample: entry.sample,
+            characteristic: entry.characteristic,
+        };
+        check_cell(tx.project, cell)?;
+        if entry.text.trim().is_empty() {
+            set_result(tx, cell, None)?;
+            continue;
+        }
+        let Some(characteristic) = tx.project.characteristic(cell.characteristic) else {
+            return Err(CommandError::UnknownCharacteristic(cell.characteristic));
+        };
+        let value =
+            parse_result(&entry.text, characteristic.effective_result_type()).map_err(|error| {
+                CommandError::InvalidResult {
+                    characteristic: cell.characteristic,
+                    error,
+                }
+            })?;
+        let comment = match &entry.comment {
+            Some(comment) => comment.clone(),
+            None => tx
+                .project
+                .result(cell)
+                .map(|r| r.comment.clone())
+                .unwrap_or_default(),
+        };
+        let result = MeasurementResult {
+            sample: cell.sample,
+            characteristic: cell.characteristic,
+            value,
+            source: ResultSource::Manual,
+            comment,
+        };
+        set_result(tx, cell, Some(result))?;
+    }
+    Ok(())
+}
+
+fn set_result_type(
+    tx: &mut Tx<'_>,
+    ids: &[CharId],
+    result_type: ResultType,
+) -> Result<(), CommandError> {
+    for id in known_chars(tx.project, ids)? {
+        let Some(current) = tx.project.characteristic(id) else {
+            continue;
+        };
+        let before = Box::new(current.clone());
+        let mut after = before.clone();
+        after.result_type = result_type;
+        let effective = after.effective_result_type();
+        if tx
+            .project
+            .results_of(id)
+            .any(|r| r.value.result_type() != effective)
+        {
+            return Err(CommandError::ResultTypeConflict(id));
+        }
+        if after != before {
+            tx.push(Change::CharacteristicChanged { before, after })?;
+        }
+    }
+    Ok(())
+}
+
+fn update_report_info(tx: &mut Tx<'_>, info: &ReportInfo) -> Result<(), CommandError> {
+    if !is_date_or_empty(&info.report_date) {
+        return Err(CommandError::InvalidDate(info.report_date.clone()));
+    }
+    if tx.project.report_info != *info {
+        tx.push(Change::ReportInfoChanged {
+            before: tx.project.report_info.clone(),
+            after: info.clone(),
+        })?;
+    }
+    Ok(())
+}
+
+fn update_revision_label(
+    tx: &mut Tx<'_>,
+    revision: RevisionId,
+    label: &str,
+) -> Result<(), CommandError> {
+    let current = tx
+        .project
+        .revisions
+        .iter()
+        .find(|r| r.id == revision)
+        .ok_or(CommandError::UnknownRevision(revision))?;
+    let label = label.trim();
+    if current.label != label {
+        tx.push(Change::RevisionLabelChanged {
+            revision,
+            before: current.label.clone(),
+            after: label.to_owned(),
+        })?;
+    }
+    Ok(())
+}
+
+fn record_issued_report(
+    tx: &mut Tx<'_>,
+    kind: ReportKind,
+    template: &TemplateRef,
+    format: ReportFormat,
+    output_sha256: &Sha256Hex,
+    env: &mut dyn Environment,
+) -> Result<(), CommandError> {
+    let revision = tx
+        .project
+        .current_revision()
+        .ok_or(CommandError::UnknownRevision(tx.project.current_revision))?;
+    let report = IssuedReport {
+        kind,
+        template: template.clone(),
+        revision: revision.id,
+        drawing_sha256: revision.sha256.clone(),
+        exported_at: env.now(),
+        output_sha256: output_sha256.clone(),
+        format,
+    };
+    tx.push(Change::IssuedReportInserted {
+        index: index_u32(tx.project.issued_reports.len()),
+        report,
     })
 }

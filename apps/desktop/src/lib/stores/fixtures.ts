@@ -37,6 +37,8 @@ export function characteristic(id: string, number: number): Characteristic {
     origin: "manual",
     sources: [],
     comment: "",
+    shorter_leg: null,
+    result_type: "auto",
   };
 }
 
@@ -112,6 +114,17 @@ export function emptyProject(): Project {
         custom_tables: [],
       },
     },
+    samples: [],
+    results: [],
+    report_info: {
+      report_number: "",
+      report_date: "",
+      company_name: "",
+      inspected_by: "",
+      approved_by: "",
+      remarks: "",
+    },
+    issued_reports: [],
   };
 }
 

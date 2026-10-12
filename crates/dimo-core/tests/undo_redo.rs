@@ -1,6 +1,7 @@
 //! Property tests of the command engine (NFR-REL-02, rule 11).
 //!
-//! Random sequences of commands, undos and redos on a small project must
+//! Random sequences of commands (every command, including the data model version 3 commands
+//! of T3.1), undos and redos on a small project must
 //! - restore the original project when everything is undone, and the final one when redone,
 //! - match a model of snapshots after every undo and redo,
 //! - leave the project unchanged when a command is refused,
@@ -20,6 +21,10 @@ use dimo_core::{
     NumberingStrategy, OrientedBox, Origin, ParseHint, Point, Project, Proposal, RangeBound, Rect,
     Rotation, Scale, SheetView, Size, SizeRange, SourceRegion, TableClass, TableLookup, TableRef,
     TextSource, ToleranceDerivation, ToleranceSettings, Unit, UnitRounding, ZoneGrid,
+};
+use dimo_core::{
+    ReportFormat, ReportInfo, ReportKind, ResultCell, ResultEntry, ResultType, SampleId, Sha256Hex,
+    TemplateRef,
 };
 use proptest::prelude::*;
 use rust_decimal::Decimal;
@@ -103,6 +108,43 @@ enum Op {
     },
     /// Refers to a characteristic that does not exist.
     Unknown,
+    /// Data model version 3 (T3.1): 0 samples is refused.
+    AddSamples {
+        count: u32,
+    },
+    UpdateSample {
+        pick: usize,
+        serial: u8,
+        date: u8,
+    },
+    DeleteSamples {
+        picks: Vec<usize>,
+    },
+    MoveSamples {
+        picks: Vec<usize>,
+        before: Option<usize>,
+    },
+    /// Sample pick, characteristic pick, text pick.
+    SetResults {
+        cells: Vec<(usize, usize, u8)>,
+    },
+    ClearResults {
+        cells: Vec<(usize, usize)>,
+    },
+    SetResultType {
+        picks: Vec<usize>,
+        result_type: u8,
+    },
+    ReportInfo {
+        number: u8,
+        bad_date: bool,
+    },
+    RevisionLabel {
+        label: u8,
+    },
+    RecordIssuedReport {
+        pdf: bool,
+    },
     Batch(Vec<Op>),
 }
 
@@ -169,6 +211,22 @@ fn simple_op() -> impl Strategy<Value = Op> {
         1 => (0u8..40).prop_map(|quarter_mm| Op::DefaultStyle { quarter_mm }),
         1 => any::<u8>().prop_map(|part| Op::Info { part }),
         1 => Just(Op::Unknown),
+        2 => (0u32..4).prop_map(|count| Op::AddSamples { count }),
+        1 => (0usize..8, 0u8..6, 0u8..4)
+            .prop_map(|(pick, serial, date)| Op::UpdateSample { pick, serial, date }),
+        1 => picks().prop_map(|picks| Op::DeleteSamples { picks }),
+        1 => (picks(), prop::option::of(0usize..8))
+            .prop_map(|(picks, before)| Op::MoveSamples { picks, before }),
+        3 => prop::collection::vec((0usize..8, 0usize..8, 0u8..9), 0..5)
+            .prop_map(|cells| Op::SetResults { cells }),
+        1 => prop::collection::vec((0usize..8, 0usize..8), 0..3)
+            .prop_map(|cells| Op::ClearResults { cells }),
+        1 => (picks(), 0u8..3)
+            .prop_map(|(picks, result_type)| Op::SetResultType { picks, result_type }),
+        1 => (any::<u8>(), prop::bool::weighted(0.2))
+            .prop_map(|(number, bad_date)| Op::ReportInfo { number, bad_date }),
+        1 => (0u8..3).prop_map(|label| Op::RevisionLabel { label }),
+        1 => any::<bool>().prop_map(|pdf| Op::RecordIssuedReport { pdf }),
     ]
 }
 
@@ -194,6 +252,40 @@ fn chars(project: &Project, picks: &[usize]) -> Vec<CharId> {
     }
     picks.iter().map(|p| ids[p % ids.len()]).collect()
 }
+
+fn samples(project: &Project, picks: &[usize]) -> Vec<SampleId> {
+    let ids: Vec<SampleId> = project.samples.iter().map(|s| s.id).collect();
+    if ids.is_empty() {
+        return Vec::new();
+    }
+    picks.iter().map(|p| ids[p % ids.len()]).collect()
+}
+
+/// Sample and characteristic picks as cells; empty if either list is empty.
+fn cells(project: &Project, picks: &[(usize, usize)]) -> Vec<ResultCell> {
+    picks
+        .iter()
+        .filter_map(|&(s, c)| {
+            Some(ResultCell {
+                sample: *samples(project, &[s]).first()?,
+                characteristic: *chars(project, &[c]).first()?,
+            })
+        })
+        .collect()
+}
+
+/// Typed results: variable, attribute, empty (clears) and invalid text.
+const RESULT_TEXTS: [&str; 9] = [
+    "10.05",
+    "9,950",
+    "\u{2212}0.5",
+    "12.10",
+    "ok",
+    "x",
+    "",
+    "bad",
+    "n.i.O.",
+];
 
 fn balloons(project: &Project, picks: &[usize]) -> Vec<BalloonId> {
     let ids: Vec<BalloonId> = project.balloons.iter().map(|b| b.id).collect();
@@ -531,6 +623,86 @@ fn command(project: &Project, op: &Op) -> Command {
         },
         Op::Unknown => Command::DeleteCharacteristics {
             ids: vec![CharId::from_uuid(uuid::Uuid::from_u128(u128::MAX))],
+        },
+        Op::AddSamples { count } => Command::AddSamples { count: *count },
+        Op::UpdateSample { pick, serial, date } => {
+            match project.samples.get(pick % project.samples.len().max(1)) {
+                // Without samples: an unknown sample, refused.
+                None => Command::DeleteSamples {
+                    ids: vec![SampleId::from_uuid(uuid::Uuid::from_u128(u128::MAX))],
+                },
+                Some(sample) => {
+                    let mut sample = sample.clone();
+                    // Empty, duplicate ("1" or "2" may exist) and fresh serials.
+                    sample.serial =
+                        ["", " 1 ", "2", "S-7", "s-7", "  "][usize::from(*serial)].into();
+                    sample.date =
+                        ["", "2026-10-12", "2026-02-30", "2024-02-29"][usize::from(*date)].into();
+                    sample.inspector = format!("i{serial}");
+                    Command::UpdateSample { sample }
+                }
+            }
+        }
+        Op::DeleteSamples { picks } => Command::DeleteSamples {
+            ids: samples(project, picks),
+        },
+        Op::MoveSamples { picks, before } => Command::MoveSamples {
+            ids: samples(project, picks),
+            before: before.and_then(|b| samples(project, &[b]).first().copied()),
+        },
+        Op::SetResults { cells: picks } => Command::SetResults {
+            results: picks
+                .iter()
+                .zip(cells(
+                    project,
+                    &picks.iter().map(|&(s, c, _)| (s, c)).collect::<Vec<_>>(),
+                ))
+                .map(|(&(_, _, text), cell)| ResultEntry {
+                    sample: cell.sample,
+                    characteristic: cell.characteristic,
+                    text: RESULT_TEXTS[usize::from(text)].into(),
+                    comment: (text % 3 == 0).then(|| format!("c{text}")),
+                })
+                .collect(),
+        },
+        Op::ClearResults { cells: picks } => Command::ClearResults {
+            cells: cells(project, picks),
+        },
+        Op::SetResultType { picks, result_type } => Command::SetResultType {
+            ids: chars(project, picks),
+            result_type: [
+                ResultType::Auto,
+                ResultType::Variable,
+                ResultType::Attribute,
+            ][usize::from(*result_type)],
+        },
+        Op::ReportInfo { number, bad_date } => Command::UpdateReportInfo {
+            info: ReportInfo {
+                report_number: format!("R-{number}"),
+                report_date: if *bad_date { "2026-1-1" } else { "2026-10-12" }.into(),
+                ..ReportInfo::default()
+            },
+        },
+        Op::RevisionLabel { label } => Command::UpdateRevisionLabel {
+            revision: project.current_revision,
+            label: ["A", " B ", ""][usize::from(*label)].into(),
+        },
+        Op::RecordIssuedReport { pdf } => Command::RecordIssuedReport {
+            kind: if *pdf {
+                ReportKind::InspectionReport
+            } else {
+                ReportKind::CheckSheet
+            },
+            template: TemplateRef {
+                id: "dimo-default".into(),
+                version: 1,
+            },
+            format: if *pdf {
+                ReportFormat::Pdf
+            } else {
+                ReportFormat::Xlsx
+            },
+            output_sha256: Sha256Hex::from_bytes(&[u8::from(*pdf); 32]),
         },
         // Batch members are resolved against the state before the batch, so later members may
         // refer to characteristics that earlier members deleted. That exercises rollback.

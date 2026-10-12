@@ -9,8 +9,10 @@ use crate::characteristic::Characteristic;
 use crate::decimal::decimal_schema;
 use crate::derivation::TableRef;
 use crate::env::Timestamp;
-use crate::id::{BalloonId, CharId, RevisionId, SheetId};
+use crate::id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
+use crate::measurement::{MeasurementResult, ResultCell, Sample};
 use crate::number::DisplayNumber;
+use crate::report::{IssuedReport, ReportInfo};
 use crate::sheet::{DrawingRevision, Sha256Hex, Sheet};
 
 /// Descriptive data of the inspected part. Empty text means not set.
@@ -318,11 +320,20 @@ pub struct Project {
     pub numbering: Numbering,
     /// Project settings.
     pub settings: ProjectSettings,
+    /// Measured parts; the order is the column order of the grid and the reports (FR-MEA-01).
+    pub samples: Vec<Sample>,
+    /// Measurement results, at most one per sample and characteristic, sorted by sample order
+    /// and then by characteristic placement order (M3 decision 1). Commands keep the order.
+    pub results: Vec<MeasurementResult>,
+    /// Report header and approval data (M3 decision 1).
+    pub report_info: ReportInfo,
+    /// Reports exported as issued, oldest first (D-23, M3 decision 17).
+    pub issued_reports: Vec<IssuedReport>,
 }
 
 impl Project {
-    /// A new project for one imported drawing, without characteristics, numbering unlocked,
-    /// default settings.
+    /// A new project for one imported drawing, without characteristics and samples, numbering
+    /// unlocked, default settings.
     pub fn new(info: ProjectInfo, revision: DrawingRevision) -> Self {
         Self {
             info,
@@ -332,6 +343,10 @@ impl Project {
             balloons: Vec::new(),
             numbering: Numbering::default(),
             settings: ProjectSettings::default(),
+            samples: Vec::new(),
+            results: Vec::new(),
+            report_info: ReportInfo::default(),
+            issued_reports: Vec::new(),
         }
     }
 
@@ -348,6 +363,21 @@ impl Project {
     /// Balloons of one characteristic, in placement order.
     pub fn balloons_of(&self, id: CharId) -> impl Iterator<Item = &Balloon> {
         self.balloons.iter().filter(move |b| b.characteristic == id)
+    }
+
+    /// The sample with this ID.
+    pub fn sample(&self, id: SampleId) -> Option<&Sample> {
+        self.samples.iter().find(|s| s.id == id)
+    }
+
+    /// The result of one sample for one characteristic.
+    pub fn result(&self, cell: ResultCell) -> Option<&MeasurementResult> {
+        self.results.iter().find(|r| r.cell() == cell)
+    }
+
+    /// Results of one characteristic, in sample order.
+    pub fn results_of(&self, id: CharId) -> impl Iterator<Item = &MeasurementResult> {
+        self.results.iter().filter(move |r| r.characteristic == id)
     }
 
     /// The sheet with this ID, in any revision.

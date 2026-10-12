@@ -170,6 +170,24 @@ pub enum RejectReason {
     InvalidMoveTarget,
     /// Quantity 0.
     ZeroQuantity,
+    /// A sample of the command does not exist.
+    UnknownSample,
+    /// A drawing revision of the command does not exist.
+    UnknownRevision,
+    /// A sample serial is empty (M3 decision 6).
+    EmptySerial,
+    /// Another sample has this serial (M3 decision 6).
+    DuplicateSerial,
+    /// A project holds at most 500 samples (M3 decision 6).
+    TooManySamples,
+    /// Samples are added 1 to 100 at once (M3 decision 6).
+    InvalidSampleCount,
+    /// A date is neither empty nor `YYYY-MM-DD`.
+    InvalidDate,
+    /// A typed result does not fit the result type of its characteristic (M3 decisions 7, 8).
+    InvalidResult,
+    /// The result type cannot change while results of the other type exist (M3 decision 4).
+    ResultTypeConflict,
     /// Undo without history.
     NothingToUndo,
     /// Redo without history.
@@ -181,7 +199,7 @@ pub enum RejectReason {
 impl From<&dimo_core::CommandError> for RejectReason {
     fn from(error: &dimo_core::CommandError) -> Self {
         use dimo_core::CommandError as E;
-        use dimo_core::FieldError;
+        use dimo_core::{FieldError, SerialError};
         match error {
             E::UnknownCharacteristic(_) => Self::UnknownCharacteristic,
             E::UnknownBalloon(_) => Self::UnknownBalloon,
@@ -193,6 +211,15 @@ impl From<&dimo_core::CommandError> for RejectReason {
             E::InvalidProjectSetting(_) => Self::InvalidProjectSetting,
             E::InvalidMoveTarget => Self::InvalidMoveTarget,
             E::Field(FieldError::ZeroQuantity) => Self::ZeroQuantity,
+            E::UnknownSample(_) => Self::UnknownSample,
+            E::UnknownRevision(_) => Self::UnknownRevision,
+            E::Serial(SerialError::Empty) => Self::EmptySerial,
+            E::Serial(SerialError::Duplicate(_)) => Self::DuplicateSerial,
+            E::TooManySamples => Self::TooManySamples,
+            E::InvalidSampleCount => Self::InvalidSampleCount,
+            E::InvalidDate(_) => Self::InvalidDate,
+            E::InvalidResult { .. } => Self::InvalidResult,
+            E::ResultTypeConflict(_) => Self::ResultTypeConflict,
             E::NothingToUndo => Self::NothingToUndo,
             E::NothingToRedo => Self::NothingToRedo,
             E::Change(_) => Self::Internal,

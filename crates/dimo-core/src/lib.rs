@@ -8,6 +8,8 @@
 //!   give the same project (rule 11).
 //! - Automation returns [`proposal::Proposal`]s; only an accept command turns them into
 //!   characteristics (ADR 0006).
+//! - Samples and results ([`measurement`]) and report data ([`report`]) are part of the
+//!   project (M3); verdicts are computed, never stored.
 //! - [`history::characteristic_history`] reads the change history of one characteristic from
 //!   the audit log (FR-CHR-10).
 //!
@@ -23,11 +25,13 @@ pub mod env;
 pub mod geometry;
 pub mod history;
 pub mod id;
+pub mod measurement;
 pub mod number;
 pub mod numbering;
 pub mod patch;
 pub mod project;
 pub mod proposal;
+pub mod report;
 pub mod sheet;
 pub mod truth;
 pub mod zones;
@@ -51,7 +55,11 @@ pub use geometry::{OrientedBox, Point, Rect, Size};
 pub use history::{
     ChangeSource, CharacteristicField, HistoryAction, HistoryEntry, characteristic_history,
 };
-pub use id::{BalloonId, CharId, RevisionId, SheetId};
+pub use id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
+pub use measurement::{
+    AttributeValue, MAX_SAMPLES, MAX_SAMPLES_PER_ADD, MeasurementResult, ResultCell, ResultEntry,
+    ResultParseError, ResultSource, ResultType, ResultValue, Sample, SerialError,
+};
 pub use number::DisplayNumber;
 pub use numbering::{NumberedCharacteristic, NumberingPreview};
 pub use patch::{Change, Patch};
@@ -61,6 +69,7 @@ pub use project::{
     TableClass, ToleranceSettings, UnitRounding,
 };
 pub use proposal::{BalloonPlacement, EngineVersion, ParseHint, ParseIssue, Proposal};
+pub use report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
 pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
 };
