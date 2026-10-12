@@ -8,9 +8,19 @@ use dimo_report::{
 };
 use serde_json::{Value, json};
 
-fn placeholder_data(rows: usize) -> Value {
+/// A table document like a report: title, columns and rows from the data, page x of y.
+const TABLE_DOC: &str = r#"
+#let data = json("/data.json")
+#set page(paper: "a4", flipped: true, margin: 12mm,
+  header: [#data.title #h(1fr) #context counter(page).display() / #context counter(page).final().first()])
+#set text(font: "Open Sans", size: 8pt, lang: sys.inputs.lang)
+#show "⌀": "Ø"
+#table(columns: data.columns.len(), table.header(..data.columns.map(strong)), ..data.rows.flatten())
+"#;
+
+fn table_data(rows: usize) -> Value {
     json!({
-        "title": "Placeholder Ø ± ° ′ ″ × ⌀ − äöüÄÖÜß",
+        "title": "Table Ø ± ° ′ ″ × ⌀ − äöüÄÖÜß",
         "columns": ["No.", "Requirement", "Lower", "Upper", "1", "2", "3"],
         "rows": (1..=rows).map(|i| vec![
             i.to_string(),
@@ -26,7 +36,7 @@ fn placeholder_data(rows: usize) -> Value {
 
 fn request(data: &Value, language: Language) -> RenderRequest<'_> {
     RenderRequest {
-        document: "placeholder",
+        document: "doc",
         data,
         language,
         date: Some(ReportDate {
@@ -37,11 +47,7 @@ fn request(data: &Value, language: Language) -> RenderRequest<'_> {
     }
 }
 
-fn bundled() -> TemplateSet {
-    TemplateSet::bundled("dimo-default").expect("bundled template set")
-}
-
-/// A template set with one document whose source is `main`.
+/// A template set with one document `doc` whose source is `main`.
 fn custom(main: &str) -> TemplateSet {
     TemplateSet::from_files([
         (
@@ -52,6 +58,10 @@ fn custom(main: &str) -> TemplateSet {
         ("main.typ".to_string(), main.as_bytes().to_vec()),
     ])
     .expect("valid test template")
+}
+
+fn table_set() -> TemplateSet {
+    custom(TABLE_DOC)
 }
 
 fn render_custom(main: &str) -> Result<Vec<u8>, ReportError> {
@@ -76,12 +86,8 @@ fn refusal(main: &str) -> String {
 }
 
 #[test]
-fn bundled_set_is_the_placeholder_default() {
+fn bundled_ids_list_the_default_set() {
     assert_eq!(bundled_ids().collect::<Vec<_>>(), ["dimo-default"]);
-    let set = bundled();
-    assert_eq!(set.id(), "dimo-default");
-    assert_eq!(set.version(), 1);
-    assert!(set.document("placeholder").is_ok());
     assert!(matches!(
         TemplateSet::bundled("nope"),
         Err(ReportError::UnknownTemplate(_))
@@ -89,10 +95,10 @@ fn bundled_set_is_the_placeholder_default() {
 }
 
 #[test]
-fn placeholder_report_renders_in_both_languages() {
-    let data = placeholder_data(120);
+fn table_renders_in_both_languages() {
+    let data = table_data(120);
     for language in [Language::En, Language::De] {
-        let pdf = render_pdf(&bundled(), &request(&data, language)).expect("render");
+        let pdf = render_pdf(&table_set(), &request(&data, language)).expect("render");
         assert!(pdf.starts_with(b"%PDF-"), "not a PDF");
         // 120 rows do not fit on one A4 landscape page: the page tree counts several kids.
         let text = String::from_utf8_lossy(&pdf);
@@ -105,33 +111,33 @@ fn placeholder_report_renders_in_both_languages() {
 
 #[test]
 fn two_renders_are_byte_identical() {
-    let data = placeholder_data(60);
-    let first = render_pdf(&bundled(), &request(&data, Language::De)).expect("first render");
+    let data = table_data(60);
+    let first = render_pdf(&table_set(), &request(&data, Language::De)).expect("first render");
     // Start the second render with an empty cache so nothing is reused.
     typst::comemo::evict(0);
-    let second = render_pdf(&bundled(), &request(&data, Language::De)).expect("second render");
+    let second = render_pdf(&table_set(), &request(&data, Language::De)).expect("second render");
     assert!(first == second, "two renders differ");
 }
 
 #[test]
 fn output_depends_on_data_language_and_date() {
-    let data = placeholder_data(5);
-    let base = render_pdf(&bundled(), &request(&data, Language::En)).expect("render");
-    let german = render_pdf(&bundled(), &request(&data, Language::De)).expect("render");
+    let data = table_data(5);
+    let base = render_pdf(&table_set(), &request(&data, Language::En)).expect("render");
+    let german = render_pdf(&table_set(), &request(&data, Language::De)).expect("render");
     assert_ne!(base, german);
-    let other_data = placeholder_data(6);
-    let more = render_pdf(&bundled(), &request(&other_data, Language::En)).expect("render");
+    let other_data = table_data(6);
+    let more = render_pdf(&table_set(), &request(&other_data, Language::En)).expect("render");
     assert_ne!(base, more);
     let mut undated = request(&data, Language::En);
     undated.date = None;
-    let undated = render_pdf(&bundled(), &undated).expect("render");
+    let undated = render_pdf(&table_set(), &undated).expect("render");
     assert_ne!(base, undated);
 }
 
 #[test]
 fn creation_date_comes_from_the_request() {
-    let data = placeholder_data(1);
-    let pdf = render_pdf(&bundled(), &request(&data, Language::En)).expect("render");
+    let data = table_data(1);
+    let pdf = render_pdf(&table_set(), &request(&data, Language::En)).expect("render");
     let text = String::from_utf8_lossy(&pdf);
     assert!(text.contains("D:20261012"), "creation date missing");
     let mut bad = request(&data, Language::En);
@@ -141,7 +147,7 @@ fn creation_date_comes_from_the_request() {
         day: 30,
     });
     assert!(matches!(
-        render_pdf(&bundled(), &bad),
+        render_pdf(&table_set(), &bad),
         Err(ReportError::InvalidDate(_))
     ));
 }
@@ -150,7 +156,7 @@ fn creation_date_comes_from_the_request() {
 fn unknown_document_is_refused() {
     let data = json!({});
     let err = render_pdf(
-        &bundled(),
+        &table_set(),
         &RenderRequest {
             document: "missing",
             data: &data,
@@ -249,6 +255,10 @@ fn invalid_template_sets_are_refused() {
             ("template.toml".into(), manifest("data.json")),
             ("data.json".into(), Vec::new()),
         ],
+        vec![(
+            "template.toml".into(),
+            b"id = \"t\"\nversion = 1\nlabels = \"labels.toml\"\n".to_vec(),
+        )],
     ];
     for files in cases {
         let names: Vec<String> = files.iter().map(|(p, _)| p.clone()).collect();

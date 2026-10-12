@@ -1,0 +1,28 @@
+---
+source: crates/dimo-cli/tests/report_text.rs
+expression: text
+---
+--- page 1 ---
+Small Shop GmbH Check sheet
+Part Customer Order Drawing file Revision SHA-256 Report no. Date Page
+BR-2041 Bracket, left Example Machines Ltd PO 88-1203 bracket_rev-B.pdf B 3f9a1c0e5b7d24a8 IR-2026-031 2026-10-09 1 of 1
+SHA-256 of the drawing file: 3f9a1c0e5b7d24a8c6e1f0b9d8a7c6e5f4d3c2b1a09f8e7d6c5b4a3928170615
+Lower Upper Part 1 Part 2 Part 3
+No. Requirement Nominal limit limit Unit Rule Method / gauge S-001 S-002 S-003
+*
+1 Ø30 H7 30 30.000 30.021 mm Fit CMM
+ISO 286 H7 Bore gauge 18-35
+2 12.5 +0.1/-0.2 12.5 12.3 12.6 mm Drawing Caliper
+3 45° 45 44.5 45.5 ° General
+ISO 2768-1 m
+4 2X M8x1.25-6H Thread plug gauge
+M8
+5 Ra 1.6 1.6 mm Drawing Roughness tester
+6 80 80 mm No tolerance
+8 20.00 20.00 19.95 20.05 mm Decimals
+±0.05
+10 -0.5 offset -0.5 -0.6 -0.4 in Manual
+*
+Limits from a draft tolerance table, not yet verified.
+Name Date Signature
+Inspected by A. Weber

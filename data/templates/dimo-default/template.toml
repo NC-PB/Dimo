@@ -1,11 +1,16 @@
-# PLACEHOLDER template set (T3.2). Only exercises the renderer in dimo-report.
-# The real check sheet and inspection report, their shared common.typ and the English and
-# German labels replace it in T3.6 (M3 decisions 10 and 12).
+# Bundled report template set (FR-EXP-06, D-30, M3 decisions 10 and 12).
+# Each document is a Typst file of this folder, rendered with `/data.json` (the report data from
+# Rust, every printed value already text, see data/templates/README.md) and `sys.inputs.lang`
+# ("en" or "de"). `labels` names the label texts of both languages (D-32), shared with the
+# spreadsheet reports.
 id = "dimo-default"
 version = 1
+labels = "labels.toml"
 
-# Each document is a Typst file of this folder, rendered with `/data.json` (the data from Rust,
-# every value already formatted as text) and `sys.inputs.lang` ("en" or "de").
 [[documents]]
-name = "placeholder"
-main = "placeholder.typ"
+name = "check-sheet"
+main = "check-sheet.typ"
+
+[[documents]]
+name = "inspection-report"
+main = "inspection-report.typ"

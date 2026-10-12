@@ -25,8 +25,20 @@ const DIMO_DEFAULT: EmbeddedFiles = &[
         include_bytes!("../../../data/templates/dimo-default/template.toml"),
     ),
     (
-        "placeholder.typ",
-        include_bytes!("../../../data/templates/dimo-default/placeholder.typ"),
+        "check-sheet.typ",
+        include_bytes!("../../../data/templates/dimo-default/check-sheet.typ"),
+    ),
+    (
+        "common.typ",
+        include_bytes!("../../../data/templates/dimo-default/common.typ"),
+    ),
+    (
+        "inspection-report.typ",
+        include_bytes!("../../../data/templates/dimo-default/inspection-report.typ"),
+    ),
+    (
+        "labels.toml",
+        include_bytes!("../../../data/templates/dimo-default/labels.toml"),
     ),
 ];
 
@@ -56,6 +68,8 @@ pub struct DocumentSpec {
 struct Manifest {
     id: String,
     version: u32,
+    #[serde(default)]
+    labels: Option<String>,
     documents: Vec<DocumentSpec>,
 }
 
@@ -64,6 +78,7 @@ struct Manifest {
 pub struct TemplateSet {
     id: String,
     version: u32,
+    labels: Option<String>,
     documents: Vec<DocumentSpec>,
     files: BTreeMap<String, Vec<u8>>,
 }
@@ -116,9 +131,17 @@ impl TemplateSet {
                 )));
             }
         }
+        if let Some(labels) = &manifest.labels
+            && !map.contains_key(labels)
+        {
+            return Err(ReportError::InvalidTemplate(format!(
+                "labels names the missing file {labels}"
+            )));
+        }
         Ok(Self {
             id: manifest.id,
             version: manifest.version,
+            labels: manifest.labels,
             documents: manifest.documents,
             files: map,
         })
@@ -132,6 +155,11 @@ impl TemplateSet {
     /// Template version from the manifest.
     pub fn version(&self) -> u32 {
         self.version
+    }
+
+    /// Path of the label file (TOML with one table per language), if the manifest names one.
+    pub fn labels_file(&self) -> Option<&str> {
+        self.labels.as_deref()
     }
 
     /// Documents in manifest order.

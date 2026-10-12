@@ -6,8 +6,9 @@
 | Parsers | `proptest` round trip (generate, print, parse) | `dimo-notation` |
 | Command engine | `proptest` random command, undo and redo sequences against snapshots; numbering rules as tables | `dimo-core/tests/` |
 | Tolerance tables | table driven tests from `data/tolerances/*.test.toml` | `dimo-tolerance` |
-| Output formats (CSV, XLSX, PDF structure, project JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
-| Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` (truth) or `-p dimo-io --test schema` (project) or `-p dimo-tolerance --test schema` (tolerance tables) | `dimo-core/tests/`, `dimo-io/tests/`, `dimo-tolerance/tests/` |
+| Output formats (CSV, XLSX, PDF structure, project JSON, report data JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
+| Report PDF text | text runs extracted with PDFium, `insta` snapshots (dimo-report may not use dimo-pdf) | `dimo-cli/tests/report_text.rs` |
+| Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` (truth) or `-p dimo-io --test schema` (project) or `-p dimo-tolerance --test schema` (tolerance tables) or `-p dimo-report --test report` (report data) | `dimo-core/tests/`, `dimo-io/tests/`, `dimo-tolerance/tests/`, `dimo-report/tests/` |
 | Project file migrations | one fixture per schema version in folder mode, never changed after release; new one with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations` | `dimo-io/tests/fixtures/v<n>/` |
 | Box select (M2 exit criterion) | box select with the tolerance engine on every truth region of the corpus and of synth seeds 1 to 40, per callout category; fails below 99 percent of the common callouts, limits required (angles under a general tolerance read with the shorter leg of the truth, as typed on the card). Report: `cargo run -p dimo-cli -- eval box-select` | `dimo-detect/src/evaluation.rs`, `dimo-detect/tests/box_select_corpus.rs`, `dimo-cli/tests/box_select_evaluation.rs`, run by `check.sh` in CI |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |

@@ -1097,8 +1097,10 @@ dependencies = [
  "dimo-detect",
  "dimo-io",
  "dimo-pdf",
+ "dimo-report",
  "dimo-synth",
  "dimo-tolerance",
+ "insta",
  "sha2",
  "tempfile",
  "thiserror 2.0.21",
@@ -1207,7 +1209,11 @@ dependencies = [
 name = "dimo-report"
 version = "0.0.0"
 dependencies = [
+ "boon",
  "dimo-core",
+ "insta",
+ "rust_decimal",
+ "schemars 1.2.2",
  "serde",
  "serde_json",
  "sha2",

@@ -1,0 +1,485 @@
+---
+source: crates/dimo-report/tests/report.rs
+expression: pretty(&model)
+---
+{
+  "column_blocks": [
+    {
+      "first": "1",
+      "from": 0,
+      "last": "3",
+      "to": 3
+    }
+  ],
+  "document": "inspection_report",
+  "flags": {
+    "blank_samples": false,
+    "draft_limits": true,
+    "open_results": false
+  },
+  "format_version": 1,
+  "header": {
+    "company": "Small Shop GmbH",
+    "customer": "Example Machines Ltd",
+    "drawing_file": "bracket_rev-B.pdf",
+    "order_reference": "PO 88-1203",
+    "part_name": "Bracket, left",
+    "part_number": "BR-2041",
+    "report_date": "2026-10-09",
+    "report_number": "IR-2026-031",
+    "revision": "B",
+    "sha256": "3f9a1c0e5b7d24a8c6e1f0b9d8a7c6e5f4d3c2b1a09f8e7d6c5b4a3928170615",
+    "sha256_short": "3f9a1c0e5b7d24a8"
+  },
+  "language": "de",
+  "remarks": "Parts deburred and cleaned.\nThread checked with a plug gauge.",
+  "rows": [
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "30,010",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "30,000",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "30,021",
+          "verdict": "pass"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "0",
+        "missing": "0",
+        "not_evaluated": "0",
+        "pass": "3"
+      },
+      "draft": true,
+      "fit": "H7",
+      "gauge": "Bore gauge 18-35",
+      "kind": "diameter",
+      "lower_deviation": "0",
+      "lower_limit": "30,000",
+      "method": "CMM",
+      "nominal": "30",
+      "number": "1",
+      "quantity": "1",
+      "requirement": "⌀30 H7",
+      "result_type": "variable",
+      "rule": "fit",
+      "rule_detail": "ISO 286 H7",
+      "unit": "mm",
+      "upper_deviation": "+0,021",
+      "upper_limit": "30,021",
+      "verdict": "pass"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "12,45",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "12,61",
+          "verdict": "fail"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "12,30",
+          "verdict": "pass"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "1",
+        "missing": "0",
+        "not_evaluated": "0",
+        "pass": "2"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "",
+      "kind": "linear",
+      "lower_deviation": "-0,2",
+      "lower_limit": "12,3",
+      "method": "Caliper",
+      "nominal": "12,5",
+      "number": "2",
+      "quantity": "1",
+      "requirement": "12.5 +0.1/-0.2",
+      "result_type": "variable",
+      "rule": "explicit",
+      "rule_detail": "",
+      "unit": "mm",
+      "upper_deviation": "+0,1",
+      "upper_limit": "12,6",
+      "verdict": "fail"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "45,2",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "44,5",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "none",
+          "value": "",
+          "verdict": "missing"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "0",
+        "missing": "1",
+        "not_evaluated": "0",
+        "pass": "2"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "",
+      "kind": "angle",
+      "lower_deviation": "",
+      "lower_limit": "44,5",
+      "method": "",
+      "nominal": "45",
+      "number": "3",
+      "quantity": "1",
+      "requirement": "45°",
+      "result_type": "variable",
+      "rule": "general",
+      "rule_detail": "ISO 2768-1 m",
+      "unit": "°",
+      "upper_deviation": "",
+      "upper_limit": "45,5",
+      "verdict": "open"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "attribute",
+          "value": "ok",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "attribute",
+          "value": "not_ok",
+          "verdict": "fail"
+        },
+        {
+          "comment": "",
+          "type": "attribute",
+          "value": "ok",
+          "verdict": "pass"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "1",
+        "missing": "0",
+        "not_evaluated": "0",
+        "pass": "2"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "Thread plug gauge M8",
+      "kind": "thread",
+      "lower_deviation": "",
+      "lower_limit": "",
+      "method": "",
+      "nominal": "",
+      "number": "4",
+      "quantity": "2",
+      "requirement": "2X M8x1.25-6H",
+      "result_type": "attribute",
+      "rule": null,
+      "rule_detail": "",
+      "unit": "",
+      "upper_deviation": "",
+      "upper_limit": "",
+      "verdict": "fail"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "0,8",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "1,6",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "1,7",
+          "verdict": "fail"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "1",
+        "missing": "0",
+        "not_evaluated": "0",
+        "pass": "2"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "",
+      "kind": "surface_texture",
+      "lower_deviation": "",
+      "lower_limit": "",
+      "method": "Roughness tester",
+      "nominal": "",
+      "number": "5",
+      "quantity": "1",
+      "requirement": "Ra 1.6",
+      "result_type": "variable",
+      "rule": "explicit",
+      "rule_detail": "",
+      "unit": "mm",
+      "upper_deviation": "",
+      "upper_limit": "1,6",
+      "verdict": "fail"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "80,12",
+          "verdict": "not_evaluated"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "79,95",
+          "verdict": "not_evaluated"
+        },
+        {
+          "comment": "",
+          "type": "none",
+          "value": "",
+          "verdict": "missing"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "0",
+        "missing": "1",
+        "not_evaluated": "2",
+        "pass": "0"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "",
+      "kind": "linear",
+      "lower_deviation": "",
+      "lower_limit": "",
+      "method": "",
+      "nominal": "80",
+      "number": "6",
+      "quantity": "1",
+      "requirement": "80",
+      "result_type": "variable",
+      "rule": "no_tolerance_defined",
+      "rule_detail": "",
+      "unit": "mm",
+      "upper_deviation": "",
+      "upper_limit": "",
+      "verdict": "open"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "20,00",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "none",
+          "value": "",
+          "verdict": "missing"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "19,94",
+          "verdict": "fail"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "1",
+        "missing": "1",
+        "not_evaluated": "0",
+        "pass": "1"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "",
+      "kind": "linear",
+      "lower_deviation": "",
+      "lower_limit": "19,95",
+      "method": "",
+      "nominal": "20,00",
+      "number": "8",
+      "quantity": "1",
+      "requirement": "20.00",
+      "result_type": "variable",
+      "rule": "decimal_rule",
+      "rule_detail": "±0,05",
+      "unit": "mm",
+      "upper_deviation": "",
+      "upper_limit": "20,05",
+      "verdict": "fail"
+    },
+    {
+      "cells": [
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "-0,50",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "-0,45",
+          "verdict": "pass"
+        },
+        {
+          "comment": "",
+          "type": "variable",
+          "value": "-0,6",
+          "verdict": "pass"
+        }
+      ],
+      "classification": "none",
+      "counts": {
+        "fail": "0",
+        "missing": "0",
+        "not_evaluated": "0",
+        "pass": "3"
+      },
+      "draft": false,
+      "fit": "",
+      "gauge": "",
+      "kind": "linear",
+      "lower_deviation": "",
+      "lower_limit": "-0,6",
+      "method": "",
+      "nominal": "-0,5",
+      "number": "10",
+      "quantity": "1",
+      "requirement": "-0.5 offset",
+      "result_type": "variable",
+      "rule": "manual",
+      "rule_detail": "",
+      "unit": "in",
+      "upper_deviation": "",
+      "upper_limit": "-0,4",
+      "verdict": "pass"
+    }
+  ],
+  "samples": [
+    {
+      "blank": false,
+      "comment": "first part",
+      "counts": {
+        "fail": "0",
+        "missing": "0",
+        "not_evaluated": "1",
+        "pass": "7"
+      },
+      "date": "2026-10-08",
+      "gauges": "Caliper 150, CMM",
+      "index": "1",
+      "inspector": "A. Weber",
+      "serial": "S-001",
+      "verdict": "open"
+    },
+    {
+      "blank": false,
+      "comment": "",
+      "counts": {
+        "fail": "2",
+        "missing": "1",
+        "not_evaluated": "1",
+        "pass": "4"
+      },
+      "date": "2026-10-08",
+      "gauges": "Caliper 150, CMM",
+      "index": "2",
+      "inspector": "A. Weber",
+      "serial": "S-002",
+      "verdict": "fail"
+    },
+    {
+      "blank": false,
+      "comment": "",
+      "counts": {
+        "fail": "2",
+        "missing": "2",
+        "not_evaluated": "0",
+        "pass": "4"
+      },
+      "date": "2026-10-09",
+      "gauges": "Caliper 150, CMM",
+      "index": "3",
+      "inspector": "A. Weber",
+      "serial": "S-003",
+      "verdict": "fail"
+    }
+  ],
+  "signatures": {
+    "approved_by": {
+      "date": "",
+      "name": "P. Muster"
+    },
+    "inspected_by": {
+      "date": "2026-10-09",
+      "name": "A. Weber"
+    }
+  },
+  "summary": {
+    "characteristics": "8",
+    "counts": {
+      "fail": "4",
+      "missing": "3",
+      "not_evaluated": "2",
+      "pass": "15"
+    },
+    "samples": "3",
+    "verdict": "fail"
+  }
+}
