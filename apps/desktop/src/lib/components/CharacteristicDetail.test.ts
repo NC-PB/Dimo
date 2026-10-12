@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type {
   Characteristic,
   CommandError,
-  TypedCallout,
+  LegOutcome,
   CharId,
   Command,
   HistoryEntry,
@@ -13,14 +13,7 @@ import type {
   TableImport,
   ToleranceDerivation,
 } from "$lib/ipc/bindings";
-import {
-  SHEET_ID,
-  balloon,
-  characteristic,
-  emptyProject,
-  loaded,
-  status,
-} from "$lib/stores/fixtures";
+import { balloon, characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
@@ -85,27 +78,15 @@ function projectOf(): Project {
       inspect: false,
     },
   ];
-  project.balloons = [balloon("b5", "c5")];
+  project.characteristics.push({
+    ...characteristic("c6", 6),
+    kind: "angle",
+    requirement_text: "45°",
+    shorter_leg: { value: "1.5", unit: "in" },
+  });
+  project.balloons = [balloon("b5", "c5"), balloon("b6", "c6")];
   return project;
 }
-
-/** What Rust reads for `30°` with a shorter leg of 40 mm and ISO 2768-m (T2.9a). */
-const ANGLE_READING: TypedCallout = {
-  values: [
-    { field: "requirement_text", value: "30°" },
-    { field: "kind", value: "angle" },
-    { field: "nominal", value: "30" },
-    { field: "unit", value: "deg" },
-    { field: "upper_limit", value: "30.5" },
-    { field: "lower_limit", value: "29.5" },
-    { field: "quantity", value: 1 },
-    { field: "inspect", value: true },
-    { field: "shorter_leg", value: { value: "40", unit: "mm" } },
-  ],
-  parse_error: null,
-  explanation: "The shorter leg is 40 mm.",
-  notes: [],
-};
 
 function patched(): ProjectPatched {
   return { session: 1, revision: 1, patch: { changes: [] }, status: status() };
@@ -137,8 +118,8 @@ const HISTORY: HistoryEntry[] = [
 function setup(importResult: TableImport = { result: "cancelled" }) {
   const commands: Command[] = [];
   const reinterpreted: CharId[][] = [];
-  const reads: [string, string, string | null, string][] = [];
-  const leg = { refuse: false };
+  const legs: [CharId, string | null][] = [];
+  const leg: { refuse: boolean; outcome: LegOutcome } = { refuse: false, outcome: "interpreted" };
   const api: ProjectCommands = {
     projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf()) }),
     newProject: () => Promise.resolve({ status: "ok", data: true }),
@@ -188,14 +169,16 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
       });
     },
     importToleranceTable: () => Promise.resolve({ status: "ok", data: importResult }),
-    readCalloutText: (sheet, text, shorterLeg, language) => {
-      reads.push([sheet, text, shorterLeg, language]);
+    setShorterLeg: (id, text) => {
+      legs.push([id, text]);
       const refused: CommandError = {
         kind: "invalid_argument",
         message: "the shorter leg is not a positive number",
       };
       return Promise.resolve(
-        leg.refuse ? { status: "error", error: refused } : { status: "ok", data: ANGLE_READING },
+        leg.refuse
+          ? { status: "error", error: refused }
+          : { status: "ok", data: { patched: patched(), outcome: leg.outcome } },
       );
     },
   };
@@ -203,7 +186,7 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
   projectStore.load(loaded(1, projectOf()));
   const selection = new SelectionStore();
   const tolerance = new ToleranceStore(toleranceApi, projectStore);
-  return { projectStore, selection, tolerance, commands, reinterpreted, reads, leg };
+  return { projectStore, selection, tolerance, commands, reinterpreted, legs, leg };
 }
 
 let component: ReturnType<typeof mount> | null = null;
@@ -346,29 +329,18 @@ describe("shorter leg of an angle (T2.9a)", () => {
     expect(target.textContent).toContain("Shorter leg (mm)");
   });
 
-  it("reads the text again with the leg and stores leg and limits in one command", async () => {
+  it("sends the typed leg to Rust, which reads and stores it as one undo step", async () => {
     const stores = setup();
     stores.selection.select(["c5"]);
     render(stores);
     await settle();
     enter("40");
     await settle();
-    expect(stores.reads).toEqual([[SHEET_ID, "30°", "40", "en"]]);
-    // Kind, quantity and inspect stay as the user left them.
-    expect(stores.commands).toEqual([
-      {
-        type: "update_fields",
-        ids: ["c5"],
-        values: [
-          { field: "nominal", value: "30" },
-          { field: "unit", value: "deg" },
-          { field: "upper_limit", value: "30.5" },
-          { field: "lower_limit", value: "29.5" },
-          { field: "shorter_leg", value: { value: "40", unit: "mm" } },
-        ],
-      },
-    ]);
+    expect(stores.legs).toEqual([["c5", "40"]]);
+    // No document command from TypeScript: Rust applies the change and returns the patch.
+    expect(stores.commands).toEqual([]);
     expect(target.querySelector("[role='alert']")).toBeNull();
+    expect(target.querySelector("[role='status']")).toBeNull();
   });
 
   it("clears the leg with empty text", async () => {
@@ -378,7 +350,34 @@ describe("shorter leg of an angle (T2.9a)", () => {
     await settle();
     enter("  ");
     await settle();
-    expect(stores.reads).toEqual([[SHEET_ID, "30°", null, "en"]]);
+    expect(stores.legs).toEqual([["c5", null]]);
+  });
+
+  it("says when hand entered limits were kept or the text gives no limits", async () => {
+    const stores = setup();
+    stores.leg.outcome = "manual_kept";
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("40");
+    await settle();
+    expect(target.querySelector("[role='status']")?.textContent).toContain("entered by hand");
+    stores.leg.outcome = "unreadable";
+    enter("8");
+    await settle();
+    expect(target.querySelector("[role='status']")?.textContent).toContain("not a dimension");
+  });
+
+  it("shows a stored leg in another unit beside the field, which takes the sheet unit", async () => {
+    const stores = setup();
+    stores.selection.select(["c6"]);
+    render(stores);
+    await settle();
+    expect(target.textContent).toContain("Shorter leg (mm)");
+    expect(legInput()?.value).toBe("");
+    expect(target.querySelector("[data-field='shorter_leg_stored']")?.textContent).toContain(
+      "1.5 in",
+    );
   });
 
   it("shows a leg Rust refuses and changes nothing", async () => {

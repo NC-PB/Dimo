@@ -23,4 +23,6 @@ pub use interpret::{
     ToleranceEngine,
 };
 pub use read::{PARSER_ENGINE, Reading, read_callout};
-pub use reinterpret::{Reinterpretation, reinterpret};
+pub use reinterpret::{
+    LegChange, LegOutcome, Reinterpretation, reinterpret, set_shorter_leg, sheet_unit,
+};

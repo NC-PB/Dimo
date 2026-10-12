@@ -2,8 +2,8 @@
  * Tolerance settings, explanations, re-interpretation and history (T2.8, FR-TOL-07, FR-TOL-08,
  * FR-CHR-10). Rust owns every rule (ADR 0001): it lists the tables and their classes, checks
  * imported tables, builds explanations in the UI language, re-interprets characteristics and
- * reads the shorter leg of an angle (T2.9a). This store only asks and sends commands; settings
- * change with the undoable `set_tolerance_settings` command.
+ * sets the shorter leg of an angle (T2.9a, `set_shorter_leg`). This store only asks and sends
+ * commands; settings change with the undoable `set_tolerance_settings` command.
  */
 
 import {
@@ -13,8 +13,9 @@ import {
   type Command,
   type CommandError,
   type ExplainLanguage,
-  type FieldValue,
   type HistoryEntry,
+  type LegOutcome,
+  type LegSet,
   type Patch,
   type Project,
   type ProjectPatched,
@@ -23,9 +24,7 @@ import {
   type TableImport,
   type ToleranceSettings,
   type ToleranceTableInfo,
-  type TypedCallout,
 } from "$lib/ipc/bindings";
-import { explainLanguage } from "./box-select.svelte";
 import { asCommandError, projectStore } from "./project.svelte";
 
 /** Result shape of the generated command functions. */
@@ -38,30 +37,13 @@ export interface ToleranceApi {
   characteristicHistory(id: CharId): Promise<Result<HistoryEntry[]>>;
   reinterpretCharacteristics(ids: CharId[]): Promise<Result<Reinterpreted>>;
   importToleranceTable(): Promise<Result<TableImport>>;
-  readCalloutText(
-    sheet: SheetId,
-    text: string,
-    shorterLeg: string | null,
-    language: ExplainLanguage,
-  ): Promise<Result<TypedCallout>>;
+  setShorterLeg(id: CharId, leg: string | null): Promise<Result<LegSet>>;
 }
-
-/** The fields a new shorter leg may change: the tolerance values it gives and the leg itself. */
-const LEG_FIELDS: ReadonlySet<FieldValue["field"]> = new Set([
-  "nominal",
-  "unit",
-  "upper_dev",
-  "lower_dev",
-  "upper_limit",
-  "lower_limit",
-  "fit",
-  "derivation",
-  "shorter_leg",
-]);
 
 /**
  * The sheet a characteristic sits on: the sheet of its first balloon, else of its first source
- * region (D-20: the unit of that sheet applies). `null` if it has neither.
+ * region (D-20: the unit of that sheet applies). `null` if it has neither. Used only to label
+ * the leg field with the unit Rust parses a new leg in.
  */
 export function sheetOf(project: Project, c: Characteristic): SheetId | null {
   return (
@@ -106,6 +88,8 @@ export class ToleranceStore {
   busy = $state(false);
   /** The characteristic whose typed shorter leg Rust refused last, and why (T2.9a). */
   legError = $state.raw<{ id: CharId; error: CommandError } | null>(null);
+  /** What the last shorter leg did with the limits of that characteristic (T2.9a). */
+  legOutcome = $state.raw<{ id: CharId; outcome: LegOutcome } | null>(null);
 
   readonly #api: ToleranceApi;
   readonly #project: ToleranceProject;
@@ -218,31 +202,21 @@ export class ToleranceStore {
   }
 
   /**
-   * Sets the shorter leg of an angle as typed in the sheet unit (T2.9a): Rust reads the
-   * requirement text again with it, and the leg with the limits it gives is stored with one
-   * `update_fields` command (one undo step). Empty text removes the leg. Kind, quantity and the
-   * inspect flag stay as they are. Returns false if Rust refused the leg.
+   * Sets the shorter leg of an angle as typed in the sheet unit (T2.9a); empty text removes it.
+   * Rust parses it, reads the requirement text again with it (limits entered by hand stay) and
+   * stores both as one undo step. Returns false if Rust refused the leg.
    */
   async setShorterLeg(id: CharId, text: string): Promise<boolean> {
-    const project = this.#project.project;
-    const c = project?.characteristics.find((x) => x.id === id);
-    const sheet = project && c ? sheetOf(project, c) : null;
-    if (c === undefined || sheet === null) {
-      return false;
-    }
     const leg = text.trim() === "" ? null : text;
-    const result = await call(() =>
-      this.#api.readCalloutText(sheet, c.requirement_text, leg, explainLanguage()),
-    );
+    const result = await call(() => this.#api.setShorterLeg(id, leg));
     if (result.status === "error") {
       this.legError = { id, error: result.error };
+      this.legOutcome = null;
       return false;
     }
     this.legError = null;
-    const values = result.data.values.filter((v) => LEG_FIELDS.has(v.field));
-    if (values.length > 0) {
-      await this.#project.execute({ type: "update_fields", ids: [id], values });
-    }
+    this.legOutcome = { id, outcome: result.data.outcome };
+    this.#project.applyPatched(result.data.patched);
     return true;
   }
 
@@ -262,6 +236,7 @@ export class ToleranceStore {
     this.imported = null;
     this.lastReinterpretation = null;
     this.legError = null;
+    this.legOutcome = null;
   }
 }
 

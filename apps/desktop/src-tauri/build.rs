@@ -25,6 +25,7 @@ fn main() {
         "explain_characteristic",
         "characteristic_history",
         "reinterpret_characteristics",
+        "set_shorter_leg",
         "import_tolerance_table",
         "app_settings",
         "set_app_settings",

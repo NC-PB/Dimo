@@ -12,6 +12,7 @@ import type {
   CharId,
   Command,
   FieldValue,
+  LegInput,
   OrientedBox,
   Patch,
   SheetId,
@@ -310,8 +311,10 @@ export class BalloonToolsStore {
     let values: FieldValue[] = [{ field: "requirement_text", value: text }];
     const sheet = this.#sheet();
     if (this.#recognition && sheet !== undefined) {
-      // The stored shorter leg of an angle is read with the text (T2.9a).
-      const leg = current.shorter_leg?.value ?? null;
+      // The stored shorter leg of an angle is read with the text, in its own unit (T2.9a).
+      const leg: LegInput | null = current.shorter_leg
+        ? { kind: "stored", value: current.shorter_leg }
+        : null;
       const read = await this.#recognition
         .readCalloutText(sheet, text, leg, explainLanguage())
         .catch(() => null);

@@ -259,6 +259,30 @@ pub fn parse_shorter_leg(text: Option<&str>, unit: Unit) -> Result<Option<Length
         })
 }
 
+/// The shorter leg sent with a callout text (T2.9a).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
+pub enum LegInput {
+    /// Text just typed in the leg field, in the unit of the sheet; empty means no leg.
+    Typed(String),
+    /// A leg already stored on the characteristic or proposal, used with its own unit, so a
+    /// later change of the sheet unit does not change it.
+    Stored(Length),
+}
+
+/// The leg of `input` (T2.9a): typed text is parsed in `sheet_unit`, a stored leg is taken as
+/// it is. `None` input or empty text is no leg.
+pub fn resolve_leg(
+    input: Option<&LegInput>,
+    sheet_unit: Unit,
+) -> Result<Option<Length>, CommandError> {
+    match input {
+        None => Ok(None),
+        Some(LegInput::Typed(text)) => parse_shorter_leg(Some(text), sheet_unit),
+        Some(LegInput::Stored(leg)) => Ok(Some(*leg)),
+    }
+}
+
 /// Reads typed text like a box selection (M2 decision 5), explained in `language`, with the
 /// shorter leg of an angle if one was entered (T2.9a).
 pub fn read_typed(
@@ -316,20 +340,20 @@ pub async fn propose_from_region(
 }
 
 /// Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
-/// in `language`. `shorter_leg` is the shorter leg of an angle as typed, in the unit of the
-/// sheet (T2.9a); `null` or empty text means none, other text that is not a positive number is
-/// refused. Changes nothing; the frontend sets the returned values with one `update_fields`
-/// command, or applies them to a proposal.
+/// in `language`. `shorter_leg` is the shorter leg of an angle (T2.9a): text typed in the unit
+/// of the sheet (empty means none, other text that is not a positive number is refused), or a
+/// leg already stored, which keeps its unit; `null` means none. Changes nothing; the frontend
+/// sets the returned values with one `update_fields` command, or applies them to a proposal.
 #[tauri::command]
 #[specta::specta]
 pub async fn read_callout_text(
     app: AppHandle,
     sheet: SheetId,
     text: String,
-    shorter_leg: Option<String>,
+    shorter_leg: Option<LegInput>,
     language: ExplainLanguage,
 ) -> Result<TypedCallout, CommandError> {
     let target = with_session(app, move |_, session| session.recognition_target(sheet)).await?;
-    let leg = parse_shorter_leg(shorter_leg.as_deref(), target.unit)?;
+    let leg = resolve_leg(shorter_leg.as_ref(), target.unit)?;
     Ok(read_typed(&target, &text, leg, language))
 }

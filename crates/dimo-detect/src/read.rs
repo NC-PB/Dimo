@@ -53,7 +53,10 @@ pub struct Reading {
     pub engines: Vec<EngineVersion>,
     /// What the interpreter could not decide (not stored in the project).
     pub notes: Vec<dimo_tolerance::Note>,
-    /// The shorter leg the reading was made with (T2.9a), stored with the limits it gives.
+    /// The shorter leg the reading was made with (T2.9a), stored with the limits it gives. Kept
+    /// as given even when it selected no table row (a callout that is not an angle, or an angle
+    /// with a written tolerance), so a leg the user entered is never dropped by retyping the
+    /// text; whether it was used shows in the derivation's range and the explanation.
     pub shorter_leg: Option<Length>,
 }
 

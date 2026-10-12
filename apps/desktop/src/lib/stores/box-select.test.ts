@@ -6,6 +6,7 @@ import type {
   BalloonPlacement,
   CommandError,
   ExplainLanguage,
+  LegInput,
   OrientedBox,
   Proposal,
   ProposalView,
@@ -63,8 +64,9 @@ function proposal(text = "Ø30 H7 +0.0203 -0"): Proposal {
 class FakeRecognition implements RecognitionCommands {
   proposals: Proposal[] = [proposal()];
   reads: string[] = [];
-  legs: (string | null)[] = [];
-  refuseLeg = false;
+  legs: (LegInput | null)[] = [];
+  /** Error kind to answer with, `null` for a normal reading. */
+  refuse: "invalid_argument" | "no_project" | null = null;
   reading: (text: string) => TypedCallout = (text) => ({
     values: [
       { field: "requirement_text", value: text },
@@ -95,15 +97,18 @@ class FakeRecognition implements RecognitionCommands {
   readCalloutText = (
     _sheet: SheetId,
     text: string,
-    shorterLeg: string | null,
+    shorterLeg: LegInput | null,
   ): Promise<Result<TypedCallout>> => {
     this.reads.push(text);
     this.legs.push(shorterLeg);
-    if (this.refuseLeg) {
+    if (this.refuse === "invalid_argument") {
       return Promise.resolve({
         status: "error",
         error: { kind: "invalid_argument", message: "not a positive number" },
       });
+    }
+    if (this.refuse === "no_project") {
+      return Promise.resolve({ status: "error", error: { kind: "no_project" } });
     }
     return ok(this.reading(text));
   };
@@ -256,13 +261,13 @@ describe("shorter leg on the card (T2.9a)", () => {
     expect(store.legs).toEqual([""]);
     store.editLeg(0, "40");
     await store.reread(0);
-    expect(recognition.legs).toEqual(["40"]);
+    expect(recognition.legs).toEqual([{ kind: "typed", value: "40" }]);
     expect(store.proposals[0]?.upper_limit).toBe("30.5");
     expect(store.proposals[0]?.shorter_leg).toEqual({ value: "40", unit: "mm" });
     expect(store.explanations[0]).toContain("Limits 29.5° to 30.5°");
     // Nothing changed since: accepting does not read again.
     await store.accept();
-    expect(recognition.legs).toEqual(["40"]);
+    expect(recognition.legs).toEqual([{ kind: "typed", value: "40" }]);
     const sent = api.commands[0];
     const accepted = sent?.type === "accept_proposals" ? sent.proposals[0] : undefined;
     expect(accepted?.shorter_leg).toEqual({ value: "40", unit: "mm" });
@@ -271,16 +276,37 @@ describe("shorter leg on the card (T2.9a)", () => {
   it("keeps the values and shows why when Rust refuses the leg", async () => {
     const { recognition, store, tools } = setup();
     recognition.proposals = [angle()];
-    recognition.refuseLeg = true;
+    recognition.refuse = "invalid_argument";
     await tools.place(PLACEMENT, RECT);
     store.editLeg(0, "abc");
     await store.reread(0);
     expect(store.legErrors[0]?.kind).toBe("invalid_argument");
     expect(store.proposals[0]?.upper_limit).toBeNull();
   });
+
+  it("does not show other failures as an invalid leg", async () => {
+    const { recognition, store, tools } = setup();
+    recognition.proposals = [angle()];
+    await tools.place(PLACEMENT, RECT);
+    recognition.refuse = "no_project";
+    store.editLeg(0, "40");
+    await store.reread(0);
+    expect(store.legErrors[0]).toBeNull();
+  });
 });
 
 describe("typed values (M2 decision 5)", () => {
+  it("sends a stored shorter leg with its own unit, never as text (T2.9a)", async () => {
+    const { project, recognition, tools } = setup();
+    const p = emptyProject();
+    p.characteristics = [
+      { ...characteristic("a", 1), kind: "angle", shorter_leg: { value: "40", unit: "mm" } },
+    ];
+    project.load(loaded(1, p), true);
+    await tools.commitText("a", "45°");
+    expect(recognition.legs).toEqual([{ kind: "stored", value: { value: "40", unit: "mm" } }]);
+  });
+
   it("sets the fields Rust read from the text in one command", async () => {
     const { api, project, recognition, tools } = setup();
     const p = emptyProject();
@@ -408,7 +434,7 @@ describe("proposal card", () => {
     await vi.waitFor(() => {
       expect(target.querySelector("[data-field=upper_limit]")?.textContent.trim()).toBe("30.5");
     });
-    expect(s.recognition.legs).toEqual(["40"]);
+    expect(s.recognition.legs).toEqual([{ kind: "typed", value: "40" }]);
     expect(target.querySelector("[data-field=explanation]")?.textContent).toContain(
       "Limits 29.5° to 30.5°",
     );

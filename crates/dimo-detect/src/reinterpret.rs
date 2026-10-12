@@ -12,10 +12,14 @@
 //! except for a characteristic that was never interpreted (no derivation), which gets them from
 //! the reading like typed text. The stored shorter leg of an angle is read with the text, so an
 //! angular general tolerance keeps its row (T2.9a).
+//!
+//! [`set_shorter_leg`] changes the shorter leg of one characteristic by the same rules: the
+//! text is read again with the new leg, limits edited by hand stay, and the leg is stored in
+//! the same command.
 
 use dimo_core::characteristic::{Characteristic, FieldValue};
 use dimo_core::derivation::{DerivationHint, DerivationRule};
-use dimo_core::{CharId, Command, Project, Unit};
+use dimo_core::{CharId, Command, Length, Project, Unit};
 
 use dimo_tolerance::Measures;
 
@@ -54,17 +58,11 @@ pub fn reinterpret(
         let Some(c) = project.characteristic(id) else {
             continue;
         };
-        // Limits without any derivation come from a project older than derivations; they were
-        // typed, so they count as manual too.
-        let manual = match &c.derivation {
-            Some(d) => d.rule == DerivationRule::Manual,
-            None => c.upper_limit.is_some() || c.lower_limit.is_some(),
-        };
-        if manual {
+        if has_manual_limits(c) {
             out.skipped_manual.push(id);
             continue;
         }
-        let Some(values) = tolerance_values(project, c, interpreter) else {
+        let Some(values) = tolerance_values(project, c, interpreter, c.shorter_leg) else {
             out.skipped_unreadable.push(id);
             continue;
         };
@@ -80,11 +78,71 @@ pub fn reinterpret(
     out
 }
 
-/// The tolerance fields for the requirement text of `c`, `None` if it does not parse.
+/// True for limits edited by hand. Limits without any derivation come from a project older than
+/// derivations; they were typed, so they count as manual too.
+fn has_manual_limits(c: &Characteristic) -> bool {
+    match &c.derivation {
+        Some(d) => d.rule == DerivationRule::Manual,
+        None => c.upper_limit.is_some() || c.lower_limit.is_some(),
+    }
+}
+
+/// What [`set_shorter_leg`] did with the limits besides storing the leg (T2.9a).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LegOutcome {
+    /// The text was read again with the leg; limits and rule follow it.
+    Interpreted,
+    /// Limits edited by hand were kept; only the leg is stored.
+    ManualKept,
+    /// The requirement text is empty or not a callout; only the leg is stored.
+    Unreadable,
+}
+
+/// The change of the shorter leg of one characteristic (T2.9a).
+#[derive(Debug, Clone, PartialEq)]
+pub struct LegChange {
+    /// One `update_fields` that stores the leg and, when read again, the tolerance fields.
+    pub command: Command,
+    /// What happened to the limits.
+    pub outcome: LegOutcome,
+}
+
+/// Sets the shorter leg of characteristic `id` to `leg` (T2.9a), read with `interpreter` (the
+/// tolerance engine with the current settings). Like [`reinterpret`]: limits edited by hand are
+/// kept, a basic dimension frame found in the PDF stays, kind, quantity and inspect stay as the
+/// user left them. `None` if `id` is not in the project. Changes nothing: execute the command.
+pub fn set_shorter_leg(
+    project: &Project,
+    id: CharId,
+    leg: Option<Length>,
+    interpreter: &dyn Interpreter,
+) -> Option<LegChange> {
+    let c = project.characteristic(id)?;
+    let (mut values, outcome) = if has_manual_limits(c) {
+        (Vec::new(), LegOutcome::ManualKept)
+    } else {
+        match tolerance_values(project, c, interpreter, leg) {
+            Some(values) => (values, LegOutcome::Interpreted),
+            None => (Vec::new(), LegOutcome::Unreadable),
+        }
+    };
+    values.push(FieldValue::ShorterLeg(leg));
+    Some(LegChange {
+        command: Command::UpdateFields {
+            ids: vec![id],
+            values,
+        },
+        outcome,
+    })
+}
+
+/// The tolerance fields for the requirement text of `c` read with the shorter leg `leg`, `None`
+/// if it does not parse.
 fn tolerance_values(
     project: &Project,
     c: &Characteristic,
     interpreter: &dyn Interpreter,
+    leg: Option<Length>,
 ) -> Option<Vec<FieldValue>> {
     if c.requirement_text.trim().is_empty() {
         return None;
@@ -97,9 +155,9 @@ fn tolerance_values(
     let reading = read_callout(
         &c.requirement_text,
         basic,
-        drawing_unit(project, c),
+        sheet_unit(project, c),
         interpreter,
-        &Measures::with_shorter_leg(c.shorter_leg),
+        &Measures::with_shorter_leg(leg),
     );
     if reading.parse_error.is_some() {
         return None;
@@ -129,8 +187,8 @@ fn tolerance_values(
 }
 
 /// Unit of the sheet the characteristic sits on (D-20): its first balloon, else its first
-/// source region; mm if neither is known.
-fn drawing_unit(project: &Project, c: &Characteristic) -> Unit {
+/// source region; mm if neither is known. A shorter leg typed for it is in this unit.
+pub fn sheet_unit(project: &Project, c: &Characteristic) -> Unit {
     project
         .balloons_of(c.id)
         .map(|b| b.sheet)
@@ -348,6 +406,86 @@ mod tests {
         // Without a leg the angle still gets no limits.
         assert_eq!(limits(&project, ids[1]), (None, None));
         assert_eq!(project.characteristic(ids[1]).unwrap().shorter_leg, None);
+    }
+
+    // T2.9a: setting the leg reads the text again with it, in one command with the leg.
+    #[test]
+    fn set_shorter_leg_reads_again_and_stores_the_leg() {
+        let (mut project, ids, mut env) = project(&["30°"]);
+        project.characteristics[0].inspect = false;
+        let leg = Length {
+            value: "8".parse().unwrap(),
+            unit: Unit::Mm,
+        };
+        let change = set_shorter_leg(&project, ids[0], Some(leg), &engine(Some("m"))).unwrap();
+        assert_eq!(change.outcome, LegOutcome::Interpreted);
+        execute(&mut project, &change.command, &mut env).unwrap();
+        let c = project.characteristic(ids[0]).unwrap();
+        assert_eq!(limits(&project, ids[0]), (d("31"), d("29")));
+        assert_eq!(c.shorter_leg, Some(leg));
+        // Inspect stays as the user left it.
+        assert!(!c.inspect);
+        // Removing the leg removes the limits again.
+        let change = set_shorter_leg(&project, ids[0], None, &engine(Some("m"))).unwrap();
+        execute(&mut project, &change.command, &mut env).unwrap();
+        assert_eq!(limits(&project, ids[0]), (None, None));
+        assert_eq!(project.characteristic(ids[0]).unwrap().shorter_leg, None);
+        let unknown = CharId::from_uuid(env.new_uuid());
+        assert_eq!(
+            set_shorter_leg(&project, unknown, None, &engine(None)),
+            None
+        );
+    }
+
+    // T2.9a: hand entered limits and unreadable text keep their values; only the leg is stored.
+    #[test]
+    fn set_shorter_leg_keeps_manual_limits_and_unreadable_text() {
+        let (mut project, ids, mut env) = project(&["30°", "SEE NOTE"]);
+        let c = &mut project.characteristics[0];
+        c.upper_limit = d("30.2");
+        c.lower_limit = d("29.9");
+        c.derivation = Some(ToleranceDerivation::manual());
+        let leg = Some(Length {
+            value: "40".parse().unwrap(),
+            unit: Unit::Mm,
+        });
+        for (id, outcome) in [
+            (ids[0], LegOutcome::ManualKept),
+            (ids[1], LegOutcome::Unreadable),
+        ] {
+            let before = project.characteristic(id).unwrap().clone();
+            let change = set_shorter_leg(&project, id, leg, &engine(Some("m"))).unwrap();
+            assert_eq!(change.outcome, outcome);
+            execute(&mut project, &change.command, &mut env).unwrap();
+            let after = project.characteristic(id).unwrap();
+            assert_eq!(after.shorter_leg, leg);
+            assert_eq!(
+                (after.upper_limit, after.lower_limit, &after.derivation),
+                (before.upper_limit, before.lower_limit, &before.derivation)
+            );
+        }
+    }
+
+    // T2.9a: a basic dimension frame found in the PDF survives a new leg.
+    #[test]
+    fn set_shorter_leg_keeps_the_basic_frame() {
+        let (mut project, ids, mut env) = project(&["30°"]);
+        let mut derivation = ToleranceDerivation::new(DerivationRule::NoToleranceDefined);
+        derivation.hints.push(DerivationHint::BasicDimension);
+        project.characteristics[0].derivation = Some(derivation);
+        let leg = Some(Length {
+            value: "40".parse().unwrap(),
+            unit: Unit::Mm,
+        });
+        let change = set_shorter_leg(&project, ids[0], leg, &engine(Some("m"))).unwrap();
+        execute(&mut project, &change.command, &mut env).unwrap();
+        let c = project.characteristic(ids[0]).unwrap();
+        assert_eq!(limits(&project, ids[0]), (None, None));
+        assert!(
+            c.derivation
+                .as_ref()
+                .is_some_and(|d| d.hints.contains(&DerivationHint::BasicDimension))
+        );
     }
 
     // FR-CHR-08: the inspect flag the user set on a reference dimension stays.

@@ -69,12 +69,19 @@ export const commands = {
 	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement, language: ExplainLanguage) => typedError<ProposalView[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement, language })),
 	/**
 	 *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
-	 *  in `language`. `shorter_leg` is the shorter leg of an angle as typed, in the unit of the
-	 *  sheet (T2.9a); `null` or empty text means none, other text that is not a positive number is
-	 *  refused. Changes nothing; the frontend sets the returned values with one `update_fields`
-	 *  command, or applies them to a proposal.
+	 *  in `language`. `shorter_leg` is the shorter leg of an angle (T2.9a): text typed in the unit
+	 *  of the sheet (empty means none, other text that is not a positive number is refused), or a
+	 *  leg already stored, which keeps its unit; `null` means none. Changes nothing; the frontend
+	 *  sets the returned values with one `update_fields` command, or applies them to a proposal.
 	 */
-	readCalloutText: (sheet: SheetId, text: string, shorterLeg: string | null, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language })),
+	readCalloutText: (sheet: SheetId, text: string, shorterLeg: 
+/**  Text just typed in the leg field, in the unit of the sheet; empty means no leg. */
+{ kind: "typed"; value: string } | 
+/**
+ *  A leg already stored on the characteristic or proposal, used with its own unit, so a
+ *  later change of the sheet unit does not change it.
+ */
+{ kind: "stored"; value: Length } | null, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language })),
 	/**  The order and numbers `strategy` would give, without changing the project (FR-BAL-05). */
 	previewNumbering: (strategy: NumberingStrategy) => typedError<NumberingPreview, CommandError>(__TAURI_INVOKE("preview_numbering", { strategy })),
 	/**
@@ -99,6 +106,12 @@ export const commands = {
 	 *  step. Characteristics with limits edited by hand are left unchanged (T2.8).
 	 */
 	reinterpretCharacteristics: (ids: CharId[]) => typedError<Reinterpreted, CommandError>(__TAURI_INVOKE("reinterpret_characteristics", { ids })),
+	/**
+	 *  Sets the shorter leg of an angle (T2.9a) as typed in the unit of its sheet, `null` or empty
+	 *  text to remove it, and reads its requirement text again with it as one undo step. Limits
+	 *  entered by hand stay; the outcome says so. Text that is not a positive number is refused.
+	 */
+	setShorterLeg: (id: CharId, leg: string | null) => typedError<LegSet, CommandError>(__TAURI_INVOKE("set_shorter_leg", { id, leg })),
 	/**
 	 *  Lets the user pick a custom tolerance table file and imports it (FR-TOL-07). Rust reads and
 	 *  checks the file; a refused file is reported with its line where known.
@@ -1090,6 +1103,33 @@ export type LabelKind =
 "letters" | 
 /**  `1, 2, 3, ...` */
 "numbers";
+
+/**  The shorter leg sent with a callout text (T2.9a). */
+export type LegInput = 
+/**  Text just typed in the leg field, in the unit of the sheet; empty means no leg. */
+{ kind: "typed"; value: string } | 
+/**
+ *  A leg already stored on the characteristic or proposal, used with its own unit, so a
+ *  later change of the sheet unit does not change it.
+ */
+{ kind: "stored"; value: Length };
+
+/**  What setting the shorter leg did with the limits (T2.9a). */
+export type LegOutcome = 
+/**  The text was read again with the leg; limits and rule follow it. */
+"interpreted" | 
+/**  Limits entered by hand were kept; only the leg is stored. */
+"manual_kept" | 
+/**  The requirement text is empty or not a callout; only the leg is stored. */
+"unreadable";
+
+/**  Result of setting the shorter leg of a characteristic (T2.9a). */
+export type LegSet = {
+	/**  The change as one undo step, also sent as `project-patched`. */
+	patched: ProjectPatched,
+	/**  What happened to the limits. */
+	outcome: LegOutcome,
+};
 
 /**
  *  A length with its unit, such as the shorter leg of an angle (T2.9a). Serialized as

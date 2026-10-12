@@ -16,6 +16,7 @@ import {
   type ExplainLanguage,
   type FieldValue,
   type InterpreterNote,
+  type LegInput,
   type OrientedBox,
   type Proposal,
   type ProposalView,
@@ -41,7 +42,7 @@ export interface RecognitionCommands {
   readCalloutText(
     sheet: SheetId,
     text: string,
-    shorterLeg: string | null,
+    shorterLeg: LegInput | null,
     language: ExplainLanguage,
   ): Promise<Result<TypedCallout>>;
 }
@@ -235,14 +236,22 @@ export class BoxSelectStore {
     }
     const text = p.requirement_text;
     const result = await this.#api
-      .readCalloutText(sheet, text, leg.trim() === "" ? null : leg, explainLanguage())
+      .readCalloutText(
+        sheet,
+        text,
+        leg.trim() === "" ? null : { kind: "typed", value: leg },
+        explainLanguage(),
+      )
       .catch(() => null);
     const current = this.proposals[index];
     if (current?.requirement_text !== text || (this.legs[index] ?? "") !== leg) {
       return;
     }
+    // Only a refused argument is a leg Rust could not read; other failures leave the card as is.
     if (result?.status === "error") {
-      this.legErrors = this.legErrors.map((e, i) => (i === index ? result.error : e));
+      if (result.error.kind === "invalid_argument") {
+        this.legErrors = this.legErrors.map((e, i) => (i === index ? result.error : e));
+      }
       return;
     }
     if (result?.status !== "ok") {

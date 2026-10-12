@@ -15,7 +15,7 @@
     unitLabel,
   } from "$lib/i18n";
   import type { HistoryEntry } from "$lib/ipc/bindings";
-  import { explainLanguage, legText } from "$lib/stores/box-select.svelte";
+  import { explainLanguage } from "$lib/stores/box-select.svelte";
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection as appSelection, type SelectionStore } from "$lib/stores/selection.svelte";
   import {
@@ -125,18 +125,22 @@
     }
   }
 
-  /** Unit of the shorter leg: as stored, else the unit of the characteristic's sheet (D-20). */
-  const legUnit = $derived.by(() => {
-    if (c === null) {
+  /** Unit of the characteristic's sheet (D-20): Rust reads a newly typed leg in it (T2.9a). */
+  const sheetUnit = $derived.by(() => {
+    if (c === null || project.project === null) {
       return null;
     }
-    if (c.shorter_leg) {
-      return c.shorter_leg.unit;
-    }
-    const sheet = project.project === null ? null : sheetOf(project.project, c);
+    const sheet = sheetOf(project.project, c);
     return project.sheets.find((s) => s.id === sheet)?.unit ?? null;
   });
+  /** A stored leg in another unit than the sheet's, shown beside the field instead of in it. */
+  const legElsewhere = $derived(
+    c?.shorter_leg && c.shorter_leg.unit !== sheetUnit ? c.shorter_leg : null,
+  );
   const legRefused = $derived(c !== null && tolerance.legError?.id === c.id);
+  const legOutcome = $derived(
+    c !== null && tolerance.legOutcome?.id === c.id ? tolerance.legOutcome.outcome : null,
+  );
 
   async function setLeg(text: string) {
     if (c !== null) {
@@ -196,7 +200,7 @@
           {#if c.kind === "angle"}
             <label class="flex items-center gap-2 text-xs">
               <span class="text-text-muted">
-                {m.shorter_leg_label({ unit: unitLabel(legUnit) })}
+                {m.shorter_leg_label({ unit: unitLabel(sheetUnit) })}
               </span>
               <input
                 type="text"
@@ -207,14 +211,32 @@
                 data-field="shorter_leg"
                 title={m.shorter_leg_hint()}
                 aria-invalid={legRefused ? "true" : undefined}
-                value={legText(c.shorter_leg)}
+                value={legElsewhere === null ? (c.shorter_leg?.value ?? "") : ""}
                 onchange={(e) => void setLeg(e.currentTarget.value)}
               />
             </label>
+            {#if legElsewhere}
+              <p class="text-xs text-text-muted" data-field="shorter_leg_stored">
+                {m.shorter_leg_stored({
+                  value: legElsewhere.value,
+                  unit: unitLabel(legElsewhere.unit),
+                })}
+              </p>
+            {/if}
             {#if legRefused}
               <p class="text-xs text-danger" role="alert">
                 <span aria-hidden="true">⚠</span>
                 {m.shorter_leg_invalid()}
+              </p>
+            {:else if legOutcome === "manual_kept"}
+              <p class="text-xs" role="status">
+                <span aria-hidden="true">◇</span>
+                {m.shorter_leg_manual_kept()}
+              </p>
+            {:else if legOutcome === "unreadable"}
+              <p class="text-xs" role="status">
+                <span aria-hidden="true">◇</span>
+                {m.shorter_leg_unreadable()}
               </p>
             {/if}
           {/if}
