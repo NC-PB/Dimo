@@ -19,6 +19,8 @@
 #   7. Measurement grid (T3.5): five characteristics from a dev script, three samples added, one
 #      column typed with the keyboard only, a 5 by 3 block pasted, undone and redone in one step
 #      each, saved; verdicts from the app and results from project.json.
+#   8. Report export (T3.8): the saved measurement project is opened twice, each time the
+#      inspection report is exported as PDF and XLSX; both runs give byte identical files.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -368,6 +370,34 @@ if [[ -s "$MEA" ]]; then
 else
   fail "missing or empty: $MEA"
 fi
+
+step "8. report export (T3.8)"
+# Two runs with their own settings and export folders; the same project must give the same
+# bytes (FR-EXP-11, dates from the project, M3 decision 14).
+for run in a b; do
+  mkdir -p "$WORK/out8$run"
+  if [[ -s "$MEA" ]]; then
+    run_app "report-$run" "$SCRIPTS/report-export.json" term "home8$run" \
+      DIMO_DEV_OPEN="$MEA" DIMO_DEV_EXPORT_DIR="$WORK/out8$run"
+  fi
+done
+for ext in pdf xlsx; do
+  first="$WORK/out8a/measure_inspection-report.$ext"
+  second="$WORK/out8b/measure_inspection-report.$ext"
+  if [[ -s "$first" && -s "$second" ]]; then
+    pass "report: inspection report $ext written in both runs"
+    if cmp -s "$first" "$second"; then
+      pass "report: inspection report $ext byte identical on re-export"
+    else
+      fail "report: inspection report $ext differs between the two exports"
+    fi
+  else
+    fail "report: missing or empty inspection report $ext ($first, $second)"
+  fi
+done
+expect "report: PDF file header" "%PDF" "$(head -c 4 "$WORK/out8a/measure_inspection-report.pdf" 2>/dev/null || true)"
+expect "app: both report exports finished" "yes" \
+  "$(yesno grep -q 'inspection_report_pdf done measure_inspection-report.pdf, inspection_report_xlsx done measure_inspection-report.xlsx' <<<"$(report report-a exported)")"
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

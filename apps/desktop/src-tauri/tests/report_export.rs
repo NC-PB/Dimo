@@ -290,3 +290,65 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
     );
     assert_eq!(session.project().unwrap(), &changed);
 }
+
+/// Render time of the inspection report for 300 characteristics by 10 samples (T3.8). Not a
+/// pass/fail check: run with
+/// `cargo test --release -p dimo-desktop --test report_export -- --ignored --nocapture`.
+#[test]
+#[ignore = "timing measurement, run by hand in release mode"]
+fn render_time_300_by_10() {
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    let commands = (0..300_u32)
+        .map(|i| Command::AddCharacteristic {
+            sheet,
+            position: Point {
+                x: f64::from(20 + (i % 30) * 25),
+                y: f64::from(20 + (i / 30) * 40),
+            },
+            anchor: Point { x: 10.0, y: 10.0 },
+            region: None,
+            values: vec![
+                FieldValue::RequirementText(format!("{i} ±0.1")),
+                FieldValue::Nominal(Some(Decimal::from(i + 1)).into()),
+                FieldValue::UpperDev(Some(Decimal::new(1, 1)).into()),
+                FieldValue::LowerDev(Some(Decimal::new(-1, 1)).into()),
+            ],
+            insert_after: None,
+        })
+        .collect();
+    session.execute(Command::Batch { commands }).unwrap();
+    session.execute(Command::AddSamples { count: 10 }).unwrap();
+    let project = session.project().unwrap();
+    let results = project
+        .samples
+        .iter()
+        .flat_map(|s| {
+            project.characteristics.iter().map(|c| ResultEntry {
+                sample: s.id,
+                characteristic: c.id,
+                text: c.nominal.unwrap_or_default().to_string(),
+                comment: None,
+            })
+        })
+        .collect();
+    session.execute(Command::SetResults { results }).unwrap();
+    let snapshot = session.export_snapshot(false).unwrap();
+    for format in [
+        ExportFormat::InspectionReportPdf,
+        ExportFormat::InspectionReportXlsx,
+    ] {
+        let request = request(format, ReportLanguage::En);
+        let start = std::time::Instant::now();
+        let bytes = render(&snapshot, &request, None).unwrap();
+        eprintln!(
+            "{format:?}: {} ms, {} bytes",
+            start.elapsed().as_millis(),
+            bytes.len()
+        );
+    }
+}
