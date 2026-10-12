@@ -235,7 +235,11 @@ describe("measurement grid (T3.5)", () => {
     expect(activeCell(grid)).toBe("c2/s2");
     key(grid, { key: "Tab" });
     expect(activeCell(grid)).toBe("c2/s3");
-    key(grid, { key: "Tab" }); // last sample: stays
+    // Tab on the last sample leaves the grid: the key is not taken (no keyboard trap).
+    const leave = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    grid.dispatchEvent(leave);
+    flushSync();
+    expect(leave.defaultPrevented).toBe(false);
     expect(activeCell(grid)).toBe("c2/s3");
     key(grid, { key: "Tab", shiftKey: true });
     expect(activeCell(grid)).toBe("c2/s2");
@@ -316,6 +320,15 @@ describe("measurement grid (T3.5)", () => {
         : c.type,
     );
     expect(sent).toEqual(["c2/s1=ok", "c4/s1=not ok", "c2/s2=not ok"]);
+    expect(target.querySelector("input.editor")).toBeNull();
+  });
+
+  it("lets ? open the cheat sheet instead of typing it", async () => {
+    const { grid } = await render();
+    const event = new KeyboardEvent("keydown", { key: "?", bubbles: true, cancelable: true });
+    grid.dispatchEvent(event);
+    flushSync();
+    expect(event.defaultPrevented).toBe(false);
     expect(target.querySelector("input.editor")).toBeNull();
   });
 

@@ -332,7 +332,7 @@
         setActive(index, col + 1);
         break;
       case "previous":
-        setActive(index, Math.max(0, col - 1));
+        setActive(index, col - 1);
         break;
       case "none":
       case "blur":
@@ -458,7 +458,10 @@
     }
     if (shortcut === null) {
       // A printable character starts editing the active cell with that character. Either way
-      // it must not reach the window shortcuts.
+      // it must not reach the window shortcuts, except the cheat sheet (D-52).
+      if (matchShortcut(event)?.action === "show_shortcuts") {
+        return;
+      }
       if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         if (index >= 0 && col >= 0) {
@@ -469,6 +472,14 @@
     }
     if (shortcut.action === "grid_paste") {
       catchPaste(); // No preventDefault: the browser's paste must still happen.
+      return;
+    }
+    // Tab past the last sample and Shift+Tab before the first leave the grid, so the keyboard
+    // reaches the sample panel and the sample bar (NFR-UX-01, no keyboard trap).
+    if (
+      (shortcut.action === "grid_next_sample" && col >= samples.length - 1) ||
+      (shortcut.action === "grid_previous_sample" && col <= 0)
+    ) {
       return;
     }
     event.preventDefault();

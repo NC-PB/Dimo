@@ -68,7 +68,13 @@ export class MeasurementStore {
     }
     this.error = null;
     this.state = state.data;
-    this.changed = changed?.status === "ok" ? frozenSet(changed.data) : NO_IDS;
+    if (changed === null) {
+      this.changed = NO_IDS;
+    } else if (changed.status === "ok") {
+      this.changed = frozenSet(changed.data);
+    } else {
+      this.error = changed.error; // Keep the last markers rather than hiding them silently.
+    }
   }
 
   /** Forgets the state, for a closed project. */

@@ -48,14 +48,15 @@ Die Tabelle ist dafür gemacht, ein Teil von oben nach unten ohne Maus zu messen
 3. Drücke **Enter**. Dimo speichert den Wert und geht zum nächsten Merkmal.
 
 **Shift+Enter** geht stattdessen nach oben, **Tab** und **Shift+Tab** bestätigen und gehen zum
-nächsten oder vorherigen Teil. Die Pfeiltasten bewegen, ohne etwas zu ändern, **F2** bearbeitet
+nächsten oder vorherigen Teil; nach dem letzten Teil führt Tab aus der Tabelle zur Seitenleiste. Die Pfeiltasten bewegen, ohne etwas zu ändern, **F2** bearbeitet
 den Wert in der Zelle, **Entf** löscht ihn und **Escape** bricht die Eingabe ab. Nimmt Dimo einen
 Wert nicht an (zum Beispiel Buchstaben in einer Messwertzelle), öffnet sich die Zelle wieder und
 die Zeile über der Tabelle sagt, warum.
 
 Bei einem Merkmal mit der Ergebnisart **i.O. / n.i.O.** drückst du **O** oder **+** für i.O. und
 **N** oder **X** für n.i.O.; Dimo speichert es und geht nach unten. **Leertaste** wechselt
-zwischen i.O. und n.i.O. Du kannst auch die Wörter `i.O.`, `n.i.O.`, `ok` oder `not ok` tippen.
+zwischen i.O. und n.i.O. `i.O.` kannst du auch als Wort tippen. Für die Wörter `n.i.O.`, `ok`
+oder `not ok` drückst du zuerst **F2**, weil **N** und **O** allein das Ergebnis schon setzen.
 
 Werte gibst du in der Einheit des Merkmals ein, die in der Spalte **Einheit** steht.
 
@@ -63,7 +64,8 @@ Werte gibst du in der Einheit des Merkmals ein, die in der Spalte **Einheit** st
 
 Kopiere einen Bereich von Werten aus einer Tabellenkalkulation oder einem Messprogramm, klicke auf
 die Zelle, in der der Bereich beginnt, und drücke ⌘V. Die Zeilen des Bereichs gehen die Merkmale
-hinunter, die Spalten über die Teile. Der ganze Bereich ist ein Schritt: ⌘Z entfernt ihn wieder.
+hinunter, die Spalten über die Teile. Der ganze Bereich ist ein Schritt: ⌘Z entfernt ihn wieder. Eine leere Zelle im Bereich löscht das
+Ergebnis in dieser Zelle.
 Passt ein Wert nicht, wird nichts eingefügt. Reicht der Bereich über das letzte Merkmal oder das
 letzte Teil hinaus, sagt Dimo das und fügt nichts ein; füge zuerst Muster hinzu.
 
