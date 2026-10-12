@@ -11,9 +11,9 @@
 //! 1. Title and header block (company, part, customer, order, drawing, revision, full SHA-256,
 //!    report number, date).
 //! 2. Inspection report only: summary (overall verdict and counts), as text with a fill.
-//! 3. Table header rows: for an inspection report the date, inspector, gauges, comment and
-//!    verdict of each sample, then the column heads with the sample serials. These rows repeat
-//!    on every printed page, as do columns A to H when the samples are printed in blocks of six.
+//! 3. Table header rows: for an inspection report the date, inspector, gauges, comment,
+//!    verdict and counts per verdict of each sample, then the column heads with the sample
+//!    serials. These rows repeat on every printed page, as do columns A to H when the samples are printed in blocks of six.
 //! 4. One row per characteristic. Values are number cells with the typed decimals (as the T1.4
 //!    list); a number format adds the verdict mark (check, cross, hollow circle), so the verdict
 //!    is readable in greyscale, and a cell fill adds the color. Attribute results and verdicts
@@ -33,12 +33,15 @@ use rust_xlsxwriter::{
 };
 
 use crate::model::{
-    Cell, CellType, CellVerdict, GroupVerdict, Row, SAMPLES_PER_BLOCK, SampleColumn,
+    Cell, CellType, CellVerdict, Counts, GroupVerdict, Row, SAMPLES_PER_BLOCK, SampleColumn,
 };
 use crate::{Language, ReportError, ReportModel, TemplateSet};
 
 /// Selects a text field of a sample column.
 type SampleField = fn(&SampleColumn) -> &str;
+
+/// Selects one count of a sample column.
+type CountField = fn(&Counts) -> &str;
 
 /// Number of characteristic columns A to H.
 const FIXED_COLUMNS: u16 = 8;
@@ -369,6 +372,22 @@ impl<'a> Builder<'a> {
                 sheet.write_string_with_format(row, col, &text, &format)?;
             }
             row += 1;
+            // Counts per sample, as the sample block of the PDF prints them.
+            let counts: [(String, CountField); 4] = [
+                (labels.marked(MARK_PASS, "pass")?, |c| &c.pass),
+                (labels.marked(MARK_FAIL, "fail")?, |c| &c.fail),
+                (labels.marked(MARK_NOT_EVALUATED, "not_evaluated")?, |c| {
+                    &c.not_evaluated
+                }),
+                (labels.verdict("missing")?.to_owned(), |c| &c.missing),
+            ];
+            for (label, field) in counts {
+                sheet.write_string_with_format(row, FIXED_COLUMNS - 1, &label, &side)?;
+                for (col, sample) in (FIXED_COLUMNS..).zip(samples) {
+                    write_count(sheet, row, col, field(&sample.counts))?;
+                }
+                row += 1;
+            }
         }
         let fixed = [
             "number",

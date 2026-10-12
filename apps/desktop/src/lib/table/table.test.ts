@@ -206,10 +206,10 @@ describe("refusals", () => {
     expect(
       refusalDetail({
         kind: "rejected",
-        reason: "invalid_geometry",
-        message: "invalid geometry: x",
+        reason: "internal",
+        message: "internal: x",
       }),
-    ).toBe("invalid geometry: x");
+    ).toBe("internal: x");
   });
 
   it("explains a locked move with the lock when it is known", () => {

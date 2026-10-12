@@ -542,7 +542,7 @@ fn result_type_is_refused_while_results_of_the_other_type_exist() {
     let cases = [
         (c[0], ResultType::Attribute, Some(c[0])),
         (c[0], ResultType::Variable, None),
-        (c[0], ResultType::Auto, None),
+        (c[0], ResultType::Auto, Some(c[0])),
         (c[1], ResultType::Variable, Some(c[1])),
         (c[1], ResultType::Attribute, None),
         (c[2], ResultType::Attribute, None),
@@ -555,12 +555,7 @@ fn result_type_is_refused_while_results_of_the_other_type_exist() {
             assert_eq!(*doc.project(), before);
         } else {
             result.unwrap();
-            // `auto` with results keeps the pinned effective type (T3.3).
-            let stored = if result_type == ResultType::Auto {
-                ResultType::Variable
-            } else {
-                result_type
-            };
+            let stored = result_type;
             assert_eq!(
                 doc.project().characteristic(id).unwrap().result_type,
                 stored

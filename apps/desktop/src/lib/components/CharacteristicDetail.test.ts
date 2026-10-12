@@ -426,6 +426,20 @@ describe("tolerance settings (T2.8)", () => {
     });
   });
 
+  it("says that an identical table changed nothing", async () => {
+    const stores = setup({ result: "unchanged", table: { id: "shop", version: 1 } });
+    renderSettings(stores);
+    await settle();
+    const button = [...target.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Import"),
+    );
+    button?.click();
+    await settle();
+    const status = target.querySelector("[data-testid='import-status']")?.textContent ?? "";
+    expect(status).toContain("shop v1 is already in the project. Nothing changed.");
+    expect(status).not.toContain("Imported");
+  });
+
   it("shows a refused import with its line", async () => {
     const stores = setup({ result: "invalid", message: "shop.toml: bad value", line: 6 });
     renderSettings(stores);

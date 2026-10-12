@@ -221,8 +221,8 @@ pub enum Command {
         cells: Vec<ResultCell>,
     },
     /// Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
-    /// characteristic has results of the other type; nothing is converted. `auto` on a
-    /// characteristic with results keeps its effective type pinned.
+    /// characteristic has results of the other type, and for `auto` on a characteristic that
+    /// has results (owner decision 2026-10-12); nothing is converted. Clear the results first.
     SetResultType {
         /// Characteristics to change.
         ids: Vec<CharId>,
@@ -1346,9 +1346,11 @@ fn set_result_type(
             return Err(CommandError::ResultTypeConflict(id));
         }
         // M3 decision 4: `auto` never holds while results exist, else a later limit change
-        // would flip the type under them. Back to `auto` keeps the pinned effective type.
-        if has_results {
-            after.result_type = effective;
+        // would flip the type under them. Owner decision 2026-10-12: going back to `auto` is
+        // refused instead of silently keeping the pinned type; clear the results first.
+        if has_results && result_type == ResultType::Auto && current.result_type != ResultType::Auto
+        {
+            return Err(CommandError::ResultTypeConflict(id));
         }
         if after != before {
             tx.push(Change::CharacteristicChanged { before, after })?;

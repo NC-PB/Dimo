@@ -46,6 +46,14 @@ describe("i18n (FR-SET-04)", () => {
       "invalid_date",
       "invalid_result",
       "result_type_conflict",
+      "unknown_balloon",
+      "unknown_sheet",
+      "invalid_geometry",
+      "invalid_style",
+      "invalid_sheet_setting",
+      "invalid_project_setting",
+      "nothing_to_undo",
+      "nothing_to_redo",
     ];
     for (const reason of reasons) {
       expect(rejectReasonText(reason), reason).toMatch(/\S/);
