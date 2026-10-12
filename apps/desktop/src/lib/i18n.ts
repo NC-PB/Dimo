@@ -420,13 +420,21 @@ export function rejectReasonText(reason: RejectReason): string | null {
     case "result_type_conflict":
       return m.refusal_result_type_conflict();
     case "unknown_balloon":
+      return m.refusal_unknown_balloon();
     case "unknown_sheet":
+      return m.refusal_unknown_sheet();
     case "invalid_geometry":
+      return m.refusal_invalid_geometry();
     case "invalid_style":
+      return m.refusal_invalid_style();
     case "invalid_sheet_setting":
+      return m.refusal_invalid_sheet_setting();
     case "invalid_project_setting":
+      return m.refusal_invalid_project_setting();
     case "nothing_to_undo":
+      return m.refusal_nothing_to_undo();
     case "nothing_to_redo":
+      return m.refusal_nothing_to_redo();
     case "internal":
       return null;
   }

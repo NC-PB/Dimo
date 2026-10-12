@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/i18n";
+  import { commandErrorMessage, m } from "$lib/i18n";
   import type { InsertPolicy, MultiInstance, NumberingStrategy } from "$lib/ipc/bindings";
   import {
     INSERT_POLICIES,
@@ -123,7 +123,7 @@
       {/if}
       {#if numberingStore.error}
         <p class="text-xs text-danger" role="alert">
-          {m.numbering_preview_failed({ message: numberingStore.error.kind })}
+          {m.numbering_preview_failed({ message: commandErrorMessage(numberingStore.error) })}
         </p>
       {/if}
       <div>
