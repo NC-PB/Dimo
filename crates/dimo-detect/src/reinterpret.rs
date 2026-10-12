@@ -10,11 +10,14 @@
 //! tolerance fields are set (nominal, unit, deviations, limits, fit, derivation); kind, quantity
 //! and the `inspect` flag stay as the user left them (FR-CHR-08: `inspect` is overridable),
 //! except for a characteristic that was never interpreted (no derivation), which gets them from
-//! the reading like typed text.
+//! the reading like typed text. The stored shorter leg of an angle is read with the text, so an
+//! angular general tolerance keeps its row (T2.9a).
 
 use dimo_core::characteristic::{Characteristic, FieldValue};
 use dimo_core::derivation::{DerivationHint, DerivationRule};
 use dimo_core::{CharId, Command, Project, Unit};
+
+use dimo_tolerance::Measures;
 
 use crate::interpret::Interpreter;
 use crate::read::read_callout;
@@ -96,6 +99,7 @@ fn tolerance_values(
         basic,
         drawing_unit(project, c),
         interpreter,
+        &Measures::with_shorter_leg(c.shorter_leg),
     );
     if reading.parse_error.is_some() {
         return None;
@@ -197,7 +201,7 @@ mod tests {
             let id = CharId::from_uuid(env.new_uuid());
             let mut c =
                 Characteristic::manual(id, DisplayNumber::plain(u32::try_from(i + 1).unwrap()));
-            let reading = read_callout(text, false, Unit::Mm, &m);
+            let reading = read_callout(text, false, Unit::Mm, &m, &Measures::default());
             c.set_values(&reading.field_values()).unwrap();
             project.characteristics.push(c);
             ids.push(id);
@@ -304,6 +308,46 @@ mod tests {
         let result = reinterpret(&project, &ids, &engine(Some("f")));
         assert_eq!(result.skipped_manual, [ids[0]]);
         assert_eq!(result.command, None);
+    }
+
+    // T2.9a regression: re-interpretation reads the stored shorter leg, so an angle keeps its
+    // angular general tolerance and the leg stays stored.
+    #[test]
+    fn reinterpret_keeps_the_shorter_leg() {
+        use dimo_core::Length;
+        let (mut project, ids, mut env) = project(&["30°", "45°"]);
+        let leg = Length {
+            value: "40".parse().unwrap(),
+            unit: Unit::Mm,
+        };
+        let m = engine(Some("m"));
+        let reading = read_callout(
+            "30°",
+            false,
+            Unit::Mm,
+            &m,
+            &Measures::with_shorter_leg(Some(leg)),
+        );
+        project.characteristics[0]
+            .set_values(&reading.field_values())
+            .unwrap();
+        assert_eq!(limits(&project, ids[0]), (d("30.5"), d("29.5")));
+        assert_eq!(limits(&project, ids[1]), (None, None));
+
+        // Class c gives ±1° for a leg over 10 up to 50 mm.
+        let result = reinterpret(&project, &ids, &engine(Some("c")));
+        assert_eq!(result.reinterpreted, ids);
+        execute(&mut project, &result.command.unwrap(), &mut env).unwrap();
+        let c = project.characteristic(ids[0]).unwrap();
+        assert_eq!(limits(&project, ids[0]), (d("31"), d("29")));
+        assert_eq!(c.shorter_leg, Some(leg));
+        assert!(matches!(
+            c.derivation.as_ref().map(|d| &d.rule),
+            Some(DerivationRule::General { .. })
+        ));
+        // Without a leg the angle still gets no limits.
+        assert_eq!(limits(&project, ids[1]), (None, None));
+        assert_eq!(project.characteristic(ids[1]).unwrap().shorter_leg, None);
     }
 
     // FR-CHR-08: the inspect flag the user set on a reference dimension stays.

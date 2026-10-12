@@ -14,7 +14,9 @@ use dimo_core::geometry::{OrientedBox, Point, Size};
 use dimo_core::proposal::BalloonPlacement;
 use dimo_core::{Command, Environment as _, SheetId};
 use dimo_desktop::ipc::CommandError;
-use dimo_desktop::recognition::{ExplainLanguage, propose, read_typed};
+use dimo_desktop::recognition::{
+    ExplainLanguage, InterpreterNote, parse_shorter_leg, propose, read_typed,
+};
 use dimo_desktop::session::AppSession;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
@@ -172,7 +174,7 @@ fn typed_text_reads_like_box_select() {
         .unwrap();
     let sheet = session.project().unwrap().revisions[0].sheets[0].id;
     let target = session.recognition_target(sheet).unwrap();
-    let typed = read_typed(&target, "Ø30 H7 +0.0203 -0", ExplainLanguage::De);
+    let typed = read_typed(&target, "Ø30 H7 +0.0203 -0", None, ExplainLanguage::De);
     assert_eq!(typed.parse_error, None);
     assert!(
         typed.explanation.as_deref().is_some_and(|e| !e.is_empty()),
@@ -181,7 +183,7 @@ fn typed_text_reads_like_box_select() {
     assert!(typed.values.contains(&FieldValue::UpperLimit(
         Some(Decimal::new(300_203, 4)).into()
     )));
-    let note = read_typed(&target, "BREAK ALL SHARP EDGES", ExplainLanguage::En);
+    let note = read_typed(&target, "BREAK ALL SHARP EDGES", None, ExplainLanguage::En);
     assert!(note.parse_error.is_some());
     assert_eq!(
         note.values,
@@ -194,4 +196,97 @@ fn typed_text_reads_like_box_select() {
         session.recognition_target(other),
         Err(CommandError::InvalidArgument { .. })
     ));
+}
+
+/// T2.9a acceptance: the shorter leg typed for an angle gives the ISO 2768-1 angle limits and an
+/// explanation that names the leg and the limits; without it the note asks for the leg.
+#[test]
+fn shorter_leg_gives_angle_limits() {
+    use dimo_core::derivation::TableRef;
+    use dimo_core::project::TableClass;
+    use dimo_core::{Length, Unit};
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    session
+        .execute(Command::SetToleranceSettings {
+            settings: dimo_core::ToleranceSettings {
+                general: Some(TableClass {
+                    table: TableRef {
+                        id: "iso-2768-1".into(),
+                        version: 1,
+                    },
+                    class: "m".into(),
+                }),
+                ..dimo_core::ToleranceSettings::default()
+            },
+        })
+        .unwrap();
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    let target = session.recognition_target(sheet).unwrap();
+    assert_eq!(target.unit, Unit::Mm);
+
+    let unknown = read_typed(&target, "30°", None, ExplainLanguage::En);
+    assert_eq!(unknown.notes, [InterpreterNote::ShorterLegUnknown]);
+    assert!(
+        unknown
+            .values
+            .contains(&FieldValue::UpperLimit(None.into()))
+    );
+
+    let leg = parse_shorter_leg(Some(" 40 "), target.unit).unwrap();
+    assert_eq!(
+        leg,
+        Some(Length {
+            value: Decimal::from(40),
+            unit: Unit::Mm
+        })
+    );
+    let typed = read_typed(&target, "30°", leg, ExplainLanguage::En);
+    assert!(typed.notes.is_empty(), "{typed:?}");
+    assert!(
+        typed
+            .values
+            .contains(&FieldValue::UpperLimit(Some(Decimal::new(305, 1)).into()))
+    );
+    assert!(
+        typed
+            .values
+            .contains(&FieldValue::LowerLimit(Some(Decimal::new(295, 1)).into()))
+    );
+    assert!(typed.values.contains(&FieldValue::ShorterLeg(leg)));
+    let explanation = typed.explanation.unwrap_or_default();
+    assert!(
+        explanation.contains("The shorter leg is 40 mm")
+            && explanation.contains("Limits 29.5° to 30.5°"),
+        "{explanation}"
+    );
+    let german = read_typed(&target, "30°", leg, ExplainLanguage::De);
+    let explanation = german.explanation.unwrap_or_default();
+    assert!(
+        explanation.contains("40 mm lang") && explanation.contains("Grenzmaße 29,5° bis 30,5°"),
+        "{explanation}"
+    );
+
+    // Empty text is no leg; other text is refused.
+    assert_eq!(parse_shorter_leg(None, Unit::Mm).unwrap(), None);
+    assert_eq!(parse_shorter_leg(Some("  "), Unit::Mm).unwrap(), None);
+    assert_eq!(
+        parse_shorter_leg(Some("1,5"), Unit::In).unwrap(),
+        Some(Length {
+            value: Decimal::new(15, 1),
+            unit: Unit::In
+        })
+    );
+    for bad in ["0", "-3", "abc", "1/2"] {
+        assert!(
+            matches!(
+                parse_shorter_leg(Some(bad), Unit::Mm),
+                Err(CommandError::InvalidArgument { .. })
+            ),
+            "{bad}"
+        );
+    }
 }

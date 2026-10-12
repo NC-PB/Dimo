@@ -63,6 +63,8 @@ function proposal(text = "Ø30 H7 +0.0203 -0"): Proposal {
 class FakeRecognition implements RecognitionCommands {
   proposals: Proposal[] = [proposal()];
   reads: string[] = [];
+  legs: (string | null)[] = [];
+  refuseLeg = false;
   reading: (text: string) => TypedCallout = (text) => ({
     values: [
       { field: "requirement_text", value: text },
@@ -90,8 +92,19 @@ class FakeRecognition implements RecognitionCommands {
       })),
     );
   };
-  readCalloutText = (_sheet: SheetId, text: string) => {
+  readCalloutText = (
+    _sheet: SheetId,
+    text: string,
+    shorterLeg: string | null,
+  ): Promise<Result<TypedCallout>> => {
     this.reads.push(text);
+    this.legs.push(shorterLeg);
+    if (this.refuseLeg) {
+      return Promise.resolve({
+        status: "error",
+        error: { kind: "invalid_argument", message: "not a positive number" },
+      });
+    }
     return ok(this.reading(text));
   };
 }
@@ -196,6 +209,77 @@ describe("box select (T2.6, FR-REC-01, ADR 0006)", () => {
   });
 });
 
+/** What Rust proposes for `30°` under ISO 2768-m without a shorter leg (T2.9a). */
+function angle(): Proposal {
+  return {
+    ...proposal("30°"),
+    kind: "angle",
+    nominal: "30",
+    unit: "deg",
+    upper_dev: null,
+    lower_dev: null,
+    upper_limit: null,
+    lower_limit: null,
+    fit: null,
+    derivation: {
+      rule: { rule: "no_tolerance_defined" },
+      draft: false,
+      hints: [],
+      conversion: null,
+    },
+    parse_hints: [],
+  };
+}
+
+/** What Rust reads for `30°` with a shorter leg of 40 mm. */
+function angleReading(): TypedCallout {
+  return {
+    values: [
+      { field: "requirement_text", value: "30°" },
+      { field: "kind", value: "angle" },
+      { field: "upper_limit", value: "30.5" },
+      { field: "lower_limit", value: "29.5" },
+      { field: "shorter_leg", value: { value: "40", unit: "mm" } },
+    ],
+    parse_error: null,
+    explanation: "The shorter leg is 40 mm. Limits 29.5° to 30.5°.",
+    notes: [],
+  };
+}
+
+describe("shorter leg on the card (T2.9a)", () => {
+  it("reads the proposal again with the typed leg and accepts it with the leg", async () => {
+    const { api, recognition, store, tools } = setup();
+    recognition.proposals = [angle()];
+    recognition.reading = angleReading;
+    await tools.place(PLACEMENT, RECT);
+    expect(store.legs).toEqual([""]);
+    store.editLeg(0, "40");
+    await store.reread(0);
+    expect(recognition.legs).toEqual(["40"]);
+    expect(store.proposals[0]?.upper_limit).toBe("30.5");
+    expect(store.proposals[0]?.shorter_leg).toEqual({ value: "40", unit: "mm" });
+    expect(store.explanations[0]).toContain("Limits 29.5° to 30.5°");
+    // Nothing changed since: accepting does not read again.
+    await store.accept();
+    expect(recognition.legs).toEqual(["40"]);
+    const sent = api.commands[0];
+    const accepted = sent?.type === "accept_proposals" ? sent.proposals[0] : undefined;
+    expect(accepted?.shorter_leg).toEqual({ value: "40", unit: "mm" });
+  });
+
+  it("keeps the values and shows why when Rust refuses the leg", async () => {
+    const { recognition, store, tools } = setup();
+    recognition.proposals = [angle()];
+    recognition.refuseLeg = true;
+    await tools.place(PLACEMENT, RECT);
+    store.editLeg(0, "abc");
+    await store.reread(0);
+    expect(store.legErrors[0]?.kind).toBe("invalid_argument");
+    expect(store.proposals[0]?.upper_limit).toBeNull();
+  });
+});
+
 describe("typed values (M2 decision 5)", () => {
   it("sets the fields Rust read from the text in one command", async () => {
     const { api, project, recognition, tools } = setup();
@@ -204,6 +288,7 @@ describe("typed values (M2 decision 5)", () => {
     project.load(loaded(1, p), true);
     await tools.commitText("a", "25±0.1");
     expect(recognition.reads).toEqual(["25±0.1"]);
+    expect(recognition.legs).toEqual([null]);
     expect(api.commands).toEqual([
       { type: "update_fields", ids: ["a"], values: recognition.reading("25±0.1").values },
     ]);
@@ -283,6 +368,50 @@ describe("proposal card", () => {
     expect(document.activeElement).toBe(input);
     expect(input?.selectionStart).toBe(6);
     expect(store.proposals[0]?.requirement_text).toBe("25±0.1");
+  });
+
+  it("offers the shorter leg for an angle in the sheet unit and reads it on change", async () => {
+    const plain = await shown();
+    expect(plain.target.querySelector("[data-field=shorter_leg]")).toBeNull();
+    if (card) {
+      void unmount(card);
+    }
+    card = null;
+    document.body.innerHTML = "";
+
+    const s = setup();
+    s.recognition.proposals = [angle()];
+    s.recognition.reading = angleReading;
+    await s.tools.place(PLACEMENT, RECT);
+    const target = document.createElement("div");
+    document.body.append(target);
+    card = mount(ProposalCard, {
+      target,
+      props: {
+        store: s.store,
+        view: { scale: 1, tx: 0, ty: 0, rotation: 0 },
+        width: 1600,
+        height: 900,
+        onDone: () => undefined,
+      },
+    });
+    flushSync();
+    await tick();
+    expect(target.textContent).toContain("Shorter leg (mm)");
+    const leg = target.querySelector<HTMLInputElement>("input[data-field=shorter_leg]");
+    expect(leg?.value).toBe("");
+    if (leg) {
+      leg.value = "40";
+      leg.dispatchEvent(new Event("input", { bubbles: true }));
+      leg.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    await vi.waitFor(() => {
+      expect(target.querySelector("[data-field=upper_limit]")?.textContent.trim()).toBe("30.5");
+    });
+    expect(s.recognition.legs).toEqual(["40"]);
+    expect(target.querySelector("[data-field=explanation]")?.textContent).toContain(
+      "Limits 29.5° to 30.5°",
+    );
   });
 
   it("Enter accepts and Esc discards", async () => {

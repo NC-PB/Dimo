@@ -69,10 +69,12 @@ export const commands = {
 	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement, language: ExplainLanguage) => typedError<ProposalView[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement, language })),
 	/**
 	 *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
-	 *  in `language`. Changes nothing; the frontend sets the returned values with one
-	 *  `update_fields` command.
+	 *  in `language`. `shorter_leg` is the shorter leg of an angle as typed, in the unit of the
+	 *  sheet (T2.9a); `null` or empty text means none, other text that is not a positive number is
+	 *  refused. Changes nothing; the frontend sets the returned values with one `update_fields`
+	 *  command, or applies them to a proposal.
 	 */
-	readCalloutText: (sheet: SheetId, text: string, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, language })),
+	readCalloutText: (sheet: SheetId, text: string, shorterLeg: string | null, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language })),
 	/**  The order and numbers `strategy` would give, without changing the project (FR-BAL-05). */
 	previewNumbering: (strategy: NumberingStrategy) => typedError<NumberingPreview, CommandError>(__TAURI_INVOKE("preview_numbering", { strategy })),
 	/**
@@ -433,6 +435,13 @@ export type Characteristic = {
 	sources: SourceRegion[],
 	/**  Free text. */
 	comment: string,
+	/**
+	 *  Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It
+	 *  selects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.
+	 *  Written as `null` when absent; a missing key (files written before T2.9a under schema
+	 *  version 2) reads as `null`.
+	 */
+	shorter_leg?: Length | null,
 };
 
 /**  A field of a characteristic, to list what changed. */
@@ -474,7 +483,9 @@ export type CharacteristicField =
 /**  Source regions. */
 "sources" | 
 /**  Comment. */
-"comment";
+"comment" | 
+/**  Shorter leg of an angle. */
+"shorter_leg";
 
 /**  What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01). */
 export type CharacteristicKind = 
@@ -956,7 +967,9 @@ export type FieldValue =
 /**  Comment. */
 { field: "comment"; value: string } | 
 /**  Which rule produced the limits (FR-TOL-08), set together with the limits it explains. */
-{ field: "derivation"; value: ToleranceDerivation | null };
+{ field: "derivation"; value: ToleranceDerivation | null } | 
+/**  Shorter leg of an angle (T2.9a), set together with the limits it gives. */
+{ field: "shorter_leg"; value: Length | null };
 
 /**  Frame times measured by the viewport during a scripted pan (NFR-PERF-02). */
 export type FrameTimeReport = {
@@ -1077,6 +1090,17 @@ export type LabelKind =
 "letters" | 
 /**  `1, 2, 3, ...` */
 "numbers";
+
+/**
+ *  A length with its unit, such as the shorter leg of an angle (T2.9a). Serialized as
+ *  `{ "value": "40", "unit": "mm" }`.
+ */
+export type Length = {
+	/**  The value in `unit`. */
+	value: string,
+	/**  A length unit: `mm` or `in`. */
+	unit: Unit,
+};
 
 /**  Why numbering was locked (FR-BAL-10). */
 export type LockReason = 
@@ -1417,6 +1441,12 @@ export type Proposal = {
 	 *  audit entries written before T2.6, which read as empty.
 	 */
 	engines?: EngineVersion[],
+	/**
+	 *  Shorter leg of an angle entered on the card (T2.9a), in the unit of the sheet. Stored on
+	 *  the accepted characteristic. Missing in audit entries written before T2.9a, which read
+	 *  as `null`.
+	 */
+	shorter_leg?: Length | null,
 };
 
 /**  A proposal of box select with what the card shows besides it. */
@@ -1811,7 +1841,8 @@ export type ToleranceTableInfo = {
 export type TypedCallout = {
 	/**
 	 *  Fields to set in one `update_fields` command: the requirement text, and when the text
-	 *  parses, kind, nominal, unit, deviations, limits, fit, quantity, inspect and derivation.
+	 *  parses, kind, nominal, unit, deviations, limits, fit, quantity, inspect, derivation and
+	 *  the shorter leg.
 	 */
 	values: FieldValue[],
 	/**  Why the text could not be parsed; then `values` holds only the requirement text. */

@@ -7,7 +7,7 @@ use rust_decimal::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::decimal::{OptionalDecimal, decimal_option_schema};
+use crate::decimal::{OptionalDecimal, decimal_option_schema, decimal_schema};
 use crate::derivation::ToleranceDerivation;
 use crate::geometry::OrientedBox;
 use crate::id::{CharId, SheetId};
@@ -69,6 +69,51 @@ impl Unit {
     /// True for length units.
     pub fn is_length(self) -> bool {
         matches!(self, Self::Mm | Self::In)
+    }
+}
+
+/// Millimetres per inch, exact.
+const MM_PER_INCH: Decimal = Decimal::from_parts(254, 0, 0, false, 1);
+
+/// A length with its unit, such as the shorter leg of an angle (T2.9a). Serialized as
+/// `{ "value": "40", "unit": "mm" }`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub struct Length {
+    /// The value in `unit`.
+    #[serde(with = "crate::decimal::serde_str")]
+    #[schemars(schema_with = "decimal_schema")]
+    #[cfg_attr(feature = "specta", specta(type = String))]
+    pub value: Decimal,
+    /// A length unit: `mm` or `in`.
+    pub unit: Unit,
+}
+
+impl Length {
+    /// The length in mm, exact (inch times 25.4). `None` for a unit that is not a length.
+    pub fn to_mm(self) -> Option<Decimal> {
+        match self.unit {
+            Unit::Mm => Some(self.value),
+            Unit::In => self.value.checked_mul(MM_PER_INCH),
+            Unit::Deg => None,
+        }
+    }
+
+    /// A length typed by the user in `unit` (the sheet unit): a positive decimal number with a
+    /// decimal point or comma, such as `40`, `12,5` or `.75`. `None` for anything else.
+    pub fn parse(text: &str, unit: Unit) -> Option<Self> {
+        if !unit.is_length() {
+            return None;
+        }
+        let text = text.trim().replace(',', ".");
+        let text = if text.starts_with('.') {
+            format!("0{text}")
+        } else {
+            text
+        };
+        let value = crate::decimal::parse_decimal(&text)?;
+        (value > Decimal::ZERO).then_some(Self { value, unit })
     }
 }
 
@@ -264,6 +309,12 @@ pub struct Characteristic {
     pub sources: Vec<SourceRegion>,
     /// Free text.
     pub comment: String,
+    /// Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It
+    /// selects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.
+    /// Written as `null` when absent; a missing key (files written before T2.9a under schema
+    /// version 2) reads as `null`.
+    #[serde(default)]
+    pub shorter_leg: Option<Length>,
 }
 
 impl Characteristic {
@@ -291,6 +342,7 @@ impl Characteristic {
             origin: Origin::Manual,
             sources: Vec::new(),
             comment: String::new(),
+            shorter_leg: None,
         }
     }
 
@@ -337,6 +389,7 @@ impl Characteristic {
                 FieldValue::Inspect(inspect) => self.inspect = *inspect,
                 FieldValue::Status(status) => self.status = *status,
                 FieldValue::Comment(text) => self.comment.clone_from(text),
+                FieldValue::ShorterLeg(leg) => self.shorter_leg = *leg,
                 FieldValue::Derivation(derivation) => {
                     (self.derivation, derivation_set) = (derivation.clone(), true);
                 }
@@ -414,6 +467,8 @@ pub enum FieldValue {
     Comment(String),
     /// Which rule produced the limits (FR-TOL-08), set together with the limits it explains.
     Derivation(Option<ToleranceDerivation>),
+    /// Shorter leg of an angle (T2.9a), set together with the limits it gives.
+    ShorterLeg(Option<Length>),
 }
 
 /// A field value that cannot be stored.
@@ -517,6 +572,34 @@ mod tests {
         .unwrap();
         assert_eq!(c.requirement_text, "Ø8 H7");
         assert_eq!(c.fit, None);
+    }
+
+    // T2.9a: the shorter leg as typed in the sheet unit, and its exact value in mm.
+    #[test]
+    fn lengths_parse_and_convert_exactly() {
+        let cases = [
+            ("40", Unit::Mm, Some(("40", "40"))),
+            (" 12,5 ", Unit::Mm, Some(("12.5", "12.5"))),
+            (".75", Unit::In, Some(("0.75", "19.050"))),
+            ("1.5", Unit::In, Some(("1.5", "38.10"))),
+            ("0.3937", Unit::In, Some(("0.3937", "9.99998"))),
+            ("0", Unit::Mm, None),
+            ("-5", Unit::Mm, None),
+            ("4o", Unit::Mm, None),
+            ("", Unit::Mm, None),
+            ("1 1/2", Unit::In, None),
+            ("40", Unit::Deg, None),
+        ];
+        for (text, unit, want) in cases {
+            let got = Length::parse(text, unit).map(|l| (l.value, l.to_mm()));
+            let want = want.map(|(v, mm)| (dec(v).unwrap(), dec(mm)));
+            assert_eq!(got, want, "{text:?} {unit:?}");
+        }
+        let deg = Length {
+            value: Decimal::ONE,
+            unit: Unit::Deg,
+        };
+        assert_eq!(deg.to_mm(), None);
     }
 
     #[test]

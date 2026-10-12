@@ -7,7 +7,7 @@ mod common;
 
 use common::context::{Cfg, SHOP_TABLE, context, settings, shop_entry};
 use common::d;
-use dimo_core::characteristic::{CharacteristicKind, ToleranceRule, Unit};
+use dimo_core::characteristic::{CharacteristicKind, Length, ToleranceRule, Unit};
 use dimo_core::derivation::{
     DerivationHint, DerivationRule, RangeBound, SizeRange, TableRef, UnitConversion,
 };
@@ -56,9 +56,10 @@ const BASE: Case = Case {
 fn run(case: &Case) -> Interpretation {
     let callout = parse_callout(case.text).unwrap_or_else(|e| panic!("{}: {e}", case.text));
     let ctx = context(case.cfg, case.unit, case.output);
-    let measures = Measures {
-        shorter_leg: case.leg.map(d),
-    };
+    let measures = Measures::with_shorter_leg(case.leg.map(|leg| Length {
+        value: d(leg),
+        unit: Unit::Mm,
+    }));
     interpret_with(&callout, &ctx, &measures)
 }
 

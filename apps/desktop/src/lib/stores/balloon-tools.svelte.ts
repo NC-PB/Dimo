@@ -310,8 +310,10 @@ export class BalloonToolsStore {
     let values: FieldValue[] = [{ field: "requirement_text", value: text }];
     const sheet = this.#sheet();
     if (this.#recognition && sheet !== undefined) {
+      // The stored shorter leg of an angle is read with the text (T2.9a).
+      const leg = current.shorter_leg?.value ?? null;
       const read = await this.#recognition
-        .readCalloutText(sheet, text, explainLanguage())
+        .readCalloutText(sheet, text, leg, explainLanguage())
         .catch(() => null);
       if (read?.status === "ok") {
         values = read.data.values;

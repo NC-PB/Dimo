@@ -88,6 +88,8 @@ pub enum CharacteristicField {
     Sources,
     /// Comment.
     Comment,
+    /// Shorter leg of an angle.
+    ShorterLeg,
 }
 
 /// The fields that differ between two states of a characteristic.
@@ -131,6 +133,7 @@ pub fn changed_fields(before: &Characteristic, after: &Characteristic) -> Vec<Ch
         (F::Origin, before.origin != after.origin),
         (F::Sources, before.sources != after.sources),
         (F::Comment, before.comment != after.comment),
+        (F::ShorterLeg, before.shorter_leg != after.shorter_leg),
     ];
     checks
         .into_iter()

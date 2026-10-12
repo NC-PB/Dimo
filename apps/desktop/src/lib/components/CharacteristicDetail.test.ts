@@ -3,6 +3,8 @@ import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
 import type {
   Characteristic,
+  CommandError,
+  TypedCallout,
   CharId,
   Command,
   HistoryEntry,
@@ -11,7 +13,14 @@ import type {
   TableImport,
   ToleranceDerivation,
 } from "$lib/ipc/bindings";
-import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
+import {
+  SHEET_ID,
+  balloon,
+  characteristic,
+  emptyProject,
+  loaded,
+  status,
+} from "$lib/stores/fixtures";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
@@ -66,9 +75,37 @@ function projectOf(): Project {
       hints: [{ hint: "reference_dimension" }],
       conversion: null,
     }),
+    {
+      ...characteristic("c5", 5),
+      kind: "angle",
+      requirement_text: "30°",
+      nominal: "30",
+      unit: "deg",
+      quantity: 2,
+      inspect: false,
+    },
   ];
+  project.balloons = [balloon("b5", "c5")];
   return project;
 }
+
+/** What Rust reads for `30°` with a shorter leg of 40 mm and ISO 2768-m (T2.9a). */
+const ANGLE_READING: TypedCallout = {
+  values: [
+    { field: "requirement_text", value: "30°" },
+    { field: "kind", value: "angle" },
+    { field: "nominal", value: "30" },
+    { field: "unit", value: "deg" },
+    { field: "upper_limit", value: "30.5" },
+    { field: "lower_limit", value: "29.5" },
+    { field: "quantity", value: 1 },
+    { field: "inspect", value: true },
+    { field: "shorter_leg", value: { value: "40", unit: "mm" } },
+  ],
+  parse_error: null,
+  explanation: "The shorter leg is 40 mm.",
+  notes: [],
+};
 
 function patched(): ProjectPatched {
   return { session: 1, revision: 1, patch: { changes: [] }, status: status() };
@@ -100,6 +137,8 @@ const HISTORY: HistoryEntry[] = [
 function setup(importResult: TableImport = { result: "cancelled" }) {
   const commands: Command[] = [];
   const reinterpreted: CharId[][] = [];
+  const reads: [string, string, string | null, string][] = [];
+  const leg = { refuse: false };
   const api: ProjectCommands = {
     projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf()) }),
     newProject: () => Promise.resolve({ status: "ok", data: true }),
@@ -149,12 +188,22 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
       });
     },
     importToleranceTable: () => Promise.resolve({ status: "ok", data: importResult }),
+    readCalloutText: (sheet, text, shorterLeg, language) => {
+      reads.push([sheet, text, shorterLeg, language]);
+      const refused: CommandError = {
+        kind: "invalid_argument",
+        message: "the shorter leg is not a positive number",
+      };
+      return Promise.resolve(
+        leg.refuse ? { status: "error", error: refused } : { status: "ok", data: ANGLE_READING },
+      );
+    },
   };
   const projectStore = new ProjectStore(api);
   projectStore.load(loaded(1, projectOf()));
   const selection = new SelectionStore();
   const tolerance = new ToleranceStore(toleranceApi, projectStore);
-  return { projectStore, selection, tolerance, commands, reinterpreted };
+  return { projectStore, selection, tolerance, commands, reinterpreted, reads, leg };
 }
 
 let component: ReturnType<typeof mount> | null = null;
@@ -269,6 +318,82 @@ describe("characteristic detail panel (T2.8)", () => {
     await settle();
     expect(stores.reinterpreted).toEqual([["c1", "c3"]]);
     expect(target.querySelector("[role='status']")?.textContent).toContain("by hand: 1");
+  });
+});
+
+describe("shorter leg of an angle (T2.9a)", () => {
+  function legInput(): HTMLInputElement | null {
+    return target.querySelector<HTMLInputElement>("input[data-field='shorter_leg']");
+  }
+
+  function enter(text: string) {
+    const input = legInput();
+    if (input) {
+      input.value = text;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  it("is offered for angles only, in the sheet unit", async () => {
+    const stores = setup();
+    stores.selection.select(["c1"]);
+    render(stores);
+    await settle();
+    expect(legInput()).toBeNull();
+    stores.selection.select(["c5"]);
+    await settle();
+    expect(legInput()?.value).toBe("");
+    expect(target.textContent).toContain("Shorter leg (mm)");
+  });
+
+  it("reads the text again with the leg and stores leg and limits in one command", async () => {
+    const stores = setup();
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("40");
+    await settle();
+    expect(stores.reads).toEqual([[SHEET_ID, "30°", "40", "en"]]);
+    // Kind, quantity and inspect stay as the user left them.
+    expect(stores.commands).toEqual([
+      {
+        type: "update_fields",
+        ids: ["c5"],
+        values: [
+          { field: "nominal", value: "30" },
+          { field: "unit", value: "deg" },
+          { field: "upper_limit", value: "30.5" },
+          { field: "lower_limit", value: "29.5" },
+          { field: "shorter_leg", value: { value: "40", unit: "mm" } },
+        ],
+      },
+    ]);
+    expect(target.querySelector("[role='alert']")).toBeNull();
+  });
+
+  it("clears the leg with empty text", async () => {
+    const stores = setup();
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("  ");
+    await settle();
+    expect(stores.reads).toEqual([[SHEET_ID, "30°", null, "en"]]);
+  });
+
+  it("shows a leg Rust refuses and changes nothing", async () => {
+    const stores = setup();
+    stores.leg.refuse = true;
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("abc");
+    await settle();
+    expect(stores.commands).toEqual([]);
+    expect(legInput()?.getAttribute("aria-invalid")).toBe("true");
+    expect(target.querySelector("[role='alert']")?.textContent).toContain(
+      "Enter a positive number",
+    );
   });
 });
 

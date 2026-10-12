@@ -4,8 +4,8 @@
  *
  * View state only. Rust reads the PDF text, parses it and interprets it with the tolerance
  * engine (`propose_from_region`), explains the limits in the UI language, reads edited text
- * again (`read_callout_text`), and accepting is one document command (`accept_proposals`), so
- * it is one undo step. Discarding changes nothing.
+ * and the shorter leg of an angle again (`read_callout_text`, T2.9a), and accepting is one
+ * document command (`accept_proposals`), so it is one undo step. Discarding changes nothing.
  */
 
 import {
@@ -21,6 +21,7 @@ import {
   type ProposalView,
   type SheetId,
   type TypedCallout,
+  type Unit,
 } from "$lib/ipc/bindings";
 import { getLocale } from "$lib/i18n";
 import type { Rect } from "$lib/viewport/view-math";
@@ -40,8 +41,14 @@ export interface RecognitionCommands {
   readCalloutText(
     sheet: SheetId,
     text: string,
+    shorterLeg: string | null,
     language: ExplainLanguage,
   ): Promise<Result<TypedCallout>>;
+}
+
+/** The shorter leg of a stored proposal or characteristic as text for its field (T2.9a). */
+export function legText(leg: { value: string } | null | undefined): string {
+  return leg?.value ?? "";
 }
 
 /** The language of explanations: the UI language. */
@@ -113,6 +120,9 @@ function apply(p: Proposal, value: FieldValue): void {
     case "derivation":
       p.derivation = value.value;
       break;
+    case "shorter_leg":
+      p.shorter_leg = value.value;
+      break;
     default:
       // Other fields (classification, inspection, comment) are not part of a reading.
       break;
@@ -126,6 +136,10 @@ export class BoxSelectStore {
   explanations = $state.raw<(string | null)[]>([]);
   /** What the tolerance engine could not decide, per proposal. Shown only, never stored. */
   notes = $state.raw<InterpreterNote[][]>([]);
+  /** The shorter leg of each proposal as typed, in the sheet unit (T2.9a). */
+  legs = $state.raw<string[]>([]);
+  /** Why Rust refused the typed shorter leg of each proposal, `null` if it did not. */
+  legErrors = $state.raw<(CommandError | null)[]>([]);
   /** The box the proposals were read from, in sheet space. */
   region = $state.raw<Rect | null>(null);
   /** True while Rust reads the box or edited text. */
@@ -136,8 +150,8 @@ export class BoxSelectStore {
   readonly #api: RecognitionCommands;
   /** Sheet of the open card. */
   #sheet: SheetId | null = null;
-  /** The text each proposal's values were read from, to see edits not read yet. */
-  #read: string[] = [];
+  /** The text and leg each proposal's values were read from, to see edits not read yet. */
+  #read: { text: string; leg: string }[] = [];
 
   constructor(project: ProjectStore, chosen: SelectionStore, api: RecognitionCommands = commands) {
     this.#project = project;
@@ -148,6 +162,17 @@ export class BoxSelectStore {
   /** True while the card is open. */
   get open(): boolean {
     return this.proposals.length > 0;
+  }
+
+  /** The sheet of the open card, `null` when closed. */
+  get sheet(): SheetId | null {
+    return this.#sheet;
+  }
+
+  /** Unit of the card's sheet: the unit the shorter leg is typed in (T2.9a, D-20). */
+  get sheetUnit(): Unit | null {
+    const id = this.#sheet;
+    return this.#project.sheets.find((s) => s.id === id)?.unit ?? null;
   }
 
   /**
@@ -168,7 +193,12 @@ export class BoxSelectStore {
       this.proposals = result.data.map((v) => v.proposal);
       this.explanations = result.data.map((v) => v.explanation);
       this.notes = result.data.map((v) => v.notes);
-      this.#read = this.proposals.map((p) => p.requirement_text);
+      this.legs = this.proposals.map((p) => legText(p.shorter_leg));
+      this.legErrors = this.proposals.map(() => null);
+      this.#read = this.proposals.map((p, i) => ({
+        text: p.requirement_text,
+        leg: this.legs[i] ?? "",
+      }));
       return true;
     } catch {
       return false;
@@ -182,22 +212,44 @@ export class BoxSelectStore {
     this.proposals = this.proposals.map((p, i) => (i === index ? { ...p, ...change } : p));
   }
 
-  /** Reads the edited requirement text of a proposal again through Rust (M2 decision 5). */
+  /** Changes the typed shorter leg of one proposal; read with {@link reread} (T2.9a). */
+  editLeg(index: number, text: string): void {
+    this.legs = this.legs.map((l, i) => (i === index ? text : l));
+  }
+
+  /**
+   * Reads the edited requirement text and shorter leg of a proposal again through Rust (M2
+   * decision 5, T2.9a). A leg Rust refuses leaves the values as they were and shows why.
+   */
   async reread(index: number): Promise<void> {
     const p = this.proposals[index];
     const sheet = this.#sheet;
-    if (p === undefined || sheet === null || this.#read[index] === p.requirement_text) {
+    const leg = this.legs[index] ?? "";
+    const read = this.#read[index];
+    if (
+      p === undefined ||
+      sheet === null ||
+      (read?.text === p.requirement_text && read.leg === leg)
+    ) {
       return;
     }
     const text = p.requirement_text;
     const result = await this.#api
-      .readCalloutText(sheet, text, explainLanguage())
+      .readCalloutText(sheet, text, leg.trim() === "" ? null : leg, explainLanguage())
       .catch(() => null);
     const current = this.proposals[index];
-    if (result?.status !== "ok" || current?.requirement_text !== text) {
+    if (current?.requirement_text !== text || (this.legs[index] ?? "") !== leg) {
       return;
     }
-    this.#read[index] = text;
+    if (result?.status === "error") {
+      this.legErrors = this.legErrors.map((e, i) => (i === index ? result.error : e));
+      return;
+    }
+    if (result?.status !== "ok") {
+      return;
+    }
+    this.#read[index] = { text, leg };
+    this.legErrors = this.legErrors.map((e, i) => (i === index ? null : e));
     this.edit(index, withReading(current, result.data));
     this.explanations = this.explanations.map((e, i) =>
       i === index ? result.data.explanation : e,
@@ -242,6 +294,8 @@ export class BoxSelectStore {
     this.proposals = [];
     this.explanations = [];
     this.notes = [];
+    this.legs = [];
+    this.legErrors = [];
     this.region = null;
     this.#sheet = null;
     this.#read = [];

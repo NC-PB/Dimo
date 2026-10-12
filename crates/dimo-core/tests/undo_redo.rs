@@ -326,6 +326,7 @@ fn proposals(project: &Project, sheet: usize, count: usize, x: i16, valid: bool)
                 parse_hints: vec![ParseHint::StackedLinesJoined],
                 job_id: None,
                 engines: Vec::new(),
+                shorter_leg: None,
             }
         })
         .collect()

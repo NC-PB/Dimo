@@ -20,13 +20,13 @@ use dimo_core::characteristic::FieldValue;
 use dimo_core::derivation::ToleranceDerivation;
 use dimo_core::geometry::OrientedBox;
 use dimo_core::proposal::{BalloonPlacement, ParseIssue, Proposal};
-use dimo_core::{SheetId, Unit};
+use dimo_core::{Length, SheetId, Unit};
 use dimo_detect::{
     BoxSelectContext, CalloutOnly, Interpreter, ToleranceEngine, box_select_with_notes,
     read_callout,
 };
 use dimo_pdf::tiles::TileService;
-use dimo_tolerance::{ExplainValues, Language, Note, TableSet, ToleranceContext};
+use dimo_tolerance::{ExplainValues, Language, Measures, Note, TableSet, ToleranceContext};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -93,7 +93,8 @@ pub struct ProposalView {
 #[serde(rename_all = "snake_case")]
 pub struct TypedCallout {
     /// Fields to set in one `update_fields` command: the requirement text, and when the text
-    /// parses, kind, nominal, unit, deviations, limits, fit, quantity, inspect and derivation.
+    /// parses, kind, nominal, unit, deviations, limits, fit, quantity, inspect, derivation and
+    /// the shorter leg.
     pub values: Vec<FieldValue>,
     /// Why the text could not be parsed; then `values` holds only the requirement text.
     pub parse_error: Option<ParseIssue>,
@@ -149,6 +150,7 @@ struct Values {
     lower_dev: Option<Decimal>,
     upper_limit: Option<Decimal>,
     lower_limit: Option<Decimal>,
+    shorter_leg: Option<Length>,
 }
 
 fn explanation(
@@ -163,6 +165,7 @@ fn explanation(
         lower_dev: v.lower_dev,
         upper_limit: v.upper_limit,
         lower_limit: v.lower_limit,
+        shorter_leg: v.shorter_leg,
     };
     derivation.map(|d| dimo_tolerance::explain(d, &values, language.into()))
 }
@@ -232,6 +235,7 @@ pub fn propose(
                 lower_dev: q.lower_dev,
                 upper_limit: q.upper_limit,
                 lower_limit: q.lower_limit,
+                shorter_leg: q.shorter_leg,
             };
             ProposalView {
                 explanation: explanation(q.derivation.as_ref(), &values, language),
@@ -242,14 +246,35 @@ pub fn propose(
         .collect())
 }
 
-/// Reads typed text like a box selection (M2 decision 5), explained in `language`.
+/// The shorter leg typed on the proposal card or in the detail panel (T2.9a), in the unit of the
+/// sheet: empty text means no leg; anything but a positive number is refused.
+pub fn parse_shorter_leg(text: Option<&str>, unit: Unit) -> Result<Option<Length>, CommandError> {
+    let Some(text) = text.map(str::trim).filter(|t| !t.is_empty()) else {
+        return Ok(None);
+    };
+    Length::parse(text, unit)
+        .map(Some)
+        .ok_or_else(|| CommandError::InvalidArgument {
+            message: format!("the shorter leg {text:?} is not a positive number"),
+        })
+}
+
+/// Reads typed text like a box selection (M2 decision 5), explained in `language`, with the
+/// shorter leg of an angle if one was entered (T2.9a).
 pub fn read_typed(
     target: &RecognitionTarget,
     text: &str,
+    shorter_leg: Option<Length>,
     language: ExplainLanguage,
 ) -> TypedCallout {
     let interpreter = interpreter(target);
-    let r = read_callout(text, false, target.unit, interpreter.as_ref());
+    let r = read_callout(
+        text,
+        false,
+        target.unit,
+        interpreter.as_ref(),
+        &Measures::with_shorter_leg(shorter_leg),
+    );
     let values = Values {
         nominal: r.nominal,
         unit: r.unit,
@@ -257,6 +282,7 @@ pub fn read_typed(
         lower_dev: r.lower_dev,
         upper_limit: r.upper_limit,
         lower_limit: r.lower_limit,
+        shorter_leg: r.shorter_leg,
     };
     TypedCallout {
         explanation: explanation(r.derivation.as_ref(), &values, language),
@@ -290,16 +316,20 @@ pub async fn propose_from_region(
 }
 
 /// Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
-/// in `language`. Changes nothing; the frontend sets the returned values with one
-/// `update_fields` command.
+/// in `language`. `shorter_leg` is the shorter leg of an angle as typed, in the unit of the
+/// sheet (T2.9a); `null` or empty text means none, other text that is not a positive number is
+/// refused. Changes nothing; the frontend sets the returned values with one `update_fields`
+/// command, or applies them to a proposal.
 #[tauri::command]
 #[specta::specta]
 pub async fn read_callout_text(
     app: AppHandle,
     sheet: SheetId,
     text: String,
+    shorter_leg: Option<String>,
     language: ExplainLanguage,
 ) -> Result<TypedCallout, CommandError> {
     let target = with_session(app, move |_, session| session.recognition_target(sheet)).await?;
-    Ok(read_typed(&target, &text, language))
+    let leg = parse_shorter_leg(shorter_leg.as_deref(), target.unit)?;
+    Ok(read_typed(&target, &text, leg, language))
 }

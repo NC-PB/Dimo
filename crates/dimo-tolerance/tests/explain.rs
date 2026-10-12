@@ -7,7 +7,7 @@ mod common;
 
 use common::context::{Cfg, context};
 use common::d;
-use dimo_core::characteristic::Unit;
+use dimo_core::characteristic::{Length, Unit};
 use dimo_core::derivation::ToleranceDerivation;
 use dimo_notation::parse_callout;
 use dimo_tolerance::{ExplainValues, Language, Measures, explain, interpret_with};
@@ -15,9 +15,10 @@ use dimo_tolerance::{ExplainValues, Language, Measures, explain, interpret_with}
 /// Interpret `text` and render the explanation in both languages.
 fn both(text: &str, cfg: Cfg, unit: Unit, output: Option<Unit>, leg: Option<&str>) -> String {
     let ctx = context(cfg, unit, output);
-    let measures = Measures {
-        shorter_leg: leg.map(d),
-    };
+    let measures = Measures::with_shorter_leg(leg.map(|leg| Length {
+        value: d(leg),
+        unit: Unit::Mm,
+    }));
     let i = interpret_with(&parse_callout(text).unwrap(), &ctx, &measures);
     let values = ExplainValues::from(&i);
     format!(
@@ -65,6 +66,23 @@ fn general() {
 #[test]
 fn general_angle() {
     insta::assert_snapshot!(both("90°", Cfg::General, Unit::Mm, None, Some("100")));
+}
+
+// T2.9a: an inch leg is named with its mm value; the limits follow from the leg.
+#[test]
+fn general_angle_inch_leg() {
+    let ctx = context(Cfg::General, Unit::In, None);
+    let measures = Measures::with_shorter_leg(Some(Length {
+        value: d("1.5"),
+        unit: Unit::In,
+    }));
+    let i = interpret_with(&parse_callout("30°").unwrap(), &ctx, &measures);
+    let values = ExplainValues::from(&i);
+    insta::assert_snapshot!(format!(
+        "callout: 30°, leg 1.5 in\nen: {}\nde: {}\n",
+        explain(&i.derivation, &values, Language::English),
+        explain(&i.derivation, &values, Language::German)
+    ));
 }
 
 #[test]
@@ -117,6 +135,7 @@ fn manual() {
         lower_dev: Some(d("-0.2")),
         upper_limit: Some(d("10.1")),
         lower_limit: Some(d("9.8")),
+        shorter_leg: None,
     };
     let derivation = ToleranceDerivation::manual();
     insta::assert_snapshot!(format!(
