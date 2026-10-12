@@ -131,13 +131,6 @@ export const commands = {
 	 */
 	setAppSettings: (settings: AppSettings) => typedError<SettingsView, CommandError>(__TAURI_INVOKE("set_app_settings", { settings })),
 	/**
-	 *  Copies the company name of the app settings into the report info of the open project, if
-	 *  the project has no company name yet (M3 decision 15). One undoable `update_report_info`;
-	 *  nothing changes, and the patch is empty, when the project has a company name or no company
-	 *  is set.
-	 */
-	fillReportCompany: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("fill_report_company")),
-	/**
 	 *  Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
 	 *  builds: always the empty default.
 	 */
@@ -193,8 +186,8 @@ export type AppSettings = {
 	/**  Name recorded in the audit log (D-27); empty uses the operating system user name. */
 	user_name: string,
 	/**
-	 *  Name of the issuing company, copied into the report info of a project when that is
-	 *  empty (M3 decision 15). Empty means not set.
+	 *  Name of the issuing company. New projects start with it in their report info (M3
+	 *  decision 15). Empty means not set.
 	 */
 	company_name: string,
 	/**  Export options used last. */

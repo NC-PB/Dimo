@@ -19,8 +19,8 @@ verwendeten Exportoptionen ([Exporte](exports.md)) liegen dort.
 
 ## Berichte
 
-- **Firmenname**: wird auf Berichten gedruckt. Öffnest du ein Projekt, dessen Berichtsdaten noch
-  keinen Firmennamen haben, kopiert Dimo ihn von hier ([Projekt- und Berichtsdaten](project-details.md)).
+- **Firmenname**: wird auf Berichten gedruckt. Neue Projekte beginnen damit in ihren
+  Berichtsdaten. Bestehende Projekte behalten ihren Namen ([Projekt- und Berichtsdaten](project-details.md)).
 
 ## Ballonstil dieses Projekts
 

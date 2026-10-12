@@ -30,7 +30,6 @@
     "allow-measurement-state",
     "allow-app-settings",
     "allow-set-app-settings",
-    "allow-fill-report-company",
     "allow-dev-startup",
     "allow-dev-report-frame-times",
     "allow-dev-log"

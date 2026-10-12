@@ -18,8 +18,8 @@ folder. The last export options ([Exports](exports.md)) are stored there too.
 
 ## Reports
 
-- **Company name**: printed on reports. When you open a project whose report data has no company
-  name yet, Dimo copies it from here ([Project and report details](project-details.md)).
+- **Company name**: printed on reports. New projects start with it in their
+  report data. Existing projects keep theirs ([Project and report details](project-details.md)).
 
 ## Balloon style of this project
 

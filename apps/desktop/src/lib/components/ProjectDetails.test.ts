@@ -32,7 +32,6 @@ function setup(project: Project = emptyProject()) {
   const commands: Command[] = [];
   let revision = 0;
   const refuse: { error: CommandError | null } = { error: null };
-  let filled = 0;
   const patched = (changes: Change[]): ProjectPatched => {
     if (changes.length > 0) {
       revision += 1;
@@ -56,23 +55,10 @@ function setup(project: Project = emptyProject()) {
     },
     undo: () => Promise.reject(new Error("not used")),
     redo: () => Promise.reject(new Error("not used")),
-    fillReportCompany: () => {
-      filled += 1;
-      const current = projectStore.project ?? project;
-      const info = { ...current.report_info, company_name: "Muster GmbH" };
-      return Promise.resolve({
-        status: "ok",
-        data: patched(
-          current.report_info.company_name === ""
-            ? [{ type: "report_info_changed", before: current.report_info, after: info }]
-            : [],
-        ),
-      });
-    },
   };
   const projectStore = new ProjectStore(api);
   projectStore.load(loaded(1, project));
-  return { projectStore, commands, refuse, filled: () => filled };
+  return { projectStore, commands, refuse };
 }
 
 let component: ReturnType<typeof mount> | null = null;
@@ -155,7 +141,6 @@ describe("project and report details (T3.4)", () => {
   it("edits the report fields, remarks included, as update_report_info commands", async () => {
     const stores = setup();
     render(stores);
-    await settle();
     await type("Report number", "R-7");
     await type("Inspected by", "Anna");
     await type("Approved by", "Ben");
@@ -166,7 +151,7 @@ describe("project and report details (T3.4)", () => {
       info: {
         report_number: "R-7",
         report_date: "",
-        company_name: "Muster GmbH",
+        company_name: "",
         inspected_by: "Anna",
         approved_by: "Ben",
         remarks: "Two lines\nof text",
@@ -237,14 +222,11 @@ describe("project and report details (T3.4)", () => {
     expect(stores.commands).toEqual([]);
   });
 
-  it("asks Rust once per project to copy the company name into an empty report info", async () => {
+  it("runs no command when it is shown", async () => {
     const stores = setup();
     render(stores);
     await settle();
-    expect(stores.filled()).toBe(1);
-    expect(stores.projectStore.project?.report_info.company_name).toBe("Muster GmbH");
-    expect(field("Company").value).toBe("Muster GmbH");
-    await type("Report number", "R-1");
-    expect(stores.filled()).toBe(1);
+    expect(stores.commands).toEqual([]);
+    expect(stores.projectStore.project?.report_info.company_name).toBe("");
   });
 });
