@@ -11,6 +11,15 @@ Report templating and PDF rendering of inspection reports (D-30, FR-EXP-06).
   report`).
 - `render_report(&TemplateSet, &ReportModel)`: renders the matching document (`check-sheet`,
   `inspection-report`) in the model's language with the report date as PDF creation date.
+- `render_xlsx(&TemplateSet, &ReportModel)` (T3.7): the same model as an XLSX workbook, built in
+  code with `rust_xlsxwriter` (no spreadsheet template before M7). Words come from the label
+  file of the template set, the sheet is named like the document. Layout: header block, summary
+  (inspection report), table header rows with the sample data, one row per characteristic and
+  one column per sample, marks legend, notes, remarks and signature fields. Values are number
+  cells that keep the typed decimals; a number format adds the verdict mark and a fill adds the
+  color; attribute results and verdicts are text with the same mark and fill. A4 landscape,
+  repeated header rows and characteristic columns, blocks of six samples when there are more.
+  Fixed document properties and ZIP times, so equal models give identical bytes.
 - `TemplateSet`: a template folder with `template.toml`, a label file and Typst files. The
   bundled `dimo-default` set (`data/templates/dimo-default/`) is embedded at compile time.
 - `render_pdf(&TemplateSet, &RenderRequest)`: compiles one document with Typst 0.15 and returns
@@ -24,7 +33,8 @@ Report templating and PDF rendering of inspection reports (D-30, FR-EXP-06).
   and data; no clock is read. Two renders give the same bytes (`tests/render.rs`).
 - Errors from Typst come back as `ReportError::Compile` with file, line and column.
 
-Tests: `tests/report.rs` (data JSON snapshots in English and German, schema, column blocks,
+Tests: `tests/xlsx.rs` (snapshots of the unzipped XML parts in both languages, byte identical
+output, 300 rows by 10 samples), `tests/report.rs` (data JSON snapshots in English and German, schema, column blocks,
 300 rows by 10 samples, byte identical renders; `DIMO_REPORT_SAMPLES_DIR=<dir>` keeps the
 rendered PDFs), `tests/render.rs` (renderer and sandbox). The extracted PDF text snapshots need
 PDFium and live in `crates/dimo-cli/tests/report_text.rs`.
