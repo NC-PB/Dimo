@@ -21,7 +21,9 @@
 #      each, saved; verdicts from the app and results from project.json.
 #   8. Report export (T3.8): the saved measurement project is opened twice, each time the
 #      inspection report is exported as PDF and XLSX; both runs give byte identical files.
-#      A third run cancels the export and leaves no file.
+#      The PDF text is read back with PDFium (T3.10): overall verdict, summary counts and the
+#      verdict of each sample; the XLSX holds the verdict words. A third run cancels the export
+#      and leaves no file.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -399,6 +401,44 @@ done
 expect "report: PDF file header" "%PDF" "$(head -c 4 "$WORK/out8a/measure_inspection-report.pdf" 2>/dev/null || true)"
 expect "app: both report exports finished" "yes" \
   "$(yesno grep -q 'inspection_report_pdf done measure_inspection-report.pdf, inspection_report_xlsx done measure_inspection-report.xlsx' <<<"$(report report-a exported)")"
+# The text of the report PDF holds the verdicts (T3.10). Verdicts of single cells are drawn as
+# marks, so the words are read where the text has them: the overall verdict, the counts of the
+# summary and the verdict of each sample. Project of step 7: sample 1 passes every limit but has
+# a value without limits (open), samples 2 and 3 each have a failing value; over 5
+# characteristics and 3 samples that is 8 pass, 4 fail, 3 not evaluated and 0 missing.
+RPDF="$WORK/out8a/measure_inspection-report.pdf"
+if [[ -s "$RPDF" ]]; then
+  # text_runs prints "x y width height font text" per run; keep x, y, height, font, text.
+  "$TEXT_RUNS" "$RPDF" | tail -n +2 |
+    awk '{ t = $6; for (i = 7; i <= NF; i++) t = t " " $i; print $1 "\t" $2 "\t" $4 "\t" $5 "\t" t }' \
+      >"$WORK/report-text.tsv"
+  # The overall verdict is the one run of about 10 pt height in the summary block (the page title
+  # is taller); the counts share its line.
+  expect "report pdf: overall verdict" "Fail" \
+    "$(awk -F'\t' '$3 > 9.5 && $3 < 12 { print $5; exit }' "$WORK/report-text.tsv")"
+  overall_y=$(awk -F'\t' '$3 > 9.5 && $3 < 12 { print $2; exit }' "$WORK/report-text.tsv")
+  expect "report pdf: summary counts (characteristics, samples, pass, fail, not evaluated, missing)" \
+    "5 3 8 4 3 0" \
+    "$(awk -F'\t' -v y="$overall_y" '$4 == "OpenSans-Regular" && $2 - y < 3 && y - $2 < 3 { print $1 "\t" $5 }' \
+         "$WORK/report-text.tsv" | sort -n | cut -f2 | tr '\n' ' ' | sed 's/ $//')"
+  # The sample block lies above the characteristic table, whose header starts with "No.".
+  table_y=$(awk -F'\t' '$5 == "No." { print $2; exit }' "$WORK/report-text.tsv")
+  expect "report pdf: verdict of each sample (open, fail, fail)" "Open Fail Fail" \
+    "$(awk -F'\t' -v ty="$table_y" '$2 < ty && $4 == "OpenSans-Regular" && ($5 == "Pass" || $5 == "Fail" || $5 == "Open") { print $2 "\t" $5 }' \
+         "$WORK/report-text.tsv" | sort -n | cut -f2 | tr '\n' ' ' | sed 's/ $//')"
+  expect "report pdf: entered values and the OK result are printed" "yes" \
+    "$(yesno test "$(awk -F'\t' '$5 == "10.01" || $5 == "OK" || $5 == "29.9" { n++ } END { print n + 0 }' "$WORK/report-text.tsv")" -ge 3)"
+else
+  fail "missing or empty: $RPDF"
+fi
+# The XLSX report holds the verdict and result words as text (marks and words in one string).
+RXLSX="$WORK/out8a/measure_inspection-report.xlsx"
+if [[ -s "$RXLSX" ]]; then
+  strings=$(unzip -p "$RXLSX" xl/sharedStrings.xml)
+  for word in "✗ Fail" "✓ OK" "✗ Not OK"; do
+    expect "report xlsx: '$word' present" "yes" "$(yesno grep -q "$word" <<<"$strings")"
+  done
+fi
 # Cancel (NFR-PERF-06): each job step waits 1.5 s, the export is cancelled during the first.
 mkdir -p "$WORK/out8c"
 if [[ -s "$MEA" ]]; then

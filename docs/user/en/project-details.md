@@ -40,6 +40,12 @@ prints it on every report.
 | Approved by | Who approved the report |
 | Remarks | Free text printed on the report |
 
+"Inspected by" and "Approved by" print in the signature block of the inspection report. The date
+of "Inspected by" is the report date; "Approved by" gets no date, you write it by hand. This is
+separate from the inspector of each sample, which you set in the sample panel
+([Entering results](measuring.md)). If the report date is empty, the report prints the date of the
+last change of the project ([Exports](exports.md)).
+
 Empty fields stay empty on the report. A new project starts with the company name from the settings and with the user name of the settings (or of your system) as inspector. Dimo does not change an existing project when you open it.
 
 ### Company name

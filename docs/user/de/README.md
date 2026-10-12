@@ -1,8 +1,9 @@
 # Dimo Benutzerhandbuch
 
 Dimo versieht jedes zu prüfende Merkmal einer technischen Zeichnung mit einem nummerierten
-Ballon, führt die Merkmalsliste und exportiert ein PDF mit Ballons und eine Merkmalsliste für die
-Prüfung. Alles bleibt auf deinem Computer.
+Ballon, führt die Merkmalsliste, nimmt die Werte auf, die du an deinen Teilen gemessen hast, und
+entscheidet über i.O. oder n.i.O. Es exportiert ein Prüfblatt, einen Prüfbericht, ein PDF mit
+Ballons und eine Merkmalsliste. Alles bleibt auf deinem Computer.
 
 Diese Version ist für das **unterstützte Ballonieren**: Du ziehst einen Rahmen um ein Maß und Dimo
 liest seinen PDF-Text, oder du klickst ein Merkmal an und tippst den Wert so, wie er aufgedruckt
@@ -142,26 +143,42 @@ gespeicherten Projekt) die Arbeit wieder her, mit einem Hinweis über der Zeichn
 des Fensters oder beim Anlegen oder Öffnen eines anderen Projekts mit ungespeicherten Änderungen
 fragt Dimo zuerst nach. Einzelheiten: [Projekte](projects.md).
 
-### 10. Exportieren
+### 10. Die Ergebnisse eingeben
 
-Öffne die Ansicht **Export** (⌘E).
+Öffne die Ansicht **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
+**Muster hinzufügen**. Klicke auf die erste Zelle eines Teils, tippe den Wert, drücke **Enter** und
+mach in der Spalte nach unten weiter: Dimo speichert den Wert, geht zum nächsten Merkmal und
+markiert das Ergebnis mit ✓ (i.O.), ✗ (n.i.O.) oder ○ (Wert ohne Grenzmaße). Bei Gewinden und
+Hinweisen drückst du **O** für i.O. oder **N** für n.i.O. Ein aus einer Tabellenkalkulation
+kopierter Bereich wird mit ⌘V eingefügt. Die Grenzmaße gehören dazu, und Dimo entscheidet für dich
+über i.O. oder n.i.O. Einzelheiten: [Ergebnisse eingeben](measuring.md).
 
+### 11. Exportieren
+
+Trage zuerst Teil, Revisionsstand der Zeichnung und die Berichtsfelder unter **Projekt und Bericht**
+ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann die Ansicht **Export** (⌘E).
+
+- **Prüfblatt** (PDF oder Excel): die Merkmale mit leeren Ergebnisspalten, zum Ausdrucken vor dem
+  Messen.
+- **Prüfbericht** (PDF oder Excel): Übersicht, Muster, Ergebnisse mit Bewertungen und
+  Unterschriftenblock.
 - **PDF mit Ballons**: die Zeichnung mit eingezeichneten Ballons. Die Originaldatei bleibt
   unverändert.
 - **Merkmalsliste (CSV)** und **(Excel)**: eine Zeile pro Merkmal, in Ballonreihenfolge, mit der
   Regel, die jedes Grenzmaß ergeben hat.
 
-Wähle die Sprache der Spaltenüberschriften und wie das PDF die Ballons enthält. Jeder Export fragt,
-wo die Datei gespeichert wird, und läuft im Hintergrund. Setze für eine Zeichnung, die an einen
-Kunden geht, vorher das Häkchen bei **Als freigegeben exportieren**: Es sperrt die Nummerierung,
-die Nummern ändern sich danach nie mehr, auch wenn du Merkmale hinzufügst oder löschst.
-Einzelheiten: [Exporte](exports.md).
+Wähle die Sprache der Berichte und Spaltenüberschriften und wie das PDF die Ballons enthält. Jeder
+Export fragt, wo die Datei gespeichert wird, und läuft im Hintergrund; **Export abbrechen** stoppt
+einen Berichtsexport. Setze für eine Zeichnung oder einen Bericht, der an einen Kunden geht,
+vorher das Häkchen bei **Als freigegeben exportieren**: Es sperrt die Nummerierung, die Nummern
+ändern sich danach nie mehr, auch wenn du Merkmale hinzufügst oder löschst, und ein Bericht wird im
+Projekt vermerkt. Einzelheiten: [Exporte](exports.md).
 
-### 11. Einstellungen
+### 12. Einstellungen
 
 Unter **Einstellungen** (⌘,) wählst du das Farbschema (hell, dunkel oder wie das System), die
-Sprache der App und den Benutzernamen, der in das Änderungsprotokoll jedes Projekts geschrieben
-wird. Die Einstellungen bleiben für den nächsten Start erhalten. Die Toleranzregeln des Projekts
+Sprache der App, den Benutzernamen, der in das Änderungsprotokoll jedes Projekts geschrieben wird,
+und den Firmennamen für Berichte. Die Einstellungen bleiben für den nächsten Start erhalten. Die Toleranzregeln des Projekts
 (Schritt 3) stehen in derselben Ansicht. Einzelheiten: [Einstellungen](settings.md).
 
 ### Wie es weitergeht
@@ -170,5 +187,8 @@ wird. Die Einstellungen bleiben für den nächsten Start erhalten. Die Toleranzr
   gemacht hast, steht im Änderungsprotokoll im Projekt.
 - Gib die gemessenen Werte deiner Teile in der Ansicht **Messen** (⌘3) ein, siehe
   [Ergebnisse eingeben](measuring.md).
-- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung und Prüfberichte. Die
-  Ansicht **Prüfen** zeigt einen Hinweis, dass sie in einer späteren Version folgt.
+- Ändern sich Grenzmaße, nachdem du Ergebnisse eingegeben hast, bleiben die Ergebnisse, und die
+  Bewertungen folgen den neuen Grenzmaßen
+  ([Ergebnisse eingeben](measuring.md#wenn-sich-grenzmaße-ändern)).
+- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung. Die Ansicht **Prüfen**
+  zeigt einen Hinweis, dass sie in einer späteren Version folgt.

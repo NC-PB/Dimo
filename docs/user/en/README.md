@@ -1,8 +1,9 @@
 # Dimo user guide
 
 Dimo numbers every characteristic of an engineering drawing that has to be inspected with a
-balloon, keeps the list of characteristics, and exports a ballooned PDF and a characteristic list
-for inspection. Everything stays on your computer.
+balloon, keeps the list of characteristics, takes the values you measured on your parts and
+decides pass or fail. It exports a check sheet, an inspection report, a ballooned PDF and a
+characteristic list. Everything stays on your computer.
 
 This version is for **assisted ballooning**: you drag a box around a dimension and Dimo reads its
 PDF text, or you click a feature and type the value as it is printed. Dimo reads nominal value,
@@ -129,24 +130,39 @@ opening the project again (or starting Dimo, for a project that was never saved)
 work, with a note above the drawing. When you close the window or create or open another
 project with unsaved changes, Dimo asks first. Details: [Projects](projects.md).
 
-### 10. Export
+### 10. Enter the results
 
-Open the **Export** view (⌘E).
+Open the **Measure** view (⌘3). Type how many parts you measure under **Number** and choose
+**Add samples**. Click the first cell of a part, type the value, press **Enter**, and carry on down
+the column: Dimo stores the value, moves to the next characteristic and marks the result with ✓
+(pass), ✗ (fail) or ○ (value without limits). For threads and notes press **O** for OK or **N**
+for not OK. A block copied from a spreadsheet pastes with ⌘V. Limits are inclusive, and Dimo
+decides pass or fail for you. Details: [Entering results](measuring.md).
 
+### 11. Export
+
+First fill in the part, drawing revision and report fields in **Project and report**
+([Project and report details](project-details.md)). Then open the **Export** view (⌘E).
+
+- **Check sheet** (PDF or Excel): the characteristics with empty result columns, to print before
+  you measure.
+- **Inspection report** (PDF or Excel): summary, samples, results with verdicts and the signature
+  block.
 - **Ballooned PDF**: the drawing with the balloons drawn in. The original file is not changed.
 - **Characteristic list (CSV)** and **(Excel)**: one row per characteristic, in balloon order,
   with the rule that gave each limit.
 
-Pick the language of the column headers and how the PDF carries the balloons. Each export asks
-where to save the file and runs in the background. For a drawing that goes to a customer, tick
-**Export as issued** first: it locks the numbering, so numbers never change afterwards, even if
-you add or delete characteristics. Details: [Exports](exports.md).
+Pick the language of the reports and column headers and how the PDF carries the balloons. Each
+export asks where to save the file and runs in the background; **Cancel export** stops a report
+export. For a drawing or report that goes to a customer, tick **Export as issued** first: it locks
+the numbering, so numbers never change afterwards, even if you add or delete characteristics, and a
+report is recorded in the project. Details: [Exports](exports.md).
 
-### 11. Settings
+### 12. Settings
 
 In **Settings** (⌘,) choose the theme (light, dark or as the system), the language of the app, and
-the user name that is written into the change log of each project. Settings are kept for the next
-start. The tolerance rules of the project (step 3) are in the same view. Details:
+the user name that is written into the change log of each project, and the company name for
+reports. Settings are kept for the next start. The tolerance rules of the project (step 3) are in the same view. Details:
 [Settings](settings.md).
 
 ### What next
@@ -155,5 +171,7 @@ start. The tolerance rules of the project (step 3) are in the same view. Details
   in the change log inside the project.
 - Enter the measured values of your parts in the **Measure** view (⌘3), see
   [Entering results](measuring.md).
-- Not yet in this version: searching the drawing automatically and inspection reports. The
-  **Review** view shows a note that it comes in a later version.
+- If limits change after you entered results, the results stay and the verdicts follow the new
+  limits ([Entering results](measuring.md#when-limits-change)).
+- Not yet in this version: searching the drawing automatically. The **Review** view shows a note
+  that it comes in a later version.
