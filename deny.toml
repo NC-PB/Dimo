@@ -18,6 +18,20 @@ ignore = [
   { id = "RUSTSEC-2025-0100", reason = "unic-ucd-ident via tauri-utils > urlpattern" },
   # paste: specta 2.0.0-rc.25 (typed IPC, T0.3), build time proc macro only
   { id = "RUSTSEC-2024-0436", reason = "paste via specta, proc macro, no fix available" },
+  # Typst (PDF reports, T3.2, owner decision 2026-10-12). Only dimo-report depends on it.
+  # quick-xml 0.38: typst-library > hayagriva > citationberg 0.7.0 (latest) parses CSL
+  # bibliography XML with it. Dimo templates never use bibliographies or citations and the data
+  # JSON cannot load XML through it (Typst's xml() uses roxmltree), so it is not reachable.
+  { id = "RUSTSEC-2026-0194", reason = "quick-xml via Typst citationberg, only CSL bibliography XML, never fed by Dimo" },
+  { id = "RUSTSEC-2026-0195", reason = "quick-xml via Typst citationberg, only CSL bibliography XML, never fed by Dimo" },
+  # Unmaintained notices, transitive through Typst, no fix upstream. Revisit on Typst updates.
+  { id = "RUSTSEC-2025-0141", reason = "bincode via Typst syntect, no fix upstream, revisit on Typst updates" },
+  { id = "RUSTSEC-2024-0320", reason = "yaml-rust via Typst syntect, no fix upstream, revisit on Typst updates" },
+  { id = "RUSTSEC-2026-0206", reason = "rustybuzz via Typst layout and krilla, no fix upstream, revisit on Typst updates" },
+  { id = "RUSTSEC-2026-0192", reason = "ttf-parser via Typst and krilla, no fix upstream, revisit on Typst updates" },
+  # Not in the spike run of the same day (newer advisory database). serde_yaml backs Typst's
+  # yaml() and hayagriva; Dimo passes data as JSON and its templates load no YAML.
+  { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml via Typst serde_yaml, no fix upstream, revisit on Typst updates" },
 ]
 
 [licenses]

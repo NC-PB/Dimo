@@ -54,6 +54,12 @@ thiserror = "=2.0.21"
 toml = { version = "=1.1.6", default-features = false, features = ["std", "serde", "parse"] }
 # Callout grammar (T2.1, spec 06). Already in the tree through the toml crates of Tauri.
 winnow = { version = "=1.0.4", default-features = false, features = ["std", "ascii"] }
+# PDF reports (T3.2, D-30, spec 06). Typst as a library, only dimo-report uses it. No cargo
+# features exist to trim it; size and advisory numbers in spikes/typst-report/RESULTS.md.
+# typst-layout is needed for `PagedDocument`, which typst 0.15 does not re-export.
+typst = { version = "=0.15.1" }
+typst-layout = { version = "=0.15.1" }
+typst-pdf = { version = "=0.15.1" }
 # Typed IPC (NFR-MNT-03). Only release candidates exist; tauri-specta pins specta exactly.
 specta = { version = "=2.0.0-rc.25", features = ["derive"] }
 specta-serde = "=0.0.12"
