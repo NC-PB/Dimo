@@ -11,6 +11,7 @@ use crate::decimal::{OptionalDecimal, decimal_option_schema, decimal_schema};
 use crate::derivation::ToleranceDerivation;
 use crate::geometry::OrientedBox;
 use crate::id::{CharId, SheetId};
+use crate::measurement::ResultType;
 use crate::number::DisplayNumber;
 
 /// What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01).
@@ -311,10 +312,12 @@ pub struct Characteristic {
     pub comment: String,
     /// Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It
     /// selects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.
-    /// Written as `null` when absent; a missing key (files written before T2.9a under schema
-    /// version 2) reads as `null`.
-    #[serde(default)]
+    /// Written as `null` when absent (files of schema version 2 without the key get `null` from
+    /// the migration to version 3).
     pub shorter_leg: Option<Length>,
+    /// How the characteristic is measured (FR-MEA-06, M3 decision 4). Changed only with
+    /// [`Command::SetResultType`](crate::command::Command::SetResultType).
+    pub result_type: ResultType,
 }
 
 impl Characteristic {
@@ -343,6 +346,20 @@ impl Characteristic {
             sources: Vec::new(),
             comment: String::new(),
             shorter_leg: None,
+            result_type: ResultType::Auto,
+        }
+    }
+
+    /// The result type in effect: [`ResultType::Variable`] or [`ResultType::Attribute`], never
+    /// [`ResultType::Auto`]. Auto is variable if the characteristic has an upper or lower
+    /// limit, otherwise attribute (M3 decision 4).
+    pub fn effective_result_type(&self) -> ResultType {
+        match self.result_type {
+            ResultType::Auto if self.upper_limit.is_some() || self.lower_limit.is_some() => {
+                ResultType::Variable
+            }
+            ResultType::Auto => ResultType::Attribute,
+            other => other,
         }
     }
 

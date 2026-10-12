@@ -53,7 +53,7 @@ pub use session::{OpenReport, ProjectSession};
 /// The `format` value in every manifest.
 pub const FORMAT_NAME: &str = "dimo-project";
 /// The schema version this build writes and the highest it reads (NFR-REL-03).
-pub const SCHEMA_VERSION: u32 = 2;
+pub const SCHEMA_VERSION: u32 = 3;
 /// File extension of project files, without the dot.
 pub const EXTENSION: &str = "dimo";
 /// Version of the Dimo build, written to the manifest.
@@ -328,6 +328,13 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
 
     let project: Project =
         serde_json::from_value(project).map_err(|e| ProjectError::json(PROJECT, &e))?;
+    // A hand edited file must not break the rules commands rely on (T3.1).
+    project
+        .check_measurements()
+        .map_err(|message| ProjectError::Json {
+            entry: PROJECT.to_owned(),
+            message: message.to_owned(),
+        })?;
     let audit = audit
         .into_iter()
         .enumerate()

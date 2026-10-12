@@ -368,6 +368,7 @@
   "field_origin": "Herkunft",
   "field_sources": "Quellbereich",
   "field_shorter_leg": "Kürzerer Schenkel",
+  "field_result_type": "Ergebnisart",
   "settings_tolerance": "Toleranzen des Projekts",
   "tolerance_settings_hint": "Änderungen gelten für ab jetzt gelesene Merkmale. Um bestehende anzupassen, diese auswählen und in der Seitenleiste neu auswerten.",
   "tolerance_general": "Allgemeintoleranz",

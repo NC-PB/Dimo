@@ -14,6 +14,9 @@ use dimo_core::{
     SizeRange, SourceRegion, TableClass, TableLookup, TableRef, TextSource, Timestamp,
     ToleranceDerivation, ToleranceSettings, Unit, UnitRounding, ZoneGrid,
 };
+use dimo_core::{
+    ReportFormat, ReportInfo, ReportKind, ResultCell, ResultEntry, ResultType, TemplateRef,
+};
 use dimo_io::project::{ImportedDrawing, ProjectFile, SheetInfo, import_drawing, sha256};
 
 /// Stand-in drawing file. `dimo-io` never parses it, it only stores and hashes it.
@@ -380,13 +383,134 @@ pub fn crate_dir() -> PathBuf {
     PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap_or_default())
 }
 
-/// A project file after [`edit`] and [`edit_v2`], with its audit log, drawing and custom table.
+/// Commands of data model version 3 (T3.1): samples added, edited, moved and deleted, results
+/// typed and cleared (variable with typed digits, attribute, comment), a result type, report
+/// info, a revision label and an issued report record.
+#[allow(clippy::too_many_lines, reason = "one linear script of test commands")]
+pub fn edit_v3(document: &mut Document, env: &mut FixedEnvironment) {
+    at(env, "2026-03-02T07:30:00Z");
+    document
+        .execute(Command::AddSamples { count: 3 }, env)
+        .unwrap();
+    let chars: Vec<_> = document
+        .project()
+        .characteristics
+        .iter()
+        .map(|c| c.id)
+        .collect();
+    let samples: Vec<_> = document.project().samples.iter().map(|s| s.id).collect();
+    let mut third = document.project().samples[2].clone();
+    third.serial = " SN-0042 ".into();
+    third.date = "2026-03-02".into();
+    third.gauges = "Caliper 0-150, plug gauge Ø8 H7".into();
+    third.comment = "first off".into();
+    let entry = |s: usize, c: usize, text: &str| ResultEntry {
+        sample: samples[s],
+        characteristic: chars[c],
+        text: text.into(),
+        comment: None,
+    };
+    let commands = vec![
+        Command::UpdateSample { sample: third },
+        Command::SetResultType {
+            ids: vec![chars[1]],
+            result_type: ResultType::Attribute,
+        },
+        Command::SetResults {
+            results: vec![
+                entry(0, 0, "8,02"),
+                entry(0, 1, "o"),
+                ResultEntry {
+                    comment: Some("near upper limit".into()),
+                    ..entry(0, 2, "30.0100")
+                },
+                entry(1, 0, "7.950"),
+                entry(1, 1, "x"),
+                ResultEntry {
+                    comment: Some("measured twice".into()),
+                    ..entry(1, 2, "\u{2212}30.5")
+                },
+                entry(2, 0, "8.1"),
+            ],
+        },
+        Command::ClearResults {
+            cells: vec![ResultCell {
+                sample: samples[1],
+                characteristic: chars[2],
+            }],
+        },
+        Command::MoveSamples {
+            ids: vec![samples[2]],
+            before: Some(samples[0]),
+        },
+        Command::AddSamples { count: 1 },
+    ];
+    for command in commands {
+        document.execute(command, env).unwrap();
+    }
+    let added = document.project().samples[3].id;
+    document
+        .execute(
+            Command::SetResults {
+                results: vec![ResultEntry {
+                    sample: added,
+                    characteristic: chars[0],
+                    text: "8".into(),
+                    comment: None,
+                }],
+            },
+            env,
+        )
+        .unwrap();
+    at(env, "2026-03-02T08:00:00Z");
+    let revision = document.project().current_revision;
+    let commands = vec![
+        Command::DeleteSamples { ids: vec![added] },
+        Command::UpdateReportInfo {
+            info: ReportInfo {
+                report_number: "IR-2026-007".into(),
+                report_date: "2026-03-02".into(),
+                company_name: "Example shop".into(),
+                inspected_by: "tester".into(),
+                approved_by: "Head of QA".into(),
+                remarks: "Lot of 3, all measured.\nSecond line.".into(),
+            },
+        },
+        Command::UpdateRevisionLabel {
+            revision,
+            label: "B".into(),
+        },
+        Command::Batch {
+            commands: vec![
+                Command::LockNumbering {
+                    reason: LockReason::IssuedReport,
+                },
+                Command::RecordIssuedReport {
+                    kind: ReportKind::InspectionReport,
+                    template: TemplateRef {
+                        id: "dimo-default".into(),
+                        version: 1,
+                    },
+                    format: ReportFormat::Pdf,
+                    output_sha256: sha256(b"report"),
+                },
+            ],
+        },
+    ];
+    for command in commands {
+        document.execute(command, env).unwrap();
+    }
+}
+
+/// A project file after [`edit`], [`edit_v2`] and [`edit_v3`], with its audit log, drawing and
+/// custom table.
 pub fn sample() -> ProjectFile {
     let mut env = env();
     let drawing = drawing(&mut env);
     let mut document = Document::new(Project::new(info(), drawing.revision.clone()));
     edit(&mut document, &mut env);
     edit_v2(&mut document, &mut env);
+    edit_v3(&mut document, &mut env);
     let mut file = ProjectFile::new(document.project().clone(), drawing.revision.imported_at);
     file.audit = document.take_audit();
     file.insert_drawing(drawing.bytes);

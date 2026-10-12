@@ -302,6 +302,8 @@ export function fieldLabel(field: CharacteristicField): string {
       return m.col_comment();
     case "shorter_leg":
       return m.field_shorter_leg();
+    case "result_type":
+      return m.field_result_type();
   }
 }
 
@@ -347,7 +349,8 @@ export function unitLabel(unit: Unit | null): string {
 
 /**
  * Translated text for the reasons of a refused command that need one, `null` for the others
- * (the caller then shows Rust's English message).
+ * (the caller then shows Rust's English message). The sample and result reasons of T3.1 get
+ * their texts with the measurement grid (T3.4, T3.5).
  */
 export function rejectReasonText(reason: RejectReason): string | null {
   switch (reason) {
@@ -368,6 +371,15 @@ export function rejectReasonText(reason: RejectReason): string | null {
     case "nothing_to_undo":
     case "nothing_to_redo":
     case "internal":
+    case "unknown_sample":
+    case "unknown_revision":
+    case "empty_serial":
+    case "duplicate_serial":
+    case "too_many_samples":
+    case "invalid_sample_count":
+    case "invalid_date":
+    case "invalid_result":
+    case "result_type_conflict":
       return null;
   }
 }

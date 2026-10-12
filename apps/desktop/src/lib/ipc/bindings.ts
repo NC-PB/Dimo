@@ -183,6 +183,13 @@ export type AppSettings = {
 	export: ExportPreferences,
 };
 
+/**  Result of a go/no go or visual check (FR-MEA-06). */
+export type AttributeValue = 
+/**  The requirement is met. */
+"ok" | 
+/**  The requirement is not met. */
+"not_ok";
+
 /**  Autosave state of the open project (NFR-REL-01). */
 export type Autosave = 
 /**  No changes since the project was opened or saved. */
@@ -374,7 +381,68 @@ after: ProjectSettings } |
 /**  State before. */
 before: ProjectInfo; 
 /**  State after. */
-after: ProjectInfo };
+after: ProjectInfo } | 
+/**  A sample was inserted at `index` of `Project::samples`. */
+{ type: "sample_inserted"; 
+/**  Position in the sample order. */
+index: number; 
+/**  The new sample. */
+sample: Sample } | 
+/**  The sample at `index` was removed. It has no results left. */
+{ type: "sample_removed"; 
+/**  Position before removal. */
+index: number; 
+/**  The removed sample. */
+sample: Sample } | 
+/**  Serial, date, inspector, gauges or comment of a sample changed. The ID stays the same. */
+{ type: "sample_changed"; 
+/**  State before. */
+before: Sample; 
+/**  State after. */
+after: Sample } | 
+/**  The sample order changed (same IDs, new order). Results follow the new order. */
+{ type: "sample_order_changed"; 
+/**  Sample IDs in the order before. */
+before: SampleId[]; 
+/**  Sample IDs in the order after. */
+after: SampleId[] } | 
+/**
+ *  The result of one cell was set, changed or cleared. `Project::results` stays sorted by
+ *  sample and placement order, so the position follows from the cell.
+ */
+{ type: "result_changed"; 
+/**  The cell. */
+cell: ResultCell; 
+/**  State before; `null` if the cell had no result. */
+before: MeasurementResult | null; 
+/**  State after; `null` if the result was cleared. */
+after: MeasurementResult | null } | 
+/**  Report header and approval data changed. */
+{ type: "report_info_changed"; 
+/**  State before. */
+before: ReportInfo; 
+/**  State after. */
+after: ReportInfo } | 
+/**  The label of a drawing revision changed. */
+{ type: "revision_label_changed"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  Label before. */
+before: string; 
+/**  Label after. */
+after: string } | 
+/**  An issued report record was inserted at `index` of `Project::issued_reports`. */
+{ type: "issued_report_inserted"; 
+/**  Position in the list. */
+index: number; 
+/**  The record. */
+report: IssuedReport } | 
+/**  The issued report record at `index` was removed. */
+{ type: "issued_report_removed"; 
+/**  Position before removal. */
+index: number; 
+/**  The record. */
+report: IssuedReport };
 
 /**  What made a change (FR-CHR-10). */
 export type ChangeSource = 
@@ -451,10 +519,15 @@ export type Characteristic = {
 	/**
 	 *  Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It
 	 *  selects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.
-	 *  Written as `null` when absent; a missing key (files written before T2.9a under schema
-	 *  version 2) reads as `null`.
+	 *  Written as `null` when absent (files of schema version 2 without the key get `null` from
+	 *  the migration to version 3).
 	 */
-	shorter_leg?: Length | null,
+	shorter_leg: Length | null,
+	/**
+	 *  How the characteristic is measured (FR-MEA-06, M3 decision 4). Changed only with
+	 *  [`Command::SetResultType`](crate::command::Command::SetResultType).
+	 */
+	result_type: ResultType,
 };
 
 /**  A field of a characteristic, to list what changed. */
@@ -498,7 +571,9 @@ export type CharacteristicField =
 /**  Comment. */
 "comment" | 
 /**  Shorter leg of an angle. */
-"shorter_leg";
+"shorter_leg" | 
+/**  Result type (FR-MEA-06). */
+"result_type";
 
 /**  What a characteristic describes (data model `Characteristic.kind`, FR-CHR-01). */
 export type CharacteristicKind = 
@@ -700,6 +775,81 @@ style: BalloonStyle } |
 { type: "update_project_info"; 
 /**  New data. */
 info: ProjectInfo } | 
+/**
+ *  Adds `count` samples (1 to 100) at the end of the sample order (FR-MEA-01, M3
+ *  decision 6). Serials continue the highest plain number, the inspector is the audit user
+ *  (D-27), other fields are empty. Refused above 500 samples per project.
+ */
+{ type: "add_samples"; 
+/**  How many samples to add. */
+count: number } | 
+/**
+ *  Replaces serial, date, inspector, gauges and comment of the sample with the same ID. The
+ *  serial is trimmed, must not be empty and must be unique; the date is `YYYY-MM-DD` or
+ *  empty (M3 decision 6).
+ */
+{ type: "update_sample"; 
+/**  The sample with its new values. */
+sample: Sample } | 
+/**  Deletes samples with their results (M3 decision 16). */
+{ type: "delete_samples"; 
+/**  Samples to delete. */
+ids: SampleId[] } | 
+/**  Moves samples in the column order. The moved samples keep their relative order. */
+{ type: "move_samples"; 
+/**  Samples to move. */
+ids: SampleId[]; 
+/**  Insert them before this sample; `null` moves them to the end. */
+before: SampleId | null } | 
+/**
+ *  Sets the results of cells from typed or pasted text, as one undo step (FR-MEA-02, M3
+ *  decisions 7 and 8). Each text is parsed by the effective result type of its
+ *  characteristic; empty text clears the cell. Refused as a whole if one text is invalid.
+ */
+{ type: "set_results"; 
+/**  Cells in order; a later entry for the same cell wins. */
+results: ResultEntry[] } | 
+/**  Clears the results of cells. Cells without a result are left as they are. */
+{ type: "clear_results"; 
+/**  Cells to clear. */
+cells: ResultCell[] } | 
+/**
+ *  Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
+ *  characteristic has results of the other type; nothing is converted.
+ */
+{ type: "set_result_type"; 
+/**  Characteristics to change. */
+ids: CharId[]; 
+/**  New result type. */
+result_type: ResultType } | 
+/**
+ *  Replaces the report header and approval data (M3 decision 1). The report date is
+ *  `YYYY-MM-DD` or empty.
+ */
+{ type: "update_report_info"; 
+/**  New data. */
+info: ReportInfo } | 
+/**  Sets the label of a drawing revision, trimmed (FR-RVC-04). */
+{ type: "update_revision_label"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  New label; empty if unknown. */
+label: string } | 
+/**
+ *  Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
+ *  are those of the current revision, the time comes from the environment clock. Exports
+ *  send it in a batch with [`Command::LockNumbering`], so lock and record are one undo
+ *  step.
+ */
+{ type: "record_issued_report"; 
+/**  Which document. */
+kind: ReportKind; 
+/**  The template it was rendered with. */
+template: TemplateRef; 
+/**  File format. */
+format: ReportFormat; 
+/**  SHA-256 of the written file. */
+output_sha256: Sha256Hex } | 
 /**  Several commands as one undo step. If one fails, none is applied. */
 { type: "batch"; 
 /**  Commands in order. */
@@ -1065,6 +1215,27 @@ export type InterpreterNote =
 /**  A fit pair such as `H7/g6` names two features; no limits. */
 "fit_pair";
 
+/**  Record of a report exported as issued (data model `IssuedReport`, D-23, M3 decision 17). */
+export type IssuedReport = {
+	/**  Which document. */
+	kind: ReportKind,
+	/**  The template it was rendered with. */
+	template: TemplateRef,
+	/**  The drawing revision that was current. */
+	revision: RevisionId,
+	/**  SHA-256 of that revision's drawing file (FR-DOC-07). */
+	drawing_sha256: Sha256Hex,
+	/**
+	 *  When it was exported, from the environment clock. Project data only; never written into
+	 *  the report file (FR-EXP-11).
+	 */
+	exported_at: Timestamp,
+	/**  SHA-256 of the written file. */
+	output_sha256: Sha256Hex,
+	/**  File format. */
+	format: ReportFormat,
+};
+
 /**  A background job ended. Event `job-finished`; sent once per job, after its last progress. */
 export type JobFinished = {
 	/**  The job. */
@@ -1148,6 +1319,25 @@ export type LockReason =
 "manual" | 
 /**  A report was exported as issued (D-23). */
 "issued_report";
+
+/**
+ *  The result of one sample for one characteristic (data model `Result`, M3 decision 1).
+ * 
+ *  Holds only what the user entered. The verdict is computed from the value and the current
+ *  limits of the characteristic (M3 decision 2).
+ */
+export type MeasurementResult = {
+	/**  The measured part. */
+	sample: SampleId,
+	/**  The characteristic. */
+	characteristic: CharId,
+	/**  The value. */
+	value: ResultValue,
+	/**  Where the value came from. */
+	source: ResultSource,
+	/**  Free text. */
+	comment: string,
+};
 
 /**  How a callout for several features (`4X`, `2 PL`) is numbered (FR-BAL-07, D-22). */
 export type MultiInstance = 
@@ -1342,6 +1532,17 @@ export type Project = {
 	numbering: Numbering,
 	/**  Project settings. */
 	settings: ProjectSettings,
+	/**  Measured parts; the order is the column order of the grid and the reports (FR-MEA-01). */
+	samples: Sample[],
+	/**
+	 *  Measurement results, at most one per sample and characteristic, sorted by sample order
+	 *  and then by characteristic placement order (M3 decision 1). Commands keep the order.
+	 */
+	results: MeasurementResult[],
+	/**  Report header and approval data (M3 decision 1). */
+	report_info: ReportInfo,
+	/**  Reports exported as issued, oldest first (D-23, M3 decision 17). */
+	issued_reports: IssuedReport[],
 };
 
 /**  Descriptive data of the inspected part. Empty text means not set. */
@@ -1552,6 +1753,24 @@ export type RejectReason =
 "invalid_move_target" | 
 /**  Quantity 0. */
 "zero_quantity" | 
+/**  A sample of the command does not exist. */
+"unknown_sample" | 
+/**  A drawing revision of the command does not exist. */
+"unknown_revision" | 
+/**  A sample serial is empty (M3 decision 6). */
+"empty_serial" | 
+/**  Another sample has this serial (M3 decision 6). */
+"duplicate_serial" | 
+/**  A project holds at most 500 samples (M3 decision 6). */
+"too_many_samples" | 
+/**  Samples are added 1 to 100 at once (M3 decision 6). */
+"invalid_sample_count" | 
+/**  A date is neither empty nor `YYYY-MM-DD`. */
+"invalid_date" | 
+/**  A typed result does not fit the result type of its characteristic (M3 decisions 7, 8). */
+"invalid_result" | 
+/**  The result type cannot change while results of the other type exist (M3 decision 4). */
+"result_type_conflict" | 
 /**  Undo without history. */
 "nothing_to_undo" | 
 /**  Redo without history. */
@@ -1559,12 +1778,102 @@ export type RejectReason =
 /**  Internal inconsistency; a bug. */
 "internal";
 
+/**  File format of a written report. */
+export type ReportFormat = 
+/**  PDF. */
+"pdf" | 
+/**  Spreadsheet (XLSX). */
+"xlsx";
+
+/**  Report header and approval data (M3 decision 1). All text; empty means not set. */
+export type ReportInfo = {
+	/**  Report number. */
+	report_number: string,
+	/**  Report date as `YYYY-MM-DD`, or empty. */
+	report_date: string,
+	/**  Name of the issuing company (the shop). */
+	company_name: string,
+	/**  Who inspected the parts. */
+	inspected_by: string,
+	/**  Who approved the report. */
+	approved_by: string,
+	/**  Remarks printed on the report. */
+	remarks: string,
+};
+
+/**  Which document a report is (FR-EXP-04). */
+export type ReportKind = 
+/**  Characteristic list with empty result columns for printing. */
+"check_sheet" | 
+/**  Results, verdicts and approval. */
+"inspection_report";
+
 /**  Language of column headers and fixed texts in exports, chosen per export (D-32). */
 export type ReportLanguage = 
 /**  English. */
 "en" | 
 /**  German. */
 "de";
+
+/**  One cell of the measurement grid: a sample and a characteristic. */
+export type ResultCell = {
+	/**  The sample (column). */
+	sample: SampleId,
+	/**  The characteristic (row). */
+	characteristic: CharId,
+};
+
+/**  One cell to set with [`Command::SetResults`](crate::command::Command::SetResults). */
+export type ResultEntry = {
+	/**  The sample (column). */
+	sample: SampleId,
+	/**  The characteristic (row). */
+	characteristic: CharId,
+	/**
+	 *  Text as typed or pasted, parsed by the effective result type of the characteristic
+	 *  ([`parse_result`]). Empty or white space only clears the cell.
+	 */
+	text: string,
+	/**
+	 *  New comment of the result; `null` keeps the current one (empty for a new result). Not
+	 *  used when the text clears the cell: the comment goes with the result.
+	 */
+	comment: string | null,
+};
+
+/**
+ *  Where a result came from (data model "Result source"). Serialized as `{ "type": "manual" }`
+ *  so the import source of M7 (file and row) can be added without a format change.
+ */
+export type ResultSource = 
+/**  Typed or pasted by the user. */
+{ type: "manual" };
+
+/**  How a characteristic is measured (FR-MEA-06, M3 decision 4). */
+export type ResultType = 
+/**  Variable if the characteristic has a limit, otherwise attribute (default). */
+"auto" | 
+/**  A measured value compared with the limits. */
+"variable" | 
+/**  OK or not OK, for go/no go and visual checks. */
+"attribute";
+
+/**
+ *  What was measured (FR-MEA-02, FR-MEA-06). Serialized as
+ *  `{ "type": "variable", "value": "12.10" }` or `{ "type": "attribute", "value": "ok" }`.
+ */
+export type ResultValue = 
+/**
+ *  A measured value in the unit of the characteristic, with the decimals as typed
+ *  (decision 8, rule 5).
+ */
+{ type: "variable"; 
+/**  The value; its scale is kept (`12.10` stays `12.10`). */
+value: string } | 
+/**  An attribute check. */
+{ type: "attribute"; 
+/**  OK or not OK. */
+value: AttributeValue };
 
 /**
  *  ID of a [`DrawingRevision`](crate::sheet::DrawingRevision).
@@ -1587,6 +1896,32 @@ export type Rotation =
 "deg180" | 
 /**  270 degrees clockwise (90 counterclockwise). */
 "deg270";
+
+/**  One measured part (data model `Sample`, FR-MEA-01). Empty text means not set. */
+export type Sample = {
+	/**  Stable ID, never changes. */
+	id: SampleId,
+	/**
+	 *  Serial number or other part identifier: trimmed, not empty, unique within the project
+	 *  (case sensitive, decision 6).
+	 */
+	serial: string,
+	/**  Measuring date as `YYYY-MM-DD`, or empty. */
+	date: string,
+	/**  Who measured the part (D-27). */
+	inspector: string,
+	/**  Gauges and instruments used, free text. */
+	gauges: string,
+	/**  Free text. */
+	comment: string,
+};
+
+/**
+ *  ID of a [`Sample`](crate::measurement::Sample), a measured part (FR-MEA-01).
+ * 
+ *  Serialized as a hyphenated lowercase UUID string.
+ */
+export type SampleId = string;
 
 /**  Drawing scale as printed in the title block, e.g. `1:2` (FR-DOC-05). */
 export type Scale = {
@@ -1758,6 +2093,14 @@ export type TableUse =
 "fit" | 
 /**  A table of the user, stored in the project. */
 "custom";
+
+/**  A report template, by id and version (FR-EXP-06, M3 decision 10). */
+export type TemplateRef = {
+	/**  Template id, e.g. `dimo-default`. */
+	id: string,
+	/**  Template version. */
+	version: number,
+};
 
 /**  Where the text of a source region came from (data model `SourceRegion`). */
 export type TextSource = 

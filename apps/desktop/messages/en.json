@@ -368,6 +368,7 @@
   "field_origin": "Origin",
   "field_sources": "Source region",
   "field_shorter_leg": "Shorter leg",
+  "field_result_type": "Result type",
   "settings_tolerance": "Tolerances of the project",
   "tolerance_settings_hint": "Changes apply to characteristics read from now on. To update existing ones, select them and use Re-interpret in the side panel.",
   "tolerance_general": "General tolerance",

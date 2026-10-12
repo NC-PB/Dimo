@@ -1,0 +1,564 @@
+---
+source: crates/dimo-io/tests/migrations.rs
+expression: migrated
+---
+{
+  "info": {
+    "part_number": "P-100",
+    "part_name": "Bracket",
+    "customer": "Example customer",
+    "order_reference": "PO 4711"
+  },
+  "revisions": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "label": "B",
+      "file_name": "part-100.pdf",
+      "sha256": "afeeeee7d0ae4766925fdc4e895b12d25a34a0f6f1b8a3d9ced882ebab4004f6",
+      "imported_at": "2026-03-01T08:00:00Z",
+      "sheets": [
+        {
+          "id": "00000000-0000-0000-0000-000000000002",
+          "index": 0,
+          "size": {
+            "width": 1190.55,
+            "height": 841.89
+          },
+          "rotation": "deg0",
+          "kind": "vector_text",
+          "raster_dpi": null,
+          "unit": "mm",
+          "scale": {
+            "drawing": 1,
+            "actual": 1
+          },
+          "zone_grid": {
+            "frame": {
+              "origin": {
+                "x": 20.0,
+                "y": 20.0
+              },
+              "size": {
+                "width": 1150.55,
+                "height": 801.89
+              }
+            },
+            "column_labels": [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8"
+            ],
+            "row_labels": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "F"
+            ]
+          },
+          "views": [
+            {
+              "label": "A-A",
+              "rect": {
+                "origin": {
+                  "x": 40.0,
+                  "y": 40.0
+                },
+                "size": {
+                  "width": 400.0,
+                  "height": 300.25
+                }
+              }
+            },
+            {
+              "label": "",
+              "rect": {
+                "origin": {
+                  "x": 500.0,
+                  "y": 40.0
+                },
+                "size": {
+                  "width": 0.3333333333333333,
+                  "height": 300.0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000003",
+          "index": 1,
+          "size": {
+            "width": 595.276,
+            "height": 841.89
+          },
+          "rotation": "deg0",
+          "kind": "raster",
+          "raster_dpi": null,
+          "unit": "mm",
+          "scale": {
+            "drawing": 1,
+            "actual": 1
+          },
+          "zone_grid": null,
+          "views": []
+        }
+      ]
+    }
+  ],
+  "current_revision": "00000000-0000-0000-0000-000000000001",
+  "characteristics": [
+    {
+      "id": "00000000-0000-0000-0000-000000000004",
+      "number": "1",
+      "kind": "diameter",
+      "requirement_text": "Ø8 ±0.1",
+      "nominal": "8.000",
+      "unit": "mm",
+      "upper_dev": "0.1",
+      "lower_dev": "-0.1",
+      "upper_limit": "8.100",
+      "lower_limit": "7.900",
+      "fit": null,
+      "derivation": {
+        "rule": {
+          "rule": "manual"
+        },
+        "draft": false,
+        "hints": [],
+        "conversion": null
+      },
+      "quantity": 1,
+      "classification": "none",
+      "inspection": {
+        "method": "",
+        "gauge": "",
+        "sampling": "",
+        "frequency": ""
+      },
+      "inspect": true,
+      "status": "accepted",
+      "origin": "manual",
+      "sources": [
+        {
+          "sheet": "00000000-0000-0000-0000-000000000002",
+          "region": {
+            "center": {
+              "x": 60.25,
+              "y": 200.5
+            },
+            "size": {
+              "width": 33.3,
+              "height": 7.1
+            },
+            "angle": 0.1
+          },
+          "text_source": {
+            "type": "manual"
+          },
+          "raw_text": null
+        }
+      ],
+      "comment": "",
+      "shorter_leg": null,
+      "result_type": "auto"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000000000a",
+      "number": "1A",
+      "kind": "diameter",
+      "requirement_text": "Ø30 H7 +0.0203 0",
+      "nominal": "30",
+      "unit": "mm",
+      "upper_dev": "0.0203",
+      "lower_dev": "0",
+      "upper_limit": "30.0203",
+      "lower_limit": "30",
+      "fit": "H7",
+      "derivation": {
+        "rule": {
+          "rule": "explicit"
+        },
+        "draft": false,
+        "hints": [
+          {
+            "hint": "fit_deviations_differ",
+            "fit": "H7",
+            "table_upper_dev": "0.021",
+            "table_lower_dev": "0"
+          }
+        ],
+        "conversion": null
+      },
+      "quantity": 2,
+      "classification": "none",
+      "inspection": {
+        "method": "",
+        "gauge": "",
+        "sampling": "",
+        "frequency": ""
+      },
+      "inspect": true,
+      "status": "accepted",
+      "origin": "box_select",
+      "sources": [
+        {
+          "sheet": "00000000-0000-0000-0000-000000000002",
+          "region": {
+            "center": {
+              "x": 700.5,
+              "y": 400.0
+            },
+            "size": {
+              "width": 60.0,
+              "height": 9.5
+            },
+            "angle": 90.0
+          },
+          "text_source": {
+            "type": "pdf_text"
+          },
+          "raw_text": "Ø30 H7 +0.0203 0"
+        }
+      ],
+      "comment": "",
+      "shorter_leg": null,
+      "result_type": "attribute"
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000006",
+      "number": "2",
+      "kind": "linear",
+      "requirement_text": "",
+      "nominal": "30.0203",
+      "unit": "mm",
+      "upper_dev": null,
+      "lower_dev": null,
+      "upper_limit": "30.3203",
+      "lower_limit": "29.7203",
+      "fit": null,
+      "derivation": {
+        "rule": {
+          "rule": "general",
+          "lookup": {
+            "table": {
+              "id": "iso-2768-1",
+              "version": 1
+            },
+            "part": "linear",
+            "class": "m",
+            "range": {
+              "min": {
+                "value": "6",
+                "inclusive": false
+              },
+              "max": {
+                "value": "30",
+                "inclusive": true
+              }
+            }
+          }
+        },
+        "draft": true,
+        "hints": [],
+        "conversion": null
+      },
+      "quantity": 1,
+      "classification": "none",
+      "inspection": {
+        "method": "",
+        "gauge": "",
+        "sampling": "",
+        "frequency": ""
+      },
+      "inspect": true,
+      "status": "accepted",
+      "origin": "manual",
+      "sources": [
+        {
+          "sheet": "00000000-0000-0000-0000-000000000002",
+          "region": {
+            "center": {
+              "x": 260.0,
+              "y": 0.3333333333333333
+            },
+            "size": {
+              "width": 33.3,
+              "height": 7.1
+            },
+            "angle": 0.1
+          },
+          "text_source": {
+            "type": "manual"
+          },
+          "raw_text": null
+        }
+      ],
+      "comment": "check twice",
+      "shorter_leg": null,
+      "result_type": "auto"
+    }
+  ],
+  "balloons": [
+    {
+      "id": "00000000-0000-0000-0000-000000000005",
+      "characteristic": "00000000-0000-0000-0000-000000000004",
+      "sheet": "00000000-0000-0000-0000-000000000002",
+      "position": {
+        "x": 0.30000000000000004,
+        "y": 1e-7
+      },
+      "anchor": {
+        "x": 78.95,
+        "y": 200.6
+      },
+      "style": {
+        "shape": null,
+        "size_mm": null,
+        "outline_mm": null,
+        "outline_color": null,
+        "fill_color": null,
+        "text_color": null,
+        "leader": null
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000007",
+      "characteristic": "00000000-0000-0000-0000-000000000006",
+      "sheet": "00000000-0000-0000-0000-000000000002",
+      "position": {
+        "x": 300.0,
+        "y": 0.3333333333333333
+      },
+      "anchor": {
+        "x": 278.7,
+        "y": 0.43333333333333335
+      },
+      "style": {
+        "shape": null,
+        "size_mm": null,
+        "outline_mm": null,
+        "outline_color": null,
+        "fill_color": null,
+        "text_color": null,
+        "leader": null
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000000000b",
+      "characteristic": "00000000-0000-0000-0000-00000000000a",
+      "sheet": "00000000-0000-0000-0000-000000000002",
+      "position": {
+        "x": 720.0,
+        "y": 380.0
+      },
+      "anchor": {
+        "x": 700.5,
+        "y": 400.0
+      },
+      "style": {
+        "shape": null,
+        "size_mm": null,
+        "outline_mm": null,
+        "outline_color": null,
+        "fill_color": null,
+        "text_color": null,
+        "leader": null
+      }
+    }
+  ],
+  "numbering": {
+    "lock": {
+      "reason": "manual",
+      "locked_at": "2026-03-01T08:09:59.999Z",
+      "locked_by": "tester",
+      "highest_number": 2,
+      "given": [
+        "1A"
+      ]
+    }
+  },
+  "settings": {
+    "balloon_style": {
+      "shape": "circle",
+      "size_mm": 7.0,
+      "outline_mm": 0.35,
+      "outline_color": "#0057B8",
+      "fill_color": "#FFFFFF",
+      "text_color": "#000000",
+      "leader": true
+    },
+    "numbering": {
+      "strategy": "sheet_zone",
+      "multi_instance": "sub_number",
+      "insert_when_locked": "letter_suffix"
+    },
+    "tolerance": {
+      "general": {
+        "table": {
+          "id": "iso-2768-1",
+          "version": 1
+        },
+        "class": "m"
+      },
+      "drawing_rule": {
+        "table": {
+          "id": "shop-table",
+          "version": 1
+        },
+        "class": "a"
+      },
+      "decimal_rules": [
+        {
+          "places": 1,
+          "tolerance": "0.1"
+        },
+        {
+          "places": 2,
+          "tolerance": "0.05"
+        }
+      ],
+      "unit_rounding": {
+        "mm_places": 3,
+        "inch_places": 4
+      },
+      "custom_tables": [
+        {
+          "table": {
+            "id": "shop-table",
+            "version": 1
+          },
+          "sha256": "6f1bf96d05bafbfebcc5543a1a78fdb78fb4649669d5053037c0af3dd28bfc1a"
+        }
+      ]
+    }
+  },
+  "samples": [
+    {
+      "id": "00000000-0000-0000-0000-00000000000e",
+      "serial": "SN-0042",
+      "date": "2026-03-02",
+      "inspector": "tester",
+      "gauges": "Caliper 0-150, plug gauge Ø8 H7",
+      "comment": "first off"
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000000000c",
+      "serial": "1",
+      "date": "",
+      "inspector": "tester",
+      "gauges": "",
+      "comment": ""
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000000000d",
+      "serial": "2",
+      "date": "",
+      "inspector": "tester",
+      "gauges": "",
+      "comment": ""
+    }
+  ],
+  "results": [
+    {
+      "sample": "00000000-0000-0000-0000-00000000000e",
+      "characteristic": "00000000-0000-0000-0000-000000000004",
+      "value": {
+        "type": "variable",
+        "value": "8.1"
+      },
+      "source": {
+        "type": "manual"
+      },
+      "comment": ""
+    },
+    {
+      "sample": "00000000-0000-0000-0000-00000000000c",
+      "characteristic": "00000000-0000-0000-0000-000000000004",
+      "value": {
+        "type": "variable",
+        "value": "8.02"
+      },
+      "source": {
+        "type": "manual"
+      },
+      "comment": ""
+    },
+    {
+      "sample": "00000000-0000-0000-0000-00000000000c",
+      "characteristic": "00000000-0000-0000-0000-00000000000a",
+      "value": {
+        "type": "attribute",
+        "value": "ok"
+      },
+      "source": {
+        "type": "manual"
+      },
+      "comment": ""
+    },
+    {
+      "sample": "00000000-0000-0000-0000-00000000000c",
+      "characteristic": "00000000-0000-0000-0000-000000000006",
+      "value": {
+        "type": "variable",
+        "value": "30.0100"
+      },
+      "source": {
+        "type": "manual"
+      },
+      "comment": "near upper limit"
+    },
+    {
+      "sample": "00000000-0000-0000-0000-00000000000d",
+      "characteristic": "00000000-0000-0000-0000-000000000004",
+      "value": {
+        "type": "variable",
+        "value": "7.950"
+      },
+      "source": {
+        "type": "manual"
+      },
+      "comment": ""
+    },
+    {
+      "sample": "00000000-0000-0000-0000-00000000000d",
+      "characteristic": "00000000-0000-0000-0000-00000000000a",
+      "value": {
+        "type": "attribute",
+        "value": "not_ok"
+      },
+      "source": {
+        "type": "manual"
+      },
+      "comment": ""
+    }
+  ],
+  "report_info": {
+    "report_number": "IR-2026-007",
+    "report_date": "2026-03-02",
+    "company_name": "Example shop",
+    "inspected_by": "tester",
+    "approved_by": "Head of QA",
+    "remarks": "Lot of 3, all measured.\nSecond line."
+  },
+  "issued_reports": [
+    {
+      "kind": "inspection_report",
+      "template": {
+        "id": "dimo-default",
+        "version": 1
+      },
+      "revision": "00000000-0000-0000-0000-000000000001",
+      "drawing_sha256": "afeeeee7d0ae4766925fdc4e895b12d25a34a0f6f1b8a3d9ced882ebab4004f6",
+      "exported_at": "2026-03-02T08:00:00Z",
+      "output_sha256": "845e91831319e89c4d656bdb80c278ac09a7230d61e5dfd2e1b1fbb436ac8917",
+      "format": "pdf"
+    }
+  ]
+}

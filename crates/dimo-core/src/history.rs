@@ -90,6 +90,8 @@ pub enum CharacteristicField {
     Comment,
     /// Shorter leg of an angle.
     ShorterLeg,
+    /// Result type (FR-MEA-06).
+    ResultType,
 }
 
 /// The fields that differ between two states of a characteristic.
@@ -134,6 +136,7 @@ pub fn changed_fields(before: &Characteristic, after: &Characteristic) -> Vec<Ch
         (F::Sources, before.sources != after.sources),
         (F::Comment, before.comment != after.comment),
         (F::ShorterLeg, before.shorter_leg != after.shorter_leg),
+        (F::ResultType, before.result_type != after.result_type),
     ];
     checks
         .into_iter()
@@ -248,7 +251,9 @@ fn source(command: &Command, id: CharId, created: bool) -> Option<ChangeSource> 
                 ChangeSource::Manual
             })
         }
-        Command::DeleteCharacteristics { ids } | Command::MoveCharacteristics { ids, .. }
+        Command::DeleteCharacteristics { ids }
+        | Command::MoveCharacteristics { ids, .. }
+        | Command::SetResultType { ids, .. }
             if ids.contains(&id) =>
         {
             Some(ChangeSource::Manual)

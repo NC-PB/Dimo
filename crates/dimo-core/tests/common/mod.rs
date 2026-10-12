@@ -112,6 +112,27 @@ pub fn check_invariants(project: &Project) {
         assert!(project.characteristic(b.characteristic).is_some());
         assert!(project.sheet(b.sheet).is_some());
     }
+    // M3 decisions 1 and 6: unique trimmed serials, at most 500 samples, results of existing
+    // cells, at most one per cell, sorted by sample order then placement order.
+    assert!(project.samples.len() <= dimo_core::MAX_SAMPLES);
+    let mut serials: Vec<&str> = project.samples.iter().map(|s| s.serial.as_str()).collect();
+    assert!(serials.iter().all(|s| !s.is_empty() && s.trim() == *s));
+    serials.sort_unstable();
+    serials.dedup();
+    assert_eq!(serials.len(), project.samples.len(), "serials are unique");
+    let key = |r: &dimo_core::MeasurementResult| {
+        let sample = project.samples.iter().position(|s| s.id == r.sample);
+        let char = project
+            .characteristics
+            .iter()
+            .position(|c| c.id == r.characteristic);
+        (sample.unwrap(), char.unwrap())
+    };
+    let keys: Vec<(usize, usize)> = project.results.iter().map(key).collect();
+    assert!(
+        keys.windows(2).all(|w| w[0] < w[1]),
+        "results sorted, one per cell: {keys:?}"
+    );
 }
 
 /// A deterministic environment, after the fixture consumed its IDs.

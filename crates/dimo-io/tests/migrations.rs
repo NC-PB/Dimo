@@ -123,38 +123,65 @@ fn current_fixture_is_written_byte_identical() {
     }
 }
 
-/// T2.4 acceptance: the version 1 fixture opens, saves as version 2, and saving the reopened
-/// file again gives identical bytes (NFR-REL-03, FR-EXP-11).
+/// T2.4 and T3.1 acceptance: every older fixture opens, saves as the current version, and
+/// saving the reopened file again gives identical bytes (NFR-REL-03, FR-EXP-11).
 #[test]
-fn version_1_saves_as_version_2_and_then_byte_identical() {
-    let loaded = ProjectFile::from_folder(&fixture(1)).unwrap();
-    assert_eq!(loaded.migrated_from(), Some(1));
-    let first = loaded.file.to_zip().unwrap();
-    let reopened = ProjectFile::from_zip(&first).unwrap();
-    assert_eq!(reopened.manifest.schema_version, 2);
-    assert_eq!(reopened.migrated_from(), None);
-    assert_eq!(reopened.file, loaded.file);
-    let second = reopened.file.to_zip().unwrap();
-    assert!(first == second, "second save differs from the first");
-
-    // Folder mode as well.
-    let out = tempfile::tempdir().unwrap();
-    let (a, b) = (out.path().join("a"), out.path().join("b"));
-    loaded.file.save(&a, Layout::Folder).unwrap();
-    ProjectFile::from_folder(&a)
-        .unwrap()
-        .file
-        .save(&b, Layout::Folder)
-        .unwrap();
-    for name in [MANIFEST, "project.json", "audit.jsonl"] {
+fn older_versions_save_as_current_and_then_byte_identical() {
+    for version in 1..SCHEMA_VERSION {
+        let loaded = ProjectFile::from_folder(&fixture(version)).unwrap();
+        assert_eq!(loaded.migrated_from(), Some(version));
+        let first = loaded.file.to_zip().unwrap();
+        let reopened = ProjectFile::from_zip(&first).unwrap();
+        assert_eq!(reopened.manifest.schema_version, SCHEMA_VERSION);
+        assert_eq!(reopened.migrated_from(), None);
+        assert_eq!(reopened.file, loaded.file);
+        let second = reopened.file.to_zip().unwrap();
         assert!(
-            fs::read(a.join(name)).unwrap() == fs::read(b.join(name)).unwrap(),
-            "{name} differs"
+            first == second,
+            "v{version}: second save differs from the first"
+        );
+
+        // Folder mode as well.
+        let out = tempfile::tempdir().unwrap();
+        let (a, b) = (out.path().join("a"), out.path().join("b"));
+        loaded.file.save(&a, Layout::Folder).unwrap();
+        ProjectFile::from_folder(&a)
+            .unwrap()
+            .file
+            .save(&b, Layout::Folder)
+            .unwrap();
+        for name in [MANIFEST, "project.json", "audit.jsonl"] {
+            assert!(
+                fs::read(a.join(name)).unwrap() == fs::read(b.join(name)).unwrap(),
+                "v{version}: {name} differs"
+            );
+        }
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(a.join(MANIFEST)).unwrap()).unwrap();
+        assert_eq!(manifest["schema_version"], SCHEMA_VERSION);
+    }
+}
+
+/// What the version 2 to 3 migration makes of the version 2 data (T3.1): no samples, results
+/// or issued reports, empty report info, result type `auto`, and the shorter leg of T2.9a kept.
+#[test]
+fn version_2_migration_fills_the_new_fields() {
+    let v2: serde_json::Value =
+        serde_json::from_slice(&fs::read(fixture(2).join("project.json")).unwrap()).unwrap();
+    let project = ProjectFile::from_folder(&fixture(2)).unwrap().file.project;
+    assert!(project.samples.is_empty() && project.results.is_empty());
+    assert_eq!(project.issued_reports.len(), 0);
+    assert_eq!(project.report_info, dimo_core::ReportInfo::default());
+    let characteristics = v2["characteristics"].as_array().unwrap();
+    assert_eq!(characteristics.len(), project.characteristics.len());
+    for (old, new) in characteristics.iter().zip(&project.characteristics) {
+        assert_eq!(new.result_type, dimo_core::ResultType::Auto);
+        assert_eq!(
+            serde_json::to_value(new.shorter_leg).unwrap(),
+            old["shorter_leg"],
+            "shorter leg kept"
         );
     }
-    let manifest: serde_json::Value =
-        serde_json::from_slice(&fs::read(a.join(MANIFEST)).unwrap()).unwrap();
-    assert_eq!(manifest["schema_version"], 2);
 }
 
 /// What the version 1 to 2 migration makes of the version 1 data (T2.4).

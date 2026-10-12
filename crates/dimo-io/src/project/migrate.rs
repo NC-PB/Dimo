@@ -23,43 +23,110 @@ pub struct Migration {
 }
 
 /// All migrations, oldest first. `MIGRATIONS[i].from == i + 1`.
-pub const MIGRATIONS: &[Migration] = &[Migration {
-    from: 1,
-    project: v1::project,
-    audit_entry: v1::audit_entry,
-}];
+pub const MIGRATIONS: &[Migration] = &[
+    Migration {
+        from: 1,
+        project: v1::project,
+        audit_entry: v1::audit_entry,
+    },
+    Migration {
+        from: 2,
+        project: v2::project,
+        audit_entry: v2::audit_entry,
+    },
+];
+
+fn object<'a>(
+    value: &'a mut Value,
+    what: &str,
+) -> std::result::Result<&'a mut serde_json::Map<String, Value>, String> {
+    value
+        .as_object_mut()
+        .ok_or_else(|| format!("{what} is not an object"))
+}
+
+fn array<'a>(value: &'a mut Value, what: &str) -> std::result::Result<&'a mut Vec<Value>, String> {
+    value
+        .as_array_mut()
+        .ok_or_else(|| format!("{what} is not an array"))
+}
+
+fn field<'a>(
+    map: &'a mut serde_json::Map<String, Value>,
+    key: &str,
+) -> std::result::Result<&'a mut Value, String> {
+    map.get_mut(key).ok_or_else(|| format!("missing {key}"))
+}
+
+/// Version 2 to 3 (T3.1, M3 decision 1): samples, results, report info and issued reports;
+/// characteristics get a result type. `shorter_leg` (T2.9a, optional under version 2) is kept,
+/// or written as `null` where a version 2 file has no key.
+mod v2 {
+    use serde_json::{Value, json};
+
+    use super::{array, field, object};
+
+    type Result = std::result::Result<(), String>;
+
+    /// Result type `auto` (M3 decision 4); `shorter_leg` kept or `null`.
+    fn characteristic(value: &mut Value) -> Result {
+        let c = object(value, "characteristic")?;
+        c.entry("shorter_leg").or_insert(Value::Null);
+        c.insert("result_type".into(), json!("auto"));
+        Ok(())
+    }
+
+    /// No samples, results or issued reports; empty report info.
+    pub(super) fn project(value: &mut Value) -> Result {
+        let p = object(value, "project")?;
+        for c in array(field(p, "characteristics")?, "characteristics")? {
+            characteristic(c)?;
+        }
+        p.insert("samples".into(), json!([]));
+        p.insert("results".into(), json!([]));
+        p.insert(
+            "report_info".into(),
+            json!({
+                "report_number": "",
+                "report_date": "",
+                "company_name": "",
+                "inspected_by": "",
+                "approved_by": "",
+                "remarks": ""
+            }),
+        );
+        p.insert("issued_reports".into(), json!([]));
+        Ok(())
+    }
+
+    /// Characteristic states in changes get the result type. Commands of version 2 keep their
+    /// shape: no command holds a characteristic.
+    pub(super) fn audit_entry(value: &mut Value) -> Result {
+        let entry = object(value, "audit entry")?;
+        for change in array(field(entry, "changes")?, "changes")? {
+            let c = object(change, "change")?;
+            let keys: &[&str] = match c.get("type").and_then(Value::as_str) {
+                Some("characteristic_inserted" | "characteristic_removed") => &["characteristic"],
+                Some("characteristic_changed") => &["before", "after"],
+                Some(_) => &[],
+                None => return Err("change without type".into()),
+            };
+            for key in keys {
+                characteristic(field(c, key)?)?;
+            }
+        }
+        Ok(())
+    }
+}
 
 /// Version 1 to 2 (T2.4): structured display numbers, tolerance derivations, zone grids and
 /// views, numbering and tolerance settings, insert anchors.
 mod v1 {
-    use serde_json::{Map, Value, json};
+    use serde_json::{Value, json};
+
+    use super::{array, field, object};
 
     type Result = std::result::Result<(), String>;
-
-    fn object<'a>(
-        value: &'a mut Value,
-        what: &str,
-    ) -> std::result::Result<&'a mut Map<String, Value>, String> {
-        value
-            .as_object_mut()
-            .ok_or_else(|| format!("{what} is not an object"))
-    }
-
-    fn array<'a>(
-        value: &'a mut Value,
-        what: &str,
-    ) -> std::result::Result<&'a mut Vec<Value>, String> {
-        value
-            .as_array_mut()
-            .ok_or_else(|| format!("{what} is not an array"))
-    }
-
-    fn field<'a>(
-        map: &'a mut Map<String, Value>,
-        key: &str,
-    ) -> std::result::Result<&'a mut Value, String> {
-        map.get_mut(key).ok_or_else(|| format!("missing {key}"))
-    }
 
     /// `number` becomes the display number text; limits that exist were typed by hand, so their
     /// derivation is `manual` (FR-TOL-08).
@@ -360,6 +427,10 @@ mod tests {
                 "changes": changes.clone()
             });
             (MIGRATIONS[0].audit_entry)(&mut entry).unwrap();
+            // The later steps bring it to the current types.
+            for step in &MIGRATIONS[1..] {
+                (step.audit_entry)(&mut entry).unwrap();
+            }
             let typed: dimo_core::AuditEntry = serde_json::from_value(entry.clone())
                 .unwrap_or_else(|e| panic!("{action}: {e}\n{entry:#}"));
             assert_eq!(typed.changes.len(), 7);
@@ -385,6 +456,66 @@ mod tests {
                 "after": { "lock": { "insert_policy": "other" } } }]
         });
         assert!((MIGRATIONS[0].audit_entry)(&mut entry).is_err());
+    }
+
+    /// Version 2 to 3: characteristics in the project and in audit changes get `result_type`
+    /// and keep `shorter_leg` (T2.9a), or get `null` without the key; the project gets the new
+    /// lists and the empty report info.
+    #[test]
+    fn version_2_characteristics_and_audit_entries_migrate() {
+        let mut v2_char = v1_characteristic(1, true);
+        {
+            let c = v2_char.as_object_mut().unwrap();
+            c.insert("number".into(), json!("1"));
+            c.insert("derivation".into(), Value::Null);
+        }
+        let mut with_leg = v2_char.clone();
+        with_leg["shorter_leg"] = json!({ "value": "40", "unit": "mm" });
+
+        let mut entry = json!({
+            "timestamp": "2026-03-01T08:00:00Z", "user": "t",
+            "action": { "type": "command", "command": { "type": "unlock_numbering" } },
+            "changes": [
+                { "type": "characteristic_inserted", "index": 0, "characteristic": v2_char.clone() },
+                { "type": "characteristic_changed", "before": v2_char.clone(),
+                  "after": with_leg.clone() },
+                { "type": "characteristic_removed", "index": 0, "characteristic": with_leg.clone() },
+                { "type": "order_changed", "before": [], "after": [] }
+            ]
+        });
+        (MIGRATIONS[1].audit_entry)(&mut entry).unwrap();
+        let typed: dimo_core::AuditEntry =
+            serde_json::from_value(entry.clone()).unwrap_or_else(|e| panic!("{e}\n{entry:#}"));
+        assert_eq!(typed.changes.len(), 4);
+        for (path, leg) in [
+            (&entry["changes"][0]["characteristic"], Value::Null),
+            (&entry["changes"][1]["before"], Value::Null),
+            (
+                &entry["changes"][1]["after"],
+                with_leg["shorter_leg"].clone(),
+            ),
+            (
+                &entry["changes"][2]["characteristic"],
+                with_leg["shorter_leg"].clone(),
+            ),
+        ] {
+            assert_eq!(path["result_type"], "auto");
+            assert_eq!(path["shorter_leg"], leg);
+        }
+
+        let mut project = json!({ "characteristics": [v2_char, with_leg] });
+        (MIGRATIONS[1].project)(&mut project).unwrap();
+        assert_eq!(project["characteristics"][1]["shorter_leg"]["value"], "40");
+        assert!(project["characteristics"][0]["shorter_leg"].is_null());
+        assert_eq!(project["samples"], json!([]));
+        assert_eq!(project["results"], json!([]));
+        assert_eq!(project["issued_reports"], json!([]));
+        let info: dimo_core::ReportInfo =
+            serde_json::from_value(project["report_info"].clone()).unwrap();
+        assert_eq!(info, dimo_core::ReportInfo::default());
+
+        let mut broken = json!({ "timestamp": "x", "changes": [{ "index": 0 }] });
+        assert!((MIGRATIONS[1].audit_entry)(&mut broken).is_err());
     }
 
     #[test]
