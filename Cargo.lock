@@ -1213,6 +1213,7 @@ dependencies = [
  "dimo-core",
  "insta",
  "rust_decimal",
+ "rust_xlsxwriter",
  "schemars 1.2.2",
  "serde",
  "serde_json",
@@ -1223,6 +1224,7 @@ dependencies = [
  "typst",
  "typst-layout",
  "typst-pdf",
+ "zip",
 ]
 
 [[package]]

@@ -8,11 +8,13 @@
 //!
 //! [`ReportModel`] (T3.6) builds that data from a project and its evaluation: header, samples,
 //! rows with formatted values and verdicts, summaries, signature block and flags.
-//! [`render_report`] renders a model with the matching document of a template set.
+//! [`render_report`] renders a model with the matching document of a template set;
+//! [`render_xlsx`] writes the same model as a spreadsheet (T3.7).
 
 pub mod model;
 mod template;
 mod world;
+mod xlsx;
 
 use std::fmt::{self, Write as _};
 use std::ops::Range;
@@ -29,6 +31,7 @@ pub use model::{
     SAMPLES_PER_BLOCK, data_schema_json, document_name,
 };
 pub use template::{DATA_FILE, DocumentSpec, MANIFEST, TemplateSet, bundled_ids};
+pub use xlsx::render_xlsx;
 
 use world::SandboxWorld;
 
@@ -135,6 +138,19 @@ pub enum ReportError {
     /// Typst could not compile the template; the first error is shown.
     #[error("report template error: {}", first(.0))]
     Compile(Vec<Diagnostic>),
+    /// The template has no label text with this key in the report language.
+    #[error("report template {template} has no label {key} for language {language}")]
+    MissingLabel {
+        /// Template id.
+        template: String,
+        /// Language code.
+        language: &'static str,
+        /// Missing key, with its table for nested labels.
+        key: String,
+    },
+    /// The spreadsheet could not be written.
+    #[error("XLSX export failed: {0}")]
+    Xlsx(#[from] rust_xlsxwriter::XlsxError),
     /// Typst could not write the PDF.
     #[error("PDF export failed: {}", first(.0))]
     Pdf(Vec<Diagnostic>),

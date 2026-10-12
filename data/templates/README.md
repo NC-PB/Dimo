@@ -63,6 +63,15 @@ page with the characteristic columns repeated. Table header rows repeat on every
 Marks: pass is a check mark, fail a cross with a bold cell frame, not evaluated a hollow circle,
 an open group verdict a short bar, a missing result an empty cell.
 
+## Spreadsheet reports
+
+`dimo_report::render_xlsx` writes the same data as an XLSX workbook, from the label file of the
+set (`labels` in `template.toml` is required for it). It is built in code, not from the Typst
+files; spreadsheet templates are M7. The sheet is named like the document ("Check sheet",
+"Inspection report", "Prüfblatt", "Prüfbericht"). Result values are number cells with the typed
+decimals; the verdict is shown by a mark in the number format (check, cross, hollow circle) and
+by the cell fill, so it reads in greyscale.
+
 ## Data format
 
 Dimo writes one JSON object to `/data.json`. Its JSON Schema is
