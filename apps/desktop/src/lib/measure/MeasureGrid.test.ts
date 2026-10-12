@@ -402,7 +402,7 @@ describe("measurement grid (T3.5)", () => {
     select.dispatchEvent(new Event("change", { bubbles: true }));
     await vi.waitFor(() => {
       expect(target.querySelector('[data-testid="grid-notice"]')?.textContent).toContain(
-        "results of the other type",
+        "Clear them first",
       );
     });
     expect(rust.commands).toEqual([
