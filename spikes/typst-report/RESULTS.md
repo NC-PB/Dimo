@@ -5,7 +5,10 @@ Spike code: `src/sandbox.rs` (World and render function), `src/main.rs` (driver)
 `report.typ` (table with repeated header from `/data.json`). Run it with
 `cargo run --release -- render <rows> <samples> <out.pdf>` and `cargo run --release -- sandbox`.
 
-**Verdict: stop at the gate.** Determinism, sandbox, licenses and render time are fine. The
+**Outcome:** the owner accepted Typst on 2026-10-12 (option 1 below). `dimo-report` now renders
+with it (T3.2 step 2). The size tuned profile numbers are in the last section.
+
+**Verdict of the spike: stop at the gate.** Determinism, sandbox, licenses and render time are fine. The
 binary size growth of the desktop app (+34 MB stripped, +45 MB unstripped, more than three times
 the current app) is far above the limit of about 10 MB set for this spike, and `cargo deny check`
 fails on six advisories that have no fix upstream. Nothing was added to `crates/dimo-report` or to
@@ -114,3 +117,31 @@ marks (decision 9) as shapes, not as characters.
 3. **Typst with a smaller release profile** (`lto = "fat"`, `codegen-units = 1`,
    `opt-level = "s"` for the whole app): reduces all code, not the embedded data. Not measured
    here; would need its own measurement and makes every release build slower.
+
+## Size tuned release profiles (after the owner decision)
+
+Measured on 2026-10-12 with the real `dimo-report` crate (commit 5c290a1) linked into
+`dimo-desktop` through a temporary call in `main.rs` (reverted, not committed). Each row is a
+clean release build in its own target directory. Profiles were set with `cargo --config`, no
+file was changed. "s for Typst" means `opt-level = "s"` as profile override for the Typst crates
+and their heaviest dependencies (typst-*, krilla, krilla-svg, hayro, hayro-interpret,
+hayro-syntax, hayro-jpeg2000, hayro-jbig2, wasmi, wasmparser, usvg, resvg, syntect, hayagriva,
+citationberg); the rest of the app keeps `opt-level = 3`.
+
+| Profile | Without Typst, stripped | With Typst, stripped | Growth | With Typst, xz | Growth xz | Clean build with Typst |
+|---|---|---|---|---|---|---|
+| current (no LTO) | 16.4 MB | 50.7 MB | +34.4 MB | 12.8 MB | +9.2 MB | 588 s (busy machine) |
+| `lto = "thin"` | not measured | 51.8 MB | +35.5 MB (vs. current) | 13.0 MB | | 393 s |
+| `lto = "fat"`, `codegen-units = 1` | 11.5 MB | 40.1 MB | +28.6 MB | 11.8 MB | +8.7 MB | 417 s |
+| current plus s for Typst | 16.4 MB | 50.5 MB | +34.1 MB | 12.5 MB | +8.9 MB | 266 s |
+| fat LTO, `codegen-units = 1`, s for Typst | 11.5 MB | 37.0 MB | **+25.5 MB** | 11.0 MB | +7.9 MB | 368 s |
+
+Without Typst: current profile built in 159 s, fat LTO in 215 s. Unstripped sizes, for reference:
+current 22.9 MB without and 67.8 MB with Typst, fat LTO plus s 45.0 MB with Typst. Build times
+are noisy: other agents built on the same machine at the same time, so compare sizes, not
+seconds.
+
+Reading: thin LTO does not help. `opt-level = "s"` alone changes little. Fat LTO with one codegen
+unit shrinks the whole app by about 30 percent and, combined with "s" for Typst, gives the
+smallest binary (37.0 MB, Typst share 25.5 MB). The rest is mostly embedded data. The compressed
+download grows by 8 to 9 MB in every variant. No profile change is committed; the owner decides.
