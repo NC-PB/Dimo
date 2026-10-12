@@ -448,7 +448,7 @@
   "refusal_invalid_sample_count": "Add between 1 and 100 samples at once.",
   "refusal_invalid_date": "Not a valid date. Use the form 2026-10-12.",
   "refusal_invalid_result": "Not a valid result for this characteristic. Enter a number, or ok or not ok for a go/no go characteristic.",
-  "refusal_result_type_conflict": "This characteristic has results of the other type. Clear them first.",
+  "refusal_result_type_conflict": "The results of this characteristic do not fit the chosen type. Clear them first.",
   "show_measure": "Show the measurement grid",
   "grid_shortcuts_title": "Measurement grid",
   "grid_up": "Grid: cell up",

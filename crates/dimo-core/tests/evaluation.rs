@@ -568,10 +568,11 @@ fn variable_of(value: Decimal) -> MeasurementResult {
     result(ResultValue::Variable { value })
 }
 
-/// Decision 4: setting `auto` again on a characteristic with results keeps the pinned type, so
-/// removing the limits cannot flip the row and mix types (spec review of T3.3).
+/// Decision 4 and the owner decision of 2026-10-12: setting `auto` on a characteristic that has
+/// results is refused (clear the results first), so removing the limits cannot flip the row and
+/// mix types (spec review of T3.3).
 #[test]
-fn auto_again_with_results_keeps_the_pin() {
+fn auto_with_results_is_refused() {
     let (mut doc, mut env) = doc_with(2);
     let (c, s) = ids(&doc);
     set(&mut doc, &mut env, &[(s[0], c[0], "10.02")]);
@@ -579,9 +580,16 @@ fn auto_again_with_results_keeps_the_pin() {
         ids: vec![c[0], c[1]],
         result_type: ResultType::Auto,
     };
-    doc.execute(to_auto, &mut env).unwrap();
+    let before = doc.project().clone();
+    assert_eq!(
+        doc.execute(to_auto, &mut env),
+        Err(CommandError::ResultTypeConflict(c[0]))
+    );
+    assert_eq!(*doc.project(), before);
     let pinned = [ResultType::Variable, ResultType::Auto, ResultType::Auto];
     assert_eq!(result_types(&doc), pinned);
+    // A characteristic without results can still go to `auto`; a batch with one conflict is
+    // refused as a whole.
     remove_limits(&mut doc, &mut env, c[0]);
     let ok = ResultEntry {
         sample: s[1],
