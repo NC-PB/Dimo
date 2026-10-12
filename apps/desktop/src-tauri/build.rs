@@ -27,6 +27,7 @@ fn main() {
         "reinterpret_characteristics",
         "set_shorter_leg",
         "import_tolerance_table",
+        "measurement_state",
         "app_settings",
         "set_app_settings",
         "dev_startup",
