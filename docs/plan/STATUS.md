@@ -65,8 +65,8 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 | Task | State | Notes |
 |---|---|---|
-| T3.1 Data model version 3 | todo | Wave 1, after T2.9a merge |
-| T3.2 Typst report rendering | in progress | Wave 1, spike with stop gate first |
+| T3.1 Data model version 3 | done | Schema 3 with migration from 2: samples, results, report info, issued reports, `result_type`; commands with inverses, result and serial parsing in Rust, load check of sample and result data. Spec reviewed |
+| T3.2 Typst report rendering | in progress | Spike stopped at the gate (binary +34.3 MB to 50 MB stripped, clean release build +166 s, 168 crates, 6 advisories, deterministic, sandbox holds; `spikes/typst-report/RESULTS.md`). Owner accepted Typst 2026-10-12; implementation running |
 | T3.3 Evaluation and verdicts | todo | Wave 2 |
 | T3.4 Project and report details | todo | Wave 2 |
 | T3.5 Measurement grid | todo | Wave 2 |
@@ -94,6 +94,10 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-12 | Typst accepted for PDF reports despite the spike cost (+34.3 MB stripped binary, +166 s clean release build, 168 crates); six advisories ignored in `deny.toml` with reasons (two quick-xml issues reachable only through CSL bibliography XML, four unmaintained transitive crates); a size tuned release profile is measured, not adopted yet | D-30, spec 06, T3.2 spike | owner |
+| 2026-10-12 | `auto` result type pinned to the effective type by the first result (T3.3 implements); German attribute words `i.O.`, `io`, `n.i.O.`, `nio` accepted | Gap found in T3.1, decision 4 | owner |
+| 2026-10-12 | Data model v3 beyond spec 07: verdict not stored (M3 decision 2); `Characteristic.result_type`; `Project.report_info`; `IssuedReport` adds `kind`, `format`, revision id; `Sample.gauges` free text plus `comment`, results have `comment`; `ResultSource` tagged object (room for M7 import); results one flat list sorted by sample order then placement order, kept sorted by `apply_change`. ADR 0004 unaffected, spec reviewer: no ADR needed | M3 decisions 1 to 4, spec 07 | T3.1, agent |
+| 2026-10-12 | `SetResults` takes text, Rust parses by the effective type; empty text clears the cell; one bad cell refuses the batch; variable values accept `.5`, refuse plus sign, exponents and thousands separators, keep scale and `-0.00` as typed; plain number serials are ASCII digits (`007` counts as 7); dates are real calendar dates; `AddSamples` takes a count, inspector from the audit user; results allowed on non inspected or rejected characteristics (only the grid filters); new reject reasons show Rust's English text until T3.4/T3.5 translate them; `shorter_leg` loses `serde(default)` because the migration writes the key | M3 decisions 6 to 8 | T3.1, agent |
 | 2026-10-12 | M3 plan and its decisions 1 to 17 confirmed, exit limit 60 minutes of working time for 25 characteristics and three parts | Owner review of `docs/plan/M3.md` | owner |
 | 2026-10-10 | Shorter leg stored as optional `Characteristic.shorter_leg` and `Proposal.shorter_leg` (`Length {value, unit}`, serde default, written as null; truth gains optional `shorter_leg`, truth format stays 1); schema stays 2 (unreleased, precedent `Proposal.job_id`; specta cannot omit empty keys); the v2 fixture gained the null key. Spec reviewer: no ADR needed while v2 is unreleased; any later field after v2 ships needs a version bump | T2.9a | T2.9a, agent |
 | 2026-10-10 | The leg is typed in the sheet unit and stored with its unit; Rust parses it (point or comma, positive only) and converts inch to mm exactly for ISO 2768-1 table 3; `read_callout_text` takes `LegInput` (`typed` text or `stored` `Length`) so a stored leg is never re-read as text; the detail panel uses `set_shorter_leg(id, leg)`, which follows the re-interpretation rules (hand entered limits, basic hint, kind, quantity, inspect stay) and returns `interpreted`, `manual_kept` or `unreadable`; a reading keeps the leg even when it selects no row | D-20, rule 2, FR-TOL-08, FR-CHR-08, spec review | T2.9a, agent |
