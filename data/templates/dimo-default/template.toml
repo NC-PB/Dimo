@@ -1,0 +1,11 @@
+# PLACEHOLDER template set (T3.2). Only exercises the renderer in dimo-report.
+# The real check sheet and inspection report, their shared common.typ and the English and
+# German labels replace it in T3.6 (M3 decisions 10 and 12).
+id = "dimo-default"
+version = 1
+
+# Each document is a Typst file of this folder, rendered with `/data.json` (the data from Rust,
+# every value already formatted as text) and `sys.inputs.lang` ("en" or "de").
+[[documents]]
+name = "placeholder"
+main = "placeholder.typ"
