@@ -1,0 +1,48 @@
+---
+source: crates/dimo-cli/tests/report_text.rs
+expression: text
+---
+--- page 1 ---
+Small Shop GmbH Inspection report
+Part Customer Order Drawing file Revision SHA-256 Report no. Date Page
+BR-2041 Bracket, left Example Machines Ltd PO 88-1203 bracket_rev-B.pdf B 3f9a1c0e5b7d24a8 IR-2026-031 2026-10-09 1 of 2
+SHA-256 of the drawing file: 3f9a1c0e5b7d24a8c6e1f0b9d8a7c6e5f4d3c2b1a09f8e7d6c5b4a3928170615
+Summary
+Not
+Overall result Characteristics Samples Pass Fail evaluated Missing
+8 3 15 4 2 3
+Fail
+Samples
+# Serial Date Inspector Gauges Comment Missing Result
+1 S-001 2026-10-08 A. Weber Caliper 150, CMM first part 7 0 1 0 Open
+2 S-002 2026-10-08 A. Weber Caliper 150, CMM 4 2 1 1 Fail
+3 S-003 2026-10-09 A. Weber Caliper 150, CMM 4 2 0 2 Fail
+Lower Upper Part 1 Part 2 Part 3
+No. Requirement Nominal limit limit Unit Rule Method / gauge S-001 S-002 S-003 Result
+*
+1 Ø30 H7 30 30.000 30.021 mm Fit CMM 30.010 30.000 30.021
+ISO 286 H7 Bore gauge 18-35
+2 12.5 +0.1/-0.2 12.5 12.3 12.6 mm Drawing Caliper 12.45 12.61 12.30
+3 45° 45 44.5 45.5 ° General 45.2 44.5
+ISO 2768-1 m
+4 2X M8x1.25-6H Thread plug gauge OK Not OK OK
+M8
+5 Ra 1.6 1.6 mm Drawing Roughness tester 0.8 1.6 1.7
+6 80 80 mm No tolerance 80.12 79.95
+8 20.00 20.00 19.95 20.05 mm Decimals 20.00 19.94
+±0.05
+10 -0.5 offset -0.5 -0.6 -0.4 in Manual -0.50 -0.45 -0.6
+*
+Limits from a draft tolerance table, not yet verified.
+Marks: Pass Fail Not evaluated Open empty: missing
+Remarks
+Parts deburred and cleaned.
+Thread checked with a plug gauge.
+--- page 2 ---
+Small Shop GmbH Inspection report
+Part Customer Order Drawing file Revision SHA-256 Report no. Date Page
+BR-2041 Bracket, left Example Machines Ltd PO 88-1203 bracket_rev-B.pdf B 3f9a1c0e5b7d24a8 IR-2026-031 2026-10-09 2 of 2
+Approval
+Name Date Signature
+Inspected by A. Weber 2026-10-09
+Approved by P. Muster

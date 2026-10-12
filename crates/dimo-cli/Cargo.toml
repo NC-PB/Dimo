@@ -22,6 +22,9 @@ thiserror.workspace = true
 [dev-dependencies]
 # Import glue test: dimo-io may not depend on dimo-pdf, the CLI may use both (rust.md).
 dimo-io.workspace = true
+# Report text snapshots (T3.6): dimo-report may not depend on dimo-pdf, the CLI may use both.
+dimo-report.workspace = true
+insta.workspace = true
 tempfile.workspace = true
 
 [lints]
