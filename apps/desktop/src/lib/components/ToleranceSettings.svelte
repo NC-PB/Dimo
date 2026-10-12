@@ -291,7 +291,12 @@
               })}
         </p>
       {:else if tolerance.imported}
-        <p class="text-xs" role="status">✓ {m.tolerance_imported({ table: tolerance.imported })}</p>
+        <p class="text-xs" role="status" data-testid="import-status">
+          ✓
+          {tolerance.importUnchanged
+            ? m.tolerance_import_unchanged({ table: tolerance.imported })
+            : m.tolerance_imported({ table: tolerance.imported })}
+        </p>
       {/if}
     </fieldset>
   {/if}

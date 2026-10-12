@@ -414,6 +414,7 @@
   "tolerance_import_refused": "Tabelle abgelehnt: {message}",
   "tolerance_import_refused_line": "Tabelle abgelehnt, Zeile {line}: {message}",
   "tolerance_imported": "{table} importiert. Sie wird mit dem Projekt gespeichert.",
+  "tolerance_import_unchanged": "{table} ist schon im Projekt. Es hat sich nichts geändert.",
   "tolerance_places_invalid": "Dezimalstellen müssen eine ganze Zahl von 0 bis 10 sein.",
   "project_details_title": "Projekt und Bericht",
   "project_details_part": "Teil",

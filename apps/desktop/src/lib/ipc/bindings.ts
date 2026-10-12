@@ -844,8 +844,8 @@ results: ResultEntry[] } |
 cells: ResultCell[] } | 
 /**
  *  Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
- *  characteristic has results of the other type; nothing is converted. `auto` on a
- *  characteristic with results keeps its effective type pinned.
+ *  characteristic has results of the other type, and for `auto` on a characteristic that
+ *  has results (owner decision 2026-10-12); nothing is converted. Clear the results first.
  */
 { type: "set_result_type"; 
 /**  Characteristics to change. */
@@ -2197,6 +2197,13 @@ export type TableImport =
 table: TableRef; 
 /**  The change, also sent as `project-patched`. */
 patched: ProjectPatched } | 
+/**
+ *  The project already holds this table in exactly this version and text; nothing changed
+ *  and no undo step was made.
+ */
+{ result: "unchanged"; 
+/**  The table. */
+table: TableRef } | 
 /**  The file was refused; the project is unchanged. */
 { result: "invalid"; 
 /**  What is wrong, in English, naming the file. */

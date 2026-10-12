@@ -216,6 +216,15 @@ fn custom_table_import_survives_a_crash() {
         };
         assert_eq!(table.id, "shop");
         assert!(!patched.patch.is_empty());
+        // The same file again changes nothing and makes no undo step.
+        let before = session.project().unwrap().clone();
+        assert_eq!(
+            tolerance::import(&mut session, &file).unwrap(),
+            TableImport::Unchanged {
+                table: table.clone()
+            }
+        );
+        assert_eq!(*session.project().unwrap(), before);
         assert!(
             tolerance::tables(&session)
                 .unwrap()

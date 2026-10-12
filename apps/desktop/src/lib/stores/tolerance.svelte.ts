@@ -82,6 +82,8 @@ export class ToleranceStore {
   importRefusal = $state.raw<ImportRefusal | null>(null);
   /** The table imported last, for a confirmation line. */
   imported = $state<string | null>(null);
+  /** True if `imported` was in the project already, byte for byte: nothing changed. */
+  importUnchanged = $state(false);
   /** Counts of the last re-interpretation, for a status line. */
   lastReinterpretation = $state.raw<Reinterpreted | null>(null);
   error = $state.raw<CommandError | null>(null);
@@ -163,13 +165,20 @@ export class ToleranceStore {
       switch (outcome.result) {
         case "cancelled":
           break;
+        case "unchanged":
+          this.importRefusal = null;
+          this.imported = `${outcome.table.id} v${String(outcome.table.version)}`;
+          this.importUnchanged = true;
+          break;
         case "invalid":
           this.imported = null;
+          this.importUnchanged = false;
           this.importRefusal = { message: outcome.message, line: outcome.line };
           break;
         case "imported":
           this.importRefusal = null;
           this.imported = `${outcome.table.id} v${String(outcome.table.version)}`;
+          this.importUnchanged = false;
           this.#project.applyPatched(outcome.patched);
           await this.refreshTables();
           break;
@@ -234,6 +243,7 @@ export class ToleranceStore {
     this.error = null;
     this.importRefusal = null;
     this.imported = null;
+    this.importUnchanged = false;
     this.lastReinterpretation = null;
     this.legError = null;
     this.legOutcome = null;

@@ -414,6 +414,7 @@
   "tolerance_import_refused": "Table refused: {message}",
   "tolerance_import_refused_line": "Table refused, line {line}: {message}",
   "tolerance_imported": "Imported {table}. It is saved with the project.",
+  "tolerance_import_unchanged": "{table} is already in the project. Nothing changed.",
   "tolerance_places_invalid": "Decimal places must be a whole number from 0 to 10.",
   "project_details_title": "Project and report",
   "project_details_part": "Part",

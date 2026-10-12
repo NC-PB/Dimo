@@ -67,6 +67,12 @@ pub enum TableImport {
         /// The change, also sent as `project-patched`.
         patched: ProjectPatched,
     },
+    /// The project already holds this table in exactly this version and text; nothing changed
+    /// and no undo step was made.
+    Unchanged {
+        /// The table.
+        table: TableRef,
+    },
     /// The file was refused; the project is unchanged.
     Invalid {
         /// What is wrong, in English, naming the file.
@@ -292,6 +298,9 @@ pub fn import(session: &mut AppSession, path: &Path) -> Result<TableImport, Comm
             });
         }
     };
+    if settings == project.settings.tolerance {
+        return Ok(TableImport::Unchanged { table });
+    }
     session.insert_table(bytes)?;
     let patched = session.execute(Command::SetToleranceSettings { settings })?;
     Ok(TableImport::Imported { table, patched })
