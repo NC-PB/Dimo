@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.7 done; T3.8 report export running, then wave 4
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.8 done; wave 4 running (T3.9 follow-ups, T3.10 guide), then T3.11 exit check
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
@@ -72,9 +72,9 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.5 Measurement grid | done | Measure view: sample bar, virtualized grid (rows from `measurement_state`), sample panel, project details, keyboard flow of decision 7, block paste as one undo step, shape marks, decision 16 marker (`changed_since_issued_report`). 300 x 10: commit to repaint 39.8 ms mean (dev build). Owner: press real Cmd+V once |
 | T3.6 Report model and default templates | done | `ReportModel::build` (all values preformatted, codes for verdicts and rules), schema `docs/schema/report-data.schema.json`, `dimo-default` v1 (check sheet, inspection report, `labels.toml` en/de), PDF text snapshots in dimo-cli. Clean room audit passed. Owner: German labels (Prüfblatt, Prüfbericht, Änderungsstand, Geprüft von, Freigegeben von, i.O./n.i.O.) and empty "Approved by" date |
 | T3.7 XLSX check sheet and inspection report | done | `dimo_report::render_xlsx` from the same `ReportModel`, labels from `labels.toml`, number cells with typed scale, marks in number formats plus fill, A4 landscape with repeated rows and columns, 6 sample columns per printed page, fixed properties and ZIP times. Owner: open the sample workbooks in a spreadsheet program (repair prompt, glyphs, print preview) |
-| T3.8 Report export in the app | in progress | Wave 3 |
-| T3.9 Follow-ups from waves 2 and 3 | todo | Wave 4 |
-| T3.10 User guide and manual test | todo | Wave 4 |
+| T3.8 Report export in the app | done | Report cards in the Export view (PDF or XLSX, en or de, blank columns), cancellable jobs (`cancel_job`, checked between steps), `report_export_warnings`, issued export records lock, filled report info and `IssuedReport` in one undo step after writing. 300 x 10 release: PDF 522 ms (1.69 MB), XLSX 12 ms |
+| T3.9 Follow-ups from waves 2 and 3 | in progress | Wave 4 |
+| T3.10 User guide and manual test | in progress | Wave 4 |
 | T3.11 Exit check | todo | Wave 4 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
@@ -94,6 +94,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-12 | Issued report export fills empty company name and inspector only for "export as issued", in the undo step that records the report; normal exports print the project as is. `SetResultType auto` while results exist is refused (T3.9) | M3 decisions 4, 15 | owner |
+| 2026-10-12 | Report export: numbering lock comes after the file is written, together with the record (drawing and list exports still lock at start, T1.9); recorded only if the project is unchanged since the copy was taken, else the outcome says "project changed"; cancel checked before each step, a started write completes; one remembered format per report; warnings (draft limits, open results, limits changed since the last issued report) computed in Rust, never refuse; debug hook `DIMO_DEV_EXPORT_DELAY_MS`; report date falls back to the manifest modification date, so a report without a report date prints a later date after recording | M3 decisions 14, 17, NFR-PERF-06 | T3.8, agent |
 | 2026-10-12 | Measurement grid: decision 16 marker compares characteristic states at the last issued report with now (limits by value and written form, effective result type), reverted changes and characteristics added later not marked; `o`/`+`/`n`/`x` set and move down, Space toggles, words need F2; Enter and Shift+Enter move without an open edit; a pasted block running past the last row or sample is refused whole, empty pasted cells clear; result types labelled "Value" / "OK / not OK" (de "Messwert" / "i.O. / n.i.O."); sample fields edited in the Measure side panel; Tab leaves the grid at the edges | M3 decisions 7, 9, 16, NFR-UX-01 | T3.5, agent |
 | 2026-10-12 | XLSX reports: sheet named after the localized document title from `labels.toml` (replaces "Report" in M3 decision 13); verdict marks in number formats (✓ ✗ ○, `-` for open) with fills green, red, yellow, grey; fail bold with a medium border; frozen columns A and B, no frozen header row; more than 6 samples print at 60 % with a page break every 6 sample columns; header parts capped to stay under 255 characters. Per sample counts missing, added in T3.9 | M3 decisions 9, 12, 13 | T3.7, agent |
 | 2026-10-12 | Report templates: labels in `labels.toml` inside the template set (optional `labels` key in `template.toml`, reused by XLSX); verdicts, rules and attribute results passed as codes, the template owns the words; 6 samples per column block, each block on a new page; "Inspected by" date is the report date, "Approved by" date stays empty; fallback date is the manifest modification date passed by the caller (UTC calendar date); check sheet data carries no verdicts and has an "Inspected by" line; ligatures off; German verdicts i.O./n.i.O.; data `format_version` 1, raised only when a field is removed or changes meaning | M3 decisions 9 to 15, D-32 | T3.6, agent |
