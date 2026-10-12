@@ -59,9 +59,10 @@ Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
    Anforderungstext, die Art, das Nennmaß, die obere und die untere Grenze, die Regel, aus der
    sie stammen, und eine Erklärung dazu. Aufgedruckte Abmaße gelten immer; weichen sie von der
    Passungstabelle ab, sagt die Erklärung das. Hinweise nennen, was Dimo nicht entscheiden
-   konnte, etwa einen Winkel, dessen kürzeren Schenkel es nicht kennt.
-3. Prüfe die Werte. Den Anforderungstext und die Art kannst du korrigieren. Dimo liest geänderten
-   Text erneut, wenn du das Feld verlässt oder übernimmst.
+   konnte, etwa einen Winkel, dessen kürzerer Schenkel noch nicht eingegeben ist.
+3. Prüfe die Werte. Den Anforderungstext und die Art kannst du korrigieren, und bei einem Winkel
+   gibst du die Länge seines kürzeren Schenkels ein ([Toleranzen](tolerances.md)). Dimo liest
+   geänderten Text und den Schenkel erneut, wenn du das Feld verlässt oder übernimmst.
 4. Drücke **Enter** oder **Übernehmen**. Der Ballon erscheint rechts oberhalb des Rahmens wie ein
    gesetzter Ballon, mit den Werten der Karte. **Escape** oder **Verwerfen** schließt die Karte,
    ohne etwas zu ändern.

@@ -264,3 +264,85 @@ fn commands_need_a_project() {
         Err(CommandError::NoProject)
     ));
 }
+
+/// T2.9a: the shorter leg set from the detail panel is parsed in the sheet unit and stored with
+/// its unit. Regression: after the sheet unit changes, retyping the requirement text (the stored
+/// leg is sent as `LegInput::Stored`) and re-interpreting keep the leg and the limits.
+#[test]
+fn shorter_leg_keeps_its_unit_when_the_sheet_unit_changes() {
+    use dimo_core::{Length, Unit};
+    use dimo_desktop::recognition::{LegInput, read_typed, resolve_leg};
+    use dimo_desktop::tolerance::LegOutcome;
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    session.execute(general("m")).unwrap();
+    let id = add(&mut session, "30°");
+    assert_eq!(limits(&session, id), (None, None));
+
+    let set = tolerance::apply_shorter_leg(&mut session, id, Some("40")).unwrap();
+    assert_eq!(set.outcome, LegOutcome::Interpreted);
+    let mm = Length {
+        value: Decimal::from(40),
+        unit: Unit::Mm,
+    };
+    let leg = |s: &AppSession| s.project().unwrap().characteristic(id).unwrap().shorter_leg;
+    assert_eq!(leg(&session), Some(mm));
+    assert_eq!(limits(&session, id), (d("30.5"), d("29.5")));
+
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    session
+        .execute(Command::UpdateSheet {
+            sheet,
+            rotation: None,
+            unit: Some(Unit::In),
+            scale: None,
+        })
+        .unwrap();
+    // Retyping the text sends the stored leg; it keeps its unit on the inch sheet.
+    let target = session.recognition_target(sheet).unwrap();
+    assert_eq!(target.unit, Unit::In);
+    let stored = resolve_leg(Some(&LegInput::Stored(mm)), target.unit).unwrap();
+    let typed = read_typed(&target, "30°", stored, ExplainLanguage::En);
+    session
+        .execute(Command::UpdateFields {
+            ids: vec![id],
+            values: typed.values,
+        })
+        .unwrap();
+    assert_eq!(leg(&session), Some(mm));
+    assert_eq!(limits(&session, id), (d("30.5"), d("29.5")));
+    // Re-interpretation uses the stored leg too.
+    tolerance::reinterpret(&mut session, &[id]).unwrap();
+    assert_eq!(leg(&session), Some(mm));
+    assert_eq!(limits(&session, id), (d("30.5"), d("29.5")));
+
+    // A newly typed leg is in the sheet unit: 0.3 in is 7.62 mm, so ±1°.
+    tolerance::apply_shorter_leg(&mut session, id, Some("0,3")).unwrap();
+    assert_eq!(
+        leg(&session),
+        Some(Length {
+            value: Decimal::new(3, 1),
+            unit: Unit::In
+        })
+    );
+    assert_eq!(limits(&session, id), (d("31"), d("29")));
+    // Text that is not a positive number is refused.
+    assert!(matches!(
+        tolerance::apply_shorter_leg(&mut session, id, Some("abc")),
+        Err(CommandError::InvalidArgument { .. })
+    ));
+    // Hand entered limits stay; only the leg changes.
+    session
+        .execute(Command::UpdateFields {
+            ids: vec![id],
+            values: vec![FieldValue::UpperLimit(d("30.2").into())],
+        })
+        .unwrap();
+    let set = tolerance::apply_shorter_leg(&mut session, id, None).unwrap();
+    assert_eq!(set.outcome, LegOutcome::ManualKept);
+    assert_eq!(leg(&session), None);
+    assert_eq!(limits(&session, id), (d("30.2"), d("29")));
+}

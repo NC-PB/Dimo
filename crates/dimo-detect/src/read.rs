@@ -4,10 +4,11 @@
 //! [`read_callout`], so a typed `Ø30 H7 +0.0203 -0` gives the same values as a box around the
 //! printed one.
 
-use dimo_core::characteristic::{CharacteristicKind, FieldValue, Unit};
+use dimo_core::characteristic::{CharacteristicKind, FieldValue, Length, Unit};
 use dimo_core::derivation::ToleranceDerivation;
 use dimo_core::proposal::{EngineVersion, ParseHint, ParseIssue};
 use dimo_notation::{Callout, parse_callout};
+use dimo_tolerance::Measures;
 use rust_decimal::Decimal;
 
 use crate::interpret::Interpreter;
@@ -52,16 +53,23 @@ pub struct Reading {
     pub engines: Vec<EngineVersion>,
     /// What the interpreter could not decide (not stored in the project).
     pub notes: Vec<dimo_tolerance::Note>,
+    /// The shorter leg the reading was made with (T2.9a), stored with the limits it gives. Kept
+    /// as given even when it selected no table row (a callout that is not an angle, or an angle
+    /// with a written tolerance), so a leg the user entered is never dropped by retyping the
+    /// text; whether it was used shows in the derivation's range and the explanation.
+    pub shorter_leg: Option<Length>,
 }
 
 /// Parses and interprets one callout text (FR-REC-02, ADR 0006: a reading changes nothing in
 /// the project). `basic_frame` is true when the PDF draws a basic dimension frame around the
-/// text (M2 decision 6). `drawing_unit` is the unit of the sheet (D-20).
+/// text (M2 decision 6). `drawing_unit` is the unit of the sheet (D-20). `measures` holds what
+/// the user entered besides the text, such as the shorter leg of an angle (T2.9a).
 pub fn read_callout(
     text: &str,
     basic_frame: bool,
     drawing_unit: Unit,
     interpreter: &dyn Interpreter,
+    measures: &Measures,
 ) -> Reading {
     let text = text.trim();
     let mut engines = vec![EngineVersion::new(PARSER_ENGINE, env!("CARGO_PKG_VERSION"))];
@@ -92,11 +100,12 @@ pub fn read_callout(
                 parse_hints: Vec::new(),
                 engines,
                 notes: Vec::new(),
+                shorter_leg: measures.shorter_leg,
             };
         }
     };
     callout.basic |= basic_frame;
-    let interpretation = interpreter.interpret(&callout, drawing_unit);
+    let interpretation = interpreter.interpret(&callout, drawing_unit, measures);
     engines.push(interpreter.engine());
     Reading {
         kind: callout.characteristic_kind(),
@@ -115,13 +124,14 @@ pub fn read_callout(
         parse_hints: hints(text, &callout),
         engines,
         notes: interpretation.notes,
+        shorter_leg: measures.shorter_leg,
     }
 }
 
 impl Reading {
     /// The fields to set on a characteristic for this reading, as one `update_fields` or
     /// `add_characteristic` command (M2 decision 5). A text that does not parse sets only the
-    /// requirement text, as before T2.6.
+    /// requirement text, as before T2.6. The shorter leg is set with the limits it gives.
     pub fn field_values(&self) -> Vec<FieldValue> {
         let mut values = vec![FieldValue::RequirementText(self.requirement_text.clone())];
         if self.parse_error.is_some() {
@@ -139,6 +149,7 @@ impl Reading {
             FieldValue::Quantity(self.quantity),
             FieldValue::Inspect(self.inspect),
             FieldValue::Derivation(self.derivation.clone()),
+            FieldValue::ShorterLeg(self.shorter_leg),
         ]);
         values
     }
@@ -173,7 +184,7 @@ mod tests {
     use dimo_core::derivation::DerivationRule;
 
     fn read(text: &str) -> Reading {
-        read_callout(text, false, Unit::Mm, &CalloutOnly)
+        read_callout(text, false, Unit::Mm, &CalloutOnly, &Measures::default())
     }
 
     fn d(text: &str) -> Option<Decimal> {
@@ -204,7 +215,7 @@ mod tests {
         let r = read("4X Ø6.6 THRU");
         assert_eq!((r.quantity, r.inspect), (4, true));
         assert!(!read("(42)").inspect);
-        let framed = read_callout("25", true, Unit::Mm, &CalloutOnly);
+        let framed = read_callout("25", true, Unit::Mm, &CalloutOnly, &Measures::default());
         assert!(!framed.inspect);
         assert!(read("25").inspect);
     }
@@ -237,12 +248,13 @@ mod tests {
     #[test]
     fn field_values_set_every_interpreted_field() {
         let values = read("Ø30 H7 +0.0203 -0").field_values();
-        assert_eq!(values.len(), 12);
+        assert_eq!(values.len(), 13);
         assert_eq!(
             values[0],
             FieldValue::RequirementText("Ø30 H7 +0.0203 -0".into())
         );
         assert!(values.contains(&FieldValue::UpperLimit(d("30.0203").into())));
         assert!(values.contains(&FieldValue::Fit(Some("H7".into()))));
+        assert_eq!(values.last(), Some(&FieldValue::ShorterLeg(None)));
     }
 }

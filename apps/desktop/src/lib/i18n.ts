@@ -300,6 +300,8 @@ export function fieldLabel(field: CharacteristicField): string {
       return m.field_sources();
     case "comment":
       return m.col_comment();
+    case "shorter_leg":
+      return m.field_shorter_leg();
   }
 }
 

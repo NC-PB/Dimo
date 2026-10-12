@@ -57,9 +57,10 @@ On a drawing with PDF text, Dimo reads the text for you.
    nominal value, the upper and lower limit, the rule that produced them and an explanation of
    the rule. Printed deviations always win; when they differ from the fit table, the
    explanation says so. Notes point out what Dimo could not decide, for example an angle whose
-   shorter leg it does not know.
-3. Check the values. You can correct the requirement text and the kind. Dimo reads edited text
-   again when you leave the field or accept.
+   shorter leg is not entered yet.
+3. Check the values. You can correct the requirement text and the kind, and for an angle type
+   the length of its shorter leg ([Tolerances](tolerances.md)). Dimo reads edited text and the
+   leg again when you leave the field or accept.
 4. Press **Enter** or **Accept**. The balloon appears up and to the right of the box, like a
    placed balloon, with the values of the card. **Escape** or **Discard** closes the card
    without changing anything.

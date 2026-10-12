@@ -10,7 +10,7 @@ use dimo_core::characteristic::Unit;
 use dimo_core::derivation::{DerivationHint, DerivationRule, ToleranceDerivation};
 use dimo_core::proposal::EngineVersion;
 use dimo_notation::{Callout, Kind, Tolerance};
-use dimo_tolerance::{Note, ToleranceContext};
+use dimo_tolerance::{Measures, Note, ToleranceContext};
 use rust_decimal::Decimal;
 
 /// Limits and derivation of one callout, the result of an [`Interpreter`].
@@ -41,8 +41,14 @@ pub struct Interpretation {
 pub trait Interpreter {
     /// Limits and derivation of `callout`. `basic` and `reference` on the callout are already
     /// final (a basic dimension frame found in the PDF sets `basic`). `drawing_unit` is the unit
-    /// of the sheet, for callouts that write none.
-    fn interpret(&self, callout: &Callout, drawing_unit: Unit) -> Interpretation;
+    /// of the sheet, for callouts that write none. `measures` are facts the text does not hold,
+    /// such as the shorter leg of an angle entered by the user (T2.9a).
+    fn interpret(
+        &self,
+        callout: &Callout,
+        drawing_unit: Unit,
+        measures: &Measures,
+    ) -> Interpretation;
 
     /// Name and version of the interpreter, stored on proposals.
     fn engine(&self) -> EngineVersion;
@@ -66,11 +72,16 @@ impl ToleranceEngine {
 }
 
 impl Interpreter for ToleranceEngine {
-    fn interpret(&self, callout: &Callout, drawing_unit: Unit) -> Interpretation {
-        // Box select does not know the shorter leg of an angle in M2; the engine then answers
-        // with a note instead of limits from an angular table.
+    fn interpret(
+        &self,
+        callout: &Callout,
+        drawing_unit: Unit,
+        measures: &Measures,
+    ) -> Interpretation {
+        // Without a shorter leg (box select does not measure it before M4) the engine answers
+        // an angle under an angular general tolerance with a note instead of limits.
         let context = self.context.clone().with_drawing_unit(drawing_unit);
-        let i = dimo_tolerance::interpret(callout, &context);
+        let i = dimo_tolerance::interpret_with(callout, &context, measures);
         Interpretation {
             unit: i.unit,
             nominal: i.nominal,
@@ -102,7 +113,7 @@ pub struct CalloutOnly;
 pub const CALLOUT_ONLY_ENGINE: &str = "dimo-detect/callout-only";
 
 impl Interpreter for CalloutOnly {
-    fn interpret(&self, callout: &Callout, drawing_unit: Unit) -> Interpretation {
+    fn interpret(&self, callout: &Callout, drawing_unit: Unit, _: &Measures) -> Interpretation {
         let unit = callout.unit.or(Some(match callout.kind {
             Kind::Angle => Unit::Deg,
             _ if callout.is_inch() => Unit::In,
@@ -191,7 +202,7 @@ mod tests {
 
     fn run(text: &str) -> Interpretation {
         let callout = parse_callout(text).unwrap_or_else(|e| panic!("{text}: {e}"));
-        CalloutOnly.interpret(&callout, Unit::Mm)
+        CalloutOnly.interpret(&callout, Unit::Mm, &Measures::default())
     }
 
     fn limits(i: &Interpretation) -> (Option<Decimal>, Option<Decimal>) {
@@ -252,7 +263,9 @@ mod tests {
         assert_eq!(run("50").unit, Some(Unit::Mm));
         let callout = parse_callout("50").unwrap();
         assert_eq!(
-            CalloutOnly.interpret(&callout, Unit::In).unit,
+            CalloutOnly
+                .interpret(&callout, Unit::In, &Measures::default())
+                .unit,
             Some(Unit::In)
         );
     }
@@ -261,7 +274,7 @@ mod tests {
     fn reference_and_basic_are_hinted() {
         let mut callout = parse_callout("25±0.1").unwrap();
         callout.basic = true;
-        let i = CalloutOnly.interpret(&callout, Unit::Mm);
+        let i = CalloutOnly.interpret(&callout, Unit::Mm, &Measures::default());
         let hints = i.derivation.map(|d| d.hints).unwrap_or_default();
         assert_eq!(hints, [DerivationHint::BasicDimension]);
     }

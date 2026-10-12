@@ -271,6 +271,18 @@
           "description": "Text as it appears on the drawing.",
           "type": "string"
         },
+        "shorter_leg": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Length"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Length of the shorter leg of an angle, as entered in the unit of its sheet (T2.9a). It\nselects the ISO 2768-1 angular general tolerance and is kept for re-interpretation.\nWritten as `null` when absent; a missing key (files written before T2.9a under schema\nversion 2) reads as `null`."
+        },
         "sources": {
           "description": "Regions of the drawing the characteristic was read from (FR-CHR-09).",
           "items": {
@@ -866,6 +878,25 @@
         "gauge",
         "sampling",
         "frequency"
+      ],
+      "type": "object"
+    },
+    "Length": {
+      "description": "A length with its unit, such as the shorter leg of an angle (T2.9a). Serialized as\n`{ \"value\": \"40\", \"unit\": \"mm\" }`.",
+      "properties": {
+        "unit": {
+          "$ref": "#/$defs/Unit",
+          "description": "A length unit: `mm` or `in`."
+        },
+        "value": {
+          "description": "The value in `unit`.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
       ],
       "type": "object"
     },

@@ -134,7 +134,11 @@ placed by box select, so they have no tolerance.
 | 4.13 | Enter `x` in a rounding field | A message says to enter a whole number from 0 to 10; nothing changes |
 | 4.14 | Box select `Ø30 H7 +0.0203 -0` and `Ø8 f7` with the general tolerance set | The fit and the printed limits still win; the general tolerance is not used |
 | 4.15 | Save, close, open the project | General tolerance, decimal rule and rounding are as you left them |
-| 4.16 | Box select the angle `90.0°` with the general tolerance set | The card has a note about the shorter leg; no limits (the input field for it is task T2.9a, record the behavior of this build) |
+| 4.16 | Box select the angle `90.0°` with ISO 2768-1 m set | The card shows a field **Shorter leg (mm)** and a note that the shorter leg is unknown; no limits |
+| 4.17 | Type `40` into **Shorter leg** and leave the field | Limits 90.5 and 89.5 (±0.5° for a leg over 10 up to 50 mm, class m); the explanation names the leg 40 mm, its range and the limits. Compare with part `angular` of `data/tolerances/iso-2768-1.toml` (draft, D-43) |
+| 4.18 | Accept, set the general class to c and re-interpret the angle | Limits 91.0 and 89.0 (±1°, class c for the same range); the side panel still shows the leg 40 |
+| 4.19 | In the side panel type `abc` into **Shorter leg**, then empty the field | `abc` is refused with a message and nothing changes; the empty field removes the leg, and the angle has no limits again |
+| 4.20 | Set the sheet unit to inch, select the angle and retype its requirement text `90.0°` | The leg stays 40 mm (shown beside the field) and the limits stay; set the unit back to mm |
 
 ## 5. Explanations, markers, history and custom tables (FR-TOL-07, FR-TOL-08, FR-CHR-08, FR-CHR-10)
 

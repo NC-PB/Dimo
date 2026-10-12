@@ -109,7 +109,8 @@ expression: migrated
           "raw_text": null
         }
       ],
-      "comment": ""
+      "comment": "",
+      "shorter_leg": null
     },
     {
       "id": "00000000-0000-0000-0000-000000000006",
@@ -155,7 +156,8 @@ expression: migrated
           "raw_text": null
         }
       ],
-      "comment": "check twice"
+      "comment": "check twice",
+      "shorter_leg": null
     }
   ],
   "balloons": [

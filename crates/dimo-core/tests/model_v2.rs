@@ -77,6 +77,7 @@ fn proposal(doc: &Document, text: &str, x: f64) -> Proposal {
         parse_hints: Vec::new(),
         job_id: Some(7),
         engines: vec![dimo_core::EngineVersion::new("dimo-notation", "0.1.0")],
+        shorter_leg: None,
     }
 }
 
@@ -253,6 +254,76 @@ fn proposals_without_job_and_engines_still_read() {
     let old: Proposal = serde_json::from_value(json).unwrap();
     assert_eq!(old.job_id, None);
     assert_eq!(old.engines, Vec::new());
+}
+
+/// T2.9a: the shorter leg of an angle goes from the accepted proposal to the characteristic,
+/// is changed with `update_fields`, and is optional under schema version 2: written as `null`
+/// when absent, and a missing key (files written before T2.9a) reads as `null`.
+#[test]
+fn shorter_leg_is_stored_and_optional_in_the_file() {
+    use dimo_core::{FieldValue, Length, Unit};
+    let (mut doc, mut env) = fresh();
+    let leg = Length {
+        value: "40".parse().unwrap(),
+        unit: Unit::Mm,
+    };
+    let mut p = proposal(&doc, "30°", 100.0);
+    let mut old = serde_json::to_value(&p).unwrap();
+    assert_eq!(old["shorter_leg"], serde_json::Value::Null);
+    old.as_object_mut().unwrap().remove("shorter_leg");
+    assert_eq!(serde_json::from_value::<Proposal>(old).unwrap(), p);
+    p.shorter_leg = Some(leg);
+    let json = serde_json::to_value(&p).unwrap();
+    assert_eq!(
+        json["shorter_leg"],
+        serde_json::json!({ "value": "40", "unit": "mm" })
+    );
+    assert_eq!(serde_json::from_value::<Proposal>(json).unwrap(), p);
+    doc.execute(
+        Command::AcceptProposals {
+            proposals: vec![p],
+            insert_after: None,
+        },
+        &mut env,
+    )
+    .unwrap();
+    let c = &doc.project().characteristics[0];
+    assert_eq!(c.shorter_leg, Some(leg));
+    let id = c.id;
+    let json = serde_json::to_value(c).unwrap();
+    assert_eq!(json["shorter_leg"]["unit"], "mm");
+    let mut old = json.clone();
+    old.as_object_mut().unwrap().remove("shorter_leg");
+    let read: dimo_core::Characteristic = serde_json::from_value(old).unwrap();
+    assert_eq!(read.shorter_leg, None);
+
+    let inch = Length {
+        value: "1.5".parse().unwrap(),
+        unit: Unit::In,
+    };
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![id],
+            values: vec![FieldValue::ShorterLeg(Some(inch))],
+        },
+        &mut env,
+    )
+    .unwrap();
+    assert_eq!(doc.project().characteristics[0].shorter_leg, Some(inch));
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![id],
+            values: vec![FieldValue::ShorterLeg(None)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    let c = &doc.project().characteristics[0];
+    assert_eq!(c.shorter_leg, None);
+    assert_eq!(
+        serde_json::to_value(c).unwrap()["shorter_leg"],
+        serde_json::Value::Null
+    );
 }
 
 #[test]

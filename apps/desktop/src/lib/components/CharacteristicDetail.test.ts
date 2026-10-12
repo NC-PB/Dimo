@@ -3,6 +3,8 @@ import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
 import type {
   Characteristic,
+  CommandError,
+  LegOutcome,
   CharId,
   Command,
   HistoryEntry,
@@ -11,7 +13,7 @@ import type {
   TableImport,
   ToleranceDerivation,
 } from "$lib/ipc/bindings";
-import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
+import { balloon, characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
@@ -66,7 +68,23 @@ function projectOf(): Project {
       hints: [{ hint: "reference_dimension" }],
       conversion: null,
     }),
+    {
+      ...characteristic("c5", 5),
+      kind: "angle",
+      requirement_text: "30°",
+      nominal: "30",
+      unit: "deg",
+      quantity: 2,
+      inspect: false,
+    },
   ];
+  project.characteristics.push({
+    ...characteristic("c6", 6),
+    kind: "angle",
+    requirement_text: "45°",
+    shorter_leg: { value: "1.5", unit: "in" },
+  });
+  project.balloons = [balloon("b5", "c5"), balloon("b6", "c6")];
   return project;
 }
 
@@ -100,6 +118,8 @@ const HISTORY: HistoryEntry[] = [
 function setup(importResult: TableImport = { result: "cancelled" }) {
   const commands: Command[] = [];
   const reinterpreted: CharId[][] = [];
+  const legs: [CharId, string | null][] = [];
+  const leg: { refuse: boolean; outcome: LegOutcome } = { refuse: false, outcome: "interpreted" };
   const api: ProjectCommands = {
     projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf()) }),
     newProject: () => Promise.resolve({ status: "ok", data: true }),
@@ -149,12 +169,24 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
       });
     },
     importToleranceTable: () => Promise.resolve({ status: "ok", data: importResult }),
+    setShorterLeg: (id, text) => {
+      legs.push([id, text]);
+      const refused: CommandError = {
+        kind: "invalid_argument",
+        message: "the shorter leg is not a positive number",
+      };
+      return Promise.resolve(
+        leg.refuse
+          ? { status: "error", error: refused }
+          : { status: "ok", data: { patched: patched(), outcome: leg.outcome } },
+      );
+    },
   };
   const projectStore = new ProjectStore(api);
   projectStore.load(loaded(1, projectOf()));
   const selection = new SelectionStore();
   const tolerance = new ToleranceStore(toleranceApi, projectStore);
-  return { projectStore, selection, tolerance, commands, reinterpreted };
+  return { projectStore, selection, tolerance, commands, reinterpreted, legs, leg };
 }
 
 let component: ReturnType<typeof mount> | null = null;
@@ -269,6 +301,98 @@ describe("characteristic detail panel (T2.8)", () => {
     await settle();
     expect(stores.reinterpreted).toEqual([["c1", "c3"]]);
     expect(target.querySelector("[role='status']")?.textContent).toContain("by hand: 1");
+  });
+});
+
+describe("shorter leg of an angle (T2.9a)", () => {
+  function legInput(): HTMLInputElement | null {
+    return target.querySelector<HTMLInputElement>("input[data-field='shorter_leg']");
+  }
+
+  function enter(text: string) {
+    const input = legInput();
+    if (input) {
+      input.value = text;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  it("is offered for angles only, in the sheet unit", async () => {
+    const stores = setup();
+    stores.selection.select(["c1"]);
+    render(stores);
+    await settle();
+    expect(legInput()).toBeNull();
+    stores.selection.select(["c5"]);
+    await settle();
+    expect(legInput()?.value).toBe("");
+    expect(target.textContent).toContain("Shorter leg (mm)");
+  });
+
+  it("sends the typed leg to Rust, which reads and stores it as one undo step", async () => {
+    const stores = setup();
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("40");
+    await settle();
+    expect(stores.legs).toEqual([["c5", "40"]]);
+    // No document command from TypeScript: Rust applies the change and returns the patch.
+    expect(stores.commands).toEqual([]);
+    expect(target.querySelector("[role='alert']")).toBeNull();
+    expect(target.querySelector("[role='status']")).toBeNull();
+  });
+
+  it("clears the leg with empty text", async () => {
+    const stores = setup();
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("  ");
+    await settle();
+    expect(stores.legs).toEqual([["c5", null]]);
+  });
+
+  it("says when hand entered limits were kept or the text gives no limits", async () => {
+    const stores = setup();
+    stores.leg.outcome = "manual_kept";
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("40");
+    await settle();
+    expect(target.querySelector("[role='status']")?.textContent).toContain("entered by hand");
+    stores.leg.outcome = "unreadable";
+    enter("8");
+    await settle();
+    expect(target.querySelector("[role='status']")?.textContent).toContain("not a dimension");
+  });
+
+  it("shows a stored leg in another unit beside the field, which takes the sheet unit", async () => {
+    const stores = setup();
+    stores.selection.select(["c6"]);
+    render(stores);
+    await settle();
+    expect(target.textContent).toContain("Shorter leg (mm)");
+    expect(legInput()?.value).toBe("");
+    expect(target.querySelector("[data-field='shorter_leg_stored']")?.textContent).toContain(
+      "1.5 in",
+    );
+  });
+
+  it("shows a leg Rust refuses and changes nothing", async () => {
+    const stores = setup();
+    stores.leg.refuse = true;
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    enter("abc");
+    await settle();
+    expect(stores.commands).toEqual([]);
+    expect(legInput()?.getAttribute("aria-invalid")).toBe("true");
+    expect(target.querySelector("[role='alert']")?.textContent).toContain(
+      "Enter a positive number",
+    );
   });
 });
 

@@ -25,6 +25,7 @@
     "allow-explain-characteristic",
     "allow-characteristic-history",
     "allow-reinterpret-characteristics",
+    "allow-set-shorter-leg",
     "allow-import-tolerance-table",
     "allow-app-settings",
     "allow-set-app-settings",

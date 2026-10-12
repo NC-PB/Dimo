@@ -1,0 +1,7 @@
+---
+source: crates/dimo-tolerance/tests/explain.rs
+expression: "format!(\"callout: 30°, leg 1.5 in\\nen: {}\\nde: {}\\n\",\nexplain(&i.derivation, &values, Language::English),\nexplain(&i.derivation, &values, Language::German))"
+---
+callout: 30°, leg 1.5 in
+en: No tolerance on the drawing. General tolerance iso-2768-1 version 1, class m, part angular. The shorter leg is 1.5 in (38.1 mm), in the range over 10 up to and including 50 mm, so ±0.5°. Limits 29.5° to 30.5°. The table is a draft and not verified yet.
+de: Keine Toleranz in der Zeichnung. Allgemeintoleranz iso-2768-1 Version 1, Klasse m, Teil angular. Der kürzere Schenkel ist 1,5 Zoll (38,1 mm) lang und liegt im Bereich über 10 bis einschließlich 50 mm, daher ±0,5°. Grenzmaße 29,5° bis 30,5°. Die Tabelle ist ein Entwurf und noch nicht geprüft.

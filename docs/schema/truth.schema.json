@@ -124,6 +124,25 @@
       ],
       "type": "object"
     },
+    "Length": {
+      "description": "A length with its unit, such as the shorter leg of an angle (T2.9a). Serialized as\n`{ \"value\": \"40\", \"unit\": \"mm\" }`.",
+      "properties": {
+        "unit": {
+          "$ref": "#/$defs/Unit",
+          "description": "A length unit: `mm` or `in`."
+        },
+        "value": {
+          "description": "The value in `unit`.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "type": "object"
+    },
     "OrientedBox": {
       "additionalProperties": false,
       "description": "Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).",
@@ -399,6 +418,17 @@
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
+        },
+        "shorter_leg": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Length"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Shorter leg of an angle on the part, when the expected limits depend on it (ISO 2768-1\ntable 3). Evaluation enters it as the user would on the proposal card (T2.9a). Only for\nangles; absent otherwise."
         },
         "tolerance_rule": {
           "anyOf": [

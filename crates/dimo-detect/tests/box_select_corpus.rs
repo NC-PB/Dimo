@@ -67,6 +67,6 @@ fn every_corpus_truth_region_is_read_correctly() {
     );
     assert!(evaluation.passes(), "{report}");
     // test_drawing_1 holds 23 common callouts and one note.
-    assert!(evaluation.gated().count >= 23, "{report}");
+    assert!(evaluation.strict().count >= 23, "{report}");
     assert!(evaluation.category(Category::Fit).count >= 6, "{report}");
 }

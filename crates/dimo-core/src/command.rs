@@ -687,6 +687,7 @@ fn accept_one(
         c.inspect = proposal.inspect;
         c.origin = proposal.origin;
         c.sources = vec![proposal.source.clone()];
+        c.shorter_leg = proposal.shorter_leg;
         Ok(())
     })
 }
