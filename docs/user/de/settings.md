@@ -17,6 +17,11 @@ verwendeten Exportoptionen ([Exporte](exports.md)) liegen dort.
 - **Benutzername**: wird bei jeder Änderung an einem Projekt festgehalten. Leer lassen, um den
   Benutzernamen des Betriebssystems zu verwenden, den das Feld grau anzeigt.
 
+## Berichte
+
+- **Firmenname**: wird auf Berichten gedruckt. Öffnest du ein Projekt, dessen Berichtsdaten noch
+  keinen Firmennamen haben, kopiert Dimo ihn von hier ([Projekt- und Berichtsdaten](project-details.md)).
+
 ## Ballonstil dieses Projekts
 
 Sichtbar, solange ein Projekt offen ist. Form, Größe, Linienbreite, Randfarbe und Bezugslinie

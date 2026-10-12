@@ -22,10 +22,11 @@ in the characteristic table.
 | [Characteristic table](characteristics.md) | Values, selecting, editing, changing the order |
 | [Sheets: rotation, unit and scale](sheets.md) | Properties of every sheet |
 | [Numbering strategies, zones and views](numbering.md) | Number by zone, view or type, preview, sub-numbers, locked numbering |
+| [Project and report details](project-details.md) | Part, customer, revision, drawing hash, report header and approval fields |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
 | [Exports](exports.md) | Ballooned PDF, CSV and Excel list, issued drawings |
 | [Tolerances](tolerances.md) | Rules, general tolerance, custom tables, explanations, draft tables, history |
-| [Settings](settings.md) | Theme, language, user name, balloon style, tolerances |
+| [Settings](settings.md) | Theme, language, user name, company name, balloon style, tolerances |
 | [Keyboard shortcuts](shortcuts.md) | Every key, for macOS and for Windows and Linux |
 
 Press **?** in the app at any time to see the keyboard shortcuts.
