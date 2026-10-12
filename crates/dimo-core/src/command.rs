@@ -1279,13 +1279,20 @@ fn set_results(tx: &mut Tx<'_>, entries: &[ResultEntry]) -> Result<(), CommandEr
         let Some(characteristic) = tx.project.characteristic(cell.characteristic) else {
             return Err(CommandError::UnknownCharacteristic(cell.characteristic));
         };
+        let effective = characteristic.effective_result_type();
         let value =
-            parse_result(&entry.text, characteristic.effective_result_type()).map_err(|error| {
-                CommandError::InvalidResult {
-                    characteristic: cell.characteristic,
-                    error,
-                }
+            parse_result(&entry.text, effective).map_err(|error| CommandError::InvalidResult {
+                characteristic: cell.characteristic,
+                error,
             })?;
+        // M3 decision 4 (owner addition): a result pins an `auto` characteristic to its
+        // effective type in the same undo step, so a later limit change never flips it.
+        if characteristic.result_type == ResultType::Auto {
+            let before = Box::new(characteristic.clone());
+            let mut after = before.clone();
+            after.result_type = effective;
+            tx.push(Change::CharacteristicChanged { before, after })?;
+        }
         let comment = match &entry.comment {
             Some(comment) => comment.clone(),
             None => tx

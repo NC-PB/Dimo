@@ -7,6 +7,8 @@
 //! - leave the project unchanged when a command is refused,
 //! - produce patches that turn the previous state into the next one,
 //! - keep the numbering and reference invariants,
+//! - pin the result type of an `auto` characteristic with the first result set on it, in the
+//!   same undo step (M3 decision 4, T3.3),
 //! - give byte identical JSON when replayed with the same environment.
 //!
 //! Undo and redo states are also compared as JSON, because `Decimal` equality ignores the
@@ -730,6 +732,22 @@ fn fresh() -> (Document, FixedEnvironment) {
     (Document::new(project), env)
 }
 
+/// M3 decision 4: a result set on an `auto` characteristic pins it to the effective type it
+/// had before; other result types stay as they were.
+fn check_pins(before: &Project, after: &Project, results: &[ResultEntry]) {
+    for old in &before.characteristics {
+        let new = after.characteristic(old.id).unwrap();
+        let set = results
+            .iter()
+            .any(|r| r.characteristic == old.id && !r.text.trim().is_empty());
+        if set && old.result_type == ResultType::Auto {
+            assert_eq!(new.result_type, old.effective_result_type());
+        } else {
+            assert_eq!(new.result_type, old.result_type);
+        }
+    }
+}
+
 /// Runs the commands, returns the document and the number of undo steps they created.
 fn run_commands(ops: &[Op]) -> (Document, FixedEnvironment, usize) {
     let (mut doc, mut env) = fresh();
@@ -737,10 +755,13 @@ fn run_commands(ops: &[Op]) -> (Document, FixedEnvironment, usize) {
     for op in ops {
         let before = doc.project().clone();
         let cmd = command(&before, op);
-        match doc.execute(cmd, &mut env) {
+        match doc.execute(cmd.clone(), &mut env) {
             Ok(patch) => {
                 assert_eq!(replay(&before, &patch.changes), *doc.project());
                 steps += usize::from(!patch.is_empty());
+                if let Command::SetResults { results } = &cmd {
+                    check_pins(&before, doc.project(), results);
+                }
             }
             Err(_) => assert_eq!(
                 *doc.project(),
