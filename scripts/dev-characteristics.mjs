@@ -8,13 +8,17 @@
 //   DIMO_DEV_OPEN=corpus/drawings/test_drawing_1.pdf \
 //   DIMO_DEV_SCRIPT=$PWD/target/dev/chars-1000.json \
 //   VITE_DIMO_DEV_TABLE_CHECK=1 pnpm -C apps/desktop tauri dev
+//
+// An optional third argument adds that many samples in a second step, for checking the
+// measurement grid with a large project (T3.5): `node scripts/dev-characteristics.mjs 300 out.json 10`.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 const count = Number(process.argv[2] ?? 1000);
 const out = process.argv[3];
-if (!Number.isInteger(count) || count < 1 || !out) {
-  console.error("usage: node scripts/dev-characteristics.mjs <count> <output.json>");
+const samples = Number(process.argv[4] ?? 0);
+if (!Number.isInteger(count) || count < 1 || !out || !Number.isInteger(samples) || samples < 0) {
+  console.error("usage: node scripts/dev-characteristics.mjs <count> <output.json> [samples]");
   process.exit(2);
 }
 
@@ -49,5 +53,10 @@ const commands = Array.from({ length: count }, (_, i) => {
 });
 
 mkdirSync(dirname(out), { recursive: true });
-writeFileSync(out, `${JSON.stringify([{ execute: { type: "batch", commands } }])}\n`);
-console.log(`wrote ${String(count)} characteristics to ${out}`);
+const steps = [{ execute: { type: "batch", commands } }];
+// Rust adds at most 100 samples per command (M3 decision 6).
+for (let left = samples; left > 0; left -= 100) {
+  steps.push({ execute: { type: "add_samples", count: Math.min(100, left) } });
+}
+writeFileSync(out, `${JSON.stringify(steps)}\n`);
+console.log(`wrote ${String(count)} characteristics and ${String(samples)} samples to ${out}`);

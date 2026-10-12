@@ -1,0 +1,79 @@
+[
+  {
+    "execute": {
+      "type": "batch",
+      "commands": [
+        {
+          "type": "add_characteristic",
+          "sheet": "$SHEET0",
+          "position": { "x": 120, "y": 120 },
+          "anchor": { "x": 130, "y": 130 },
+          "region": null,
+          "insert_after": null,
+          "values": [
+            { "field": "kind", "value": "diameter" },
+            { "field": "requirement_text", "value": "Ø10 ±0.1" },
+            { "field": "nominal", "value": "10" },
+            { "field": "upper_dev", "value": "0.1" },
+            { "field": "lower_dev", "value": "-0.1" }
+          ]
+        },
+        {
+          "type": "add_characteristic",
+          "sheet": "$SHEET0",
+          "position": { "x": 180, "y": 120 },
+          "anchor": { "x": 190, "y": 130 },
+          "region": null,
+          "insert_after": null,
+          "values": [
+            { "field": "kind", "value": "note" },
+            { "field": "requirement_text", "value": "Deburr all edges" }
+          ]
+        },
+        {
+          "type": "add_characteristic",
+          "sheet": "$SHEET0",
+          "position": { "x": 240, "y": 120 },
+          "anchor": { "x": 250, "y": 130 },
+          "region": null,
+          "insert_after": null,
+          "values": [
+            { "field": "kind", "value": "linear" },
+            { "field": "requirement_text", "value": "20 ±0.05" },
+            { "field": "nominal", "value": "20" },
+            { "field": "upper_dev", "value": "0.05" },
+            { "field": "lower_dev", "value": "-0.05" }
+          ]
+        },
+        {
+          "type": "add_characteristic",
+          "sheet": "$SHEET0",
+          "position": { "x": 300, "y": 120 },
+          "anchor": { "x": 310, "y": 130 },
+          "region": null,
+          "insert_after": null,
+          "values": [
+            { "field": "kind", "value": "linear" },
+            { "field": "requirement_text", "value": "approx. 7" },
+            { "field": "nominal", "value": "7" }
+          ]
+        },
+        {
+          "type": "add_characteristic",
+          "sheet": "$SHEET0",
+          "position": { "x": 360, "y": 120 },
+          "anchor": { "x": 370, "y": 130 },
+          "region": null,
+          "insert_after": null,
+          "values": [
+            { "field": "kind", "value": "linear" },
+            { "field": "requirement_text", "value": "30 +0 -0.2" },
+            { "field": "nominal", "value": "30" },
+            { "field": "upper_dev", "value": "0" },
+            { "field": "lower_dev", "value": "-0.2" }
+          ]
+        }
+      ]
+    }
+  }
+]

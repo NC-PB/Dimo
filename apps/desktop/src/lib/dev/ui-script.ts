@@ -29,12 +29,16 @@
  * - `button`: clicks the button whose text is this label.
  * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
+ * - `cell`: `[row, sample]` clicks a cell of the measurement grid, both one based (row 1 is the
+ *   first measured characteristic), and gives the grid the focus (T3.5).
+ * - `paste`: sends a paste event with this text to the focused element, as Cmd/Ctrl+V with that
+ *   text on the clipboard would (T3.5).
  * - `view`: zoom percent and the sheet point in the viewport center.
  * - `show`: switches to a view (`drawing`, `export`, `settings`, ...).
  * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
  *   or the `<select>` whose `aria-label` starts with it.
  * - `reveal`: scrolls the field inside the label that starts with this text into view.
- * - `fill`: `[label, text]` sets the text field inside the label that starts with this text, as
+ * - `fill`: `[label, text]` sets the text, number or date field inside the label that starts with this text, as
  *   typing and leaving the field would (input and change events), e.g. the shorter leg (T2.9a).
  * - `check`: `[label, checked]` sets the check box (or turns on the radio button) inside the
  *   label that starts with this text.
@@ -45,6 +49,8 @@ import { commands, type ExportFormat } from "$lib/ipc/bindings";
 import { isMacPlatform } from "$lib/shortcuts";
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
 import { boxSelect } from "$lib/stores/box-select.svelte";
+import { devTools } from "./dev-tools.svelte";
+import { measurementStore } from "$lib/stores/measurement.svelte";
 import { documentStore } from "$lib/stores/document.svelte";
 import { EXPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
 import { numberingStore } from "$lib/stores/numbering.svelte";
@@ -76,6 +82,8 @@ export type UiStep =
   | { keys: string }
   | { button: string }
   | ({ row: number } & Mods)
+  | { cell: [number, number] }
+  | { paste: string }
   | ({ balloon: number } & Mods)
   | { view: [number, number, number] }
   | { show: string }
@@ -233,7 +241,21 @@ function report(label: string): string {
   const zones = grid
     ? `${String(grid.column_labels.length)}x${String(grid.row_labels.length)}`
     : "none";
-  return `${label}: card [${card}], view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}`;
+  // Measurement grid (T3.5): verdicts per measured row as one letter per sample.
+  const letter = { pass: "p", fail: "f", not_evaluated: "n", missing: "-" } as const;
+  const verdicts = measurementStore.rows
+    .map(
+      (r) =>
+        `${projectStore.characteristicById.get(r.characteristic)?.number ?? "?"}:${r.cells.map((v) => letter[v]).join("")}`,
+    )
+    .join(" ");
+  const times = devTools.commitTimes;
+  const commits =
+    times.length === 0
+      ? "-"
+      : `${String(times.length)} mean ${(times.reduce((a, b) => a + b, 0) / times.length).toFixed(1)} ms max ${Math.max(...times).toFixed(1)} ms`;
+  const measure = `samples ${String(project?.samples.length ?? 0)} results ${String(project?.results.length ?? 0)} verdicts [${verdicts}] overall ${measurementStore.state?.verdict ?? "-"} commits ${commits}`;
+  return `${label}: ${measure}, card [${card}], view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -306,6 +328,27 @@ async function run(step: UiStep): Promise<void> {
     // from the focused grid.
     document.querySelector<HTMLElement>('[role="grid"]')?.focus({ preventScroll: true });
     await sleep(STEP_PAUSE_MS);
+  } else if ("cell" in step) {
+    const [row, col] = step.cell;
+    const grid = [...document.querySelectorAll<HTMLElement>('[role="grid"]')].find(
+      (g) => g.offsetParent !== null && g.querySelector("[data-verdict]") !== null,
+    );
+    const cell = grid?.querySelector<HTMLElement>(
+      `[data-row="${String(row - 1)}"] [data-col="${String(col - 1)}"]`,
+    );
+    cell?.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, cancelable: true, button: 0, buttons: 1 }),
+    );
+    grid?.focus({ preventScroll: true });
+    await sleep(STEP_PAUSE_MS);
+  } else if ("paste" in step) {
+    const target = document.activeElement ?? document.body;
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: { getData: (type: string) => (type === "text/plain" ? step.paste : "") },
+    });
+    target.dispatchEvent(event);
+    await sleep(STEP_PAUSE_MS);
   } else if ("view" in step) {
     const [percent, x, y] = step.view;
     viewport.set(
@@ -335,7 +378,9 @@ async function run(step: UiStep): Promise<void> {
     labelled(step.reveal)?.scrollIntoView({ block: "center" });
     await sleep(STEP_PAUSE_MS);
   } else if ("fill" in step) {
-    const field = labelled(step.fill[0])?.querySelector<HTMLInputElement>("input[type=text]");
+    const field = labelled(step.fill[0])?.querySelector<HTMLInputElement>(
+      "input[type=text], input[type=number], input[type=date]",
+    );
     if (field) {
       field.focus({ preventScroll: true });
       field.value = step.fill[1];

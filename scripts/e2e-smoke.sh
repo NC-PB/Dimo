@@ -16,6 +16,9 @@
 #      limits, and a typed balloon is read again with "Re-interpret selected".
 #   6. Project and report details (T3.4): part, revision and report fields are typed into the
 #      side panel and saved; the company name comes from the settings.
+#   7. Measurement grid (T3.5): five characteristics from a dev script, three samples added, one
+#      column typed with the keyboard only, a 5 by 3 block pasted, undone and redone in one step
+#      each, saved; verdicts from the app and results from project.json.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -332,6 +335,38 @@ if [[ -s "$DET" ]]; then
     "$(djq '"\(.report_info.report_number) \(.report_info.approved_by) \(.report_info.inspected_by) \(.report_info.company_name)"')"
 else
   fail "missing or empty: $DET"
+fi
+
+step "7. measurement grid (T3.5)"
+run_app measure "$SCRIPTS/measure.json" term home7 \
+  DIMO_DEV_OPEN="$DRAWING" DIMO_DEV_SCRIPT="$SCRIPTS/measure-setup.json" \
+  DIMO_DEV_SAVE_AS="$WORK/measure.dimo"
+verdicts_of() { { grep -oE 'samples [0-9]+ results [0-9]+ verdicts \[[^]]*\] overall [a-z]+' <<<"$1" || true; } | head -1; }
+expect "measure: three samples added, no results" \
+  "samples 3 results 0 verdicts [1:--- 2:--- 3:--- 4:--- 5:---] overall open" \
+  "$(verdicts_of "$(report measure 'samples added')")"
+expect "measure: column typed with the keyboard: pass, OK, fail, not evaluated, pass on the limit" \
+  "samples 3 results 5 verdicts [1:p-- 2:p-- 3:f-- 4:n-- 5:p--] overall fail" \
+  "$(verdicts_of "$(report measure 'column 1')")"
+pasted='samples 3 results 15 verdicts [1:ppf 2:pfp 3:ppf 4:nnn 5:ppf] overall fail'
+expect "measure: 5 by 3 block pasted" "$pasted" "$(verdicts_of "$(report measure pasted)")"
+expect "measure: undo removes the whole paste" \
+  "samples 3 results 5 verdicts [1:p-- 2:p-- 3:f-- 4:n-- 5:p--] overall fail" \
+  "$(verdicts_of "$(report measure 'paste undone')")"
+expect "measure: redo brings it back" "$pasted" "$(verdicts_of "$(report measure 'paste redone')")"
+MEA="$WORK/measure.dimo"
+if [[ -s "$MEA" ]]; then
+  MJSON=$(unzip -p "$MEA" project.json)
+  mjq() { jq -r "$1" <<<"$MJSON"; }
+  expect "measure: serials and result count stored" "1,2,3 15" \
+    "$(mjq '"\([.samples[].serial] | join(",")) \(.results | length)"')"
+  expect "measure: values of sample 1 as typed or pasted, in characteristic order" \
+    "10.01|ok|20|6.9|29.9" \
+    "$(mjq '.samples[0].id as $s | [.results[] | select(.sample == $s) | .value.value] | join("|")')"
+  expect "measure: result types pinned or set (decision 4)" "variable attribute variable variable variable" \
+    "$(mjq '[.characteristics | sort_by(.number | tonumber)[] | .result_type] | join(" ")')"
+else
+  fail "missing or empty: $MEA"
 fi
 
 step "result"
