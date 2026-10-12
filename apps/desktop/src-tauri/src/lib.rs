@@ -61,6 +61,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             tolerance::set_shorter_leg,
             tolerance::import_tolerance_table,
             measurement::measurement_state,
+            measurement::changed_since_issued_report,
             settings::app_settings,
             settings::set_app_settings,
             dev::dev_startup,

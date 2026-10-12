@@ -28,6 +28,7 @@
     "allow-set-shorter-leg",
     "allow-import-tolerance-table",
     "allow-measurement-state",
+    "allow-changed-since-issued-report",
     "allow-app-settings",
     "allow-set-app-settings",
     "allow-dev-startup",

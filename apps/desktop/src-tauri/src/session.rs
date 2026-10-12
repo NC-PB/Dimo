@@ -831,6 +831,13 @@ impl AppSession {
         Ok(open.project.characteristic_history(id))
     }
 
+    /// Characteristics of the open project whose limits or result type changed after the last
+    /// issued report (M3 decision 16).
+    pub fn changed_since_issued_report(&self) -> Result<Vec<dimo_core::CharId>, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        Ok(open.project.changed_since_issued_report())
+    }
+
     /// Keeps a custom tolerance table file in the open project (M2 decision 4) and returns its
     /// hash. Validate it first; it is journaled with the first command whose settings list it.
     pub fn insert_table(&mut self, bytes: Vec<u8>) -> Result<Sha256Hex, CommandError> {

@@ -123,6 +123,12 @@ export const commands = {
 	 *  samples in column order.
 	 */
 	measurementState: () => typedError<MeasurementState, CommandError>(__TAURI_INVOKE("measurement_state")),
+	/**
+	 *  Characteristics whose limits or result type changed after the last issued report, in
+	 *  placement order; empty without an issued report (M3 decision 16). The measurement grid marks
+	 *  them with a hint. Computed from the audit log in Rust (rule 2).
+	 */
+	changedSinceIssuedReport: () => typedError<CharId[], CommandError>(__TAURI_INVOKE("changed_since_issued_report")),
 	/**  The settings of the user and the operating system user name. */
 	appSettings: () => __TAURI_INVOKE<SettingsView>("app_settings"),
 	/**

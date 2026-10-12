@@ -10,7 +10,8 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use dimo_core::{
-    Command, FieldValue, OverallVerdict, Point, ResultEntry, ResultType, Verdict, VerdictCounts,
+    Command, FieldValue, OverallVerdict, Point, ReportFormat, ReportKind, ResultEntry, ResultType,
+    Sha256Hex, TemplateRef, Verdict, VerdictCounts,
 };
 use dimo_desktop::ipc::CommandError;
 use dimo_desktop::measurement::state_of;
@@ -142,6 +143,41 @@ fn measurement_state_of_the_open_project() {
     let json = serde_json::to_value(&state).unwrap();
     assert_eq!(json["rows"][0]["cells"][1], "missing");
     assert_eq!(json["verdict"], "fail");
+}
+
+/// Decision 16: after an issued report, a limit change marks the characteristic; the session
+/// reads the flushed and the unflushed audit log.
+#[test]
+fn changed_since_issued_report_of_the_open_project() {
+    assert!(matches!(
+        AppSession::new(None).changed_since_issued_report(),
+        Err(CommandError::NoProject)
+    ));
+    let Some(tiles) = service() else { return };
+    let mut session = session_with(&tiles, 2, 1);
+    assert_eq!(
+        session.changed_since_issued_report().unwrap(),
+        Vec::<dimo_core::CharId>::new()
+    );
+    session
+        .execute(Command::RecordIssuedReport {
+            kind: ReportKind::InspectionReport,
+            template: TemplateRef {
+                id: "dimo-default".into(),
+                version: 1,
+            },
+            format: ReportFormat::Pdf,
+            output_sha256: Sha256Hex::from_bytes(&[1; 32]),
+        })
+        .unwrap();
+    let first = session.project().unwrap().characteristics[0].id;
+    session
+        .execute(Command::UpdateFields {
+            ids: vec![first],
+            values: vec![FieldValue::UpperDev(Some(Decimal::new(2, 1)).into())],
+        })
+        .unwrap();
+    assert_eq!(session.changed_since_issued_report().unwrap(), vec![first]);
 }
 
 /// 300 characteristics by 10 samples: the query including JSON serialization (what the IPC
