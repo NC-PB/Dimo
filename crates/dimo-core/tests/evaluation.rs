@@ -567,3 +567,66 @@ proptest! {
 fn variable_of(value: Decimal) -> MeasurementResult {
     result(ResultValue::Variable { value })
 }
+
+/// Decision 4: setting `auto` again on a characteristic with results keeps the pinned type, so
+/// removing the limits cannot flip the row and mix types (spec review of T3.3).
+#[test]
+fn auto_again_with_results_keeps_the_pin() {
+    let (mut doc, mut env) = doc_with(2);
+    let (c, s) = ids(&doc);
+    set(&mut doc, &mut env, &[(s[0], c[0], "10.02")]);
+    let to_auto = Command::SetResultType {
+        ids: vec![c[0], c[1]],
+        result_type: ResultType::Auto,
+    };
+    doc.execute(to_auto, &mut env).unwrap();
+    let pinned = [ResultType::Variable, ResultType::Auto, ResultType::Auto];
+    assert_eq!(result_types(&doc), pinned);
+    remove_limits(&mut doc, &mut env, c[0]);
+    let ok = ResultEntry {
+        sample: s[1],
+        characteristic: c[0],
+        text: "ok".into(),
+        comment: None,
+    };
+    let refused = doc.execute(Command::SetResults { results: vec![ok] }, &mut env);
+    let error = ResultParseError::NotANumber;
+    assert_eq!(
+        refused,
+        Err(CommandError::InvalidResult {
+            characteristic: c[0],
+            error
+        })
+    );
+    // Without results, `auto` is stored as asked.
+    set(&mut doc, &mut env, &[(s[0], c[0], "")]);
+    let to_auto = Command::SetResultType {
+        ids: vec![c[0]],
+        result_type: ResultType::Auto,
+    };
+    doc.execute(to_auto, &mut env).unwrap();
+    assert_eq!(result_types(&doc)[0], ResultType::Auto);
+}
+
+/// Decision 3 and D-43: rows with limits from a draft table carry the draft mark.
+#[test]
+fn rows_carry_the_draft_mark() {
+    let (mut doc, mut env) = doc_with(1);
+    let (c, _) = ids(&doc);
+    let draft = ToleranceDerivation {
+        draft: true,
+        ..ToleranceDerivation::new(DerivationRule::Explicit)
+    };
+    let values = vec![FieldValue::Derivation(Some(draft))];
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![c[2]],
+            values,
+        },
+        &mut env,
+    )
+    .unwrap();
+    let state = measurement_state(doc.project());
+    let marks: Vec<bool> = state.rows.iter().map(|r| r.draft).collect();
+    assert_eq!(marks, [false, false, true]);
+}

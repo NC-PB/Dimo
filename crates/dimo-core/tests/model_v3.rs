@@ -555,9 +555,15 @@ fn result_type_is_refused_while_results_of_the_other_type_exist() {
             assert_eq!(*doc.project(), before);
         } else {
             result.unwrap();
+            // `auto` with results keeps the pinned effective type (T3.3).
+            let stored = if result_type == ResultType::Auto {
+                ResultType::Variable
+            } else {
+                result_type
+            };
             assert_eq!(
                 doc.project().characteristic(id).unwrap().result_type,
-                result_type
+                stored
             );
         }
     }

@@ -811,6 +811,7 @@ before: SampleId | null } |
  *  Sets the results of cells from typed or pasted text, as one undo step (FR-MEA-02, M3
  *  decisions 7 and 8). Each text is parsed by the effective result type of its
  *  characteristic; empty text clears the cell. Refused as a whole if one text is invalid.
+ *  A result on an `auto` characteristic pins it to the effective type in the same step.
  */
 { type: "set_results"; 
 /**  Cells in order; a later entry for the same cell wins. */
@@ -821,7 +822,8 @@ results: ResultEntry[] } |
 cells: ResultCell[] } | 
 /**
  *  Sets how characteristics are measured (FR-MEA-06, M3 decision 4). Refused while a
- *  characteristic has results of the other type; nothing is converted.
+ *  characteristic has results of the other type; nothing is converted. `auto` on a
+ *  characteristic with results keeps its effective type pinned.
  */
 { type: "set_result_type"; 
 /**  Characteristics to change. */

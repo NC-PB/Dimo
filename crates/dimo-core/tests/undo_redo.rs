@@ -762,6 +762,14 @@ fn run_commands(ops: &[Op]) -> (Document, FixedEnvironment, usize) {
                 if let Command::SetResults { results } = &cmd {
                     check_pins(&before, doc.project(), results);
                 }
+                if let Command::SetResultType { ids, .. } = &cmd {
+                    let p = doc.project();
+                    for &id in ids {
+                        let auto = p.characteristic(id).unwrap().result_type == ResultType::Auto;
+                        let has_results = p.results_of(id).next().is_some();
+                        assert!(!(auto && has_results), "auto with results");
+                    }
+                }
             }
             Err(_) => assert_eq!(
                 *doc.project(),
