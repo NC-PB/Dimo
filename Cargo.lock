@@ -1132,6 +1132,7 @@ dependencies = [
  "dimo-detect",
  "dimo-io",
  "dimo-pdf",
+ "dimo-report",
  "dimo-tolerance",
  "rfd",
  "rust_decimal",

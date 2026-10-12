@@ -6,26 +6,88 @@ Open the **Export** view (the **Export** button in the top bar, or ⌘E on macOS
 It needs an open project. Each export asks where to save the file and then runs in the
 background; you can keep working meanwhile. The file contains the project as it was when you
 clicked the button. A progress bar and then the saved file name appear below the export, or the
-reason why it failed.
+reason why it failed. While a report export runs, **Cancel export** stops it; no file is
+written then. Dimo stops between the steps of the export (prepare, render, write), so a cancel
+can take a moment to take effect.
+
+The view has two groups: **Reports** (check sheet and inspection report) and **Drawing and
+characteristic list** (ballooned PDF, CSV and Excel list).
 
 The suggested file names follow the project file (or the drawing, for a project that was never
-saved): `part_ballooned.pdf`, `part_characteristics.csv` and `part_characteristics.xlsx`.
+saved): `part_ballooned.pdf`, `part_characteristics.csv`, `part_characteristics.xlsx`,
+`part_check-sheet.pdf` or `.xlsx`, and `part_inspection-report.pdf` or `.xlsx`.
 
-Options. The first two are remembered for the next start:
+Options. All but the last are remembered for the next start, as is the format chosen for each
+report:
 
-- **Column headers**: English or German headers in the CSV and Excel files, independent of the
-  language of the app.
+- **Language**: English or German headers in the CSV and Excel files, and the language of the
+  reports, independent of the language of the app.
 - **Balloons in the PDF**: as part of the page (default), or as annotations that PDF viewers can
   show, hide or delete.
-- **Export as issued**: locks the numbering before exporting. Use it for drawings that go to a
+- **Blank result columns**: how many empty result columns a check sheet gets when the project
+  has no samples, 1 to 10 (default 3).
+- **Export as issued**: locks the numbering. Use it for drawings and reports that go to a
   customer. While locked, numbers never change, deleted numbers are not reused, a new
   characteristic gets the highest number ever used plus one, and rows of the table cannot be
-  moved. The lock is recorded in the change log. This box is not remembered and is off at every
-  start. While the numbering is locked the box is disabled and says so.
+  moved. The lock is recorded in the change log. A report exported as issued is also recorded
+  in the project (see [Issued reports](#issued-reports)). This box is not remembered and is off
+  at every start. While the numbering is locked the box says so; reports exported as issued are
+  still recorded.
 
 Dimo has no unlock button in this version. The lock is a change like any other, so ⌘Z undoes it
 as long as it is the last change you made, for example right after the export. Anything you
 change after the export goes on top of it in the history.
+
+## Check sheet and inspection report
+
+Both reports list the inspected characteristics in number order: characteristics with
+**Inspect** cleared (reference and basic dimensions) and rejected ones are left out. Each row
+shows number, requirement, nominal, limits, unit, the rule that gave the limits, method and
+gauge. The header on every page shows the company, part, customer, order, drawing file,
+revision, the start of the SHA-256 of the drawing file (in full on the first page), report
+number, date and page. The values come from [Project and report details](project-details.md).
+
+- **Check sheet**: empty result columns to print and fill in by hand. With samples in the
+  project there is one column per sample with its serial; without samples the number of blank
+  result columns set in the options.
+- **Inspection report**: summary (overall result and counts of pass, fail, not evaluated and
+  missing), the samples with date, inspector, gauges and their result, the results with their
+  marks, remarks and the signature block (inspected by, approved by). How verdicts are found is
+  explained in [Entering results](measuring.md).
+
+Choose **PDF** or **Excel** under **Format** of each report. Both contain the same values. The
+PDF is A4 landscape; more than six samples are printed in blocks of six columns. The Excel file
+has one sheet named after the report, numbers as number cells with the digits you typed, and
+the marks as text with a colored fill.
+
+Limits from tolerance tables that are still drafts are marked in the report with a footnote.
+
+The date printed on a report is the report date of the project. If it is empty, the date of the
+last change of the project is used. It never depends on the day you export, so the same project
+gives the same files, byte for byte.
+
+### Issued reports
+
+With **Export as issued** a report export does three things in one step, after the file is
+written:
+
+1. The numbering is locked, if it is not locked yet.
+2. An empty company name is filled in from **Settings** and an empty "inspected by" with your
+   user name. The report already shows these values.
+3. The project records the issued report: which report, the template and its version, the file
+   format, the drawing revision and its SHA-256, the SHA-256 of the written file and the export
+   time. The export time is kept in the project only, it is not printed in the report.
+
+Recording is a change of the project. A report without a report date therefore prints a later
+date when you export it again; enter a report date to keep it fixed.
+
+⌘Z undoes all three at once. Below the export Dimo confirms "Recorded as issued". If you changed
+the project while the export ran, the file is written but nothing is recorded, because the file
+no longer shows the project; export again.
+
+Before an issued export Dimo warns when limits come from draft tables, when results are missing
+or not evaluated (inspection report), or when limits or result types changed after the last
+issued report. You can export anyway or go back. The warnings never prevent the export.
 
 ## Ballooned PDF
 

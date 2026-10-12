@@ -1,5 +1,6 @@
 //! Settings of the user, independent of any project (T1.9): theme (D-51), UI language
-//! (FR-SET-04), audit user name (D-27) and the last used export options (D-32, D-33).
+//! (FR-SET-04), audit user name (D-27) and the last used export options (D-32, D-33, M3
+//! decision 12: blank check sheet columns and report formats).
 //!
 //! Stored as `settings.json` in the app config directory. Only Rust reads and writes the file;
 //! the webview has no file system access (NFR-SEC-01). Missing fields take their defaults and
@@ -9,6 +10,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
 
+use dimo_core::ReportFormat;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager, WebviewWindow};
@@ -55,6 +57,15 @@ pub enum ReportLanguage {
     De,
 }
 
+impl From<ReportLanguage> for dimo_report::Language {
+    fn from(language: ReportLanguage) -> Self {
+        match language {
+            ReportLanguage::En => Self::En,
+            ReportLanguage::De => Self::De,
+        }
+    }
+}
+
 impl From<ReportLanguage> for dimo_io::export::Language {
     fn from(language: ReportLanguage) -> Self {
         match language {
@@ -76,13 +87,32 @@ pub enum PdfBalloons {
 }
 
 /// The export options used last, offered again in the export view.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub struct ExportPreferences {
-    /// Header language of the characteristic list.
+    /// Language of the characteristic list headers and of the reports (D-32).
     pub language: ReportLanguage,
     /// Balloons as page content or annotations.
     pub pdf_balloons: PdfBalloons,
+    /// Blank result columns of a check sheet for a project without samples, 1 to 10
+    /// (M3 decision 12).
+    pub blank_columns: u8,
+    /// File format of the check sheet.
+    pub check_sheet_format: ReportFormat,
+    /// File format of the inspection report.
+    pub inspection_report_format: ReportFormat,
+}
+
+impl Default for ExportPreferences {
+    fn default() -> Self {
+        Self {
+            language: ReportLanguage::default(),
+            pdf_balloons: PdfBalloons::default(),
+            blank_columns: dimo_report::DEFAULT_BLANK_COLUMNS,
+            check_sheet_format: ReportFormat::Pdf,
+            inspection_report_format: ReportFormat::Pdf,
+        }
+    }
 }
 
 /// Settings of the user.
@@ -109,6 +139,10 @@ impl AppSettings {
     pub fn normalized(mut self) -> Self {
         self.user_name = self.user_name.trim().to_owned();
         self.company_name = self.company_name.trim().to_owned();
+        self.export.blank_columns = self
+            .export
+            .blank_columns
+            .clamp(1, dimo_report::MAX_BLANK_COLUMNS);
         self.locale = self.locale.and_then(|locale| {
             let locale = locale.trim().to_owned();
             let ok = !locale.is_empty()
@@ -313,6 +347,9 @@ mod tests {
             export: ExportPreferences {
                 language: ReportLanguage::De,
                 pdf_balloons: PdfBalloons::Annotations,
+                blank_columns: 5,
+                check_sheet_format: ReportFormat::Xlsx,
+                inspection_report_format: ReportFormat::Pdf,
             },
         };
         settings.save(&path).unwrap();
@@ -329,7 +366,16 @@ mod tests {
         let loaded = AppSettings::load(&path);
         assert_eq!(loaded.export.language, ReportLanguage::De);
         assert_eq!(loaded.export.pdf_balloons, PdfBalloons::PageContent);
+        assert_eq!(
+            loaded.export.blank_columns, 3,
+            "older files get the default"
+        );
+        assert_eq!(loaded.export.check_sheet_format, ReportFormat::Pdf);
         assert_eq!(loaded.theme, Theme::System);
+        std::fs::write(&path, r#"{"export": {"blank_columns": 40}}"#).unwrap();
+        assert_eq!(AppSettings::load(&path).export.blank_columns, 10);
+        std::fs::write(&path, r#"{"export": {"blank_columns": 0}}"#).unwrap();
+        assert_eq!(AppSettings::load(&path).export.blank_columns, 1);
     }
 
     #[test]

@@ -7,26 +7,92 @@ Strg+E sonst). Sie braucht ein offenes Projekt. Jeder Export fragt, wo die Datei
 und läuft dann im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das
 Projekt so, wie es war, als du die Schaltfläche geklickt hast. Unter dem Export erscheinen ein
 Fortschrittsbalken und danach der Dateiname, oder der Grund, warum der Export fehlschlug.
+Während ein Bericht exportiert wird, hält **Export abbrechen** ihn an; dann wird keine Datei
+geschrieben. Dimo hält zwischen den Schritten des Exports an (vorbereiten, erzeugen, schreiben),
+das Abbrechen kann also einen Moment dauern.
+
+Die Ansicht hat zwei Gruppen: **Berichte** (Prüfblatt und Prüfbericht) und **Zeichnung und
+Merkmalsliste** (PDF mit Ballons, CSV- und Excel-Liste).
 
 Die vorgeschlagenen Dateinamen folgen der Projektdatei (bei einem nie gespeicherten Projekt der
-Zeichnung): `teil_ballooned.pdf`, `teil_characteristics.csv` und `teil_characteristics.xlsx`.
+Zeichnung): `teil_ballooned.pdf`, `teil_characteristics.csv`, `teil_characteristics.xlsx`,
+`teil_check-sheet.pdf` oder `.xlsx` und `teil_inspection-report.pdf` oder `.xlsx`.
 
-Optionen. Die ersten beiden werden für den nächsten Start gespeichert:
+Optionen. Alle außer der letzten werden für den nächsten Start gespeichert, ebenso das für jeden
+Bericht gewählte Format:
 
-- **Spaltenüberschriften**: englische oder deutsche Überschriften in den CSV- und Excel-Dateien,
-  unabhängig von der Sprache der App.
+- **Sprache**: englische oder deutsche Überschriften in den CSV- und Excel-Dateien und die
+  Sprache der Berichte, unabhängig von der Sprache der App.
 - **Ballons im PDF**: als Teil der Seite (Standard) oder als Anmerkungen, die PDF-Programme
   ein- und ausblenden oder löschen können.
-- **Als freigegeben exportieren**: sperrt die Nummerierung vor dem Export. Für Zeichnungen, die
+- **Leere Ergebnisspalten**: wie viele leere Ergebnisspalten ein Prüfblatt erhält, wenn das
+  Projekt keine Muster hat, 1 bis 10 (Standard 3).
+- **Als freigegeben exportieren**: sperrt die Nummerierung. Für Zeichnungen und Berichte, die
   an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
   werden nicht wieder vergeben, ein neues Merkmal erhält die höchste je vergebene Nummer plus
   eins, und Zeilen der Tabelle lassen sich nicht verschieben. Die Sperre steht im
-  Änderungsprotokoll. Dieses Feld wird nicht gespeichert und ist bei jedem Start aus. Solange die
-  Nummerierung gesperrt ist, ist das Feld deaktiviert und sagt das auch.
+  Änderungsprotokoll. Ein als freigegeben exportierter Bericht wird außerdem im Projekt vermerkt
+  (siehe [Freigegebene Berichte](#freigegebene-berichte)). Dieses Feld wird nicht gespeichert und
+  ist bei jedem Start aus. Solange die Nummerierung gesperrt ist, sagt das Feld das; als
+  freigegeben exportierte Berichte werden trotzdem vermerkt.
 
 Eine Schaltfläche zum Entsperren gibt es in dieser Version nicht. Die Sperre ist eine Änderung wie
 jede andere, ⌘Z macht sie also rückgängig, solange sie deine letzte Änderung ist, zum Beispiel
 direkt nach dem Export. Was du nach dem Export änderst, liegt im Verlauf darüber.
+
+## Prüfblatt und Prüfbericht
+
+Beide Berichte führen die zu prüfenden Merkmale in Nummernfolge auf: Merkmale ohne **Prüfen**
+(Referenz- und theoretisch genaue Maße) und abgelehnte fehlen. Jede Zeile zeigt Nummer,
+Anforderung, Nennmaß, Grenzen, Einheit, die Regel, aus der die Grenzen stammen, Prüfmethode und
+Prüfmittel. Der Kopf jeder Seite zeigt Firma, Teil, Kunde, Auftrag, Zeichnungsdatei,
+Änderungsstand, den Anfang des SHA-256 der Zeichnungsdatei (vollständig auf der ersten Seite),
+Berichtsnummer, Datum und Seite. Die Werte stammen aus
+[Projekt- und Berichtsdaten](project-details.md).
+
+- **Prüfblatt**: leere Ergebnisspalten zum Ausdrucken und Ausfüllen von Hand. Hat das Projekt
+  Muster, gibt es eine Spalte je Muster mit seiner Seriennummer; ohne Muster die in den Optionen
+  eingestellte Zahl leerer Ergebnisspalten.
+- **Prüfbericht**: Übersicht (Gesamtergebnis und Anzahl i.O., n.i.O., nicht bewertet und
+  fehlend), die Muster mit Datum, Prüfer, Prüfmitteln und ihrem Ergebnis, die Ergebnisse mit
+  ihren Zeichen, Bemerkungen und die Unterschriften (geprüft von, freigegeben von). Wie die
+  Bewertungen entstehen, steht unter [Ergebnisse eingeben](measuring.md).
+
+Wähle unter **Format** jedes Berichts **PDF** oder **Excel**. Beide enthalten dieselben Werte.
+Das PDF ist A4 quer; mehr als sechs Muster werden in Blöcken von sechs Spalten gedruckt. Die
+Excel-Datei hat ein Blatt mit dem Namen des Berichts, Zahlen als Zahlenzellen mit den
+eingegebenen Stellen und die Zeichen als Text mit farbiger Füllung.
+
+Grenzen aus Toleranztabellen, die noch Entwürfe sind, sind im Bericht mit einer Fußnote markiert.
+
+Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es leer, gilt das Datum der
+letzten Änderung am Projekt. Es hängt nie vom Tag des Exports ab, dasselbe Projekt ergibt also
+dieselben Dateien, Byte für Byte.
+
+### Freigegebene Berichte
+
+Mit **Als freigegeben exportieren** erledigt ein Berichtsexport nach dem Schreiben der Datei drei
+Dinge in einem Schritt:
+
+1. Die Nummerierung wird gesperrt, falls sie es noch nicht ist.
+2. Ein leerer Firmenname wird aus den **Einstellungen** ergänzt und ein leeres „geprüft von“ mit
+   deinem Benutzernamen. Der Bericht zeigt diese Werte bereits.
+3. Das Projekt vermerkt den freigegebenen Bericht: welcher Bericht, die Vorlage und ihre Version,
+   das Dateiformat, den Änderungsstand der Zeichnung und deren SHA-256, den SHA-256 der
+   geschriebenen Datei und den Exportzeitpunkt. Der Exportzeitpunkt steht nur im Projekt, nicht im
+   Bericht.
+
+Das Vermerken ist eine Änderung am Projekt. Ein Bericht ohne Berichtsdatum trägt deshalb bei einem
+erneuten Export ein späteres Datum; gib ein Berichtsdatum ein, damit es fest bleibt.
+
+⌘Z macht alle drei auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als freigegeben
+vermerkt“. Hast du das Projekt während des Exports geändert, wird die Datei geschrieben, aber
+nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann erneut.
+
+Vor einem Export als freigegeben warnt Dimo, wenn Grenzen aus Entwurfstabellen stammen, wenn
+Ergebnisse fehlen oder nicht bewertet sind (Prüfbericht) oder wenn sich Grenzen oder
+Ergebnisarten nach dem letzten freigegebenen Bericht geändert haben. Du kannst trotzdem
+exportieren oder zurückgehen. Die Warnungen verhindern den Export nie.
 
 ## PDF mit Ballons
 

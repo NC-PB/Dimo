@@ -50,6 +50,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             project::undo,
             project::redo,
             export::export_project,
+            export::cancel_job,
+            export::report_export_warnings,
             recognition::propose_from_region,
             recognition::read_callout_text,
             numbering::preview_numbering,
@@ -141,6 +143,7 @@ pub fn run() -> tauri::Result<()> {
             let autosave_dir = dev::dev_folder("data", app.path().app_data_dir().ok())
                 .map(|dir| dir.join(AUTOSAVE_FOLDER));
             app.manage(project::SessionState::new(autosave_dir));
+            app.manage(export::JobRegistry::default());
             // Settings of the user in the app config directory (T1.9).
             let settings_path = dev::dev_folder("config", app.path().app_config_dir().ok())
                 .map(|dir| dir.join(settings::SETTINGS_FILE));

@@ -1,0 +1,11 @@
+[
+  { "mark": "report cancel start" },
+  { "wait": 800 },
+  { "show": "export" },
+  { "wait": 400 },
+  { "button": "Export inspection report…" },
+  { "wait": 800 },
+  { "button": "Cancel export" },
+  { "wait": 4000 },
+  { "report": "cancelled" }
+]

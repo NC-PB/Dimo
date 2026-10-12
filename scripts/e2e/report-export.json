@@ -1,0 +1,13 @@
+[
+  { "mark": "report export start" },
+  { "wait": 800 },
+  { "show": "export" },
+  { "wait": 400 },
+  { "button": "Export inspection report…" },
+  { "wait": 3000 },
+  { "select": ["Inspection report: Format", "xlsx"] },
+  { "wait": 300 },
+  { "button": "Export inspection report…" },
+  { "wait": 2000 },
+  { "report": "exported" }
+]

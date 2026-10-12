@@ -16,6 +16,7 @@ dimo-core = { workspace = true, features = ["specta"] }
 dimo-detect.workspace = true
 dimo-io.workspace = true
 dimo-pdf.workspace = true
+dimo-report.workspace = true
 dimo-tolerance.workspace = true
 rfd.workspace = true
 rust_decimal.workspace = true

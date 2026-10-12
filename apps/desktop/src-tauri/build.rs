@@ -17,6 +17,8 @@ fn main() {
         "undo",
         "redo",
         "export_project",
+        "cancel_job",
+        "report_export_warnings",
         "propose_from_region",
         "read_callout_text",
         "preview_numbering",
