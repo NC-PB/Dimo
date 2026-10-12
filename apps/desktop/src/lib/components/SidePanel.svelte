@@ -2,6 +2,7 @@
   import CharacteristicDetail from "$lib/components/CharacteristicDetail.svelte";
   import DevPanel from "$lib/components/DevPanel.svelte";
   import NumberingPanel from "$lib/components/NumberingPanel.svelte";
+  import ProjectDetails from "$lib/components/ProjectDetails.svelte";
   import SelectionSummary from "$lib/components/SelectionSummary.svelte";
   import SheetProperties from "$lib/components/SheetProperties.svelte";
   import { DEV_TOOLS_ENABLED } from "$lib/dev/dev-tools.svelte";
@@ -14,6 +15,7 @@
   aria-label={m.side_panel_label()}
 >
   <SheetProperties />
+  <ProjectDetails />
   <NumberingPanel />
   <SelectionSummary />
   <CharacteristicDetail />

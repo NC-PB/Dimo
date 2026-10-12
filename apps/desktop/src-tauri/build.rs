@@ -29,6 +29,7 @@ fn main() {
         "import_tolerance_table",
         "app_settings",
         "set_app_settings",
+        "fill_report_company",
         "dev_startup",
         "dev_report_frame_times",
         "dev_log",

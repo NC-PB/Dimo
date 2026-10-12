@@ -46,6 +46,7 @@ describe("settings store (T1.9)", () => {
     expect(sent).toEqual([{ ...DEFAULT_SETTINGS, user_name: "  Anna  ", theme: "light" }]);
     expect(store.current.user_name).toBe("Anna");
     expect(store.current.theme).toBe("light");
+    expect(DEFAULT_SETTINGS.company_name).toBe("");
     expect(document.documentElement.dataset.theme).toBe("light");
   });
 
