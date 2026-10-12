@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.4, T3.6 and T3.7 done; T3.5 running, T3.8 after T3.5
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.7 done; T3.8 report export running, then wave 4
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
@@ -69,10 +69,10 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.2 Typst report rendering | done | `dimo_report::render_pdf` with a sandboxed Typst world (template files, `/data.json`, Open Sans Regular and Bold only), embedded template sets, placeholder `dimo-default`. Typst 0.15.1, 166 crates, 7 advisories ignored with reasons, lock age ok. Spike numbers in `spikes/typst-report/RESULTS.md` (accepted by the owner) |
 | T3.3 Evaluation and verdicts | done | `dimo_core::evaluation` (verdicts, summaries, overall), result type pinning, query `measurement_state` (300 x 10 cells: 5.4 ms mean quiet, test asserts fastest of 30 under 20 ms). Two property tests at 10,000 cases |
 | T3.4 Project and report details | done | Project and report panel in the Drawing side panel, company name in Settings; new projects start with company name and audit user as inspector (set by Rust at creation, no undo step). Owner: check German wording. Measure view placement moves to T3.5 |
-| T3.5 Measurement grid | in progress | Wave 2 |
+| T3.5 Measurement grid | done | Measure view: sample bar, virtualized grid (rows from `measurement_state`), sample panel, project details, keyboard flow of decision 7, block paste as one undo step, shape marks, decision 16 marker (`changed_since_issued_report`). 300 x 10: commit to repaint 39.8 ms mean (dev build). Owner: press real Cmd+V once |
 | T3.6 Report model and default templates | done | `ReportModel::build` (all values preformatted, codes for verdicts and rules), schema `docs/schema/report-data.schema.json`, `dimo-default` v1 (check sheet, inspection report, `labels.toml` en/de), PDF text snapshots in dimo-cli. Clean room audit passed. Owner: German labels (Prüfblatt, Prüfbericht, Änderungsstand, Geprüft von, Freigegeben von, i.O./n.i.O.) and empty "Approved by" date |
 | T3.7 XLSX check sheet and inspection report | done | `dimo_report::render_xlsx` from the same `ReportModel`, labels from `labels.toml`, number cells with typed scale, marks in number formats plus fill, A4 landscape with repeated rows and columns, 6 sample columns per printed page, fixed properties and ZIP times. Owner: open the sample workbooks in a spreadsheet program (repair prompt, glyphs, print preview) |
-| T3.8 Report export in the app | todo | Wave 3 |
+| T3.8 Report export in the app | in progress | Wave 3 |
 | T3.9 Follow-ups from waves 2 and 3 | todo | Wave 4 |
 | T3.10 User guide and manual test | todo | Wave 4 |
 | T3.11 Exit check | todo | Wave 4 |
@@ -94,6 +94,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-12 | Measurement grid: decision 16 marker compares characteristic states at the last issued report with now (limits by value and written form, effective result type), reverted changes and characteristics added later not marked; `o`/`+`/`n`/`x` set and move down, Space toggles, words need F2; Enter and Shift+Enter move without an open edit; a pasted block running past the last row or sample is refused whole, empty pasted cells clear; result types labelled "Value" / "OK / not OK" (de "Messwert" / "i.O. / n.i.O."); sample fields edited in the Measure side panel; Tab leaves the grid at the edges | M3 decisions 7, 9, 16, NFR-UX-01 | T3.5, agent |
 | 2026-10-12 | XLSX reports: sheet named after the localized document title from `labels.toml` (replaces "Report" in M3 decision 13); verdict marks in number formats (✓ ✗ ○, `-` for open) with fills green, red, yellow, grey; fail bold with a medium border; frozen columns A and B, no frozen header row; more than 6 samples print at 60 % with a page break every 6 sample columns; header parts capped to stay under 255 characters. Per sample counts missing, added in T3.9 | M3 decisions 9, 12, 13 | T3.7, agent |
 | 2026-10-12 | Report templates: labels in `labels.toml` inside the template set (optional `labels` key in `template.toml`, reused by XLSX); verdicts, rules and attribute results passed as codes, the template owns the words; 6 samples per column block, each block on a new page; "Inspected by" date is the report date, "Approved by" date stays empty; fallback date is the manifest modification date passed by the caller (UTC calendar date); check sheet data carries no verdicts and has an "Inspected by" line; ligatures off; German verdicts i.O./n.i.O.; data `format_version` 1, raised only when a field is removed or changes meaning | M3 decisions 9 to 15, D-32 | T3.6, agent |
 | 2026-10-12 | Release profile: fat LTO, `codegen-units = 1`, `opt-level = "s"` for Typst and its heaviest dependencies (stripped app 50.7 MB to 37.0 MB in the spike). Seventh deny ignore RUSTSEC-2024-0449 (unsafe-libyaml unmaintained, through serde_yaml in Typst) accepted | T3.2 measurements | owner |
