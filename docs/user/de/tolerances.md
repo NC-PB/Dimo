@@ -33,9 +33,11 @@ ab, die nicht in der Zeichnung steht. Gib bei einem Winkel ohne eingetragene Tol
 des kürzeren Schenkels im Feld **Kürzerer Schenkel** ein, auf der Karte der Rahmenauswahl oder
 in der Seitenleiste, Reiter **Toleranz**. Das Feld ist in der Einheit des Blatts (mm oder Zoll).
 Dimo setzt dann die Grenzmaße des Winkels, und die Erklärung nennt den Schenkel, seinen Bereich
-und die Grenzmaße. Ohne Schenkel erhält der Winkel keine Grenzmaße und einen Hinweis. Der Schenkel wird
-mit dem Merkmal gespeichert, daher verwendet ihn **Ausgewählte neu auswerten** weiter. Leere das
-Feld, um den Schenkel zu entfernen.
+und die Grenzmaße. Ohne Schenkel erhält der Winkel keine Grenzmaße und einen Hinweis. Der
+Schenkel wird mit seiner Einheit beim Merkmal gespeichert, daher verwenden ihn **Ausgewählte neu
+auswerten** und ein neu eingegebener Anforderungstext weiter, auch wenn sich die Einheit des
+Blatts später ändert. Grenzmaße, die du von Hand eingegeben hast, bleiben. Leere das Feld, um den
+Schenkel zu entfernen.
 
 ## Toleranzeinstellungen des Projekts
 

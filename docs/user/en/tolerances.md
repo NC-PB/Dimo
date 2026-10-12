@@ -29,8 +29,9 @@ not written on the drawing. For an angle without a written tolerance, type the l
 shorter leg in the field **Shorter leg** on the proposal card or in the side panel, tab
 **Tolerance**. The field is in the unit of the sheet (mm or inch). Dimo then sets the limits of the
 angle, and the explanation names the leg, its range and the limits. Without a leg the angle gets
-no limits and a note. The leg is stored with the characteristic, so **Re-interpret selected**
-keeps using it. Empty the field to remove the leg.
+no limits and a note. The leg is stored with the characteristic and its unit, so **Re-interpret
+selected** and a retyped requirement text keep using it, also after the sheet unit changes.
+Limits you entered by hand stay. Empty the field to remove the leg.
 
 ## Tolerance settings of the project
 
