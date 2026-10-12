@@ -1834,7 +1834,10 @@ export type ResultEntry = {
 	 *  ([`parse_result`]). Empty or white space only clears the cell.
 	 */
 	text: string,
-	/**  New comment of the result; `null` keeps the current one (empty for a new result). */
+	/**
+	 *  New comment of the result; `null` keeps the current one (empty for a new result). Not
+	 *  used when the text clears the cell: the comment goes with the result.
+	 */
 	comment: string | null,
 };
 

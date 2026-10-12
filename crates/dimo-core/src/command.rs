@@ -516,8 +516,8 @@ fn run_measurement(
             format,
             output_sha256,
         } => record_issued_report(tx, *kind, template, *format, output_sha256, env),
-        // `run` sends only the commands above.
-        _ => Ok(()),
+        // `run` sends only the commands above; anything else is a bug.
+        _ => Err(ChangeError("not a sample, result or report command").into()),
     }
 }
 

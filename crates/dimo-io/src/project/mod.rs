@@ -328,6 +328,13 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
 
     let project: Project =
         serde_json::from_value(project).map_err(|e| ProjectError::json(PROJECT, &e))?;
+    // A hand edited file must not break the rules commands rely on (T3.1).
+    project
+        .check_measurements()
+        .map_err(|message| ProjectError::Json {
+            entry: PROJECT.to_owned(),
+            message: message.to_owned(),
+        })?;
     let audit = audit
         .into_iter()
         .enumerate()

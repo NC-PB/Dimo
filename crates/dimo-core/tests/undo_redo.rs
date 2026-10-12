@@ -8,6 +8,9 @@
 //! - produce patches that turn the previous state into the next one,
 //! - keep the numbering and reference invariants,
 //! - give byte identical JSON when replayed with the same environment.
+//!
+//! Undo and redo states are also compared as JSON, because `Decimal` equality ignores the
+//! scale and the typed digits must survive (M3 decision 8).
 
 #![allow(clippy::unwrap_used)] // Helpers of a test crate; rust.md allows unwrap in tests.
 
@@ -771,11 +774,13 @@ proptest! {
         }
         prop_assert_eq!(undone, steps);
         prop_assert_eq!(doc.project(), &original);
+prop_assert_eq!(serde_json::to_string(doc.project()).unwrap(), serde_json::to_string(&original).unwrap());
 
         while doc.can_redo() {
             doc.redo(&mut env).unwrap();
         }
         prop_assert_eq!(doc.project(), &last);
+prop_assert_eq!(serde_json::to_string(doc.project()).unwrap(), serde_json::to_string(&last).unwrap());
 
         // Rule 11: same commands and environment give byte identical JSON.
         let (again, _, _) = run_commands(&ops);
@@ -811,6 +816,7 @@ proptest! {
                     Some(expected) => {
                         doc.undo(&mut env).unwrap();
                         prop_assert_eq!(doc.project(), &expected);
+prop_assert_eq!(serde_json::to_string(doc.project()).unwrap(), serde_json::to_string(&expected).unwrap());
                         redo_model.push(before);
                     }
                     None => prop_assert!(doc.undo(&mut env).is_err()),
@@ -819,6 +825,7 @@ proptest! {
                     Some(expected) => {
                         doc.redo(&mut env).unwrap();
                         prop_assert_eq!(doc.project(), &expected);
+prop_assert_eq!(serde_json::to_string(doc.project()).unwrap(), serde_json::to_string(&expected).unwrap());
                         undo_model.push(before);
                     }
                     None => prop_assert!(doc.redo(&mut env).is_err()),

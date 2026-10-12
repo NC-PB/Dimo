@@ -356,6 +356,32 @@ fn oversized_entries_are_refused() {
     assert!(matches!(error, ProjectError::TooManyEntries(3)), "{error}");
 }
 
+/// T3.1: samples and results that break the rules commands keep are refused on load.
+#[test]
+fn broken_samples_and_results_are_refused() {
+    let project = serde_json::to_value(&common::sample().project).unwrap();
+    let edits: [fn(&mut serde_json::Value); 5] = [
+        |p| p["results"].as_array_mut().unwrap().reverse(),
+        |p| {
+            let first = p["results"][0].clone();
+            p["results"].as_array_mut().unwrap().insert(0, first);
+        },
+        |p| p["results"][0]["sample"] = "00000000-0000-0000-0000-0000000000ff".into(),
+        |p| p["samples"][1]["serial"] = p["samples"][0]["serial"].clone(),
+        |p| p["samples"][0]["serial"] = " 7".into(),
+    ];
+    for (i, edit) in edits.iter().enumerate() {
+        let mut broken = project.clone();
+        edit(&mut broken);
+        let bytes = sample_entries_with("project.json", &serde_json::to_vec(&broken).unwrap());
+        let error = ProjectFile::from_zip(&bytes).unwrap_err();
+        assert!(
+            matches!(&error, ProjectError::Json { entry, .. } if entry == "project.json"),
+            "case {i}: {error}"
+        );
+    }
+}
+
 #[test]
 fn newer_schema_versions_are_refused_and_left_untouched() {
     let manifest = br#"{"format":"dimo-project","schema_version":99,"future":"field"}"#;
