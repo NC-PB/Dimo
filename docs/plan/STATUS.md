@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.8 done; T3.10 done; T3.9 last follow-ups and T3.11 exit check running
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.8 done; T3.1 to T3.10 done, T3.11 procedure and dry run done; last follow-up (open after export, report date) running; then owner exit run
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
@@ -75,7 +75,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.8 Report export in the app | done | Report cards in the Export view (PDF or XLSX, en or de, blank columns), cancellable jobs (`cancel_job`, checked between steps), `report_export_warnings`, issued export records lock, filled report info and `IssuedReport` in one undo step after writing. 300 x 10 release: PDF 522 ms (1.69 MB), XLSX 12 ms |
 | T3.9 Follow-ups from waves 2 and 3 | done | XLSX counts per sample, `SetResultType auto` with results refused, identical custom table import reported as unchanged, all reject reasons except `internal` translated, ghost number component test. Still English in the German UI: OS, PDFium, file, project and export error details, custom table parser messages, autosave error (needs structured error kinds, later). Smoke flake seen once in step 5 under load; 3 of 3 passes on a quiet machine. Delete confirmation for characteristics with results (component tests only, not run in the app) and German wording merged |
 | T3.10 User guide and manual test | done | User guide en/de for every M3 feature, `docs/dev/manual-test-m3.md` (16 sections: real Cmd+V, four XLSX files in a spreadsheet program, German wording), smoke step 8 reads verdicts back from the exported PDF and XLSX. Owner: run the manual test |
-| T3.11 Exit check | todo | Wave 4 |
+| T3.11 Exit check | review | `docs/perf/M3-exit.md` written; agent dry run on synth seed 7 (25 inspected, 3 parts, invented values): verdicts and report correct, all re-exports byte identical, no bug. Owner: run the procedure on a real drawing and record the result |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -94,6 +94,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-13 | "Open after export" option (opens the written file with the system default app) and report date filled with today's date at the first report export when empty; empty header fields print no label; XLSX legend gains "open" (T3.9 follow-up running) | M3 dry run friction | owner |
 | 2026-10-13 | German wording: "Änderungsstand" for the drawing revision, "Teil"/"Teile" for samples, "Als ausgegeben exportieren" for export as issued ("Freigegeben von" stays for approval) | T3.10 mismatches | owner |
 | 2026-10-13 | `SetResultType auto` with results refused (`ResultTypeConflict`), `auto` on an `auto` row is a no-op; identical custom table import has its own outcome `unchanged` (equal resulting tolerance settings incl. sha256; same id with different text still replaces); XLSX counts per sample as four rows under the per sample verdict row | Owner decision 2026-10-12, T3.7 review, M2 leftovers | T3.9, agent |
 | 2026-10-12 | Issued report export fills empty company name and inspector only for "export as issued", in the undo step that records the report; normal exports print the project as is. `SetResultType auto` while results exist is refused (T3.9) | M3 decisions 4, 15 | owner |
