@@ -15,7 +15,8 @@ bis zu 500 Teile enthalten. Die Seriennummern zählen von der höchsten reinen Z
 
 Klicke auf den Kopf oder eine Zelle einer Teilespalte, um sie zum aktiven Teil zu machen. Die
 Seitenleiste rechts zeigt Seriennummer, Datum, Prüfer, Prüfmittel und Bemerkung; dort änderst du
-sie. Eine Seriennummer wird von Leerzeichen am Rand befreit, darf nicht leer sein und muss im
+sie. Darunter zählt sie die Ergebnisse dieses Teils: i.O., n.i.O., nicht bewertet und fehlend.
+Projekt- und Berichtsdaten findest du unter **Datei > Info**. Eine Seriennummer wird von Leerzeichen am Rand befreit, darf nicht leer sein und muss im
 Projekt eindeutig sein (Groß- und Kleinschreibung zählt als Unterschied). Seriennummern können
 beliebiger Text sein, zum Beispiel `A-17`. **Nach links** und **Nach rechts** ändern die
 Reihenfolge der Spalten, die auch die Reihenfolge in den Berichten ist. **Teil löschen** löscht
@@ -40,7 +41,20 @@ Grenze, bleibt die andere Zelle leer.
 | Teilekopf | Seriennummer des Teils und dieselben Zahlen für dieses Teil |
 
 Die Zeile über der Tabelle zeigt das Gesamtergebnis aller Teile und warum Dimo die letzte Eingabe
-nicht angenommen hat.
+nicht angenommen hat. Die Statusleiste unten zeigt die Summen aller Teile und das Gesamtergebnis.
+
+## Die Messleiste
+
+Die Leiste über der Tabelle funktioniert wie die Bearbeitungszeile einer Tabellenkalkulation. Sie
+nennt die aktive Zelle (Merkmalsnummer und Teil), zeigt die Anforderung mit ihren Grenzen und der
+Toleranzregel und hat ein Feld **Wert** mit dem Wert der aktiven Zelle. Daneben sagt Dimo das
+Ergebnis in Worten, zum Beispiel „i.O., auf der unteren Grenze“ oder „n.i.O., über der oberen
+Grenze“.
+
+Du kannst einen Wert in der Zelle oder im Feld **Wert** tippen; beide zeigen beim Tippen denselben
+Text. **Enter** im Feld speichert den Wert und geht zum nächsten Merkmal, wie in der Tabelle;
+**Umschalt+Enter** geht nach oben und **Escape** bricht ab. Klickst du in das Feld, während du in
+einer Zelle tippst, geht dieselbe Eingabe im Feld weiter.
 
 Ein Dreieck neben der Nummer bedeutet: Grenzmaße oder Ergebnisart dieses Merkmals wurden nach dem
 letzten ausgegebenen Bericht geändert ([Wenn sich Grenzmaße ändern](#wenn-sich-grenzmaße-ändern)).

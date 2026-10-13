@@ -164,7 +164,17 @@ sentence and buttons that are registry commands, or a tab to switch to for plain
   script steps `cell` and `paste` drive it. Grid keys are the `grid` scope of `shortcuts.ts`. In
   `tauri dev`, `devTools.commitTimes` holds commit to repaint times and the UI script report
   prints their mean; `node scripts/dev-characteristics.mjs 300 out.json 10` makes a 300 by 10
-  project for the check.
+  project for the check. The Measure bar (`MeasureBar.svelte`, T3.19) is part of the grid: the
+  grid's edit state has a `source` (cell or bar), so the cell editor and the bar's value field
+  show one edit. The verdict words come from the cell's `Verdict` and the `LimitPosition` that
+  `measurement_state` returns per cell; `to_inspect` and `complete_samples` feed File > Info.
+- Report tab (T3.19, `src/lib/report/`): `report_preview` renders the PDF that Save copy would
+  write (same Rust path, date filled as the export fills it) and opens it in the tile service;
+  `PreviewPage` shows its pages through `dimo://tile/...` like a drawing. `report-view.svelte.ts`
+  debounces the refresh after project or option changes and drops late answers. `report_checks`
+  feeds the pane "Before you issue the report"; `print_report` writes the same PDF to a
+  temporary folder and opens it with the system viewer (the open after export path). File >
+  Export (`ExportView.svelte`) keeps the ballooned PDF and the lists.
 - Balloon sizes: `viewport/balloons.ts` follows `dimo_core::BalloonMetrics` with the generated
   `BALLOON_METRICS`. The Rust test `balloon_layout` writes `balloon-layout.fixture.json`, and
   `balloons.test.ts` checks the viewport against it, so viewport and ballooned PDF agree.
