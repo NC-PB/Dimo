@@ -9,6 +9,7 @@ import { selection } from "$lib/stores/selection.svelte";
 import { view } from "$lib/stores/view.svelte";
 import PlacingBar from "./PlacingBar.svelte";
 import StatusBar from "./StatusBar.svelte";
+import TitleBar from "./TitleBar.svelte";
 
 let component: ReturnType<typeof mount> | null = null;
 let target: HTMLElement;
@@ -76,6 +77,22 @@ describe("status bar (ADR 0007, T3.15)", () => {
     flushSync();
     expect(target.textContent).toContain("1 selected");
     expect(target.textContent).toContain("General tolerance: None");
+  });
+});
+
+describe("title bar (ADR 0007)", () => {
+  it("names the project and its saved state", () => {
+    component = mount(TitleBar, { target });
+    flushSync();
+    const name = () => target.querySelector("[data-testid=document-name]")?.textContent ?? "";
+    expect(name()).toContain("No project open");
+    openProject(); // A new project without changes and without a file.
+    expect(name()).toContain("Untitled");
+    expect(name()).toContain("not saved yet");
+    expect(target.querySelector("button[aria-label=Save]")).not.toBeNull();
+    expect(target.querySelector("button[aria-label=Undo]")?.getAttribute("aria-disabled")).toBe(
+      "true",
+    );
   });
 });
 

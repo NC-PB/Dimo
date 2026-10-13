@@ -23,12 +23,24 @@
   import { toleranceStore } from "$lib/stores/tolerance.svelte";
   import { view } from "$lib/stores/view.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { measureUi } from "$lib/measure/measure-ui.svelte";
 
-  // An offer to update characteristics (M3 decision 22) belongs to the project it was made for.
+  // An offer to update characteristics (M3 decision 22) and the row filters of the Measure tab
+  // belong to the project they were made for.
   $effect(() => {
     void projectStore.session;
     toleranceStore.declineGeneralUpdate();
+    measureUi.onlyMissing = false;
+    measureUi.onlyFailed = false;
+  });
+
+  // The tolerance table list (ribbon fields, status bar) follows the project: an import, undo or
+  // another project. Only these two values are tracked, not every patch.
+  $effect(() => {
+    void projectStore.session;
+    void projectStore.project?.settings.tolerance;
+    untrack(() => void toleranceStore.refreshTables());
   });
 
   onMount(() => {

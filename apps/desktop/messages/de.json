@@ -556,7 +556,6 @@
   "doc_saved": "gespeichert",
   "doc_not_saved": "nicht gespeichert",
   "doc_autosaved": "nicht gespeichert, automatisch gesichert",
-  "doc_autosave_failed": "automatische Sicherung fehlgeschlagen",
   "doc_none": "Kein Projekt offen",
   "cmd_save": "Speichern",
   "cmd_save_desc": "Speichert das Projekt in seiner Datei.",
@@ -648,7 +647,6 @@
   "reason_no_project": "Öffne oder starte zuerst ein Projekt.",
   "reason_busy": "Dimo arbeitet, warte einen Moment.",
   "reason_no_selection": "Wähle zuerst einen Ballon aus.",
-  "reason_one_selection": "Wähle genau einen Ballon aus.",
   "reason_nothing_to_undo": "Nichts zum Rückgängigmachen.",
   "reason_nothing_to_redo": "Nichts zum Wiederholen.",
   "reason_no_characteristics": "Noch keine Merkmale.",
@@ -692,5 +690,6 @@
   "ribbon_group_output": "Ausgabe",
   "ribbon_group_zoom": "Zoom",
   "ribbon_group_panes": "Bereiche",
-  "ribbon_group_look": "Darstellung"
+  "ribbon_group_look": "Darstellung",
+  "doc_not_saved_yet": "noch nicht gespeichert"
 }

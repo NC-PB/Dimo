@@ -7,19 +7,12 @@
    */
   import { m } from "$lib/i18n";
   import type { TableClass } from "$lib/ipc/bindings";
-  import { projectStore } from "$lib/stores/project.svelte";
   import { toleranceStore } from "$lib/stores/tolerance.svelte";
   import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
 
+  // App.svelte keeps the table list in step with the project.
   const NONE = "";
   const settings = $derived(toleranceStore.settings);
-
-  // The table list follows the project: an import, undo or another project.
-  $effect(() => {
-    void projectStore.session;
-    void projectStore.project?.settings.tolerance;
-    void toleranceStore.refreshTables();
-  });
 
   const options = $derived(
     toleranceStore.generalTables.flatMap((t) =>

@@ -27,7 +27,9 @@
   function run(action: ShortcutAction): boolean {
     const id = commandForShortcut(action);
     if (id !== undefined) {
-      return runCommand(id);
+      // A Cmd/Ctrl key of a disabled command still belongs to Dimo, never to the webview.
+      const withMod = SHORTCUTS.find((s) => s.action === action)?.keys.every((k) => k.mod);
+      return runCommand(id) || withMod === true;
     }
     switch (action) {
       // Arrow keys move the view over the drawing, so the drawing moves the other way.

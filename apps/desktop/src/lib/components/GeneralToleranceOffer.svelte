@@ -22,7 +22,7 @@
   let { tolerance = appTolerance, class: extra = "", confirmation = true }: Props = $props();
 
   const buttonClass =
-    "min-h-8 rounded border border-border px-3 text-xs hover:bg-surface-raised disabled:opacity-50";
+    "min-h-8 rounded border border-border px-3 text-xs hover:bg-hover disabled:opacity-50";
 </script>
 
 {#if tolerance.generalOffer}

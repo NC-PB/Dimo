@@ -2,10 +2,9 @@
   import { LOCALE_NAMES, m } from "$lib/i18n";
   import type { ReportFormat, ReportLanguage } from "$lib/ipc/bindings";
   import { exportStore } from "$lib/stores/export.svelte";
-  import { projectStore } from "$lib/stores/project.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { FIELD_CLASS, LABEL_CLASS } from "./field";
   import Ribbon from "./Ribbon.svelte";
 
   /**
@@ -21,7 +20,6 @@
   const LANGUAGES: readonly ReportLanguage[] = ["en", "de"];
 
   const prefs = $derived(settingsStore.current.export);
-  const reason = $derived(projectStore.isOpen ? null : m.reason_no_project());
   const format = $derived(
     exportStore.document === "check_sheet"
       ? prefs.check_sheet_format
@@ -47,7 +45,7 @@
 
 {#snippet options()}
   <div class="flex gap-2">
-    <label class={LABEL_CLASS} title={fieldTitle(m.field_report_format_desc(), reason)}>
+    <label class={LABEL_CLASS} title={m.field_report_format_desc()}>
       {m.export_format()}
       <select
         class="{FIELD_CLASS} min-w-32"
@@ -65,7 +63,7 @@
         {/each}
       </select>
     </label>
-    <label class={LABEL_CLASS} title={fieldTitle(m.field_report_language_desc(), reason)}>
+    <label class={LABEL_CLASS} title={m.field_report_language_desc()}>
       {m.export_language()}
       <select
         class="{FIELD_CLASS} min-w-28"

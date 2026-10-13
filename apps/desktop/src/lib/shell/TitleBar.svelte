@@ -1,6 +1,6 @@
 <script lang="ts">
   import BrandMark from "$lib/components/BrandMark.svelte";
-  import { m } from "$lib/i18n";
+  import { autosaveLabel, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
   import { projectStore } from "$lib/stores/project.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
@@ -21,10 +21,14 @@
       return null;
     }
     if (status.autosave.state === "failed") {
-      return { text: m.doc_autosave_failed(), failed: true };
+      return { text: m.autosave_failed({ message: status.autosave.message }), failed: true };
     }
     if (!status.modified) {
-      return { text: m.doc_saved(), failed: false };
+      // A new project without changes has no file yet: it is not saved.
+      return {
+        text: status.file_name === null ? m.doc_not_saved_yet() : m.doc_saved(),
+        failed: false,
+      };
     }
     return {
       text: status.autosave.state === "journaled" ? m.doc_autosaved() : m.doc_not_saved(),
@@ -75,7 +79,11 @@
     {:else}
       <strong class="font-semibold text-text">{name}</strong>
       <span aria-hidden="true"> · </span>
-      <span class={saved.failed ? "text-danger" : ""} data-saved={!status?.modified}>
+      <span
+        class={saved.failed ? "text-danger" : ""}
+        title={status ? autosaveLabel(status.autosave, status.file_name !== null) : undefined}
+        data-saved={!status?.modified}
+      >
         {#if saved.failed}<span aria-hidden="true">⚠ </span>{/if}{saved.text}
       </span>
     {/if}

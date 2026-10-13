@@ -44,9 +44,10 @@ aktualisiere Dimo, um es zu öffnen.
 ## Automatische Sicherung und Wiederherstellung
 
 Jede Änderung wird sofort, spätestens aber alle 30 Sekunden, in ein Sicherungsjournal
-geschrieben. Die Titelleiste zeigt den Zustand neben dem Projektnamen: "gespeichert", "nicht
-gespeichert", "nicht gespeichert, automatisch gesichert" oder "automatische Sicherung
-fehlgeschlagen" mit einem Warnzeichen, wenn das Journal nicht geschrieben werden konnte.
+geschrieben. Die Titelleiste zeigt den Zustand neben dem Projektnamen: "gespeichert", "noch nicht
+gespeichert" (ein neues Projekt ohne Änderungen), "nicht gespeichert", "nicht gespeichert,
+automatisch gesichert" oder "Automatische Sicherung fehlgeschlagen" mit dem Grund und einem
+Warnzeichen, wenn das Journal nicht geschrieben werden konnte.
 
 - Ein gespeichertes Projekt hat sein Journal neben der Datei: `part.dimo.journal`. Beim Speichern
   wird es in die Projektdatei übernommen und gelöscht.

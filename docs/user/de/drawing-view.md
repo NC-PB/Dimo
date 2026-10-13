@@ -52,7 +52,8 @@ Fokus hat.
 ## Blätter
 
 Ein PDF mit mehreren Seiten hat ein Blatt pro Seite. Die Statusleiste zeigt einen Reiter pro
-Blatt ("Blatt 2"); ein Klick zeigt es an. Auch **Bild auf** und **Bild ab** wechseln die Blätter. Ein Blatt wird beim ersten Anzeigen ins Fenster eingepasst. Wählst du in der
+Blatt ("Blatt 2"); ein Klick zeigt es an. Auch **Bild auf** und **Bild ab** wechseln die Blätter.
+Ein Blatt wird beim ersten Anzeigen ins Fenster eingepasst. Wählst du in der
 Tabelle ein Merkmal, dessen Ballon auf einem anderen Blatt liegt, wechselt Dimo zu diesem Blatt und
 zeigt den Ballon.
 

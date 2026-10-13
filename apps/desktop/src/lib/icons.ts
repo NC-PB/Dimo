@@ -25,7 +25,6 @@ import FolderOpen from "@lucide/svelte/icons/folder-open";
 import Grid3x3 from "@lucide/svelte/icons/grid-3x3";
 import Hash from "@lucide/svelte/icons/hash";
 import Info from "@lucide/svelte/icons/info";
-import Keyboard from "@lucide/svelte/icons/keyboard";
 import ListOrdered from "@lucide/svelte/icons/list-ordered";
 import Maximize from "@lucide/svelte/icons/maximize";
 import Moon from "@lucide/svelte/icons/moon";
@@ -67,7 +66,6 @@ export const icons = {
   help: CircleHelp,
   inspectionReport: FileCheck,
   issueReport: Stamp,
-  keyboard: Keyboard,
   moveLeft: ArrowLeft,
   moveRight: ArrowRight,
   newProject: FilePlus,

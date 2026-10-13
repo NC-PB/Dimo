@@ -556,7 +556,6 @@
   "doc_saved": "saved",
   "doc_not_saved": "not saved",
   "doc_autosaved": "not saved, autosaved",
-  "doc_autosave_failed": "autosave failed",
   "doc_none": "No project open",
   "cmd_save": "Save",
   "cmd_save_desc": "Saves the project in its file.",
@@ -648,7 +647,6 @@
   "reason_no_project": "Open or start a project first.",
   "reason_busy": "Dimo is working, wait a moment.",
   "reason_no_selection": "Select a balloon first.",
-  "reason_one_selection": "Select exactly one balloon.",
   "reason_nothing_to_undo": "Nothing to undo.",
   "reason_nothing_to_redo": "Nothing to redo.",
   "reason_no_characteristics": "No characteristics yet.",
@@ -692,5 +690,6 @@
   "ribbon_group_output": "Output",
   "ribbon_group_zoom": "Zoom",
   "ribbon_group_panes": "Panes",
-  "ribbon_group_look": "Look"
+  "ribbon_group_look": "Look",
+  "doc_not_saved_yet": "not saved yet"
 }

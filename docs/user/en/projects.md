@@ -40,8 +40,9 @@ lost; update Dimo to open it.
 ## Autosave and recovery
 
 Every change is written to an autosave journal right away, and at the latest every 30 seconds.
-The title bar shows the state next to the project name: "saved", "not saved", "not saved,
-autosaved", or "autosave failed" with a warning sign if the journal could not be written.
+The title bar shows the state next to the project name: "saved", "not saved yet" (a new project
+without changes), "not saved", "not saved, autosaved", or "Autosave failed" with the reason and a
+warning sign if the journal could not be written.
 
 - A saved project keeps its journal next to the file: `part.dimo.journal`. Saving merges it into
   the project file and deletes it.

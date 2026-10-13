@@ -24,7 +24,7 @@
   );
 
   const optionClass =
-    "flex min-h-8 items-center gap-1 rounded border border-border px-2 py-1 text-xs text-text hover:bg-surface-raised aria-pressed:border-accent aria-pressed:ring-2 aria-pressed:ring-accent";
+    "flex min-h-8 items-center gap-1 rounded border border-border px-2 py-1 text-xs text-text hover:bg-hover aria-pressed:border-accent aria-pressed:ring-2 aria-pressed:ring-accent";
 </script>
 
 <Popover.Root
@@ -117,7 +117,7 @@
       </fieldset>
       <button
         type="button"
-        class="min-h-8 self-start rounded border border-border px-2 py-1 text-xs hover:bg-surface-raised"
+        class="min-h-8 self-start rounded border border-border px-2 py-1 text-xs hover:bg-hover"
         onclick={() => void balloonTools.resetStyle()}
       >
         {m.balloon_style_reset()}
