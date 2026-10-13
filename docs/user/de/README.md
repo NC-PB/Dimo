@@ -24,8 +24,8 @@ Grenzwerte in der Merkmalstabelle ein.
 | [Merkmalstabelle](characteristics.md) | Werte, Auswahl, Bearbeiten, Reihenfolge ändern |
 | [Blätter: Drehung, Einheit und Maßstab](sheets.md) | Eigenschaften jedes Blatts |
 | [Nummerierungsstrategien, Zonen und Ansichten](numbering.md) | Nach Zone, Ansicht oder Art nummerieren, Vorschau, Unternummern, gesperrte Nummerierung |
-| [Projekt- und Berichtsdaten](project-details.md) | Teil, Kunde, Revisionsstand, Zeichnungs-Hash, Berichtskopf und Freigabefelder |
-| [Ergebnisse eingeben](measuring.md) | Muster, Messwerttabelle, Eingabe mit der Tastatur, Einfügen, Markierungen für i.O. und n.i.O., Ergebnisarten |
+| [Projekt- und Berichtsdaten](project-details.md) | Teil, Kunde, Änderungsstand, Zeichnungs-Hash, Berichtskopf und Freigabefelder |
+| [Ergebnisse eingeben](measuring.md) | Teile, Messwerttabelle, Eingabe mit der Tastatur, Einfügen, Markierungen für i.O. und n.i.O., Ergebnisarten |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | Prüfblatt und Prüfbericht, PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen und Berichte |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
@@ -146,7 +146,7 @@ fragt Dimo zuerst nach. Einzelheiten: [Projekte](projects.md).
 ### 10. Die Ergebnisse eingeben
 
 Öffne die Ansicht **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
-**Muster hinzufügen**. Klicke auf die erste Zelle eines Teils, tippe den Wert, drücke **Enter** und
+**Teile hinzufügen**. Klicke auf die erste Zelle eines Teils, tippe den Wert, drücke **Enter** und
 mach in der Spalte nach unten weiter: Dimo speichert den Wert, geht zum nächsten Merkmal und
 markiert das Ergebnis mit ✓ (i.O.), ✗ (n.i.O.) oder ○ (Wert ohne Grenzmaße). Bei Gewinden und
 Hinweisen drückst du **O** für i.O. oder **N** für n.i.O. Ein aus einer Tabellenkalkulation
@@ -155,12 +155,12 @@ kopierter Bereich wird mit ⌘V eingefügt. Die Grenzmaße gehören dazu, und Di
 
 ### 11. Exportieren
 
-Trage zuerst Teil, Revisionsstand der Zeichnung und die Berichtsfelder unter **Projekt und Bericht**
+Trage zuerst Teil, Änderungsstand der Zeichnung und die Berichtsfelder unter **Projekt und Bericht**
 ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann die Ansicht **Export** (⌘E).
 
 - **Prüfblatt** (PDF oder Excel): die Merkmale mit leeren Ergebnisspalten, zum Ausdrucken vor dem
   Messen.
-- **Prüfbericht** (PDF oder Excel): Übersicht, Muster, Ergebnisse mit Bewertungen und
+- **Prüfbericht** (PDF oder Excel): Übersicht, Teile, Ergebnisse mit Bewertungen und
   Unterschriftenblock.
 - **PDF mit Ballons**: die Zeichnung mit eingezeichneten Ballons. Die Originaldatei bleibt
   unverändert.
@@ -170,7 +170,7 @@ ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann die Ansicht 
 Wähle die Sprache der Berichte und Spaltenüberschriften und wie das PDF die Ballons enthält. Jeder
 Export fragt, wo die Datei gespeichert wird, und läuft im Hintergrund; **Export abbrechen** stoppt
 einen Berichtsexport. Setze für eine Zeichnung oder einen Bericht, der an einen Kunden geht,
-vorher das Häkchen bei **Als freigegeben exportieren**: Es sperrt die Nummerierung, die Nummern
+vorher das Häkchen bei **Als ausgegeben exportieren**: Es sperrt die Nummerierung, die Nummern
 ändern sich danach nie mehr, auch wenn du Merkmale hinzufügst oder löschst, und ein Bericht wird im
 Projekt vermerkt. Einzelheiten: [Exporte](exports.md).
 

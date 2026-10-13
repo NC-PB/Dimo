@@ -22,11 +22,11 @@ Feld wieder den alten Wert, und eine Meldung über der Zeichnung nennt den Grund
 
 | Feld | Bedeutung |
 |---|---|
-| Revisionsstand | Revisionsstand der Zeichnung, zum Beispiel `B`. Dimo liest ihn nicht aus dem Schriftfeld, tippe ihn von der Zeichnung ab |
+| Änderungsstand | Änderungsstand der Zeichnung, zum Beispiel `B`. Dimo liest ihn nicht aus dem Schriftfeld, tippe ihn von der Zeichnung ab |
 | Zeichnungsdatei | Dateiname der importierten Zeichnung (nicht bearbeitbar) |
 | SHA-256 | Fingerabdruck der Zeichnungsdatei (nicht bearbeitbar). **Kopieren** legt ihn in die Zwischenablage. Der Bericht druckt ihn, so lässt sich prüfen, dass ein Bericht zu genau dieser Zeichnung gehört |
 
-Der Revisionsstand gehört zur Zeichnung im Projekt. Dimo speichert ihn mit dem Projekt und druckt
+Der Änderungsstand gehört zur Zeichnung im Projekt. Dimo speichert ihn mit dem Projekt und druckt
 ihn auf jeden Bericht.
 
 ## Bericht
@@ -42,10 +42,9 @@ ihn auf jeden Bericht.
 
 „Geprüft von“ und „Freigegeben von“ stehen im Unterschriftenblock des Prüfberichts. Das Datum bei
 „Geprüft von“ ist das Berichtsdatum; „Freigegeben von“ bekommt kein Datum, das schreibst du von
-Hand. Das ist getrennt vom Prüfer jedes Musters, den du im Bereich **Muster** der Seitenleiste einstellst
+Hand. Das ist getrennt vom Prüfer jedes Teils, den du im Bereich **Teil** der Seitenleiste einstellst
 ([Ergebnisse eingeben](measuring.md)). Ist das Berichtsdatum leer, druckt der Bericht das Datum der
-letzten Änderung am Projekt ([Exporte](exports.md)). Das Feld **Revisionsstand** heißt auf den
-deutschen Berichten „Änderungsstand“.
+letzten Änderung am Projekt ([Exporte](exports.md)).
 
 Leere Felder bleiben auf dem Bericht leer. Ein neues Projekt beginnt mit dem Firmennamen aus den Einstellungen und mit dem Benutzernamen der Einstellungen (oder deines Systems) als Prüfer. Dimo ändert ein bestehendes Projekt nicht, wenn du es öffnest.
 
