@@ -159,6 +159,9 @@
     if (unsavedPrompt.open) {
       return; // The question about unsaved changes has focus.
     }
+    if (balloonTools.pendingDelete !== null) {
+      return; // The question about deleting results has focus.
+    }
     if (open && shortcut.action !== "show_shortcuts") {
       return; // The dialog has focus; Escape closes it.
     }

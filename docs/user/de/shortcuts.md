@@ -102,10 +102,10 @@ Gilt, solange die Messwerttabelle der Ansicht Messen den Fokus hat. Ein getippte
 | Messwerte: Zelle nach rechts | `→` | `→` |
 | Messwerte: bestätigen und zum nächsten Merkmal | `↵` | `↵` |
 | Messwerte: bestätigen und zum vorherigen Merkmal | `⇧↵` | `Shift+↵` |
-| Messwerte: bestätigen und zum nächsten Muster | `⇥` | `⇥` |
-| Messwerte: bestätigen und zum vorherigen Muster | `⇧⇥` | `Shift+⇥` |
-| Messwerte: erstes Muster | `Home` | `Home` |
-| Messwerte: letztes Muster | `End` | `End` |
+| Messwerte: bestätigen und zum nächsten Teil | `⇥` | `⇥` |
+| Messwerte: bestätigen und zum vorherigen Teil | `⇧⇥` | `Shift+⇥` |
+| Messwerte: erstes Teil | `Home` | `Home` |
+| Messwerte: letztes Teil | `End` | `End` |
 | Messwerte: erstes Merkmal | `⌘↑` oder `⌘Home` | `Ctrl+↑` oder `Ctrl+Home` |
 | Messwerte: letztes Merkmal | `⌘↓` oder `⌘End` | `Ctrl+↓` oder `Ctrl+End` |
 | Messwerte: Wert bearbeiten | `F2` | `F2` |

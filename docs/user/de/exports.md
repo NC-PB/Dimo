@@ -26,15 +26,15 @@ Bericht gewählte Format:
 - **Ballons im PDF**: als Teil der Seite (Standard) oder als Anmerkungen, die PDF-Programme
   ein- und ausblenden oder löschen können.
 - **Leere Ergebnisspalten**: wie viele leere Ergebnisspalten ein Prüfblatt erhält, wenn das
-  Projekt keine Muster hat, 1 bis 10 (Standard 3).
-- **Als freigegeben exportieren**: sperrt die Nummerierung. Für Zeichnungen und Berichte, die
+  Projekt keine Teile hat, 1 bis 10 (Standard 3).
+- **Als ausgegeben exportieren**: sperrt die Nummerierung. Für Zeichnungen und Berichte, die
   an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
   werden nicht wieder vergeben, ein neues Merkmal erhält die höchste je vergebene Nummer plus
   eins, und Zeilen der Tabelle lassen sich nicht verschieben. Die Sperre steht im
-  Änderungsprotokoll. Ein als freigegeben exportierter Bericht wird außerdem im Projekt vermerkt
-  (siehe [Freigegebene Berichte](#freigegebene-berichte)). Dieses Feld wird nicht gespeichert und
+  Änderungsprotokoll. Ein als ausgegeben exportierter Bericht wird außerdem im Projekt vermerkt
+  (siehe [Ausgegebene Berichte](#ausgegebene-berichte)). Dieses Feld wird nicht gespeichert und
   ist bei jedem Start aus. Solange die Nummerierung gesperrt ist, sagt das Feld das; als
-  freigegeben exportierte Berichte werden trotzdem vermerkt.
+  ausgegeben exportierte Berichte werden trotzdem vermerkt.
 
 Eine Schaltfläche zum Entsperren gibt es in dieser Version nicht. Die Sperre ist eine Änderung wie
 jede andere, ⌘Z macht sie also rückgängig, solange sie deine letzte Änderung ist, zum Beispiel
@@ -51,12 +51,12 @@ Berichtsnummer, Datum und Seite. Die Werte stammen aus
 [Projekt- und Berichtsdaten](project-details.md).
 
 - **Prüfblatt**: leere Ergebnisspalten zum Ausdrucken und Ausfüllen von Hand und eine Zeile für
-  den Prüfer. Hat das Projekt Muster, gibt es eine Spalte je Muster mit seiner Seriennummer; ohne
-  Muster die in den Optionen eingestellte Zahl leerer Ergebnisspalten, mit dem Hinweis, die
+  den Prüfer. Hat das Projekt Teile, gibt es eine Spalte je Teil mit seiner Seriennummer; ohne
+  Teile die in den Optionen eingestellte Zahl leerer Ergebnisspalten, mit dem Hinweis, die
   Seriennummer jedes Teils in den Spaltenkopf zu schreiben. Das Prüfblatt zeigt keine
   Bewertungen.
-- **Prüfbericht**: eine Übersicht (Gesamtergebnis, Anzahl der Merkmale und Muster sowie Anzahl
-  i.O., n.i.O., nicht bewertet und fehlend), ein Musterblock mit einer Zeile je Muster
+- **Prüfbericht**: eine Übersicht (Gesamtergebnis, Anzahl der Merkmale und Teile sowie Anzahl
+  i.O., n.i.O., nicht bewertet und fehlend), ein Teileblock mit einer Zeile je Teil
   (Seriennummer, Datum, Prüfer, Prüfmittel, Bemerkung, seine eigenen Zahlen und seine Bewertung),
   die Ergebnistabelle mit dem Zeichen jeder Bewertung und der Bewertung jeder Zeile, eine Legende
   der Zeichen, Bemerkungen und der Unterschriftenblock. Wie die Bewertungen entstehen, steht unter
@@ -67,12 +67,12 @@ Datum und einem leeren Feld für die handschriftliche Unterschrift. Die Namen ko
 Berichtsfeldern. Das Datum bei „Geprüft von“ ist das Berichtsdatum; das Datum bei „Freigegeben von“
 bleibt leer und wird von Hand eingetragen. Digitale Signaturen gibt es nicht. Ist das
 Gesamtergebnis offen, sagt der Bericht, dass nicht alle Ergebnisse erfasst und bewertet sind.
-Nicht bestandene Zellen und Muster haben einen fetten Rand.
+Nicht bestandene Zellen und Teile haben einen fetten Rand.
 
 Wähle unter **Format** jedes Berichts **PDF** oder **Excel**. Beide enthalten dieselben Werte.
 
 - **PDF**: A4 quer, Kopf auf jeder Seite, Tabellenkopf auf jeder Seite wiederholt. Bei mehr als
-  sechs Mustern wird die Tabelle in Blöcken von sechs Musterspalten gedruckt, jeder Block auf
+  sechs Teilen wird die Tabelle in Blöcken von sechs Teilespalten gedruckt, jeder Block auf
   einer neuen Seite, mit wiederholten Merkmalsspalten und einer Überschrift wie „Teile 7 bis 12
   von 12“.
 - **Excel**: ein Blatt mit dem Namen des Berichts. Werte sind Zahlenzellen mit den eingegebenen
@@ -80,14 +80,13 @@ Wähle unter **Format** jedes Berichts **PDF** oder **Excel**. Beide enthalten d
   Bewertungen und i.O.-/n.i.O.-Ergebnisse sind Text mit dem Zeichen. Die Zellen haben zusätzlich
   eine Füllfarbe (grün, rot, gelb, grau für offen). Die Spalten A und B sind fixiert. Das Blatt ist
   für A4 quer eingerichtet, mit auf jeder gedruckten Seite wiederholten Kopfzeilen; bei mehr als
-  sechs Mustern wird mit 60 Prozent gedruckt, mit einem Seitenumbruch nach jeweils sechs
-  Musterspalten und wiederholten Merkmalsspalten. Der Prüfbericht enthält für jedes Muster die
+  sechs Teilen wird mit 60 Prozent gedruckt, mit einem Seitenumbruch nach jeweils sechs
+  Teilespalten und wiederholten Merkmalsspalten. Der Prüfbericht enthält für jedes Teil die
   Anzahl i.O., n.i.O., nicht bewertet und fehlend, wie das PDF.
 
 Die Wörter auf den Berichten richten sich nach der Berichtssprache des Exports (Englisch oder
 Deutsch), nicht nach der Sprache der App. Auf Deutsch heißen die Bewertungen **i.O.** und
-**n.i.O.**, auf Englisch **Pass** und **Fail**. In den deutschen Berichten heißen die Muster
-„Teile“, und der Revisionsstand heißt „Änderungsstand“.
+**n.i.O.**, auf Englisch **Pass** und **Fail**.
 
 Grenzen aus Toleranztabellen, die noch Entwürfe sind, sind in der Regelspalte mit einem Stern
 markiert, und der Bericht sagt in einer Fußnote, dass diese Grenzen aus einer Entwurfstabelle
@@ -97,16 +96,16 @@ Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es leer, gil
 letzten Änderung am Projekt. Es hängt nie vom Tag des Exports ab, dasselbe Projekt ergibt also
 dieselben Dateien, Byte für Byte.
 
-### Freigegebene Berichte
+### Ausgegebene Berichte
 
-Mit **Als freigegeben exportieren** erledigt ein Berichtsexport nach dem Schreiben der Datei drei
+Mit **Als ausgegeben exportieren** erledigt ein Berichtsexport nach dem Schreiben der Datei drei
 Dinge in einem Schritt:
 
 1. Die Nummerierung wird gesperrt, falls sie es noch nicht ist.
 2. Ein leerer Firmenname wird aus den **Einstellungen** ergänzt und ein leeres „geprüft von“ mit
    deinem Benutzernamen. Der Bericht zeigt diese Werte bereits. Ein normaler Export druckt das
    Projekt, wie es ist, und lässt leere Felder leer.
-3. Das Projekt vermerkt den freigegebenen Bericht: welcher Bericht, die Vorlage und ihre Version,
+3. Das Projekt vermerkt den ausgegebenen Bericht: welcher Bericht, die Vorlage und ihre Version,
    das Dateiformat, den Änderungsstand der Zeichnung und deren SHA-256, den SHA-256 der
    geschriebenen Datei und den Exportzeitpunkt. Der Exportzeitpunkt steht nur im Projekt, nicht im
    Bericht.
@@ -114,16 +113,16 @@ Dinge in einem Schritt:
 Das Vermerken ist eine Änderung am Projekt. Ein Bericht ohne Berichtsdatum trägt deshalb bei einem
 erneuten Export ein späteres Datum; gib ein Berichtsdatum ein, damit es fest bleibt.
 
-⌘Z macht alle drei auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als freigegeben
+⌘Z macht alle drei auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als ausgegeben
 vermerkt“. Hast du das Projekt während des Exports geändert, wird die Datei geschrieben, aber
 nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann erneut.
 
-Vor einem Export als freigegeben warnt Dimo, wenn Grenzen aus Entwurfstabellen stammen, wenn
+Vor einem Export als ausgegeben warnt Dimo, wenn Grenzen aus Entwurfstabellen stammen, wenn
 Ergebnisse fehlen oder nicht bewertet sind (Prüfbericht) oder wenn sich Grenzen oder
-Ergebnisarten nach dem letzten freigegebenen Bericht geändert haben
+Ergebnisarten nach dem letzten ausgegebenen Bericht geändert haben
 ([Wenn sich Grenzmaße ändern](measuring.md#wenn-sich-grenzmaße-ändern)). Du kannst trotzdem
 exportieren oder zurückgehen. Die Warnungen verhindern den Export nie. Beide Berichte können
-freigegeben werden, als PDF und als Excel; jede freigegebene Datei wird für sich vermerkt.
+ausgegeben werden, als PDF und als Excel; jede ausgegebene Datei wird für sich vermerkt.
 
 ## PDF mit Ballons
 

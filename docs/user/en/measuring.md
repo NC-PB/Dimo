@@ -150,4 +150,4 @@ the general tolerance or the rules of the project, or edit a characteristic in t
   report is not marked. Before the first issued report, nothing is marked. Dimo also warns about
   such changes before the next issued export ([Exports](exports.md)).
 - If you delete a characteristic, its results are deleted in the same step, without a question,
-  and ⌘Z brings both back. Deleting a sample asks first when it has results.
+  and ⌘Z brings both back. Deleting a sample asks first when it has results. Deleting characteristics that have results asks first too: Dimo says how many results go with them, and ⌘Z brings them back.

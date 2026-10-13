@@ -1,24 +1,24 @@
 # Ergebnisse eingeben
 
 In der Ansicht **Messen** (⌘3) gibst du ein, was du an den Teilen gemessen hast. Die Zeilen sind
-die zu prüfenden Merkmale, jede Spalte ist ein Teil (Muster). Dimo vergleicht jeden Wert mit den
-Grenzmaßen und markiert ihn als i.O. oder n.i.O. Muster, Ergebnisse und Bewertungen werden im
+die zu prüfenden Merkmale, jede Spalte ist ein Teil. Dimo vergleicht jeden Wert mit den
+Grenzmaßen und markiert ihn als i.O. oder n.i.O. Teile, Ergebnisse und Bewertungen werden im
 Projekt gespeichert und stehen im [Prüfbericht](exports.md).
 
-## Muster
+## Teile
 
-Ein Muster ist ein Teil, das du misst. Ein neues Projekt hat keine Muster. Gib unter **Anzahl** ein,
-wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Muster hinzufügen**. Ein Projekt kann
-bis zu 500 Muster enthalten. Die Seriennummern zählen von der höchsten reinen Zahl weiter (`1`, `2`,
+Ein Teil ist ein Stück, das du misst. Ein neues Projekt hat keine Teile. Gib unter **Anzahl** ein,
+wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Teile hinzufügen**. Ein Projekt kann
+bis zu 500 Teile enthalten. Die Seriennummern zählen von der höchsten reinen Zahl weiter (`1`, `2`,
 `3`); das Datum ist leer, als Prüfer steht dein Benutzername aus den Einstellungen.
 
-Klicke auf den Kopf oder eine Zelle einer Musterspalte, um sie zum aktiven Muster zu machen. Die
+Klicke auf den Kopf oder eine Zelle einer Teilespalte, um sie zum aktiven Teil zu machen. Die
 Seitenleiste rechts zeigt Seriennummer, Datum, Prüfer, Prüfmittel und Bemerkung; dort änderst du
 sie. Eine Seriennummer wird von Leerzeichen am Rand befreit, darf nicht leer sein und muss im
 Projekt eindeutig sein (Groß- und Kleinschreibung zählt als Unterschied). Seriennummern können
 beliebiger Text sein, zum Beispiel `A-17`. **Nach links** und **Nach rechts** ändern die
-Reihenfolge der Spalten, die auch die Reihenfolge in den Berichten ist. **Muster löschen** löscht
-die Spalte; hat das Muster Ergebnisse, fragt Dimo vorher, weil sie mit gelöscht werden. Jede
+Reihenfolge der Spalten, die auch die Reihenfolge in den Berichten ist. **Teil löschen** löscht
+die Spalte; hat das Teil Ergebnisse, fragt Dimo vorher, weil sie mit gelöscht werden. Jede
 Änderung machst du mit ⌘Z rückgängig.
 
 ## Die Tabelle
@@ -34,13 +34,13 @@ Grenze, bleibt die andere Zelle leer.
 |---|---|
 | Ergebnisart | **Automatisch** (Messwert, wenn das Merkmal ein Grenzmaß hat, sonst i.O. / n.i.O.), **Messwert** oder **i.O. / n.i.O.** |
 | Übersicht | Wie viele Ergebnisse der Zeile i.O., n.i.O., nicht bewertet sind oder fehlen |
-| Musterkopf | Seriennummer des Teils und dieselben Zahlen für dieses Teil |
+| Teilekopf | Seriennummer des Teils und dieselben Zahlen für dieses Teil |
 
 Die Zeile über der Tabelle zeigt das Gesamtergebnis aller Teile und warum Dimo die letzte Eingabe
 nicht angenommen hat.
 
 Ein Dreieck neben der Nummer bedeutet: Grenzmaße oder Ergebnisart dieses Merkmals wurden nach dem
-letzten freigegebenen Bericht geändert ([Wenn sich Grenzmaße ändern](#wenn-sich-grenzmaße-ändern)).
+letzten ausgegebenen Bericht geändert ([Wenn sich Grenzmaße ändern](#wenn-sich-grenzmaße-ändern)).
 
 Ein Merkmal mit einer Anzahl wie `4X` und einem Ballon hat ein Ergebnis je Teil: gib den
 schlechtesten Wert ein. Willst du einen Wert je Element, nummeriere die Elemente einzeln mit
@@ -87,7 +87,7 @@ die Zelle, in der der Bereich beginnt, und drücke ⌘V. Die Zeilen des Bereichs
 hinunter, die Spalten über die Teile. Der ganze Bereich ist ein Schritt: ⌘Z entfernt ihn wieder.
 Eine leere Zelle im Bereich löscht das Ergebnis in dieser Zelle. Passt ein Wert nicht, wird nichts
 eingefügt. Reicht der Bereich über das letzte Merkmal oder das letzte Teil hinaus, sagt Dimo das
-und fügt nichts ein; füge zuerst Muster hinzu.
+und fügt nichts ein; füge zuerst Teile hinzu.
 
 ## Markierungen
 
@@ -147,14 +147,14 @@ Tabelle bearbeitest.
   danach exportierst. Ein Wert, der i.O. war, kann jetzt n.i.O. sein, und umgekehrt.
 - Ein Merkmal, das schon Ergebnisse hat, behält seine Ergebnisart (siehe oben).
 - Ein Bericht, der früher exportiert wurde, ist eine Datei und ändert sich nicht. Sind die neuen
-  Grenzmaße wichtig, exportiere den Bericht noch einmal, als freigegeben, wenn er an einen Kunden
+  Grenzmaße wichtig, exportiere den Bericht noch einmal, als ausgegeben, wenn er an einen Kunden
   geht.
 - Ein Dreieck neben der Nummer in der Tabelle zeigt jedes Merkmal, dessen Grenzmaße oder
-  Ergebnisart sich vom Stand beim letzten freigegebenen Bericht unterscheiden. Grenzmaße gelten als
+  Ergebnisart sich vom Stand beim letzten ausgegebenen Bericht unterscheiden. Grenzmaße gelten als
   verschieden, wenn sich der Wert oder die Schreibweise unterscheidet (`12` gegen `12.0`). Die
   Marke verschwindet, wenn die Änderung rückgängig gemacht oder die alten Grenzmaße wieder
-  eingegeben werden. Ein Merkmal, das du nach dem letzten freigegebenen Bericht hinzugefügt hast,
-  ist nicht markiert. Vor dem ersten freigegebenen Bericht ist nichts markiert. Vor dem nächsten
-  Export als freigegeben warnt Dimo ebenfalls vor solchen Änderungen ([Exporte](exports.md)).
+  eingegeben werden. Ein Merkmal, das du nach dem letzten ausgegebenen Bericht hinzugefügt hast,
+  ist nicht markiert. Vor dem ersten ausgegebenen Bericht ist nichts markiert. Vor dem nächsten
+  Export als ausgegeben warnt Dimo ebenfalls vor solchen Änderungen ([Exporte](exports.md)).
 - Löschst du ein Merkmal, werden seine Ergebnisse im selben Schritt gelöscht, ohne Rückfrage, und
-  ⌘Z bringt beides zurück. Beim Löschen eines Musters fragt Dimo vorher, wenn es Ergebnisse hat.
+  ⌘Z bringt beides zurück. Beim Löschen eines Teils fragt Dimo vorher, wenn es Ergebnisse hat. Dasselbe gilt für Merkmale mit Ergebnissen: Vor dem Löschen sagt Dimo, wie viele Ergebnisse mit verschwinden; ⌘Z holt sie zurück.

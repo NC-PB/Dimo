@@ -297,9 +297,9 @@ The user guide uses "du".
 | # | Check | Expected |
 |---|---|---|
 | 14.1 | The view and the guide | Terms in the app and in `docs/user/de/measuring.md`, `exports.md` and `project-details.md` are the same |
-| 14.2 | Muster and Teile | The app says **Muster** for samples; the German reports say **Teile** in the column heads and in the block heading ("Teile 7 bis 12 von 12"). Decide whether one word should be used everywhere |
-| 14.3 | Revisionsstand and Änderungsstand | The panel field is **Revisionsstand**; the German reports print **Änderungsstand**. Decide whether to unify |
-| 14.4 | Freigegeben | **Als freigegeben exportieren** (issued) and **Freigegeben von** (approved by) use the same word for two meanings. Decide whether this is a problem for a shop |
+| 14.2 | Teil and Teile | The app and the German reports both say **Teil** and **Teile** for samples (owner decision 2026-10-13): panel, grid, sample bar, messages, column heads, block heading ("Teile 7 bis 12 von 12") |
+| 14.3 | Änderungsstand | The panel field and the German reports both say **Änderungsstand** for the drawing revision |
+| 14.4 | Ausgegeben and Freigegeben | The export option reads **Als ausgegeben exportieren** (issued) and the signature row **Freigegeben von** (approved by); the two words no longer clash. The warning dialog, the notes under the export and the Measure view hint say "ausgegeben" too |
 | 14.5 | Gut/Schlecht-Merkmal | Used in the shortcut cheat sheet for the OK / not OK result type; the column says **i.O. / n.i.O.** |
 | 14.6 | Grenze and Grenzmaß | Columns say **Untere Grenze** and **Obere Grenze**; running texts say "Grenzmaße" |
 | 14.7 | Refusal messages | Texts such as "Dieses Merkmal hat Ergebnisse der anderen Art. Lösche sie zuerst." read well; the grid messages (not a number, paste does not fit) are complete German sentences |

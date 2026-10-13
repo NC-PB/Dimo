@@ -96,7 +96,7 @@ weiter in der Reihenfolge der Merkmalstabelle nummeriert. Ein neuer Ballon erhä
 Nummer. Löschst du einen Ballon oder verschiebst eine Zeile in der Tabelle, werden alle neu
 nummeriert.
 
-Nach einem Export als freigegeben ([Exporte](exports.md)) ist die Nummerierung gesperrt. Die
+Nach einem Export als ausgegeben ([Exporte](exports.md)) ist die Nummerierung gesperrt. Die
 Nummern ändern sich dann nie: Ein neuer Ballon erhält die höchste je vergebene Nummer plus eins,
 eine gelöschte Nummer wird nicht wieder verwendet, und Zeilen lassen sich nicht verschieben.
 

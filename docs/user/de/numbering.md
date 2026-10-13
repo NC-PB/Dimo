@@ -89,7 +89,7 @@ ihrer Anzahl.
 
 ## Gesperrte Nummerierung
 
-Nach einem Export als freigegeben ist die Nummerierung gesperrt ([Exporte](exports.md)). Die
+Nach einem Export als ausgegeben ist die Nummerierung gesperrt ([Exporte](exports.md)). Die
 Nummern ändern sich dann nie, und **Nummerierung anwenden** wird nicht angeboten. **Hinzugefügt
 bei Sperre** legt die Nummer eines danach hinzugefügten Merkmals fest:
 
