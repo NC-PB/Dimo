@@ -20,15 +20,18 @@ import ExternalLink from "@lucide/svelte/icons/external-link";
 import Eye from "@lucide/svelte/icons/eye";
 import FileCheck from "@lucide/svelte/icons/file-check";
 import FileOutput from "@lucide/svelte/icons/file-output";
+import FileText from "@lucide/svelte/icons/file-text";
 import FilePlus from "@lucide/svelte/icons/file-plus";
 import FolderOpen from "@lucide/svelte/icons/folder-open";
 import Grid3x3 from "@lucide/svelte/icons/grid-3x3";
 import Hash from "@lucide/svelte/icons/hash";
 import Info from "@lucide/svelte/icons/info";
+import ListChecks from "@lucide/svelte/icons/list-checks";
 import ListOrdered from "@lucide/svelte/icons/list-ordered";
 import Maximize from "@lucide/svelte/icons/maximize";
 import Moon from "@lucide/svelte/icons/moon";
 import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
+import MousePointerClick from "@lucide/svelte/icons/mouse-pointer-click";
 import Palette from "@lucide/svelte/icons/palette";
 import PanelBottom from "@lucide/svelte/icons/panel-bottom";
 import PanelRight from "@lucide/svelte/icons/panel-right";
@@ -38,8 +41,10 @@ import Redo2 from "@lucide/svelte/icons/redo-2";
 import RefreshCw from "@lucide/svelte/icons/refresh-cw";
 import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
 import RotateCw from "@lucide/svelte/icons/rotate-cw";
+import Ruler from "@lucide/svelte/icons/ruler";
 import Save from "@lucide/svelte/icons/save";
 import SaveAll from "@lucide/svelte/icons/save-all";
+import ScanSearch from "@lucide/svelte/icons/scan-search";
 import Settings from "@lucide/svelte/icons/settings";
 import SquareDashed from "@lucide/svelte/icons/square-dashed";
 import Stamp from "@lucide/svelte/icons/stamp";
@@ -66,6 +71,7 @@ export const icons = {
   help: CircleHelp,
   inspectionReport: FileCheck,
   issueReport: Stamp,
+  measure: Ruler,
   moveLeft: ArrowLeft,
   moveRight: ArrowRight,
   newProject: FilePlus,
@@ -78,6 +84,8 @@ export const icons = {
   previewNumbers: Eye,
   projectInfo: Info,
   redo: Redo2,
+  report: FileText,
+  review: ScanSearch,
   renumber: ListOrdered,
   rotateLeft: RotateCcw,
   rotateRight: RotateCw,
@@ -85,7 +93,9 @@ export const icons = {
   saveAs: SaveAll,
   saveCopy: FileOutput,
   select: MousePointer2,
+  selectHint: MousePointerClick,
   settings: Settings,
+  setupChecklist: ListChecks,
   sidePanel: PanelRight,
   table: PanelBottom,
   themeDark: Moon,

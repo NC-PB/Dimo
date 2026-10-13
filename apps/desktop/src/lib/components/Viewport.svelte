@@ -385,27 +385,13 @@
   aria-label={m.viewport_label()}
 >
   {#if doc === null}
-    <div class="flex h-full flex-col items-center justify-center gap-3 text-text-muted">
-      <p>{projectStore.busy ? m.working() : m.sample_greeting()}</p>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="rounded bg-accent-strong px-3 py-1.5 text-sm text-accent-ink disabled:opacity-50"
-          disabled={projectStore.busy}
-          onclick={() => void projectStore.newProject()}
-        >
-          {m.new_project()}
-        </button>
-        <button
-          type="button"
-          class="rounded border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-raised disabled:opacity-50"
-          disabled={projectStore.busy}
-          onclick={() => void projectStore.open()}
-        >
-          {m.open_project()}
-        </button>
-      </div>
-    </div>
+    <!-- Without a project the start screen covers the drawing (T3.17); this shows only while a
+         drawing is being opened. -->
+    {#if projectStore.isOpen}
+      <p class="flex h-full items-center justify-center text-sm text-text-muted" role="status">
+        {m.viewport_opening()}
+      </p>
+    {/if}
   {:else}
     {#if sheetBox}
       <div

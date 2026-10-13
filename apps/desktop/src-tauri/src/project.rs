@@ -136,15 +136,19 @@ pub async fn new_project(
 ) -> Result<bool, CommandError> {
     check_unsaved(&app.state::<SessionState>(), discard)?;
     let tiles = tile_service(&app.state::<TileState>())?;
-    let picked = rfd::AsyncFileDialog::new()
-        .add_filter("PDF", &["pdf", "PDF"])
-        .set_parent(&window)
-        .pick_file()
-        .await;
-    let Some(file) = picked else {
-        return Ok(false);
+    let path = if let Some(path) = crate::dev::dev_new_drawing() {
+        path
+    } else {
+        let picked = rfd::AsyncFileDialog::new()
+            .add_filter("PDF", &["pdf", "PDF"])
+            .set_parent(&window)
+            .pick_file()
+            .await;
+        let Some(file) = picked else {
+            return Ok(false);
+        };
+        file.path().to_path_buf()
     };
-    let path = file.path().to_path_buf();
     with_session(app, move |app, session| {
         let loaded = session.create_from_drawing(&tiles, &path, discard)?;
         emit(app, &loaded);

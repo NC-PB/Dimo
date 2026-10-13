@@ -29,7 +29,8 @@
  *   key would; on the drawing the key goes to its key handling (T2.7a, typing right after a
  *   placing click).
  * - `button`: clicks the button whose text is this label (or, for icon buttons, whose
- *   `aria-label` is).
+ *   `aria-label` is, or whose `aria-labelledby` element has this text, like the start screen
+ *   cards).
  * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
  * - `cell`: `[row, sample]` clicks a cell of the measurement grid, both one based (row 1 is the
@@ -334,11 +335,17 @@ async function run(step: UiStep): Promise<void> {
     await typeKeys(step.keys);
     await sleep(STEP_PAUSE_MS);
   } else if ("button" in step) {
-    // Icon only buttons of the title bar are found by their accessible name (T3.15).
+    // Icon only buttons of the title bar are found by their accessible name (T3.15), the cards
+    // of the start screen by the title they are labelled by (T3.17).
     const buttons = [...document.querySelectorAll<HTMLElement>("button")];
+    const labelledBy = (b: HTMLElement): string | undefined => {
+      const id = b.getAttribute("aria-labelledby");
+      return id === null ? undefined : document.getElementById(id)?.textContent.trim();
+    };
     const button =
       buttons.find((b) => b.textContent.trim() === step.button) ??
-      buttons.find((b) => b.getAttribute("aria-label") === step.button);
+      buttons.find((b) => b.getAttribute("aria-label") === step.button) ??
+      buttons.find((b) => labelledBy(b) === step.button);
     button?.click();
     await sleep(STEP_PAUSE_MS);
   } else if ("balloon" in step) {

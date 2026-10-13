@@ -1,5 +1,7 @@
 <script lang="ts">
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import { LOCALE_NAMES, commandErrorMessage, m } from "$lib/i18n";
+  import { icons } from "$lib/icons";
   import type {
     ExportFormat,
     PdfBalloons,
@@ -182,8 +184,34 @@
   <h1 id="export-heading" class="text-lg font-semibold">{m.view_export()}</h1>
 
   {#if !open}
-    <p class="text-text-muted">{m.export_no_project()}</p>
+    <EmptyState
+      icon={icons.report}
+      title={m.empty_no_project_title()}
+      text={m.empty_report_no_project()}
+      actions={[{ command: "new_project" }, { command: "open_project" }]}
+    />
   {:else}
+    {#if (projectStore.project?.characteristics.length ?? 0) === 0}
+      <div class="max-w-2xl rounded border border-border bg-surface">
+        <EmptyState
+          size="inline"
+          icon={icons.report}
+          title={m.empty_report_no_chars_title()}
+          text={m.empty_report_no_chars_text()}
+          actions={[{ command: "place_tool" }]}
+        />
+      </div>
+    {:else if (projectStore.project?.results.length ?? 0) === 0}
+      <div class="max-w-2xl rounded border border-border bg-surface">
+        <EmptyState
+          size="inline"
+          icon={icons.measure}
+          title={m.empty_report_no_results_title()}
+          text={m.empty_report_no_results_text()}
+          actions={[{ tab: "measure", label: m.empty_go_measure() }]}
+        />
+      </div>
+    {/if}
     <fieldset class="flex max-w-2xl flex-col gap-3 rounded border border-border bg-surface p-4">
       <legend class="px-1 font-semibold">{m.export_options()}</legend>
       <label class="flex flex-wrap items-center gap-2">

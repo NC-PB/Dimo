@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import {
     columnSizingFeature,
     createColumnHelper,
@@ -751,7 +752,14 @@
       </div>
     </div>
     {#if rows.length === 0}
-      <p class="px-3 py-4 text-text-muted">{m.table_empty()}</p>
+      <div class="sticky left-0 w-fit max-w-xl">
+        <EmptyState
+          size="inline"
+          title={m.empty_table_title()}
+          text={m.empty_table_text()}
+          actions={[{ command: "place_tool" }]}
+        />
+      </div>
     {/if}
     <div
       bind:this={body}

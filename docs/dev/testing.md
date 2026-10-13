@@ -43,9 +43,10 @@ terminal. Release builds ignore all of them (NFR-SEC-01).
 | Variable | Effect |
 |---|---|
 | `DIMO_DEV_OPEN=<path>` | Create a project from this PDF, or open this `.dimo` file, at startup |
-| `DIMO_DEV_UI_SCRIPT=<file>` | Play these UI steps once the project is shown (steps in `src/lib/dev/ui-script.ts`) |
+| `DIMO_DEV_UI_SCRIPT=<file>` | Play these UI steps once the project (or, without one, the start screen) is shown (steps in `src/lib/dev/ui-script.ts`) |
 | `DIMO_DEV_EXPORT_DIR=<dir>` | Exports skip the save dialog and write their suggested file name here |
 | `DIMO_DEV_SAVE_AS=<file>` | "Save as" skips the save dialog and saves here |
+| `DIMO_DEV_NEW_DRAWING=<pdf>` | "New project" skips the open dialog and uses this PDF (start screen and setup pane, T3.17) |
 | `DIMO_DEV_HOME=<dir>` | Settings, autosave and tile cache live in `config`, `data` and `cache` below this folder |
 
 `DIMO_DEV_SCRIPT` (document commands, see `dev.rs`) and the other `DIMO_DEV_*` variables are for
@@ -88,6 +89,9 @@ drawing gestures ignore the real mouse, and the script prints how many real poin
    XLSX twice (byte identical), a cancelled export that leaves no file. The PDF text is read
    back with PDFium (`text_runs`): overall verdict, summary counts and the verdict of each
    sample; the XLSX shared strings hold the verdict words.
+9. Start screen and setup pane (`start-setup.json`): no project at startup, the start screen card
+   creates one, the setup pane sets general tolerance, unit, scale, part number and customer, and
+   Start ballooning switches on Place balloon; checked from the saved project.
 
 Work happens in a temporary folder below the target directory with its own `DIMO_DEV_HOME`, so
 your settings and your own unsaved work are untouched. The language is forced to English because

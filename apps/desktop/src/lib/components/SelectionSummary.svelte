@@ -1,5 +1,7 @@
 <script lang="ts">
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/i18n";
+  import { icons } from "$lib/icons";
   import type { Characteristic } from "$lib/ipc/bindings";
   import { projectStore } from "$lib/stores/project.svelte";
   import { selection } from "$lib/stores/selection.svelte";
@@ -37,7 +39,15 @@
 <!-- Compact summary of the selected characteristics (T1.9). Editing stays in the table. -->
 <section class="flex-1 overflow-auto" aria-label={m.selection_summary_label()}>
   {#if chosen.length === 0}
-    <p>{m.side_panel_empty()}</p>
+    <EmptyState
+      size="inline"
+      icon={icons.selectHint}
+      title={m.empty_selection_title()}
+      text={projectStore.characteristics.length === 0
+        ? m.empty_selection_none()
+        : m.empty_selection_text()}
+      actions={[{ command: "place_tool" }]}
+    />
   {:else if single}
     <h2 class="mb-2 text-base font-semibold text-text">
       {label("number")}

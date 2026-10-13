@@ -17,6 +17,7 @@ import { MeasurementStore } from "$lib/stores/measurement.svelte";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import MeasureGrid from "./MeasureGrid.svelte";
+import { measureUi } from "./measure-ui.svelte";
 
 const VIEW_HEIGHT = 560;
 const ROW_HEIGHT = 28;
@@ -409,5 +410,86 @@ describe("measurement grid (T3.5)", () => {
       { type: "set_result_type", ids: ["c1"], result_type: "attribute" },
     ]);
     expect(select.value).toBe("auto");
+  });
+});
+describe("measure grid empty states (T3.17)", () => {
+  afterEach(() => {
+    measureUi.onlyFailed = false;
+  });
+
+  async function renderEmpty(change: (data: ReturnType<typeof setup>) => void) {
+    const rust = fakeRust();
+    const data = setup();
+    change(data);
+    const project = new ProjectStore(rust.api);
+    project.load(loaded(1, data.project));
+    const measurement = new MeasurementStore({
+      measurementState: () => Promise.resolve({ status: "ok", data: data.state }),
+      changedSinceIssuedReport: () => Promise.resolve({ status: "ok", data: [] }),
+    });
+    await measurement.refresh(false);
+    component = mount(MeasureGrid, {
+      target,
+      props: { project, measurement, selected: new SelectionStore() },
+    });
+    flushSync();
+    await tick();
+  }
+
+  function empty(): { title: string; actions: string[] } | null {
+    const box = target.querySelector('[data-testid="empty-state"]');
+    if (!box) {
+      return null;
+    }
+    return {
+      title: box.querySelector("h2")?.textContent.trim() ?? "",
+      actions: [...box.querySelectorAll<HTMLElement>("button")].map((b) => b.dataset.action ?? ""),
+    };
+  }
+
+  it("offers Add parts when there are characteristics but no parts", async () => {
+    await renderEmpty(({ project, state }) => {
+      project.samples = [];
+      project.results = [];
+      state.samples = [];
+      state.rows = state.rows.map((r) => ({ ...r, cells: [] }));
+    });
+    expect(empty()).toEqual({ title: "No parts yet", actions: ["add_parts"] });
+  });
+
+  it("offers Place balloon when there are no characteristics", async () => {
+    await renderEmpty(({ project, state }) => {
+      project.characteristics = [];
+      project.results = [];
+      state.rows = [];
+    });
+    expect(empty()).toEqual({
+      title: "Nothing to measure yet",
+      actions: ["place_tool"],
+    });
+  });
+
+  it("points to the drawing when no characteristic is inspected", async () => {
+    await renderEmpty(({ state }) => {
+      state.rows = [];
+    });
+    expect(empty()).toEqual({
+      title: "Nothing to measure yet",
+      actions: ["tab-home"],
+    });
+  });
+
+  it("offers to switch a filter off when it hides every row", async () => {
+    measureUi.onlyFailed = true;
+    await renderEmpty(() => undefined);
+    expect(empty()).toEqual({
+      title: "No row matches the filter",
+      actions: ["only_failed"],
+    });
+  });
+
+  it("shows no empty state with rows and parts", async () => {
+    await renderEmpty(() => undefined);
+    expect(empty()).toBeNull();
   });
 });

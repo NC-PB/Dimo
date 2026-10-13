@@ -26,6 +26,9 @@
 //!
 //! - `DIMO_DEV_SAVE_AS=<path>`: "save as" (and "save" of a project without a file) skips the
 //!   save dialog and saves to this path (T1.10).
+//! - `DIMO_DEV_NEW_DRAWING=<path>`: "new project" skips the open dialog and creates the project
+//!   from this PDF, so a UI script can start on the start screen and click "New project from
+//!   drawing" (T3.17).
 //! - `DIMO_DEV_IMPORT_TABLE=<path>`: "import custom table" skips the open dialog and reads this
 //!   table file (T2.8).
 //! - `DIMO_DEV_HOME=<dir>`: the cache, data and config folders of the app (tiles, autosave,
@@ -86,6 +89,16 @@ pub fn dev_export_delay() -> Option<std::time::Duration> {
 pub fn dev_save_as() -> Option<PathBuf> {
     if cfg!(debug_assertions) {
         var("DIMO_DEV_SAVE_AS").map(PathBuf::from)
+    } else {
+        None
+    }
+}
+
+/// Debug builds started with `DIMO_DEV_NEW_DRAWING`: "new project" skips the open dialog and
+/// uses this drawing (T3.17). `None` in release builds.
+pub fn dev_new_drawing() -> Option<PathBuf> {
+    if cfg!(debug_assertions) {
+        var("DIMO_DEV_NEW_DRAWING").map(PathBuf::from)
     } else {
         None
     }

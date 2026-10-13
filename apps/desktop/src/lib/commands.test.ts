@@ -14,6 +14,7 @@ import { balloonTools } from "./stores/balloon-tools.svelte";
 import { characteristic, emptyProject, loaded } from "./stores/fixtures";
 import { projectStore } from "./stores/project.svelte";
 import { selection } from "./stores/selection.svelte";
+import { setupStore } from "./stores/setup.svelte";
 import { view } from "./stores/view.svelte";
 
 let session = 100;
@@ -110,5 +111,26 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
     expect(view.shortcutsOpen).toBe(true);
     runCommand("help");
     expect(view.shortcutsOpen).toBe(false);
+  });
+
+  it("switches to the drawing when Place balloon is turned on from another view (T3.17)", () => {
+    openProject();
+    view.setTab("measure");
+    expect(runCommand("place_tool")).toBe(true);
+    expect(view.current).toBe("drawing");
+    expect(balloonTools.tool).toBe("place");
+  });
+
+  it("opens and closes the setup pane with Set up drawing (T3.17)", () => {
+    expect(disabledReason("setup_checklist")).toBe("Open or start a project first.");
+    openProject();
+    view.setTab("report");
+    expect(setupStore.visible).toBe(false);
+    expect(runCommand("setup_checklist")).toBe(true);
+    expect(setupStore.visible).toBe(true);
+    expect(command("setup_checklist").pressed?.()).toBe(true);
+    expect(view.current).toBe("drawing");
+    runCommand("setup_checklist");
+    expect(setupStore.visible).toBe(false);
   });
 });

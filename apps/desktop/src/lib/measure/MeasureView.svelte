@@ -1,6 +1,8 @@
 <script lang="ts">
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import ProjectDetails from "$lib/components/ProjectDetails.svelte";
   import { m } from "$lib/i18n";
+  import { icons } from "$lib/icons";
   import { measurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import MeasureGrid from "./MeasureGrid.svelte";
@@ -29,7 +31,12 @@
 <div class="flex min-h-0 flex-1">
   <section class="flex min-w-0 flex-1 flex-col bg-bg" aria-label={m.view_measure()}>
     {#if projectStore.project === null}
-      <p class="m-auto text-sm text-text-muted">{m.measure_no_project()}</p>
+      <EmptyState
+        icon={icons.measure}
+        title={m.empty_no_project_title()}
+        text={m.empty_measure_no_project()}
+        actions={[{ command: "new_project" }, { command: "open_project" }]}
+      />
     {:else}
       <SampleBar />
       <MeasureGrid />

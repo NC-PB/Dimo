@@ -112,6 +112,14 @@ them. A new command gets an entry in the registry, a message for label and descr
 languages, and a place in a ribbon; `commands.test.ts` checks labels, icons, tooltips and
 shortcuts. Ribbon groups that do not fit the window move into "More" (`ribbon-fit.ts`).
 
+Guidance (T3.17): without a project `StartScreen` covers the drawing area (the drawing stays
+mounted underneath, `inert`). After `projectStore.newProject()` created a project,
+`projectStore.createdSession` names its session and `stores/setup.svelte.ts` shows `SetupPane`
+in place of the side panel; opened projects never match. Its answers go through
+`toleranceStore.setSettings` (so the decision 22 offer still works) and one `batch` of
+`update_sheet` and `update_project_info`. Empty views and panes use `EmptyState`: a title, one
+sentence and buttons that are registry commands, or a tab to switch to for plain navigation.
+
 - Settings of the user (`stores/settings.svelte.ts`): theme, UI language, audit user name and
   the last export options. Rust stores them in `settings.json` in the app config directory
   (`src-tauri/src/settings.rs`). `main.ts` reads them before mounting, so the first render has

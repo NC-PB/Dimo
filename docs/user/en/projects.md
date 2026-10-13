@@ -21,6 +21,13 @@ until you save it; the title bar shows "Untitled". The first save asks for a fil
 `.dimo` if you leave it out. Undo has no limit while the project is open; the history starts fresh
 when you open a project again.
 
+Without an open project Dimo shows the start screen with **New project from drawing** and
+**Open project**. Right after a new project is created, the pane **Set up this drawing** asks for
+the general tolerance, unit and scale, part number and customer; **Skip** closes it, and
+**Set up drawing** on the **Drawing** tab opens it again. Opened projects do not show it. Views
+and panes without content (no characteristics, no parts, no measured values) say what is missing
+and offer a button for the next step.
+
 When a project has unsaved changes, Dimo asks before it creates or opens another project and
 before the window closes or Dimo quits: **Save**, **Don't save** or **Cancel**.
 

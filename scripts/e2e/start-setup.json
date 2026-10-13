@@ -1,0 +1,17 @@
+[
+  { "mark": "start screen" },
+  { "wait": 500 },
+  { "button": "New project from drawing" },
+  { "wait": 2500 },
+  { "check": ["ISO 2768-1 m", true] },
+  { "select": ["Unit", "in"] },
+  { "select": ["Scale", "2:1"] },
+  { "fill": ["Part number", "BR-2041"] },
+  { "fill": ["Customer", "Muster AG"] },
+  { "button": "Start ballooning" },
+  { "wait": 1000 },
+  { "report": "after setup" },
+  { "key": "s", "mod": true, "shift": true },
+  { "wait": 1000 },
+  { "report": "final" }
+]

@@ -319,6 +319,26 @@ describe("project store (T1.5)", () => {
     expect(clean.rust.calls).toEqual(["new(false)"]);
   });
 
+  it("records the session of a project created from a drawing, not of an opened one (T3.17)", async () => {
+    const { rust, store } = await connected();
+    expect(store.createdSession).toBe(-1);
+    // Rust created the project, but its event is still on the way: the store fetches the state.
+    rust.state = loaded(2);
+    expect(await store.newProject()).toBe(true);
+    expect(store.session).toBe(2);
+    expect(store.createdSession).toBe(2);
+
+    rust.state = loaded(3);
+    await store.open();
+    await store.resync(false);
+    expect(store.session).toBe(3);
+    expect(store.createdSession).toBe(2);
+
+    rust.newProject = () => Promise.resolve({ status: "ok" as const, data: false });
+    expect(await store.newProject()).toBe(false);
+    expect(store.createdSession).toBe(2);
+  });
+
   it("answers a window close request after asking", async () => {
     const { rust, store } = await connected("discard");
     store.status = status({ modified: true });

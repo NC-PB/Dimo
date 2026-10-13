@@ -88,6 +88,12 @@ export class ProjectStore {
   error = $state.raw<CommandError | null>(null);
   /** True while a file dialog or file operation runs. */
   busy = $state(false);
+  /**
+   * Session of the last project created from a drawing with {@link ProjectStore.newProject} in
+   * this window, `-1` before one. The setup pane opens for it (M3 decision 23); projects opened
+   * from a file never match.
+   */
+  createdSession = $state(-1);
 
   /** Characteristics by ID. */
   readonly characteristicById = $derived(characteristicsById(this.project));
@@ -300,14 +306,23 @@ export class ProjectStore {
     return { proceed: false, discard: false };
   }
 
-  /** New project from a drawing chosen in the file dialog (Rust). */
-  async newProject(): Promise<void> {
-    await this.#busy(async () => {
+  /**
+   * New project from a drawing chosen in the file dialog (Rust). Resolves to whether a project
+   * was created; then the store already shows it and `createdSession` names its session.
+   */
+  async newProject(): Promise<boolean> {
+    const created = await this.#busy(async () => {
       const { proceed, discard } = await this.#settleUnsaved();
-      if (proceed) {
-        await this.#call(() => this.#api.newProject(discard));
+      if (!proceed || (await this.#call(() => this.#api.newProject(discard))) !== true) {
+        return false;
       }
+      // The `project-loaded` event and the command result arrive in any order: fetch the state,
+      // so the new session is applied before it is recorded.
+      await this.resync(false);
+      this.createdSession = this.session;
+      return true;
     });
+    return created === true;
   }
 
   /** Opens a project chosen in the file dialog (Rust). */

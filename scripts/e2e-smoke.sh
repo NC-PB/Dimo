@@ -24,6 +24,9 @@
 #      The PDF text is read back with PDFium (T3.10): overall verdict, summary counts and the
 #      verdict of each sample; the XLSX holds the verdict words. A third run cancels the export
 #      and leaves no file.
+#   9. Start screen and setup pane (T3.17): without a project the start screen card creates the
+#      project (DIMO_DEV_NEW_DRAWING replaces the file dialog), the setup pane sets general
+#      tolerance, unit, scale, part number and customer, and Start ballooning turns on placing.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -455,6 +458,24 @@ fi
 expect "report: cancelled export reported" "yes" \
   "$(yesno grep -q 'inspection_report_pdf cancelled' <<<"$(report report-cancel cancelled)")"
 expect "report: cancelled export left no file" "0" "$(find "$WORK/out8c" -type f | wc -l | tr -d ' ')"
+
+step "9. start screen and setup pane (T3.17)"
+# No project at startup: the UI script clicks the start screen card, DIMO_DEV_NEW_DRAWING
+# replaces the file dialog, and the setup pane answers go into the project.
+run_app setup "$SCRIPTS/start-setup.json" term home9 \
+  DIMO_DEV_NEW_DRAWING="$DRAWING" DIMO_DEV_SAVE_AS="$WORK/setup.dimo"
+expect "setup: Start ballooning switches on Place balloon" "yes" \
+  "$(yesno grep -q 'tool place' <<<"$(report setup 'after setup')")"
+SET="$WORK/setup.dimo"
+if [[ -s "$SET" ]]; then
+  SJSON=$(unzip -p "$SET" project.json)
+  sjq() { jq -r "$1" <<<"$SJSON"; }
+  expect "setup: general tolerance, unit, scale, part number and customer stored" \
+    "iso-2768-1 m in 2:1 BR-2041 Muster AG" \
+    "$(sjq '"\(.settings.tolerance.general.table.id) \(.settings.tolerance.general.class) \(.revisions[0].sheets[0].unit) \(.revisions[0].sheets[0].scale.drawing):\(.revisions[0].sheets[0].scale.actual) \(.info.part_number) \(.info.customer)"')"
+else
+  fail "missing or empty: $SET"
+fi
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

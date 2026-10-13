@@ -43,17 +43,21 @@ und Alt statt ⌥.
 
 ### 1. Ein Projekt aus einer Zeichnung anlegen
 
-Starte Dimo und wähle **Neues Projekt** (⌘N). Wähle das PDF der Zeichnung. Dimo kopiert die
-Zeichnung in das Projekt, das Projekt hängt danach also nicht mehr von der Originaldatei ab, und
-zeigt das erste Blatt eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter (Seiten), zeigt
+Starte Dimo. Ohne offenes Projekt zeigt es den Startbildschirm: **Neues Projekt aus Zeichnung**,
+**Projekt öffnen** und die drei Schritte der Arbeit. Klicke **Neues Projekt aus Zeichnung** (oder
+drücke ⌘N) und wähle das PDF der Zeichnung. Dimo kopiert die Zeichnung in das Projekt, das
+Projekt hängt danach also nicht mehr von der Originaldatei ab, und zeigt das erste Blatt
+eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter (Seiten), zeigt
 die Statusleiste unten einen Reiter pro Blatt.
 
 Das Projekt hat noch keine Datei. Die Titelleiste zeigt "Unbenannt"; du speicherst es in
 Schritt 9, aber Dimo hält schon jetzt eine wiederherstellbare Kopie von allem, was du tust
 ([Projekte](projects.md)).
 
-Liegt das Blatt quer, stelle jetzt Drehung, Einheit und Maßstab unter **Blatteigenschaften**
-rechts ein, wie in Schritt 8. Wer Einheit und Maßstab früh setzt, vergisst sie nicht.
+Rechts öffnet Dimo **Zeichnung einrichten**. Beantworte es aus dem Schriftfeld (Schritt 3) und
+klicke **Ballonieren starten**, oder klicke **Überspringen** und stelle alles später ein. Liegt
+das Blatt quer, drehe es mit **Nach links drehen** oder **Nach rechts drehen** im Reiter
+**Zeichnung**, wie in Schritt 8.
 
 ### 2. Sich umsehen
 
@@ -66,13 +70,22 @@ gedrückter Leertaste und Ziehen. Bild auf und Bild ab wechseln die Blätter. Ei
 ### 3. Die Allgemeintoleranz des Projekts wählen
 
 Die meisten Zeichnungen geben im Schriftfeld eine Allgemeintoleranz an, zum Beispiel
-ISO 2768-m. Dimo liest das Schriftfeld noch nicht, du sagst es ihm also einmal: Öffne die
-**Einstellungen** (⌘,), gehe zu **Toleranzen des Projekts**, wähle **ISO 2768-1** als
-**Allgemeintoleranz** und die Klasse aus der Zeichnung und kehre mit ⌘1 zur Zeichnung zurück.
-Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser Tabelle. Ohne Allgemeintoleranz
-wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat keine Grenzwerte. Die mit Dimo
-gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre Werte geprüft sind.
-Einzelheiten: [Toleranzen](tolerances.md).
+ISO 2768-mK: der kleine Buchstabe ist die Klasse nach ISO 2768-1. Dimo liest das Schriftfeld noch
+nicht, du sagst es ihm also einmal in **Zeichnung einrichten**:
+
+1. **Allgemeintoleranz**: wähle **Keine** oder die Klasse nach ISO 2768-1 aus der Zeichnung
+   (f fein, m mittel, c grob, v sehr grob).
+2. **Einheit und Maßstab**: Millimeter oder Zoll und der Maßstab aus dem Schriftfeld. Sie gelten
+   für alle Blätter der Zeichnung; einzelne Blätter änderst du später im Reiter **Zeichnung**.
+3. **Teil (optional)**: Teilenummer und Kunde, für die Berichte.
+
+**Ballonieren starten** speichert die Angaben (Rückgängig nimmt sie zurück, die Allgemeintoleranz
+als eigenen Schritt) und schaltet **Ballon setzen** ein. Später änderst du sie im Reiter
+**Zeichnung**: **Allgemeintoleranz**, **Einheit** und **Maßstab**, oder **Zeichnung einrichten**,
+das denselben Bereich wieder öffnet. Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser
+Tabelle. Ohne Allgemeintoleranz wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat
+keine Grenzwerte. Die mit Dimo gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre
+Werte geprüft sind. Einzelheiten: [Toleranzen](tolerances.md).
 
 ### 4. Ballons setzen und Werte erfassen
 
