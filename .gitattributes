@@ -11,3 +11,4 @@
 *.snap linguist-generated=false
 apps/desktop/src/lib/ipc/bindings.ts linguist-generated=true
 *.ttf binary
+*.woff2 binary
