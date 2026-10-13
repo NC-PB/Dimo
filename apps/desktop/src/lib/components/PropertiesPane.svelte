@@ -55,6 +55,8 @@
       : null,
   );
   const sheet = $derived(view.paneTool === null ? undefined : shownSheet());
+  /** The section of a ribbon command on screen; the × of the header then closes it. */
+  const tool = $derived(view.paneTool !== null && sheet !== undefined ? view.paneTool : null);
 
   // A new selection shows its properties: the section of a ribbon command gives way.
   $effect(() => {
@@ -66,9 +68,9 @@
   });
 
   const title = $derived(
-    view.paneTool === "zones"
+    tool === "zones"
       ? m.zones_title()
-      : view.paneTool === "views"
+      : tool === "views"
         ? m.views_title()
         : single
           ? m.detail_title({ number: single.number })
@@ -77,7 +79,7 @@
             : m.pane_project_title(),
   );
   const label = $derived(
-    view.paneTool !== null
+    tool !== null
       ? m.side_panel_label()
       : single
         ? m.pane_characteristic_label()
@@ -93,12 +95,23 @@
     }
   }
 
-  function hide(): void {
-    view.showSidePanel = false;
+  /** The × of the header: closes the section of a ribbon command, else hides the pane. */
+  function close(): void {
+    if (tool !== null) {
+      closeTool(tool);
+    } else {
+      view.showSidePanel = false;
+    }
   }
 </script>
 
-<Pane {title} {label} onclose={hide} closeLabel={m.pane_hide()} testid="properties-pane">
+<Pane
+  {title}
+  {label}
+  onclose={close}
+  closeLabel={tool === null ? m.pane_hide() : m.pane_close_section({ section: title })}
+  testid="properties-pane"
+>
   {#if numbering.previewing}
     <PaneSection
       id="numbering.preview"
@@ -122,20 +135,11 @@
     </PaneSection>
   {/if}
 
-  {#if view.paneTool !== null && sheet}
-    {@const tool = view.paneTool}
-    <PaneSection
-      id="tool.{tool}"
-      title={tool === "zones" ? m.zones_title() : m.views_title()}
-      onclose={() => {
-        closeTool(tool);
-      }}
-      closeLabel={m.pane_close_section({
-        section: tool === "zones" ? m.zones_title() : m.views_title(),
-      })}
-    >
+  {#if tool !== null && sheet}
+    <!-- The pane header names the section; its × closes it. -->
+    <div class="flex flex-col gap-2 border-b border-border px-3.5 py-3" data-section="tool.{tool}">
       <ZonesAndViews {sheet} part={tool} />
-    </PaneSection>
+    </div>
   {:else if single}
     <CharacteristicDetail {project} {selected} {tolerance} />
   {:else if count > 1}

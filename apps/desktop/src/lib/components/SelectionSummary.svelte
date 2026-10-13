@@ -93,30 +93,28 @@
     {#if tolerance.error}
       <p class="m-0 text-xs text-danger" role="alert">{commandErrorMessage(tolerance.error)}</p>
     {/if}
-    <div
-      class="flex flex-wrap items-center gap-2"
-      role="group"
-      aria-label={m.pane_inspect_selected()}
-    >
+    <div class="flex flex-col gap-1.5" role="group" aria-label={m.pane_inspect_selected()}>
       <span class="text-[13px] text-text-muted">{m.pane_inspect_selected()}</span>
-      <button
-        type="button"
-        class={choiceClass}
-        aria-pressed={allInspected}
-        data-inspect="yes"
-        onclick={() => {
-          setInspect(true);
-        }}>{m.pane_yes()}</button
-      >
-      <button
-        type="button"
-        class={choiceClass}
-        aria-pressed={noneInspected}
-        data-inspect="no"
-        onclick={() => {
-          setInspect(false);
-        }}>{m.pane_no()}</button
-      >
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class={choiceClass}
+          aria-pressed={allInspected}
+          data-inspect="yes"
+          onclick={() => {
+            setInspect(true);
+          }}>{m.pane_yes()}</button
+        >
+        <button
+          type="button"
+          class={choiceClass}
+          aria-pressed={noneInspected}
+          data-inspect="no"
+          onclick={() => {
+            setInspect(false);
+          }}>{m.pane_no()}</button
+        >
+      </div>
     </div>
   </PaneSection>
 </div>
