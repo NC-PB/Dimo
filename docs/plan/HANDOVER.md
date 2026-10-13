@@ -104,8 +104,13 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
   (`TaskStop`). Wait for the notification without "background work still running".
 - **Smoke flake under load (fixed 2026-10-13):** the dev UI script shared pointer ID 1 with the
   real mouse, so moving the mouse over the window during a scripted drag changed the box. Script
-  events now use ID 41 and the smoke output counts real pointer events. Heavy load can still make
-  a hidden or covered window stall (WebKit throttling); if so, try Tauri `backgroundThrottling`.
+  events now use ID 41 and the smoke output counts real pointer events.
+- **Smoke stall (fixed 2026-10-13, T3.20):** a page reload ends the running UI script, which plays
+  once per process. Any run in the same checkout that recompiles the Paraglide messages
+  (`pnpm check`, `pnpm test`, `check.sh`, an edit of `messages/*.json`) used to reload the page
+  through the dev server. The smoke test now starts Vite with `DIMO_E2E=1` (no watching, no hot
+  reload) and fails at once on "page loaded again"; debug runs with a UI script also turn off
+  WebKit background throttling.
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 

@@ -119,10 +119,10 @@ placed by box select, so they have no tolerance.
 
 | # | Step | Expected |
 |---|---|---|
-| 4.1 | Open **Settings** (⌘,) | The section **Tolerances of the project** is shown; the language of the labels follows the app |
+| 4.1 | Open the **Drawing** tab (the project settings left the Settings view in M3, ADR 0007) | The group **Tolerances** shows **General tolerance**, **Decimal rules…** and **Company tables**; the language of the labels follows the app |
 | 4.2 | Set **General tolerance** to ISO 2768-1 and class m | A **Draft** marker appears next to the table |
 | 4.3 | Go back to the drawing (⌘1) | The limits of the three characteristics are unchanged (no automatic update) |
-| 4.4 | Select the three rows and choose **Re-interpret selected (3)** | The line below says "Re-interpreted: 3". `50` gets 50.3 and 49.7, `31.05` gets 31.35 and 30.75, `30` gets 30.2 and 29.8, rule **General tolerance**, marker Draft |
+| 4.4 | Select the three rows and choose **Update limits** (Home tab) | The line below says "Limits updated: 3". `50` gets 50.3 and 49.7, `31.05` gets 31.35 and 30.75, `30` gets 30.2 and 29.8, rule **General tolerance**, marker Draft |
 | 4.5 | Press ⌘Z once | All three are back to no limits in one step |
 | 4.6 | Press ⇧⌘Z, then type limits by hand into one of them (`50.1` upper, `49.9` lower) | The rule becomes **Entered by hand** |
 | 4.7 | Select all three and re-interpret again | "Kept because entered by hand: 1" |
@@ -150,7 +150,7 @@ placed by box select, so they have no tolerance.
 | 5.4 | Tick and clear **Inspect this characteristic** for a reference dimension | The **Inspect** cell in the table follows; re-interpreting keeps your choice |
 | 5.5 | Open the tab **History** for a characteristic you edited and accepted | Newest first; each entry has time, user and source: **By hand** for your edits, **Recognition** for the accepted box select, **By rule** after a re-interpretation or renumbering; undo and redo appear as "(Undone)" and "(Redone)" |
 | 5.6 | Use the arrow keys on the tab buttons | The tab changes |
-| 5.7 | In **Settings** choose **Import table…** and cancel the dialog | Nothing changes, no message |
+| 5.7 | In **Company tables** (Drawing tab) choose **Import table…** and cancel the dialog | Nothing changes, no message |
 | 5.8 | Import `shop-table.toml` | A native dialog opens; afterwards "Imported shop-table v1. It is saved with the project." and the table is listed under **Custom tables** with the Draft marker |
 | 5.9 | Set **Drawing rule (custom table)** to Shop general tolerances, class a, and re-interpret a characteristic without hand entered limits, for example `30` | Limits 30.02 and 29.98, rule **Drawing rule**; with ISO 2768-1 m still set as general tolerance the drawing rule wins |
 | 5.10 | Import a copy of the file in which `version = 1` is changed to `version = one` | The file is refused with its name and "line 6"; the project is unchanged |
@@ -161,7 +161,7 @@ placed by box select, so they have no tolerance.
 
 ## 6. Drawing B: synthetic drawing, rotated text (FR-REC-02)
 
-Create a new project from `target/synth/synth_7.pdf`. In **Settings** set ISO 2768-1 class m (the
+Create a new project from `target/synth/synth_7.pdf`. In **General tolerance** (Home or Drawing tab) set ISO 2768-1 class m (the
 drawing declares it). Box select each callout:
 
 | # | Text | Expected |
@@ -245,7 +245,7 @@ M2 asks for correct limits for 99 percent of common callouts on a vector PDF. Th
 tests (`cargo run -p dimo-cli -- eval box-select`) measure this on the corpus and synthetic
 drawings. This section is the confirmation on a real drawing of your choice (drawing C).
 
-1. Set the general tolerance of the drawing in **Settings**.
+1. Set the general tolerance of the drawing in **General tolerance** (Home or Drawing tab).
 2. Box select every dimension of the drawing with the Place balloon tool and press **Enter** (fix
    the text on the card where needed, and count that as a miss).
 3. Compare the limits of every characteristic with the printed values and your standard tables.
