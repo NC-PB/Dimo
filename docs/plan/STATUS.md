@@ -78,7 +78,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.11 Exit check | review | `docs/perf/M3-exit.md` written; agent dry run on synth seed 7 (25 inspected, 3 parts, invented values): verdicts and report correct, all re-exports byte identical, no bug. Owner: run the procedure on a real drawing and record the result |
 | T3.12 ADR for the new shell | review | ADR 0007 proposed, spec 12 D-50 points to it. Owner: accept (set Status: accepted) |
 | T3.13 UI bug fixes | todo | Wave 5: Place balloon toggle, general tolerance applied to existing characteristics |
-| T3.14 Theme tokens and brand | todo | Wave 5 |
+| T3.14 Theme tokens and brand | done | cnc-master colors light/dark (contrast test, 45 checks, danger/success/warning kept apart from orange), Space Grotesk and JetBrains Mono bundled from the owner's own projects with OFL texts in `data/fonts/`, brand mark in the toolbar. Follow-ups: focus ring on sunken areas (2.87:1), values in mono, app icon from the brand mark |
 | T3.15 App shell, tabs and ribbon | todo | Wave 6 |
 | T3.16 File view, Options and About | todo | Wave 6 |
 | T3.17 Guidance | todo | Wave 6 |
@@ -104,6 +104,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-13 | Theme: danger darkened to #991b1b (light) so it stays apart from the orange accent (CIELAB distance test); accent used as text only as accent-strong; fonts in `data/fonts/` with OFL texts next to them; no Reserved Font Name found in the Space Grotesk metadata (upstream not checked offline) | M3 decisions 24, 25 | T3.14, agent |
+| 2026-10-13 | Smoke step 5 (box select reads the wrong text) failed for the third time, always under load (load average 13 to 30); now treated as a bug to investigate after T3.13 | Repeated flake | coordinator |
 | 2026-10-13 | [ADR 0007](../adr/0007-office-style-shell.md) proposed: office-style shell with tabs File, Home, Drawing, Review, Measure, Report, View; Settings view replaced by File > Options and project settings in context; supersedes the D-50 view list. **Owner: accept** | M3 decision 18, owner agreed to supersede D-50 | coordinator |
 | 2026-10-13 | SIL OFL 1.1 fonts accepted as "similar" under rule 10, provided every copy shows the copyright notice and the full license text; an About page shows all license texts (M3 decision 29) | Space Grotesk license condition | owner |
 | 2026-10-13 | UI rework added to M3 as waves 5 to 8 (T3.12 to T3.21), before the owner's exit run; mockups approved: tabs File, Home, Drawing, Review (placeholder), Measure, Report, View; Place balloon stays on until Esc; brand colors and fonts of the cnc-master site, light and dark | Owner test of M3: UI lacks a common thread, settings buried | owner |
