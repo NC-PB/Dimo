@@ -61,7 +61,7 @@ selected** in the side panel to read it again. Details: [Tolerances](tolerances.
 
 ## Deleting
 
-The table has no delete key. Select the rows and use **Delete** in the toolbar above the drawing,
+The table has no delete key. Select the rows and use **Delete** on the Home tab,
 or select the balloons on the drawing and press **Delete**. The balloons are deleted with their
 characteristics, and ⌘Z brings everything back. Results entered for a characteristic are deleted
 with it in the same step, without a question, and ⌘Z brings them back

@@ -1,6 +1,6 @@
 # Frontend conventions
 
-Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no SSR, no router (D-50).
+Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no SSR, no router (ADR 0007).
 
 ## Rules
 
@@ -24,7 +24,8 @@ Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no S
   Grotesk (`font-heading`), values and code `font-mono` (JetBrains Mono). The files are bundled
   from `data/fonts/` (`theme/fonts.css`), never loaded from the network.
 - Text: every user visible string goes through Paraglide messages, English and German (FR-SET-04).
-- Shortcuts: defined in one file, shown in the `?` cheat sheet (D-52). Every action reachable by keyboard.
+- Shortcuts: keys defined in one file (`shortcuts.ts`), shown in the `?` cheat sheet (D-52); commands
+  name their shortcut from the registry (`commands.svelte.ts`). Every action reachable by keyboard.
 - Pass/fail and status always use shape plus color, never color alone (NFR-UX-05, D-24).
 - Accessibility: semantic elements, labels on controls, focus visible.
 
@@ -91,9 +92,25 @@ is the table's) and shown in the developer tools.
 
 ## Views, settings and exports
 
-`App.svelte` switches the views of D-50 with `stores/view.svelte.ts`. The drawing view stays
-mounted (hidden) while Export or Settings is shown, so tiles, zoom and table scroll are kept;
-drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks the others).
+The shell follows [ADR 0007](../adr/0007-office-style-shell.md) (`src/lib/shell/`): `TitleBar`,
+`TabBar` with one ribbon per tab (`HomeRibbon`, `DrawingRibbon`, ...), the work area and
+`StatusBar`. `stores/view.svelte.ts` holds the tab (`tab`: file, home, drawing, review, measure,
+report, view) and the work area it shows (`current`: drawing, review, measure, export, settings,
+file); Home and Drawing both show the drawing, the View tab keeps the area that was shown. The
+drawing stays mounted (hidden) while another area is shown, so tiles, zoom and table scroll are
+kept; drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks the
+others). Hiding the table or the side panel (View tab) hides them with CSS, they stay mounted.
+
+Commands (T3.15, decision 27): `src/lib/commands.svelte.ts` defines every ribbon and title bar
+command once: label, icon (`src/lib/icons.ts`, Lucide, one import per icon), the shortcut action
+of `shortcuts.ts`, a tooltip sentence, `disabled()` returning the reason or `null`, `pressed()`
+for on/off commands, and `run()`. `CommandButton` renders one (large, small or icon only);
+disabled commands use `aria-disabled` so the tooltip with the reason still shows. The window
+shortcut handler (`Shortcuts.svelte`) runs the same command when a key has one, so key and
+button share one disabled state. Keys are defined only in `shortcuts.ts`; a command never repeats
+them. A new command gets an entry in the registry, a message for label and description in both
+languages, and a place in a ribbon; `commands.test.ts` checks labels, icons, tooltips and
+shortcuts. Ribbon groups that do not fit the window move into "More" (`ribbon-fit.ts`).
 
 - Settings of the user (`stores/settings.svelte.ts`): theme, UI language, audit user name and
   the last export options. Rust stores them in `settings.json` in the app config directory

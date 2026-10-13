@@ -1,20 +1,37 @@
 # Eine Zeichnung ansehen
 
-Die Ansicht **Zeichnung** ist der Ort, an dem du arbeitest. Sie zeigt das Blatt in der Mitte, die
-Merkmalstabelle darunter ([Merkmalstabelle](characteristics.md)) und eine Seitenleiste rechts. Die
-Schaltflächen **Zeichnung**, **Prüfen**, **Messen**, **Export** und **Einstellungen** oben wechseln
-die Ansicht. Die Ansicht Zeichnung erreichst du auch mit ⌘1, die Ansicht Messen mit ⌘3
-([Ergebnisse eingeben](measuring.md)). **Prüfen** ist in dieser Version ein Platzhalter.
+Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalstabelle darunter
+([Merkmalstabelle](characteristics.md)) und eine Seitenleiste rechts.
+
+## Das Fenster
+
+- **Titelleiste**: Speichern, Rückgängig und Wiederholen, der Name des Projekts mit "gespeichert"
+  oder "nicht gespeichert", der Schalter hell oder dunkel und **Hilfe** (die Liste der
+  Tastenkürzel).
+- **Register**: **Datei** (neu, öffnen, speichern, speichern unter, Einstellungen), **Start**
+  (Ballons setzen und bearbeiten, Nummerierung, Allgemeintoleranz), **Zeichnung** (Drehung,
+  Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Prüfen** (in dieser
+  Version ein Platzhalter), **Messen** ([Ergebnisse eingeben](measuring.md)), **Bericht**
+  ([Exporte](exports.md)) und **Ansicht** (Zoom, Tabelle und Seitenleiste zeigen oder verbergen,
+  Darstellung). Jedes Register zeigt seine Befehle in einer Zeile unter den Registern. Halte den
+  Zeiger über einen Befehl, um zu sehen, was er tut, sein Tastenkürzel und, wenn er grau ist,
+  warum er gerade nicht geht. In einem schmalen Fenster rutschen die letzten Gruppen unter
+  **Mehr**.
+- **Statusleiste** unten: die Blätter, das aktive Werkzeug, die Anzahl Merkmale und ausgewählte
+  (im Register Messen die Summen aller Teile), die Allgemeintoleranz, Einheit und Maßstab, und
+  der Zoom.
+
+Start und Zeichnung zeigen beide die Zeichnung (⌘1). ⌘2 zeigt Prüfen, ⌘3 Messen, ⌘E Bericht.
 
 ## Zoomen
 
 | Aktion | So geht es |
 |---|---|
 | Um den Zeiger vergrößern oder verkleinern | Mausrad, oder Spreizen und Zusammenziehen auf dem Trackpad |
-| Um die Mitte vergrößern oder verkleinern | **+** und **-** (auch die Schaltflächen in der Werkzeugleiste) |
-| Das ganze Blatt ins Fenster einpassen | **0**, oder **Blatt einpassen** in der Werkzeugleiste |
+| Um die Mitte vergrößern oder verkleinern | **+** und **-**, die Schaltflächen im Register Ansicht oder der Zoom in der Statusleiste |
+| Das ganze Blatt ins Fenster einpassen | **0**, oder **Blatt einpassen** im Register Ansicht |
 
-Die Werkzeugleiste zeigt den Zoom in Prozent der gedruckten Größe: 100 % heißt, die Zeichnung ist
+Die Statusleiste zeigt den Zoom in Prozent der gedruckten Größe: 100 % heißt, die Zeichnung ist
 auf dem Bildschirm so groß wie auf Papier. Ballons behalten ihre gedruckte Größe, sie wachsen und
 schrumpfen also mit dem Zoom.
 
@@ -34,9 +51,8 @@ Fokus hat.
 
 ## Blätter
 
-Ein PDF mit mehreren Seiten hat ein Blatt pro Seite. Gibt es mehr als ein Blatt, zeigt die
-Werkzeugleiste eine Auswahl ("Blatt 2 von 5") mit Pfeilen. Auch **Bild auf** und **Bild ab**
-wechseln die Blätter. Ein Blatt wird beim ersten Anzeigen ins Fenster eingepasst. Wählst du in der
+Ein PDF mit mehreren Seiten hat ein Blatt pro Seite. Die Statusleiste zeigt einen Reiter pro
+Blatt ("Blatt 2"); ein Klick zeigt es an. Auch **Bild auf** und **Bild ab** wechseln die Blätter. Ein Blatt wird beim ersten Anzeigen ins Fenster eingepasst. Wählst du in der
 Tabelle ein Merkmal, dessen Ballon auf einem anderen Blatt liegt, wechselt Dimo zu diesem Blatt und
 zeigt den Ballon.
 

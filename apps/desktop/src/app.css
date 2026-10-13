@@ -28,3 +28,16 @@ h3 {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
+
+/* The accent reaches only 2.87:1 on sunken areas (the drawing), so the focus ring there uses
+   the strong accent (T3.15, decision 28). */
+.bg-sunken:focus-visible,
+.bg-sunken :focus-visible {
+  outline-color: var(--color-accent-strong);
+}
+
+/* Numbers and values in the characteristic table and the measurement grid use the monospace
+   face (decision 24); their cells are the ones marked `tabular-nums`. */
+[role="grid"] .tabular-nums {
+  font-family: var(--font-mono);
+}

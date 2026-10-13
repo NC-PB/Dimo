@@ -1,20 +1,34 @@
 # Looking at a drawing
 
-The **Drawing** view is where you work. It shows the sheet in the middle, the characteristic table
-under it ([Characteristic table](characteristics.md)) and a side panel on the right. The buttons
-**Drawing**, **Review**, **Measure**, **Export** and **Settings** at the top switch the view. The
-Drawing view is also ⌘1, the Measure view ⌘3 ([Entering results](measuring.md)). **Review** is a
-placeholder in this version.
+The drawing is where you work. It shows the sheet in the middle, the characteristic table under it
+([Characteristic table](characteristics.md)) and a side panel on the right.
+
+## The window
+
+- **Title bar**: Save, Undo and Redo, the name of the project with "saved" or "not saved", the
+  light or dark switch and **Help** (the list of keyboard shortcuts).
+- **Tabs**: **File** (new, open, save, save as, settings), **Home** (place and edit balloons,
+  numbering, general tolerance), **Drawing** (rotation, unit, scale, zone grid, views,
+  tolerances, project info), **Review** (a placeholder in this version), **Measure**
+  ([Entering results](measuring.md)), **Report** ([Exports](exports.md)) and **View** (zoom,
+  show or hide the table and the side panel, theme). Each tab shows its commands in one row
+  under the tabs. Hold the pointer over a command to see what it does, its shortcut and, when it
+  is grey, why it cannot be used now. In a narrow window the last groups move into **More**.
+- **Status bar** at the bottom: the sheets, the active tool, the number of characteristics and
+  of selected ones (on the Measure tab the totals of all parts), the general tolerance, unit and
+  scale, and the zoom.
+
+Home and Drawing both show the drawing (⌘1). ⌘2 shows Review, ⌘3 Measure, ⌘E Report.
 
 ## Zoom
 
 | Action | How |
 |---|---|
 | Zoom in or out around the pointer | Mouse wheel, or pinch on the trackpad |
-| Zoom in or out around the center | **+** and **-** (also the buttons in the toolbar) |
-| Fit the whole sheet into the window | **0**, or **Fit sheet** in the toolbar |
+| Zoom in or out around the center | **+** and **-**, the buttons on the View tab or the zoom in the status bar |
+| Fit the whole sheet into the window | **0**, or **Fit sheet** on the View tab |
 
-The toolbar shows the zoom as a percentage of the printed size: 100 % means the drawing is as
+The status bar shows the zoom as a percentage of the printed size: 100 % means the drawing is as
 large on the screen as it would be on paper. Balloons keep their printed size, so they grow and
 shrink with the zoom.
 
@@ -33,8 +47,8 @@ keyboard focus. Shift with an arrow key moves the selected balloons instead
 
 ## Sheets
 
-A PDF with several pages has one sheet per page. When there is more than one sheet, the toolbar
-shows a selector ("Sheet 2 of 5") with arrows. **PgUp** and **PgDn** switch sheets too. A sheet is
+A PDF with several pages has one sheet per page. The status bar shows one tab per sheet ("Sheet
+2"); click one to show it. **PgUp** and **PgDn** switch sheets too. A sheet is
 fitted into the window the first time you show it. Selecting a characteristic in the table whose
 balloon is on another sheet switches to that sheet and shows the balloon.
 

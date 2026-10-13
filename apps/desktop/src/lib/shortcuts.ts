@@ -1,6 +1,8 @@
 /**
- * The keyboard shortcut map (D-52, NFR-UX-01). Every shortcut of the app is defined here and
- * listed in the cheat sheet (`?`). Labels come from `shortcutLabel` in `i18n.ts`.
+ * The keyboard shortcut map (D-52, NFR-UX-01). Every key combination of the app is defined here
+ * and listed in the cheat sheet (`?`). Labels come from `shortcutLabel` in `i18n.ts`. Commands of
+ * the registry (`commands.svelte.ts`) name the action they run, so their tooltips show these
+ * keys and the window runs the command for them (T3.15); keys are never repeated there.
  */
 
 export type ShortcutAction =

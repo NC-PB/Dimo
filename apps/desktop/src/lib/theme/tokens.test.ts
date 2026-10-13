@@ -95,6 +95,9 @@ const PAIRS: [string, string, number][] = [
   ["text-muted", "bg", 4.5],
   ["text-muted", "surface", 4.5],
   ["text-muted", "hover", 4.5],
+  // The drawing area is sunken (T3.15): its hint text and the focus ring there.
+  ["text-muted", "sunken", 4.5],
+  ["accent-strong", "sunken", 3],
   ["accent-ink", "accent-strong", 4.5],
   ["accent-ink", "danger", 4.5],
   ["accent-strong", "surface", 4.5],

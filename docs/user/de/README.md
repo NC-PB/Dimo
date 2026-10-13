@@ -45,10 +45,10 @@ und Alt statt ⌥.
 
 Starte Dimo und wähle **Neues Projekt** (⌘N). Wähle das PDF der Zeichnung. Dimo kopiert die
 Zeichnung in das Projekt, das Projekt hängt danach also nicht mehr von der Originaldatei ab, und
-zeigt das erste Blatt eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter (Seiten), erscheint
-in der Werkzeugleiste eine Blattauswahl.
+zeigt das erste Blatt eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter (Seiten), zeigt
+die Statusleiste unten einen Reiter pro Blatt.
 
-Das Projekt hat noch keine Datei. Die Werkzeugleiste zeigt "Unbenannt"; du speicherst es in
+Das Projekt hat noch keine Datei. Die Titelleiste zeigt "Unbenannt"; du speicherst es in
 Schritt 9, aber Dimo hält schon jetzt eine wiederherstellbare Kopie von allem, was du tust
 ([Projekte](projects.md)).
 
@@ -145,7 +145,7 @@ fragt Dimo zuerst nach. Einzelheiten: [Projekte](projects.md).
 
 ### 10. Die Ergebnisse eingeben
 
-Öffne die Ansicht **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
+Öffne das Register **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
 **Teile hinzufügen**. Klicke auf die erste Zelle eines Teils, tippe den Wert, drücke **Enter** und
 mach in der Spalte nach unten weiter: Dimo speichert den Wert, geht zum nächsten Merkmal und
 markiert das Ergebnis mit ✓ (i.O.), ✗ (n.i.O.) oder ○ (Wert ohne Grenzmaße). Bei Gewinden und
@@ -156,7 +156,7 @@ kopierter Bereich wird mit ⌘V eingefügt. Die Grenzmaße gehören dazu, und Di
 ### 11. Exportieren
 
 Trage zuerst Teil, Änderungsstand der Zeichnung und die Berichtsfelder unter **Projekt und Bericht**
-ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann die Ansicht **Export** (⌘E).
+ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann das Register **Bericht** (⌘E).
 
 - **Prüfblatt** (PDF oder Excel): die Merkmale mit leeren Ergebnisspalten, zum Ausdrucken vor dem
   Messen.

@@ -2,9 +2,11 @@
 
 ## Aus der App exportieren
 
-Öffne die Ansicht **Export** (die Schaltfläche **Export** in der oberen Leiste, oder ⌘E auf macOS,
-Strg+E sonst). Sie braucht ein offenes Projekt. Jeder Export fragt, wo die Datei gespeichert wird,
-und läuft dann im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das
+Öffne das Register **Bericht** (⌘E auf macOS, Strg+E sonst). Oben wählst du Prüfblatt oder
+Prüfbericht, Format, Sprache und **Nach dem Export öffnen**; **Kopie speichern** exportiert das
+gewählte Dokument, **Bericht ausgeben** exportiert es als ausgegeben. Darunter stehen alle Exporte
+als Karten. Das Register braucht ein offenes Projekt. Jeder Export fragt, wo die Datei gespeichert
+wird, und läuft dann im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das
 Projekt so, wie es war, als du die Schaltfläche geklickt hast. Unter dem Export erscheinen ein
 Fortschrittsbalken und danach der Dateiname, oder der Grund, warum der Export fehlschlug.
 Während ein Bericht exportiert wird, hält **Export abbrechen** ihn an; dann wird keine Datei
