@@ -1,18 +1,18 @@
 <script lang="ts">
   import ProjectDetails from "$lib/components/ProjectDetails.svelte";
   import { m } from "$lib/i18n";
-  import type { SampleId } from "$lib/ipc/bindings";
   import { measurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import MeasureGrid from "./MeasureGrid.svelte";
+  import { measureUi } from "./measure-ui.svelte";
   import SampleBar from "./SampleBar.svelte";
   import SamplePanel from "./SamplePanel.svelte";
 
   /**
-   * The Measure view (D-50, T3.5): sample bar, measurement grid, and a side panel with the
-   * active sample and the project and report details (T3.4).
+   * The Measure view (ADR 0007, T3.5): the parts line, the measurement grid, and a side panel
+   * with the active part and the project and report details (T3.4). The parts and row commands
+   * are on the Measure ribbon (T3.15).
    */
-  let activeSample = $state<SampleId | null>(null);
 
   // Verdicts follow every change of the project: Rust computes them (M3 decision 2). The
   // decision 16 markers are asked for only when a report was issued.
@@ -31,12 +31,8 @@
     {#if projectStore.project === null}
       <p class="m-auto text-sm text-text-muted">{m.measure_no_project()}</p>
     {:else}
-      <SampleBar {activeSample} />
-      <MeasureGrid
-        onActiveSample={(id) => {
-          activeSample = id;
-        }}
-      />
+      <SampleBar />
+      <MeasureGrid />
     {/if}
   </section>
   <aside
@@ -44,7 +40,7 @@
     aria-label={m.measure_side_panel_label()}
   >
     {#if projectStore.project !== null}
-      <SamplePanel {activeSample} />
+      <SamplePanel activeSample={measureUi.activeSample} />
     {/if}
     <ProjectDetails />
   </aside>

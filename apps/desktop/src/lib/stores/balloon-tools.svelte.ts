@@ -426,9 +426,9 @@ export class BalloonToolsStore {
   }
 
   /**
-   * Escape: discards the open proposal card, else closes the style picker, else clears the
-   * selection, else returns to the select tool. Returns whether it did something. Gestures and
-   * the editor handle Escape themselves.
+   * Escape: discards the open proposal card, else closes the style picker, else stops placing
+   * (M3 decision 19: "Stop (Esc)"), else clears the selection. Returns whether it did something.
+   * Gestures and the editor handle Escape themselves.
    */
   escape(): boolean {
     if (this.#boxSelect?.open) {
@@ -439,12 +439,12 @@ export class BalloonToolsStore {
       this.styleOpen = false;
       return true;
     }
-    if (!this.#selection.isEmpty) {
-      this.#selection.clear();
-      return true;
-    }
     if (this.tool !== "select") {
       this.tool = "select";
+      return true;
+    }
+    if (!this.#selection.isEmpty) {
+      this.#selection.clear();
       return true;
     }
     return false;

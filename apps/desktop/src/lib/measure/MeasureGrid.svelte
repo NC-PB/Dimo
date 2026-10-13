@@ -24,6 +24,7 @@
   import { refusalDetail } from "$lib/table/refusal";
   import { RowVirtualizer } from "$lib/table/virtual.svelte";
   import { cellKey, editText, parseBlock, pasteEntries, resultsByCell, toggledText } from "./grid";
+  import { measureUi, type MeasureUiStore } from "./measure-ui.svelte";
   import { resultTypeLabel, verdictLabel } from "./labels";
   import VerdictCounts from "./VerdictCounts.svelte";
   import VerdictMark from "./VerdictMark.svelte";
@@ -35,8 +36,10 @@
     measurement?: MeasurementStore;
     /** The shared selection; the app's selection unless a test passes its own. */
     selected?: SelectionStore;
-    /** Called with the sample of the active column, for the sample bar and the sample panel. */
+    /** Called with the sample of the active column, for the sample panel. */
     onActiveSample?: (sample: SampleId | null) => void;
+    /** Shared with the Measure ribbon (T3.15): active cell, row filters, grid actions. */
+    ui?: MeasureUiStore;
   }
 
   let {
@@ -44,6 +47,7 @@
     measurement = measurementStore,
     selected = selection,
     onActiveSample = () => undefined,
+    ui = measureUi,
   }: Props = $props();
 
   /** Row height, header height and sample column width in CSS px. */
@@ -81,10 +85,23 @@
   const columns = FROZEN.map((spec) =>
     helper.accessor((r: GridRow): unknown => r.c.id, { id: spec.id }),
   );
+  /** The active cell: a row by characteristic and a sample column (or the result type). */
+  let active = $state<{ id: CharId; col: number } | null>(null);
+
+  /**
+   * Row filters of the ribbon (T3.15) read Rust's verdicts only. The active row stays while a
+   * filter is on, so a value typed into it never makes the cursor jump.
+   */
+  function shown(state: RowState): boolean {
+    const missing = !ui.onlyMissing || state.counts.missing > 0;
+    const failed = !ui.onlyFailed || state.verdict === "fail";
+    return (missing && failed) || state.characteristic === active?.id;
+  }
+
   const gridRows = $derived(
     measurement.rows.flatMap((state) => {
       const c = project.characteristicById.get(state.characteristic);
-      return c === undefined ? [] : [{ state, c }];
+      return c === undefined || !shown(state) ? [] : [{ state, c }];
     }),
   );
   const table = createTable({
@@ -152,8 +169,6 @@
     return shown;
   });
 
-  /** The active cell: a row by characteristic and a sample column (or the result type). */
-  let active = $state<{ id: CharId; col: number } | null>(null);
   /** The cell being typed in. `error`: Rust refused the last attempt. */
   let editing = $state<{
     id: CharId;
@@ -169,8 +184,37 @@
 
   $effect(() => {
     const col = active?.col ?? -1;
-    onActiveSample(col >= 0 ? (sampleIds[col] ?? null) : null);
+    const sample = col >= 0 ? (sampleIds[col] ?? null) : null;
+    onActiveSample(sample);
+    ui.activeSample = sample;
+    ui.activeRow = active?.id ?? null;
   });
+
+  // The ribbon's paste, clear and result type act through the grid (T3.15).
+  $effect(() =>
+    ui.attach({
+      paste: (text) => paste(text),
+      clear: async () => {
+        const id = active?.id;
+        const sample = active === null ? undefined : sampleIds[active.col];
+        if (id !== undefined && sample !== undefined) {
+          await clearCell(id, sample);
+        }
+      },
+      setResultType: async (value) => {
+        const c = active === null ? undefined : project.characteristicById.get(active.id);
+        if (c !== undefined) {
+          await setResultType(c, value);
+        }
+      },
+      focus: () => {
+        focusGrid();
+      },
+      notify: (text) => {
+        notice = text;
+      },
+    }),
+  );
 
   function cellId(id: CharId, col: number): string {
     return col === TYPE_COL ? `mg-type-${id}` : `mg-${id}-${String(col)}`;
@@ -368,16 +412,22 @@
     notice = refused === null ? null : cellRefused(refused, id, sample);
   }
 
-  async function setResultType(c: Characteristic, select: HTMLSelectElement) {
-    const value = select.value as ResultType;
+  /** Sets the result type of a row; returns false when Rust refused it. */
+  async function setResultType(c: Characteristic, value: ResultType): Promise<boolean> {
     if (value === c.result_type) {
-      return;
+      return true;
     }
     const refused = await send({ type: "set_result_type", ids: [c.id], result_type: value });
     if (refused === null) {
       notice = null;
-    } else {
-      notice = m.measure_type_refused({ number: c.number, message: refusalDetail(refused) });
+      return true;
+    }
+    notice = m.measure_type_refused({ number: c.number, message: refusalDetail(refused) });
+    return false;
+  }
+
+  async function onResultTypeChange(c: Characteristic, select: HTMLSelectElement) {
+    if (!(await setResultType(c, select.value as ResultType))) {
       select.value = project.characteristicById.get(c.id)?.result_type ?? c.result_type;
     }
   }
@@ -838,7 +888,7 @@
                   aria-label={m.measure_type_label({ number: c.number })}
                   value={c.result_type}
                   onchange={(event) => {
-                    void setResultType(c, event.currentTarget);
+                    void onResultTypeChange(c, event.currentTarget);
                     focusGrid();
                   }}
                   onkeydown={(event) => {

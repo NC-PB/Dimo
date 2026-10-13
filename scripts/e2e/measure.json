@@ -3,7 +3,7 @@
   { "key": "3", "mod": true },
   { "wait": 600 },
   { "fill": ["Number", "3"] },
-  { "button": "Add samples" },
+  { "button": "Add parts" },
   { "wait": 500 },
   { "select": ["Result type of characteristic 4", "variable"] },
   { "wait": 400 },
@@ -32,7 +32,7 @@
   { "key": "z", "mod": true, "shift": true },
   { "wait": 600 },
   { "report": "paste redone" },
-  { "button": "Save as" },
+  { "key": "s", "mod": true, "shift": true },
   { "wait": 800 },
   { "report": "final" }
 ]

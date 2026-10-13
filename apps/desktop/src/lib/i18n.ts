@@ -9,6 +9,7 @@ import type {
   DerivationHint,
   DerivationRule,
   InterpreterNote,
+  NumberingStrategy,
   OpenNotice,
   RejectReason,
   Theme,
@@ -17,7 +18,7 @@ import type {
 import { m } from "./paraglide/messages.js";
 import { getLocale, locales, setLocale, type Locale } from "./paraglide/runtime.js";
 import type { ShortcutAction } from "./shortcuts";
-import type { View } from "./stores/view.svelte";
+import type { Tab, View } from "./stores/view.svelte";
 
 export { getLocale, locales, m, setLocale, type Locale };
 
@@ -40,6 +41,28 @@ export function viewLabel(view: View): string {
       return m.view_export();
     case "settings":
       return m.view_settings();
+    case "file":
+      return m.tab_file();
+  }
+}
+
+/** Translated label of a ribbon tab (ADR 0007). */
+export function tabLabel(tab: Tab): string {
+  switch (tab) {
+    case "file":
+      return m.tab_file();
+    case "home":
+      return m.tab_home();
+    case "drawing":
+      return m.tab_drawing();
+    case "review":
+      return m.tab_review();
+    case "measure":
+      return m.tab_measure();
+    case "report":
+      return m.tab_report();
+    case "view":
+      return m.tab_view();
   }
 }
 
@@ -128,6 +151,8 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.show_shortcuts();
     case "show_drawing":
       return m.show_drawing();
+    case "show_review":
+      return m.show_review();
     case "show_measure":
       return m.show_measure();
     case "show_export":
@@ -502,4 +527,36 @@ export function noticeLines(notice: OpenNotice): string[] {
     lines.push(m.notice_migrated({ version: String(notice.migrated_from) }));
   }
   return lines;
+}
+
+/** Translated name of a numbering strategy (T2.7). */
+export function strategyLabel(strategy: NumberingStrategy): string {
+  switch (strategy) {
+    case "sheet_zone":
+      return m.numbering_strategy_sheet_zone();
+    case "view":
+      return m.numbering_strategy_view();
+    case "view_clockwise":
+      return m.numbering_strategy_view_clockwise();
+    case "kind":
+      return m.numbering_strategy_kind();
+    case "manual":
+      return m.numbering_strategy_manual();
+  }
+}
+
+/** One sentence on what a numbering strategy does (T2.7). */
+export function strategyHint(strategy: NumberingStrategy): string {
+  switch (strategy) {
+    case "sheet_zone":
+      return m.numbering_hint_sheet_zone();
+    case "view":
+      return m.numbering_hint_view();
+    case "view_clockwise":
+      return m.numbering_hint_view_clockwise();
+    case "kind":
+      return m.numbering_hint_kind();
+    case "manual":
+      return m.numbering_hint_manual();
+  }
 }

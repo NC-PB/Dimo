@@ -41,7 +41,7 @@
   { "wait": 500 },
   { "report": "reinterpreted" },
 
-  { "button": "Save as" },
+  { "key": "s", "mod": true, "shift": true },
   { "wait": 800 },
   { "report": "final" }
 ]

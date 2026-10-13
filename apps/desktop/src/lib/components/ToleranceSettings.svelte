@@ -5,6 +5,7 @@
    * unit conversion, and custom tables. Rust lists the tables and classes, checks every value
    * and every imported file; each change is one undoable `set_tolerance_settings` command.
    */
+  import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import { m } from "$lib/i18n";
   import type { DecimalPlaceRule, TableClass, ToleranceTableInfo } from "$lib/ipc/bindings";
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
@@ -171,48 +172,9 @@
       </div>
     {/each}
 
-    {#if tolerance.generalOffer}
-      {@const offer = tolerance.generalOffer}
-      {@const count = String(offer.count)}
-      <div
-        class="flex flex-wrap items-center gap-2 rounded border border-accent bg-surface-raised px-3 py-2 text-sm"
-        role="status"
-        data-testid="general-offer"
-      >
-        <span aria-hidden="true">ℹ</span>
-        <p class="flex-1">
-          {#if offer.removing}
-            {offer.count === 1
-              ? m.tolerance_general_remove_one()
-              : m.tolerance_general_remove_other({ count })}
-          {:else}
-            {offer.count === 1
-              ? m.tolerance_general_offer_one()
-              : m.tolerance_general_offer_other({ count })}
-          {/if}
-        </p>
-        <button
-          type="button"
-          class="rounded bg-accent px-2 py-1 text-xs text-accent-text disabled:opacity-50"
-          disabled={tolerance.busy}
-          onclick={() => void tolerance.applyGeneralUpdate()}
-          >{m.tolerance_general_update({ count })}</button
-        >
-        <button
-          type="button"
-          class={buttonClass}
-          onclick={() => {
-            tolerance.declineGeneralUpdate();
-          }}>{m.tolerance_general_not_now()}</button
-        >
-      </div>
-    {:else if tolerance.generalUpdated !== null}
-      <p class="text-xs" role="status" data-testid="general-updated">
-        ✓ {m.tolerance_general_updated({ count: String(tolerance.generalUpdated) })}
-      </p>
-    {/if}
+    <GeneralToleranceOffer {tolerance} />
 
-    <fieldset class="flex flex-col gap-2">
+    <fieldset class="flex flex-col gap-2" id="settings-decimal-rules">
       <legend class="font-semibold">{m.tolerance_decimal_rules()}</legend>
       <p class="text-xs text-text-muted">{m.tolerance_decimal_rules_hint()}</p>
       {#each settings.decimal_rules as rule, i (rule.places)}
@@ -300,7 +262,7 @@
       </p>
     {/if}
 
-    <fieldset class="flex flex-col gap-2">
+    <fieldset class="flex flex-col gap-2" id="settings-custom-tables">
       <legend class="font-semibold">{m.tolerance_custom_tables()}</legend>
       {#if tolerance.customTables.length === 0}
         <p class="text-xs text-text-muted">{m.tolerance_no_custom()}</p>

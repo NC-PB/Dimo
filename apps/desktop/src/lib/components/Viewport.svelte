@@ -4,6 +4,7 @@
   import BalloonLayer from "$lib/components/BalloonLayer.svelte";
   import ProposalCard from "$lib/components/ProposalCard.svelte";
   import SheetOverlay from "$lib/components/SheetOverlay.svelte";
+  import PlacingBar from "$lib/shell/PlacingBar.svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { DUMMY_STYLE, dummyBalloons, leaderLine } from "$lib/dev/dummy-balloons";
@@ -380,7 +381,7 @@
 <main
   bind:clientWidth={viewport.size.width}
   bind:clientHeight={viewport.size.height}
-  class="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-bg"
+  class="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-sunken"
   aria-label={m.viewport_label()}
 >
   {#if doc === null}
@@ -494,6 +495,14 @@
       ondblclick={(e) => {
         e.preventDefault();
       }}
+      oncontextmenu={(e) => {
+        // Right click stops placing (M3 decision 19); there is no context menu yet.
+        e.preventDefault();
+        if (balloonTools.tool === "place") {
+          balloonGestures.cancel();
+          balloonTools.setTool("select");
+        }
+      }}
       onkeydown={(e) => {
         // Keys typed right after a placing click belong to the value editor (FR-BAL-02).
         if (balloonTools.typeAhead(e)) {
@@ -510,6 +519,7 @@
       onDone={focusDrawing}
       takeTyped={() => balloonTools.takeTyped("card")}
     />
+    <PlacingBar />
   {/if}
 </main>
 

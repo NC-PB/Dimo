@@ -8,7 +8,7 @@
   { "fill": ["Approved by", "Ben"] },
   { "wait": 500 },
   { "report": "details filled" },
-  { "button": "Save as" },
+  { "key": "s", "mod": true, "shift": true },
   { "wait": 800 },
   { "report": "final" }
 ]
