@@ -408,9 +408,21 @@ impl AppSession {
         })
     }
 
+    /// Today's date in the time zone of the computer, `YYYY-MM-DD` (T3.9).
+    pub fn local_date(&self) -> String {
+        self.env.local_date()
+    }
+
+    /// Fixes the local date that [`Self::local_date`] returns; `None` restores the real one.
+    /// For tests and scripted runs.
+    pub fn set_fixed_local_date(&mut self, date: Option<&str>) {
+        self.env.set_fixed_local_date(date);
+    }
+
     /// `info` with an empty company name taken from the app settings and an empty "inspected
-    /// by" taken from the audit user (D-27), as an issued report export fills them (M3
-    /// decision 15). Fields that are set stay as they are.
+    /// by" taken from the audit user (D-27) and an empty report date set to today, as an issued
+    /// report export fills them (M3 decisions 15 and 17, T3.9). Fields that are set stay as they
+    /// are.
     pub fn issued_report_info(&self, info: &ReportInfo) -> ReportInfo {
         let mut filled = info.clone();
         if filled.company_name.trim().is_empty() {
@@ -418,6 +430,9 @@ impl AppSession {
         }
         if filled.inspected_by.trim().is_empty() {
             filled.inspected_by = self.env.user_name();
+        }
+        if filled.report_date.trim().is_empty() {
+            filled.report_date = self.env.local_date();
         }
         filled
     }

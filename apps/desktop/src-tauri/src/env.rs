@@ -12,6 +12,8 @@ const UNKNOWN_USER: &str = "unknown";
 #[derive(Debug, Clone)]
 pub struct DesktopEnvironment {
     user: String,
+    /// Replaces the local date, for tests and scripted runs.
+    fixed_local_date: Option<String>,
 }
 
 impl DesktopEnvironment {
@@ -19,7 +21,25 @@ impl DesktopEnvironment {
     pub fn new() -> Self {
         Self {
             user: os_user_name(),
+            fixed_local_date: None,
         }
+    }
+
+    /// Today's date in the time zone of the computer, as `YYYY-MM-DD`. This is the only place
+    /// that reads the local calendar day; the report date is filled from it (T3.9).
+    pub fn local_date(&self) -> String {
+        self.fixed_local_date.clone().unwrap_or_else(|| {
+            chrono::Local::now()
+                .date_naive()
+                .format("%Y-%m-%d")
+                .to_string()
+        })
+    }
+
+    /// Makes [`Self::local_date`] return `date` (or the real date again for `None`), so tests
+    /// and scripted runs do not depend on the day they run.
+    pub fn set_fixed_local_date(&mut self, date: Option<&str>) {
+        self.fixed_local_date = date.map(str::to_owned);
     }
 
     /// Sets the name recorded in audit entries, for the user name setting (D-27, T1.9).
@@ -79,6 +99,20 @@ mod tests {
         let now = env.now();
         assert!(now.as_str().ends_with('Z'), "{now}");
         assert!(now.as_str() > "2026-01-01", "{now}");
+    }
+
+    #[test]
+    fn local_date_is_a_calendar_date_and_can_be_fixed() {
+        let mut env = DesktopEnvironment::new();
+        let today = env.local_date();
+        let bytes = today.as_bytes();
+        assert_eq!(bytes.len(), 10, "{today}");
+        assert!(bytes[4] == b'-' && bytes[7] == b'-', "{today}");
+        assert!(today.as_str() > "2026-01-01", "{today}");
+        env.set_fixed_local_date(Some("2027-02-03"));
+        assert_eq!(env.local_date(), "2027-02-03");
+        env.set_fixed_local_date(None);
+        assert_eq!(env.local_date(), today);
     }
 
     #[test]

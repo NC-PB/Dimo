@@ -52,6 +52,7 @@ shows number, requirement, nominal, limits, unit, the rule that gave the limits,
 gauge. The header on every page shows the company, part, customer, order, drawing file,
 revision, the start of the SHA-256 of the drawing file (in full on the first page), report
 number, date and page. The values come from [Project and report details](project-details.md).
+A header field that is empty prints neither its label nor a value.
 
 - **Check sheet**: empty result columns to print and fill in by hand, and a line for the
   inspector. With samples in the project there is one column per sample with its serial; without
@@ -89,9 +90,13 @@ language of the app. In German the verdicts read **i.O.** and **n.i.O.**, in Eng
 Limits from tolerance tables that are still drafts are marked in the rule column with an asterisk
 and the report says in a footnote that these limits are from a draft table and not yet verified.
 
-The date printed on a report is the report date of the project. If it is empty, the date of the
-last change of the project is used. It never depends on the day you export, so the same project
-gives the same files, byte for byte.
+The date printed on a report is the report date of the project. If it is empty when you export
+a check sheet or an inspection report, Dimo enters today's date (the date of your computer) as
+the report date first, as one change you can undo with ⌘Z, and prints it. Later exports print
+the stored date, so the same project gives the same files, byte for byte, on any day. To use
+another date, enter it under **Report date** in [Project and report details](project-details.md)
+before you export. If you clear the date again, the next report export fills in the date of that
+day anew. The ballooned PDF and the lists do not use the report date.
 
 ### Issued reports
 
@@ -99,17 +104,18 @@ With **Export as issued** a report export does three things in one step, after t
 written:
 
 1. The numbering is locked, if it is not locked yet.
-2. An empty company name is filled in from **Settings** and an empty "inspected by" with your
-   user name. The report already shows these values. A normal export prints the project as it
-   is and leaves empty fields empty.
+2. An empty company name is filled in from **Settings**, an empty "inspected by" with your
+   user name and an empty report date with today's date. The report already shows these
+   values. A normal export prints the project as it is and leaves the other empty fields empty;
+   only the report date is entered then too, as described above.
 3. The project records the issued report: which report, the template and its version, the file
    format, the drawing revision and its SHA-256, the SHA-256 of the written file and the export
    time. The export time is kept in the project only, it is not printed in the report.
 
-Recording is a change of the project. A report without a report date therefore prints a later
-date when you export it again; enter a report date to keep it fixed.
+Recording is a change of the project. If the report date was empty, the same step also stores
+today's date as the report date, so the report shows it and later exports print it as well.
 
-⌘Z undoes all three at once. Below the export Dimo confirms "Recorded as issued". If you changed
+⌘Z undoes all of it at once. Below the export Dimo confirms "Recorded as issued". If you changed
 the project while the export ran, the file is written but nothing is recorded, because the file
 no longer shows the project; export again.
 

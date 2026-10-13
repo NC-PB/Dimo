@@ -555,11 +555,17 @@ pub struct ExportStart {
     pub issued: IssuedInfo,
     /// For an issued drawing or list export: the patch of the numbering lock, to emit.
     pub lock: Option<ProjectPatched>,
+    /// For a normal report export of a project without a report date: the patch that stored
+    /// today's date, to emit (T3.9).
+    pub date: Option<ProjectPatched>,
 }
 
 /// Takes the snapshot of an export. For an issued drawing or list export the numbering is
-/// locked first (T1.9); a report is not changed here, its snapshot gets the filled report info
-/// and the lock follows after the write (M3 decisions 15 and 17).
+/// locked first (T1.9). A report exported as issued is not changed here: its snapshot gets the
+/// filled report info, with today's date if the report date is empty, and the lock follows after
+/// the write in one undo step with the stored info (M3 decisions 15 and 17). A normal report
+/// export of a project without a report date stores today's date first, as one undo step, so
+/// that later exports print the same date and stay byte identical (T3.9, FR-EXP-11).
 pub fn take_snapshot(
     session: &mut AppSession,
     request: ExportRequest,
@@ -569,6 +575,11 @@ pub fn take_snapshot(
         Some(session.execute(Command::LockNumbering {
             reason: LockReason::IssuedReport,
         })?)
+    } else {
+        None
+    };
+    let date = if report.is_some() && !request.issued {
+        fill_report_date(session)?
     } else {
         None
     };
@@ -582,7 +593,24 @@ pub fn take_snapshot(
         snapshot,
         issued,
         lock,
+        date,
     })
+}
+
+/// Stores today's date as the report date of the open project if it has none, as one undoable
+/// step (T3.9). `None` if the report date is set.
+fn fill_report_date(session: &mut AppSession) -> Result<Option<ProjectPatched>, CommandError> {
+    let project = session.project().ok_or(CommandError::NoProject)?;
+    if !project.report_info.report_date.trim().is_empty() {
+        return Ok(None);
+    }
+    let info = ReportInfo {
+        report_date: session.local_date(),
+        ..project.report_info.clone()
+    };
+    session
+        .execute(Command::UpdateReportInfo { info })
+        .map(Some)
 }
 
 /// Asks for the target file and starts the export as a background job. Returns `null` if the
@@ -631,11 +659,12 @@ pub async fn export_project(
         snapshot,
         issued,
         lock,
+        date,
     } = with_session(app.clone(), move |_, session| {
         take_snapshot(session, request)
     })
     .await?;
-    if let Some(patched) = lock {
+    for patched in [lock, date].into_iter().flatten() {
         emit_patched(&app, patched);
     }
     let id = next_job_id();

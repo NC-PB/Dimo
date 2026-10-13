@@ -56,6 +56,7 @@ Prüfmittel. Der Kopf jeder Seite zeigt Firma, Teil, Kunde, Auftrag, Zeichnungsd
 Änderungsstand, den Anfang des SHA-256 der Zeichnungsdatei (vollständig auf der ersten Seite),
 Berichtsnummer, Datum und Seite. Die Werte stammen aus
 [Projekt- und Berichtsdaten](project-details.md).
+Ein leeres Kopffeld druckt weder seine Bezeichnung noch einen Wert.
 
 - **Prüfblatt**: leere Ergebnisspalten zum Ausdrucken und Ausfüllen von Hand und eine Zeile für
   den Prüfer. Hat das Projekt Teile, gibt es eine Spalte je Teil mit seiner Seriennummer; ohne
@@ -99,9 +100,14 @@ Grenzen aus Toleranztabellen, die noch Entwürfe sind, sind in der Regelspalte m
 markiert, und der Bericht sagt in einer Fußnote, dass diese Grenzen aus einer Entwurfstabelle
 stammen und noch nicht verifiziert sind.
 
-Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es leer, gilt das Datum der
-letzten Änderung am Projekt. Es hängt nie vom Tag des Exports ab, dasselbe Projekt ergibt also
-dieselben Dateien, Byte für Byte.
+Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es beim Export eines
+Prüfblatts oder eines Prüfberichts leer, trägt Dimo zuerst das heutige Datum (das Datum deines
+Computers) als Berichtsdatum ein, als eine Änderung, die du mit ⌘Z rückgängig machen kannst,
+und druckt es. Spätere Exporte drucken das gespeicherte Datum, dasselbe Projekt ergibt also an
+jedem Tag dieselben Dateien, Byte für Byte. Für ein anderes Datum trägst du es vor dem Export
+unter **Berichtsdatum** in den [Projekt- und Berichtsdaten](project-details.md) ein. Löschst du
+das Datum wieder, trägt der nächste Berichtsexport das Datum dieses Tages neu ein. Das
+Ballon-PDF und die Listen verwenden das Berichtsdatum nicht.
 
 ### Ausgegebene Berichte
 
@@ -109,18 +115,21 @@ Mit **Als ausgegeben exportieren** erledigt ein Berichtsexport nach dem Schreibe
 Dinge in einem Schritt:
 
 1. Die Nummerierung wird gesperrt, falls sie es noch nicht ist.
-2. Ein leerer Firmenname wird aus den **Einstellungen** ergänzt und ein leeres „geprüft von“ mit
-   deinem Benutzernamen. Der Bericht zeigt diese Werte bereits. Ein normaler Export druckt das
-   Projekt, wie es ist, und lässt leere Felder leer.
+2. Ein leerer Firmenname wird aus den **Einstellungen** ergänzt, ein leeres „geprüft von“ mit
+   deinem Benutzernamen und ein leeres Berichtsdatum mit dem heutigen Datum. Der Bericht zeigt
+   diese Werte bereits. Ein normaler Export druckt das Projekt, wie es ist, und lässt die
+   anderen leeren Felder leer; nur das Berichtsdatum wird dann ebenfalls eingetragen, wie oben
+   beschrieben.
 3. Das Projekt vermerkt den ausgegebenen Bericht: welcher Bericht, die Vorlage und ihre Version,
    das Dateiformat, den Änderungsstand der Zeichnung und deren SHA-256, den SHA-256 der
    geschriebenen Datei und den Exportzeitpunkt. Der Exportzeitpunkt steht nur im Projekt, nicht im
    Bericht.
 
-Das Vermerken ist eine Änderung am Projekt. Ein Bericht ohne Berichtsdatum trägt deshalb bei einem
-erneuten Export ein späteres Datum; gib ein Berichtsdatum ein, damit es fest bleibt.
+Das Vermerken ist eine Änderung am Projekt. War das Berichtsdatum leer, trägt derselbe Schritt
+auch das heutige Datum als Berichtsdatum ein, damit der Bericht es zeigt und spätere Exporte es
+ebenfalls drucken.
 
-⌘Z macht alle drei auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als ausgegeben
+⌘Z macht alles auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als ausgegeben
 vermerkt“. Hast du das Projekt während des Exports geändert, wird die Datei geschrieben, aber
 nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann erneut.
 
