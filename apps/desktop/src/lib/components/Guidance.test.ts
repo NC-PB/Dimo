@@ -7,6 +7,8 @@ import { projectStore } from "$lib/stores/project.svelte";
 import { recentStore } from "$lib/stores/recent.svelte";
 import { view } from "$lib/stores/view.svelte";
 import EmptyState, { type EmptyAction } from "./EmptyState.svelte";
+import { ReportViewStore } from "$lib/report/report-view.svelte";
+import ReportView from "$lib/report/ReportView.svelte";
 import ExportView from "./ExportView.svelte";
 import SelectionSummary from "./SelectionSummary.svelte";
 import StartScreen from "./StartScreen.svelte";
@@ -166,8 +168,28 @@ describe("empty states (T3.17)", () => {
       : null;
   }
 
-  it("guides the Report view from no project to measured values", () => {
+  it("guides File > Export from no project to the list exports (T3.19)", () => {
     render((t) => mount(ExportView, { target: t }));
+    expect(reportEmpty()).toEqual({
+      title: "No project open",
+      actions: ["new_project", "open_project"],
+    });
+    projectStore.load(loaded(++session, emptyProject()));
+    flushSync();
+    expect(reportEmpty()).toEqual({ title: "Nothing to report yet", actions: ["place_tool"] });
+  });
+
+  it("guides the Report view from no project to measured values", () => {
+    const store = new ReportViewStore(
+      {
+        reportPreview: () =>
+          Promise.resolve({ status: "ok", data: { doc: "0", name: "p.pdf", sheets: [] } }),
+        reportChecks: () => Promise.resolve({ status: "error", error: { kind: "no_project" } }),
+        printReport: () => Promise.resolve({ status: "ok", data: "p.pdf" }),
+      },
+      0,
+    );
+    render((t) => mount(ReportView, { target: t, props: { store } }));
     expect(reportEmpty()).toEqual({
       title: "No project open",
       actions: ["new_project", "open_project"],

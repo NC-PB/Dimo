@@ -12,6 +12,7 @@
     runCommand,
     type CommandId,
   } from "$lib/commands.svelte";
+  import ExportView from "$lib/components/ExportView.svelte";
   import RecentProjects from "$lib/components/RecentProjects.svelte";
   import { m } from "$lib/i18n";
   import { icons, type Icon } from "$lib/icons";
@@ -25,7 +26,11 @@
     "flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3.5 py-2 text-left text-sm text-text hover:bg-hover aria-disabled:cursor-default aria-disabled:opacity-45 aria-disabled:hover:bg-transparent aria-[current=page]:bg-accent-soft aria-[current=page]:font-semibold";
 
   /** Commands that open a pane of this page show as current while it is shown. */
-  const PANE_OF: Partial<Record<CommandId, FilePane>> = { options: "options", about: "about" };
+  const PANE_OF: Partial<Record<CommandId, FilePane>> = {
+    export_report: "export",
+    options: "options",
+    about: "about",
+  };
 </script>
 
 {#snippet railItem(label: string, Glyph: Icon, pane: FilePane)}
@@ -121,6 +126,8 @@
           <RecentProjects heading={m.recent_title()} />
         </div>
       </div>
+    {:else if view.filePane === "export"}
+      <ExportView />
     {:else if view.filePane === "options"}
       <OptionsPane />
     {:else}

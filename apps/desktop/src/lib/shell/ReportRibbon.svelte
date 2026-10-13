@@ -4,15 +4,18 @@
   import { exportStore } from "$lib/stores/export.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS } from "./field";
+  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
   import Ribbon from "./Ribbon.svelte";
 
   /**
-   * Report tab (ADR 0007, mockup "Report tab"): the document, its options and the output. The
-   * options are the remembered export options of the user (T1.9); Save copy and Issue report
-   * run the same exports as the cards of the report page below. Preview and Print follow in
-   * T3.19.
+   * Report tab (ADR 0007, mockup "Report tab"): the document, its options, the output and the
+   * other exports. The options are the remembered export options of the user (T1.9); the work
+   * area below shows the preview of what Save copy writes, Print opens it in the PDF viewer
+   * (T3.19). Blank result columns apply to a check sheet of a project without parts.
    */
+  /** Bounds of the blank check sheet columns (M3 decision 12); Rust clamps them too. */
+  const MIN_BLANK = 1;
+  const MAX_BLANK = 10;
   const FORMATS: readonly { value: ReportFormat; label: () => string }[] = [
     { value: "pdf", label: () => m.export_format_pdf() },
     { value: "xlsx", label: () => m.export_format_xlsx() },
@@ -24,6 +27,10 @@
     exportStore.document === "check_sheet"
       ? prefs.check_sheet_format
       : prefs.inspection_report_format,
+  );
+
+  const blankReason = $derived(
+    exportStore.document === "check_sheet" ? null : m.reason_check_sheet_only(),
   );
 
   function setFormat(value: ReportFormat): void {
@@ -82,6 +89,27 @@
       </select>
     </label>
   </div>
+  <label class={LABEL_CLASS} title={fieldTitle(m.export_blank_columns_hint(), blankReason)}>
+    {m.export_blank_columns()}
+    <input
+      type="number"
+      min={MIN_BLANK}
+      max={MAX_BLANK}
+      step="1"
+      class="{FIELD_CLASS} w-16"
+      data-field="blank-columns"
+      disabled={blankReason !== null}
+      value={prefs.blank_columns}
+      onchange={(e) => {
+        const value = Math.round(Number(e.currentTarget.value));
+        if (Number.isFinite(value)) {
+          const blank_columns = Math.min(MAX_BLANK, Math.max(MIN_BLANK, value));
+          void settingsStore.update({ export: { ...prefs, blank_columns } });
+        }
+        e.currentTarget.value = String(prefs.blank_columns);
+      }}
+    />
+  </label>
   <div class="flex flex-col gap-0.5 self-end">
     <CommandButton id="open_after_export" />
   </div>
@@ -89,7 +117,12 @@
 
 {#snippet output()}
   <CommandButton id="save_copy" size="large" />
+  <CommandButton id="print" size="large" />
   <CommandButton id="issue_report" size="large" />
+{/snippet}
+
+{#snippet more()}
+  <CommandButton id="more_exports" size="large" />
 {/snippet}
 
 <Ribbon
@@ -97,5 +130,6 @@
     { id: "document", label: m.ribbon_group_document(), content: documentGroup },
     { id: "options", label: m.ribbon_group_options(), content: options },
     { id: "output", label: m.ribbon_group_output(), content: output },
+    { id: "more", label: m.ribbon_group_more(), content: more },
   ]}
 />

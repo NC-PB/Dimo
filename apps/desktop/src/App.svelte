@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ExportView from "$lib/components/ExportView.svelte";
+  import ReportView from "$lib/report/ReportView.svelte";
   import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import ProjectMessages from "$lib/components/ProjectMessages.svelte";
   import Shortcuts from "$lib/components/Shortcuts.svelte";
@@ -132,7 +132,7 @@
   {#if view.current === "measure"}
     <MeasureView />
   {:else if view.current === "export"}
-    <ExportView />
+    <ReportView />
   {:else if view.current === "file"}
     <FilePage />
   {:else if view.current === "review"}

@@ -86,7 +86,7 @@ describe("tab bar and ribbon (ADR 0007, T3.15)", () => {
     tab("report").click();
     flushSync();
     expect(view.current).toBe("export");
-    expect(groups()).toEqual(["Document", "Options", "Output"]);
+    expect(groups()).toEqual(["Document", "Options", "Output", "Other exports"]);
     tab("view").click();
     flushSync();
     expect(groups()).toEqual(["Zoom", "Panes", "Look"]);

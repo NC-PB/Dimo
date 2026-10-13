@@ -60,7 +60,7 @@
   { "wait": 800 },
   { "report": "saved as" },
 
-  { "show": "export" },
+  { "show": "file:export" },
   { "check": ["Export as issued", true] },
   { "button": "Export PDF…" },
   { "wait": 2500 },
