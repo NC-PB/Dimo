@@ -141,6 +141,14 @@ pub fn run() -> tauri::Result<()> {
         eprintln!("failed to export TypeScript bindings: {err}");
     }
 
+    #[cfg_attr(
+        not(debug_assertions),
+        allow(unused_mut, reason = "only debug builds change the context")
+    )]
+    let mut context = tauri::generate_context!();
+    #[cfg(debug_assertions)]
+    dev::keep_scripted_window_running(&mut context);
+
     let app = tauri::Builder::default()
         .invoke_handler(builder.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(tiles::SCHEME, tiles::handle)
@@ -175,7 +183,7 @@ pub fn run() -> tauri::Result<()> {
                 project::on_close_requested(window, api);
             }
         })
-        .build(tauri::generate_context!())?;
+        .build(context)?;
     app.run(|handle, event| match event {
         tauri::RunEvent::ExitRequested { api, code, .. } => {
             project::on_exit_requested(handle, &api, code);

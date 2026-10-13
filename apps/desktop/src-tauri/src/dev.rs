@@ -319,6 +319,23 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
     })
 }
 
+/// Debug builds with `DIMO_DEV_UI_SCRIPT`: the webview keeps running its timers while the
+/// window is hidden, minimized or covered. The web engine otherwise throttles or suspends a webview that
+/// is not on screen, and every step of the UI script waits on a timer, so a smoke run whose
+/// window was covered stalled before the script started (2026-10-13). Release builds and debug
+/// runs without a UI script keep the default policy. macOS 14 and later; other platforms ignore
+/// the setting.
+#[cfg(debug_assertions)]
+pub fn keep_scripted_window_running(context: &mut tauri::Context<tauri::Wry>) {
+    if var("DIMO_DEV_UI_SCRIPT").is_none() {
+        return;
+    }
+    for window in &mut context.config_mut().app.windows {
+        window.background_throttling =
+            Some(tauri::utils::config::BackgroundThrottlingPolicy::Disabled);
+    }
+}
+
 /// True if `path` is a project (file with the project extension or a folder), not a drawing.
 fn is_project(path: &Path) -> bool {
     path.is_dir()

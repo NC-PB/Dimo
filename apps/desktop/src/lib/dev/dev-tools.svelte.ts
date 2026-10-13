@@ -115,7 +115,12 @@ export class DevToolsStore {
     }
     if (startup.ui_script !== null) {
       // Let the first tiles arrive, so captures show the drawing. Without `DIMO_DEV_OPEN` the
-      // script runs on whatever project the app restored (crash recovery check).
+      // script runs on whatever project the app restored (crash recovery check). The line
+      // before the wait shows whether the page was hidden when a run stalls; debug runs with a
+      // UI script turn off background throttling, see `keep_scripted_window_running` (dev.rs).
+      await commands
+        .devLog(`script queued, page ${document.visibilityState}`)
+        .catch(() => undefined);
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await runUiScript(startup.ui_script);
     }

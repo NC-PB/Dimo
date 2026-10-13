@@ -51,6 +51,9 @@
  *   that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons, selection, tool
  *   and limits).
+ * - `until`: waits until the text of a report contains this text, for example `"\"P5\""`
+ *   once the fifth typed value is stored, at most 10 s; then the step fails. Use it instead of
+ *   a fixed `wait` where the next step needs a change that Rust has applied.
  */
 
 import { commands, type ExportFormat } from "$lib/ipc/bindings";
@@ -100,6 +103,7 @@ export type UiStep =
   | { reveal: string }
   | { fill: [string, string] }
   | { wait: number }
+  | { until: string }
   | { mark: string }
   | { report: string };
 
@@ -119,6 +123,8 @@ const SCRIPT_POINTER_ID = 41;
 const FIELD_WAIT_MS = 3000;
 /** Longest wait for Rust to read a dragged box before the next step. */
 const BOX_WAIT_MS = 10000;
+/** Longest wait of an `until` step. */
+const UNTIL_WAIT_MS = 10000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -479,6 +485,15 @@ async function run(step: UiStep): Promise<void> {
     await sleep(STEP_PAUSE_MS);
   } else if ("wait" in step) {
     await sleep(step.wait);
+  } else if ("until" in step) {
+    // Polls the store state that `report` describes, so the step ends as soon as the change
+    // arrived, however loaded the machine is (smoke step 4 read too early, 2026-10-13).
+    for (let waited = 0; !report("until").includes(step.until); waited += 50) {
+      if (waited >= UNTIL_WAIT_MS) {
+        throw new Error(`"${step.until}" not reported within ${String(UNTIL_WAIT_MS)} ms`);
+      }
+      await sleep(50);
+    }
   } else if ("mark" in step) {
     await log(`mark ${step.mark}`);
   } else {
