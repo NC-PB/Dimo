@@ -85,7 +85,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.18 Properties pane | done | Pane follows the selection (none, one, many) in Drawing; shared `Pane` frame now also used by Measure and Report (merge agent); zone grid and views as pane sections; dialogs for custom scale and numbering options; stale write race fixed (`executeWith`) |
 | T3.19 Measure and Report layout | done | Progress counts in `measurement_state` (`to_inspect`, `complete_samples`), Measure bar with value field and verdict words from Rust (`LimitPosition`), report live preview equal to Save copy (test), "Before you issue" checks (`report_checks`), Print through the system viewer, File > Export pane for drawing and lists |
 | T3.20 Wording and German pass | done | Glossary in `docs/dev/translations.md` applied (94 messages, 20 dead keys removed), German labels fit at 1280 px (Drawing tab 12 px spare), user guide, manual test M3 and exit procedure on the new shell, ProjectDetails removed; smoke: `until` step, no hot reload in the smoke test (`DIMO_E2E=1`), background throttling off in scripted debug runs. Owner: confirm the glossary terms |
-| T3.21 Exit test with a shop floor user | todo | Wave 8 |
+| T3.21 Exit test with a shop floor user | review | Procedure `docs/perf/M3-ui-test.md` written. Owner: run it with one shop floor person who has not used Dimo, record the findings |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
