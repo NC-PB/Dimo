@@ -39,7 +39,7 @@ export type ShortcutAction =
   | "show_review"
   | "show_measure"
   | "show_export"
-  | "show_settings"
+  | "show_options"
   | "table_up"
   | "table_down"
   | "table_left"
@@ -131,12 +131,12 @@ export const SHORTCUTS: readonly Shortcut[] = [
     textEditing: true,
     anyView: true,
   },
-  // Tabs (ADR 0007): drawing (Home), review, measure, report, settings (File).
+  // Tabs (ADR 0007): drawing (Home), review, measure, report, and File > Options.
   { action: "show_drawing", keys: [{ key: "1", mod: true }], anyView: true },
   { action: "show_review", keys: [{ key: "2", mod: true }], anyView: true },
   { action: "show_measure", keys: [{ key: "3", mod: true }], anyView: true },
   { action: "show_export", keys: [{ key: "e", mod: true }], anyView: true },
-  { action: "show_settings", keys: [{ key: ",", mod: true }], anyView: true },
+  { action: "show_options", keys: [{ key: ",", mod: true }], anyView: true },
   { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }] },
   { action: "zoom_out", keys: [{ key: "-" }, { key: "_" }] },
   { action: "fit", keys: [{ key: "0" }] },

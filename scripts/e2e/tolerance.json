@@ -16,14 +16,10 @@
   { "wait": 300 },
   { "report": "discarded" },
 
-  { "show": "settings" },
-  { "wait": 500 },
-  { "select": ["General tolerance", "iso-2768-1"] },
-  { "wait": 500 },
-  { "select": ["Class", "m"] },
-  { "wait": 500 },
-  { "show": "drawing" },
+  { "show": "home" },
   { "wait": 300 },
+  { "select": ["General tolerance", "iso-2768-1|m"] },
+  { "wait": 500 },
 
   {
     "drag": [

@@ -1,9 +1,8 @@
 <script lang="ts">
   /**
    * The offer after the general tolerance changed (M3 decision 22): "n characteristics have no
-   * tolerance yet ... [Update n] [Not now]", and the confirmation after Update. Shown where the
-   * general tolerance can be changed: the settings page and above the drawing (Home and Drawing
-   * tabs, T3.15).
+   * tolerance yet ... [Update n] [Not now]", and the confirmation after Update. Shown above the
+   * drawing, where the general tolerance is changed (Home and Drawing tabs, T3.15).
    */
   import { m } from "$lib/i18n";
   import {
@@ -15,7 +14,7 @@
     tolerance?: ToleranceStore;
     /** Extra classes for the placement. */
     class?: string;
-    /** Also show the line after an update (the settings page; the drawing shows the limits). */
+    /** Also show the line after an update (off above the drawing, which shows the limits). */
     confirmation?: boolean;
   }
 

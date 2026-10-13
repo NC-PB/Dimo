@@ -37,7 +37,7 @@ One `.dimo` file holds the drawing as you imported it, the characteristics and b
 settings of the project (balloon style, tolerance rules with the custom tables you imported,
 numbering strategy), the rotation, unit, scale, zone grid and views of each sheet, the numbering
 lock, and the change log: every change with the time and the user name set in
-[Settings](settings.md). The file is a ZIP archive, so you can look inside it with any ZIP
+**Options** ([File page, options and About](settings.md)). The file is a ZIP archive, so you can look inside it with any ZIP
 program, but only Dimo should write it.
 
 A project saved by an older Dimo opens, and a note says it was converted; saving writes the

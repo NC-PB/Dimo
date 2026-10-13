@@ -4,7 +4,7 @@ import { TABS, VIEWS, ViewStore, isTab, isView } from "./view.svelte";
 describe("view store (ADR 0007)", () => {
   it("lists the tabs and work areas in order", () => {
     expect(TABS).toEqual(["file", "home", "drawing", "review", "measure", "report", "view"]);
-    expect(VIEWS).toEqual(["drawing", "review", "measure", "export", "settings", "file"]);
+    expect(VIEWS).toEqual(["drawing", "review", "measure", "export", "file"]);
   });
 
   it("starts on the Home tab with the drawing", () => {
@@ -46,8 +46,8 @@ describe("view store (ADR 0007)", () => {
     view.set("unknown");
     view.setTab("nonsense");
     expect(view.current).toBe("measure");
-    view.set("settings");
-    expect([view.tab, view.current]).toEqual(["file", "settings"]);
+    view.set("settings"); // The settings page is gone (T3.16): File > Options replaces it.
+    expect([view.tab, view.current]).toEqual(["measure", "measure"]);
     view.set("export");
     expect(view.tab).toBe("report");
     expect(isView("export")).toBe(true);
@@ -66,5 +66,20 @@ describe("view store (ADR 0007)", () => {
     view.setTab("measure");
     view.set("drawing");
     expect(view.tab).toBe("home");
+  });
+
+  it("opens a File pane and goes back to the tab before File (T3.16)", () => {
+    const view = new ViewStore();
+    view.setTab("measure");
+    view.openFile("options");
+    expect([view.tab, view.current, view.filePane]).toEqual(["file", "file", "options"]);
+    view.openFile("about");
+    view.back();
+    expect([view.tab, view.current]).toEqual(["measure", "measure"]);
+    view.set("file");
+    view.back();
+    expect(view.tab).toBe("measure");
+    view.back();
+    expect(view.tab).toBe("measure");
   });
 });

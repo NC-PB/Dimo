@@ -215,7 +215,7 @@ fn overlay(base: &mut serde_json::Value, top: serde_json::Value) {
     }
 }
 
-/// The settings and what the settings view shows next to them.
+/// The settings and what File > Options shows next to them.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub struct SettingsView {

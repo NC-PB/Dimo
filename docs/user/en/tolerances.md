@@ -35,8 +35,11 @@ Limits you entered by hand stay. Empty the field to remove the leg.
 
 ## Tolerance settings of the project
 
-Open **Settings** (⌘,) while a project is open. The section **Tolerances of the project** holds
-the rules of this project. They are stored in the project file, and every change is one undo step.
+The rules of this project are on the **Drawing** tab: the **General tolerance** field (also on
+the **Home** tab), **Decimal rules…** (decimal place rules and rounding after unit conversion) and
+**Company tables** (custom tables and the drawing rule) open a small window each.
+**File** > **Info** sums them up. They are stored in the project file, and every change is one
+undo step.
 
 - **General tolerance**: the table and class for dimensions without a tolerance, for example
   ISO 2768-1 class m. The choice lists the general tables and the custom tables of the
@@ -142,7 +145,7 @@ removed and the characteristic can be read again.
 The tables shipped with Dimo are drafts until their values have been checked against the printed
 standard. Limits from a draft table work like any other but carry the **Draft** marker in the
 table, in the side panel and on the box select card. A custom table you import can be a draft too.
-The settings show the marker next to a table that is a draft. Check limits from a draft table
+The Drawing tab and **File** > **Info** show the marker next to a table that is a draft. Check limits from a draft table
 against your own standard before you rely on them. A table stops being a draft only when its
 file is marked as verified by the person who checked each value; Dimo never changes that itself.
 

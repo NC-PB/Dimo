@@ -2,7 +2,6 @@
   import ExportView from "$lib/components/ExportView.svelte";
   import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import ProjectMessages from "$lib/components/ProjectMessages.svelte";
-  import SettingsView from "$lib/components/SettingsView.svelte";
   import Shortcuts from "$lib/components/Shortcuts.svelte";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import DeleteCharacteristicsDialog from "$lib/components/DeleteCharacteristicsDialog.svelte";
@@ -16,6 +15,7 @@
   import { icons } from "$lib/icons";
   import MeasureView from "$lib/measure/MeasureView.svelte";
   import FilePage from "$lib/shell/FilePage.svelte";
+  import ProjectSettingsDialog from "$lib/shell/ProjectSettingsDialog.svelte";
   import StatusBar from "$lib/shell/StatusBar.svelte";
   import TabBar from "$lib/shell/TabBar.svelte";
   import TitleBar from "$lib/shell/TitleBar.svelte";
@@ -38,6 +38,18 @@
     toleranceStore.declineGeneralUpdate();
     measureUi.onlyMissing = false;
     measureUi.onlyFailed = false;
+  });
+
+  // A project opened or created from the File page shows its drawing, so work can start
+  // at once (ADR 0007, T3.16). Closing a project stays on the File page, which then offers
+  // New and Open.
+  $effect(() => {
+    void projectStore.session;
+    untrack(() => {
+      if (projectStore.isOpen && view.tab === "file") {
+        view.setTab("home");
+      }
+    });
   });
 
   // The tolerance table list (ribbon fields, status bar) follows the project: an import, undo or
@@ -121,8 +133,6 @@
     <MeasureView />
   {:else if view.current === "export"}
     <ExportView />
-  {:else if view.current === "settings"}
-    <SettingsView />
   {:else if view.current === "file"}
     <FilePage />
   {:else if view.current === "review"}
@@ -142,3 +152,4 @@
 <Shortcuts />
 <UnsavedChangesDialog />
 <DeleteCharacteristicsDialog />
+<ProjectSettingsDialog />

@@ -94,13 +94,6 @@ async function revealInSidePanel(selector: string): Promise<void> {
   document.querySelector(selector)?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
-/** Opens the settings page at a section, until the Drawing tab gets these settings (T3.16). */
-async function openSettings(id: string): Promise<void> {
-  view.set("settings");
-  await tick();
-  document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
-}
-
 /** The theme in effect, read from the document root (`theme.ts` sets it). */
 function shownTheme(): "light" | "dark" {
   return typeof document !== "undefined" && document.documentElement.dataset.theme === "dark"
@@ -173,13 +166,45 @@ export const COMMANDS = {
       view.shortcutsOpen = !view.shortcutsOpen;
     },
   },
-  settings: {
-    label: () => m.cmd_settings(),
-    icon: icons.settings,
-    description: () => m.cmd_settings_desc(),
-    shortcut: "show_settings",
+  close_project: {
+    label: () => m.cmd_close_project(),
+    icon: icons.closeProject,
+    description: () => m.cmd_close_project_desc(),
+    disabled: needIdle,
+    run: () => projectStore.close(),
+  },
+  export_report: {
+    label: () => m.cmd_export(),
+    icon: icons.saveCopy,
+    description: () => m.cmd_export_desc(),
+    disabled: needProject,
     run: () => {
-      view.set("settings");
+      view.setTab("report");
+    },
+  },
+  print: {
+    label: () => m.cmd_print(),
+    icon: icons.print,
+    description: () => m.cmd_print_desc(),
+    // Printing comes with the report preview (T3.19); until then the reason says what to do.
+    disabled: () => needProject() ?? m.reason_print_later(),
+    run: () => false,
+  },
+  options: {
+    label: () => m.cmd_options(),
+    icon: icons.options,
+    description: () => m.cmd_options_desc(),
+    shortcut: "show_options",
+    run: () => {
+      view.openFile("options");
+    },
+  },
+  about: {
+    label: () => m.cmd_about(),
+    icon: icons.about,
+    description: () => m.cmd_about_desc(),
+    run: () => {
+      view.openFile("about");
     },
   },
 
@@ -317,14 +342,27 @@ export const COMMANDS = {
     icon: icons.decimalRules,
     description: () => m.cmd_decimal_rules_desc(),
     disabled: needProject,
-    run: () => openSettings("settings-decimal-rules"),
+    run: () => {
+      view.projectDialog = "decimal_rules";
+    },
   },
   company_tables: {
     label: () => m.cmd_company_tables(),
     icon: icons.companyTables,
     description: () => m.cmd_company_tables_desc(),
     disabled: needProject,
-    run: () => openSettings("settings-custom-tables"),
+    run: () => {
+      view.projectDialog = "company_tables";
+    },
+  },
+  project_balloon_style: {
+    label: () => m.cmd_project_balloon_style(),
+    icon: icons.projectBalloonStyle,
+    description: () => m.cmd_project_balloon_style_desc(),
+    disabled: needProject,
+    run: () => {
+      view.projectDialog = "balloon_style";
+    },
   },
   project_info: {
     label: () => m.cmd_project_info(),

@@ -10,6 +10,7 @@ pub mod ipc;
 pub mod measurement;
 pub mod numbering;
 pub mod project;
+pub mod recent;
 pub mod recognition;
 pub mod session;
 pub mod settings;
@@ -23,7 +24,7 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, numbering.rs, tolerance.rs, measurement.rs, dev.rs). \
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, recent.rs, numbering.rs, tolerance.rs, measurement.rs, dev.rs). \
 Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
@@ -46,6 +47,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             project::save_project,
             project::save_project_as,
             project::confirm_close,
+            project::close_project,
+            recent::recent_projects,
+            recent::remove_recent_project,
+            recent::open_recent_project,
             project::execute,
             project::undo,
             project::redo,
@@ -152,6 +157,10 @@ pub fn run() -> tauri::Result<()> {
             let user_settings = settings::SettingsState::load(settings_path);
             settings::apply(app.handle(), &user_settings.get());
             app.manage(user_settings);
+            // Recent projects next to the settings (T3.16).
+            let recent_path = dev::dev_folder("config", app.path().app_config_dir().ok())
+                .map(|dir| dir.join(recent::RECENT_FILE));
+            app.manage(recent::RecentState::load(recent_path));
             recover_unsaved(app.handle());
             project::start_autosave_timer(app.handle().clone());
             Ok(())

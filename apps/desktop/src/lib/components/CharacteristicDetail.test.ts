@@ -18,6 +18,8 @@ import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
 import CharacteristicDetail from "./CharacteristicDetail.svelte";
+import GeneralToleranceField from "$lib/shell/GeneralToleranceField.svelte";
+import GeneralToleranceOffer from "./GeneralToleranceOffer.svelte";
 import ToleranceSettings from "./ToleranceSettings.svelte";
 
 const DRAFT_GENERAL: ToleranceDerivation = {
@@ -133,6 +135,8 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
     saveProject: () => Promise.resolve({ status: "ok", data: true }),
     saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
     confirmClose: () => Promise.resolve({ status: "ok", data: null }),
+    closeProject: () => Promise.resolve({ status: "ok", data: null }),
+    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
     execute: (command) => {
       commands.push(command);
       return Promise.resolve({
@@ -418,27 +422,51 @@ describe("shorter leg of an angle (T2.9a)", () => {
   });
 });
 
-describe("tolerance settings (T2.8)", () => {
+describe("tolerance settings (T2.8, T3.16)", () => {
+  /** The company tables dialog of the Drawing tab (T3.16). */
   function renderSettings(stores: ReturnType<typeof setup>) {
     target = document.createElement("div");
     document.body.append(target);
     component = mount(ToleranceSettings, {
       target,
-      props: { project: stores.projectStore, tolerance: stores.tolerance },
+      props: {
+        section: "company_tables",
+        project: stores.projectStore,
+        tolerance: stores.tolerance,
+      },
     });
     flushSync();
   }
 
+  /** The general tolerance field of the Home and Drawing tabs with the offer above the drawing. */
+  let offer: ReturnType<typeof mount> | null = null;
+  function renderGeneral(stores: ReturnType<typeof setup>) {
+    target = document.createElement("div");
+    document.body.append(target);
+    component = mount(GeneralToleranceField, { target, props: { tolerance: stores.tolerance } });
+    offer = mount(GeneralToleranceOffer, { target, props: { tolerance: stores.tolerance } });
+    void stores.tolerance.refreshTables(); // App.svelte does this for the ribbon field.
+    flushSync();
+  }
+
+  afterEach(() => {
+    if (offer) {
+      void unmount(offer);
+      offer = null;
+    }
+  });
+
   it("sets the general standard and class as one command", async () => {
     const stores = setup();
-    renderSettings(stores);
+    renderGeneral(stores);
     await settle();
-    const general = target.querySelector<HTMLSelectElement>("[data-setting='general']");
+    const general = target.querySelector<HTMLSelectElement>("[data-field='general-tolerance']");
     const options = [...(general?.options ?? [])].map((o) => o.value);
     // Fit tables are not general tolerances.
-    expect(options).toEqual(["", "iso-2768-1"]);
+    expect(options[0]).toBe("");
+    expect(options.slice(1).every((o) => o.startsWith("iso-2768-1|"))).toBe(true);
     if (general) {
-      general.value = "iso-2768-1";
+      general.value = "iso-2768-1|f";
       general.dispatchEvent(new Event("change", { bubbles: true }));
     }
     await settle();
@@ -477,9 +505,9 @@ describe("tolerance settings (T2.8)", () => {
   });
 
   function pickGeneral(value: string): void {
-    const select = target.querySelector<HTMLSelectElement>("[data-setting='general']");
+    const select = target.querySelector<HTMLSelectElement>("[data-field='general-tolerance']");
     if (select) {
-      select.value = value;
+      select.value = `${value}|f`;
       select.dispatchEvent(new Event("change", { bubbles: true }));
     }
   }
@@ -492,7 +520,7 @@ describe("tolerance settings (T2.8)", () => {
   it("offers to update characteristics after the general tolerance changed", async () => {
     const stores = setup();
     stores.general.candidates = ["c1", "c2"];
-    renderSettings(stores);
+    renderGeneral(stores);
     await settle();
     expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
     pickGeneral("iso-2768-1");
@@ -513,7 +541,7 @@ describe("tolerance settings (T2.8)", () => {
 
   it("Not now closes the offer and changes nothing", async () => {
     const stores = setup();
-    renderSettings(stores);
+    renderGeneral(stores);
     await settle();
     pickGeneral("iso-2768-1");
     await settle();
@@ -530,7 +558,7 @@ describe("tolerance settings (T2.8)", () => {
 
   it("withdraws the offer when the project changes (undo, redo, edits)", async () => {
     const stores = setup();
-    renderSettings(stores);
+    renderGeneral(stores);
     await settle();
     pickGeneral("iso-2768-1");
     await settle();
@@ -548,7 +576,7 @@ describe("tolerance settings (T2.8)", () => {
   it("makes no offer when nothing would change or another setting changed", async () => {
     const stores = setup();
     stores.general.candidates = [];
-    renderSettings(stores);
+    renderGeneral(stores);
     await settle();
     pickGeneral("iso-2768-1");
     await settle();

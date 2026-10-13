@@ -165,7 +165,7 @@ for sections 8 to 10.
 
 | # | Step | Expected |
 |---|---|---|
-| 6.1 | Open **Settings**, enter the company name `Test Works`, close the project and create a new one from the drawing | The new project's **Company** field shows `Test Works` and **Inspected by** shows your user name; the project is not marked as changed |
+| 6.1 | Open **File** > **Options**, enter the company name `Test Works`, close the project and create a new one from the drawing | The new project's **Company** field shows `Test Works` and **Inspected by** shows your user name; the project is not marked as changed |
 | 6.2 | Open `m3-test.dimo` again | Company and inspector of this project are what they were (an empty company stays empty). Opening never changes them |
 | 6.3 | In `m3-test.dimo` enter company `Test Works`, inspected by `A. Tester`, approved by `B. Boss`, report number `R-1`, remarks `Test run` | Each field saves when you leave it; each is one undo step |
 | 6.4 | Choose **Today** next to the report date, then undo (⌘Z), then leave the field empty | **Today** enters the date of your computer once; it does not change by itself later. After the undo the field is empty again; leave it empty, step 9 covers the export |
@@ -249,7 +249,7 @@ first, so the fill is visible.
 |---|---|---|
 | 11.1 | In the **Export** view tick **Export as issued** and export the inspection report as PDF | Before it starts Dimo warns that some limits come from draft tables; **Back** cancels, **Export anyway** continues |
 | 11.2 | After the export | Below the export: recorded as issued, numbering locked |
-| 11.3 | Open the PDF | **Inspected by** shows your user name and the company shows the name from **Settings**, as the empty fields were filled for the issued export |
+| 11.3 | Open the PDF | **Inspected by** shows your user name and the company shows the name from **Options**, as the empty fields were filled for the issued export |
 | 11.4 | Look at **Project and report** | The company and inspected by fields now hold these values |
 | 11.5 | Press ⌘Z once | The lock, the filled fields and the record are undone together; the **Export as issued** hint no longer says locked |
 | 11.6 | Press ⇧⌘Z, save, then run `unzip -p m3-test-copy.dimo project.json \| jq '.issued_reports'` | One entry: kind `inspection_report`, template `dimo-default` version 1, the revision, the SHA-256 of the drawing, `output_sha256` equal to `shasum -a 256` of the exported file, format `pdf`, an export time |

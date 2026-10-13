@@ -20,6 +20,8 @@
 
   /**
    * Drawing tab (ADR 0007, mockup "Drawing tab"): sheet, zones and views, tolerances, project.
+   * Decimal rules, company tables and the project balloon style open a small dialog
+   * (`ProjectSettingsDialog`, T3.16).
    * Unit and scale act on the sheet on screen with the same undoable `update_sheet` as the side
    * panel; a scale that is not in the list is typed in the side panel.
    */
@@ -111,6 +113,7 @@
 
 {#snippet project()}
   <CommandButton id="project_info" size="large" />
+  <CommandButton id="project_balloon_style" size="large" />
   <CommandButton id="setup_checklist" size="large" />
 {/snippet}
 

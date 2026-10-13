@@ -2,13 +2,23 @@
   /**
    * General tolerance on the Home and Drawing tabs (M3 decision 21, T3.15): one select with
    * every class of every general table, bound to the project's tolerance settings. A change is
-   * the same undoable `set_tolerance_settings` as on the settings page, and offers the update of
+   * the undoable `set_tolerance_settings` command, and offers the update of
    * existing characteristics (decision 22, shown above the drawing). Rust lists the tables.
    */
   import { m } from "$lib/i18n";
   import type { TableClass } from "$lib/ipc/bindings";
-  import { toleranceStore } from "$lib/stores/tolerance.svelte";
+  import {
+    toleranceStore as appTolerance,
+    type ToleranceStore,
+  } from "$lib/stores/tolerance.svelte";
   import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+
+  interface Props {
+    /** The tolerance store; the app's by default, a fake in tests. */
+    tolerance?: ToleranceStore;
+  }
+
+  let { tolerance: toleranceStore = appTolerance }: Props = $props();
 
   // App.svelte keeps the table list in step with the project.
   const NONE = "";

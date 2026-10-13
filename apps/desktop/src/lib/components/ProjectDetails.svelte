@@ -1,7 +1,12 @@
 <script lang="ts">
   import { m } from "$lib/i18n";
   import type { ProjectInfo, ReportInfo } from "$lib/ipc/bindings";
-  import { localDate } from "$lib/project-details";
+  import {
+    editProjectInfo,
+    editReportInfo,
+    editRevisionLabel,
+    setReportDateToday,
+  } from "$lib/project-details";
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
 
   interface Props {
@@ -21,71 +26,28 @@
   const project = $derived(projectStore.project);
   const revision = $derived(project?.revisions.find((r) => r.id === project.current_revision));
 
-  /**
-   * Sends a changed field. Afterwards the input shows what the project holds (`read`): Rust's
-   * trimmed text, or the old value when Rust refused (the reason appears in the project
-   * messages).
-   */
-  async function send(
-    input: HTMLInputElement | HTMLTextAreaElement,
-    read: () => string | undefined,
-    run: () => Promise<unknown>,
-  ): Promise<void> {
-    if (input.value === read()) {
-      return;
-    }
-    await run();
-    input.value = read() ?? "";
-  }
-
   function editInfo(
     event: Event & { currentTarget: HTMLInputElement },
     field: keyof ProjectInfo,
   ): void {
-    if (!project) {
-      return;
-    }
-    const info = { ...project.info, [field]: event.currentTarget.value };
-    void send(
-      event.currentTarget,
-      () => projectStore.project?.info[field],
-      () => projectStore.execute({ type: "update_project_info", info }),
-    );
+    void editProjectInfo(projectStore, event.currentTarget, field);
   }
 
   function editReport(
     event: Event & { currentTarget: HTMLInputElement | HTMLTextAreaElement },
     field: keyof ReportInfo,
   ): void {
-    if (!project) {
-      return;
-    }
-    const info = { ...project.report_info, [field]: event.currentTarget.value };
-    void send(
-      event.currentTarget,
-      () => projectStore.project?.report_info[field],
-      () => projectStore.execute({ type: "update_report_info", info }),
-    );
+    void editReportInfo(projectStore, event.currentTarget, field);
   }
 
   function editRevision(event: Event & { currentTarget: HTMLInputElement }): void {
-    if (!revision) {
-      return;
+    if (revision) {
+      void editRevisionLabel(projectStore, event.currentTarget, revision.id);
     }
-    const label = event.currentTarget.value;
-    const id = revision.id;
-    void send(
-      event.currentTarget,
-      () => projectStore.project?.revisions.find((r) => r.id === id)?.label,
-      () => projectStore.execute({ type: "update_revision_label", revision: id, label }),
-    );
   }
 
   function setToday(): void {
-    if (project) {
-      const info = { ...project.report_info, report_date: localDate(new Date()) };
-      void projectStore.execute({ type: "update_report_info", info });
-    }
+    setReportDateToday(projectStore);
   }
 
   let copied = $state(false);

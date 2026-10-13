@@ -1,11 +1,12 @@
 <script lang="ts">
   /**
-   * Tolerance settings of the open project (T2.8, M2 decision 2, FR-TOL-06, FR-TOL-07,
-   * FR-TOL-09): general standard and class, drawing rule, decimal place rules, rounding after
-   * unit conversion, and custom tables. Rust lists the tables and classes, checks every value
-   * and every imported file; each change is one undoable `set_tolerance_settings` command.
+   * Tolerance rules of the open project (T2.8, M2 decision 2, FR-TOL-06, FR-TOL-07, FR-TOL-09),
+   * shown in the dialogs of the Drawing tab (M3 decision 21, T3.16): `decimal_rules` holds the
+   * decimal place rules and the rounding after unit conversion, `company_tables` the drawing
+   * rule and the custom tables with their import. The general tolerance is a field on the Home
+   * and Drawing tabs. Rust lists the tables and classes, checks every value and every imported
+   * file; each change is one undoable `set_tolerance_settings` command.
    */
-  import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import { m } from "$lib/i18n";
   import type { DecimalPlaceRule, TableClass, ToleranceTableInfo } from "$lib/ipc/bindings";
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
@@ -15,11 +16,12 @@
   } from "$lib/stores/tolerance.svelte";
 
   interface Props {
+    section: "decimal_rules" | "company_tables";
     project?: ProjectStore;
     tolerance?: ToleranceStore;
   }
 
-  let { project = appProject, tolerance = appTolerance }: Props = $props();
+  let { section, project = appProject, tolerance = appTolerance }: Props = $props();
 
   const settings = $derived(tolerance.settings);
   /** Select value for "no table". */
@@ -30,12 +32,6 @@
     void project.session;
     void project.project?.settings.tolerance;
     void tolerance.refreshTables();
-  });
-
-  // An offer to update characteristics (M3 decision 22) belongs to the project it was made for.
-  $effect(() => {
-    void project.session;
-    tolerance.declineGeneralUpdate();
   });
 
   function tableLabel(t: ToleranceTableInfo): string {
@@ -112,158 +108,60 @@
     }
   }
 
-  const fieldClass = "rounded border border-border bg-surface px-2 py-1 text-text";
-  const sectionClass = "flex max-w-2xl flex-col gap-3 rounded border border-border bg-surface p-4";
+  const fieldClass = "min-h-8 rounded border border-border-strong bg-surface px-2 py-1 text-text";
   const buttonClass =
-    "rounded border border-border px-2 py-1 text-xs hover:bg-surface-raised disabled:opacity-50";
+    "min-h-8 rounded border border-border px-2 py-1 text-xs hover:bg-hover disabled:opacity-50";
 </script>
 
-<fieldset class={sectionClass} data-testid="tolerance-settings">
-  <legend class="px-1 font-semibold">{m.settings_tolerance()}</legend>
+<div class="flex flex-col gap-4 text-sm text-text" data-testid="tolerance-settings">
   {#if settings === null}
     <p class="text-text-muted">{m.settings_no_project()}</p>
-  {:else}
-    <p class="text-xs text-text-muted">{m.tolerance_settings_hint()}</p>
-
-    {#each [{ key: "general", label: m.tolerance_general(), choice: settings.general, options: tolerance.generalTables }, { key: "drawing_rule", label: m.tolerance_drawing_rule(), choice: settings.drawing_rule, options: tolerance.customTables }] as row (row.key)}
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="flex flex-wrap items-center gap-2">
-          <span class="w-48">{row.label}</span>
+  {:else if section === "company_tables"}
+    {@const choice = settings.drawing_rule}
+    <div class="flex flex-wrap items-center gap-2">
+      <label class="flex flex-wrap items-center gap-2">
+        <span class="w-40">{m.tolerance_drawing_rule()}</span>
+        <select
+          class={fieldClass}
+          data-setting="drawing_rule"
+          value={choice?.table.id ?? NONE}
+          onchange={(e) => {
+            void tolerance.setSettings({ drawing_rule: pickTable(e.currentTarget.value, choice) });
+          }}
+        >
+          <option value={NONE}>{m.tolerance_none()}</option>
+          {#each tolerance.customTables as t (t.table.id)}
+            <option value={t.table.id}>{tableLabel(t)}</option>
+          {/each}
+        </select>
+      </label>
+      {#if choice}
+        <label class="flex items-center gap-2">
+          <span>{m.tolerance_class()}</span>
           <select
             class={fieldClass}
-            data-setting={row.key}
-            value={row.choice?.table.id ?? NONE}
+            data-setting="drawing_rule_class"
+            value={choice.class}
             onchange={(e) => {
-              const next = pickTable(e.currentTarget.value, row.choice);
-              void tolerance.setSettings(
-                row.key === "general" ? { general: next } : { drawing_rule: next },
-              );
+              void tolerance.setSettings({
+                drawing_rule: { ...choice, class: e.currentTarget.value },
+              });
             }}
           >
-            <option value={NONE}>{m.tolerance_none()}</option>
-            {#each row.options as t (t.table.id)}
-              <option value={t.table.id}>{tableLabel(t)}</option>
+            {#each classesOf(choice) as cls (cls)}
+              <option value={cls}>{cls}</option>
             {/each}
           </select>
         </label>
-        {#if row.choice}
-          <label class="flex items-center gap-2">
-            <span>{m.tolerance_class()}</span>
-            <select
-              class={fieldClass}
-              data-setting="{row.key}_class"
-              value={row.choice.class}
-              onchange={(e) => {
-                const next = row.choice ? { ...row.choice, class: e.currentTarget.value } : null;
-                void tolerance.setSettings(
-                  row.key === "general" ? { general: next } : { drawing_rule: next },
-                );
-              }}
-            >
-              {#each classesOf(row.choice) as cls (cls)}
-                <option value={cls}>{cls}</option>
-              {/each}
-            </select>
-          </label>
-          {#if isDraft(row.choice)}
-            <span class="draft text-warning" title={m.badge_draft_title()}>{m.badge_draft()}</span>
-          {/if}
+        {#if isDraft(choice)}
+          <span class="draft text-warning" title={m.badge_draft_title()}>{m.badge_draft()}</span>
         {/if}
-      </div>
-    {/each}
+      {/if}
+    </div>
+    <p class="text-xs text-text-muted">{m.tolerance_drawing_rule_hint()}</p>
 
-    <GeneralToleranceOffer {tolerance} />
-
-    <fieldset class="flex flex-col gap-2" id="settings-decimal-rules">
-      <legend class="font-semibold">{m.tolerance_decimal_rules()}</legend>
-      <p class="text-xs text-text-muted">{m.tolerance_decimal_rules_hint()}</p>
-      {#each settings.decimal_rules as rule, i (rule.places)}
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="w-48 tabular-nums">{m.tolerance_places()}: {rule.places}</span>
-          <label class="flex items-center gap-2">
-            <span>{m.tolerance_value()}</span>
-            <input
-              class="{fieldClass} w-24 tabular-nums"
-              type="text"
-              spellcheck="false"
-              value={rule.tolerance}
-              onchange={(e) => {
-                setRule(i, e.currentTarget.value);
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            class={buttonClass}
-            aria-label={m.tolerance_remove_rule({ places: String(rule.places) })}
-            onclick={() => {
-              removeRule(i);
-            }}>✕</button
-          >
-        </div>
-      {/each}
-      <form
-        class="flex flex-wrap items-center gap-2"
-        onsubmit={(e) => {
-          e.preventDefault();
-          void addRule();
-        }}
-      >
-        <label class="flex items-center gap-2">
-          <span class="w-48">{m.tolerance_places()}</span>
-          <input
-            class="{fieldClass} w-16 tabular-nums"
-            type="text"
-            inputmode="numeric"
-            bind:value={newPlaces}
-          />
-        </label>
-        <label class="flex items-center gap-2">
-          <span>{m.tolerance_value()}</span>
-          <input
-            class="{fieldClass} w-24 tabular-nums"
-            type="text"
-            spellcheck="false"
-            bind:value={newTolerance}
-          />
-        </label>
-        <button type="submit" class={buttonClass}>{m.tolerance_add_rule()}</button>
-      </form>
-    </fieldset>
-
-    <fieldset class="flex flex-col gap-2">
-      <legend class="font-semibold">{m.tolerance_rounding()}</legend>
-      {#each [{ key: "mm_places", label: m.tolerance_mm_places() }, { key: "inch_places", label: m.tolerance_inch_places() }] as const as row (row.key)}
-        <label class="flex flex-wrap items-center gap-2">
-          <span class="w-48">{row.label}</span>
-          <input
-            class="{fieldClass} w-16 tabular-nums"
-            type="text"
-            inputmode="numeric"
-            value={String(settings.unit_rounding[row.key])}
-            onchange={(e) => {
-              const count = places(e.currentTarget.value);
-              placesInvalid = count === null;
-              if (count === null) {
-                return;
-              }
-              void tolerance.setSettings({
-                unit_rounding: { ...settings.unit_rounding, [row.key]: count },
-              });
-            }}
-          />
-        </label>
-      {/each}
-    </fieldset>
-    {#if placesInvalid}
-      <p class="text-xs text-danger" role="alert">
-        <span aria-hidden="true">⚠</span>
-        {m.tolerance_places_invalid()}
-      </p>
-    {/if}
-
-    <fieldset class="flex flex-col gap-2" id="settings-custom-tables">
-      <legend class="font-semibold">{m.tolerance_custom_tables()}</legend>
+    <section class="flex flex-col gap-2" aria-labelledby="custom-tables-title">
+      <h3 id="custom-tables-title" class="font-semibold">{m.tolerance_custom_tables()}</h3>
       {#if tolerance.customTables.length === 0}
         <p class="text-xs text-text-muted">{m.tolerance_no_custom()}</p>
       {:else}
@@ -307,9 +205,97 @@
             : m.tolerance_imported({ table: tolerance.imported })}
         </p>
       {/if}
-    </fieldset>
+    </section>
+  {:else}
+    <section class="flex flex-col gap-2" aria-labelledby="decimal-rules-title">
+      <h3 id="decimal-rules-title" class="font-semibold">{m.tolerance_decimal_rules()}</h3>
+      <p class="text-xs text-text-muted">{m.tolerance_decimal_rules_hint()}</p>
+      {#each settings.decimal_rules as rule, i (rule.places)}
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="w-40 tabular-nums">{m.tolerance_places()}: {rule.places}</span>
+          <label class="flex items-center gap-2">
+            <span>{m.tolerance_value()}</span>
+            <input
+              class="{fieldClass} w-24 font-mono tabular-nums"
+              type="text"
+              spellcheck="false"
+              value={rule.tolerance}
+              onchange={(e) => {
+                setRule(i, e.currentTarget.value);
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            class={buttonClass}
+            aria-label={m.tolerance_remove_rule({ places: String(rule.places) })}
+            onclick={() => {
+              removeRule(i);
+            }}>✕</button
+          >
+        </div>
+      {/each}
+      <form
+        class="flex flex-wrap items-center gap-2"
+        onsubmit={(e) => {
+          e.preventDefault();
+          void addRule();
+        }}
+      >
+        <label class="flex items-center gap-2">
+          <span class="w-40">{m.tolerance_places()}</span>
+          <input
+            class="{fieldClass} w-16 font-mono tabular-nums"
+            type="text"
+            inputmode="numeric"
+            bind:value={newPlaces}
+          />
+        </label>
+        <label class="flex items-center gap-2">
+          <span>{m.tolerance_value()}</span>
+          <input
+            class="{fieldClass} w-24 font-mono tabular-nums"
+            type="text"
+            spellcheck="false"
+            bind:value={newTolerance}
+          />
+        </label>
+        <button type="submit" class={buttonClass}>{m.tolerance_add_rule()}</button>
+      </form>
+    </section>
+
+    <section class="flex flex-col gap-2" aria-labelledby="unit-rounding-title">
+      <h3 id="unit-rounding-title" class="font-semibold">{m.tolerance_rounding()}</h3>
+      {#each [{ key: "mm_places", label: m.tolerance_mm_places() }, { key: "inch_places", label: m.tolerance_inch_places() }] as const as row (row.key)}
+        <label class="flex flex-wrap items-center gap-2">
+          <span class="w-40">{row.label}</span>
+          <input
+            class="{fieldClass} w-16 font-mono tabular-nums"
+            type="text"
+            inputmode="numeric"
+            value={String(settings.unit_rounding[row.key])}
+            onchange={(e) => {
+              const count = places(e.currentTarget.value);
+              placesInvalid = count === null;
+              if (count === null) {
+                return;
+              }
+              void tolerance.setSettings({
+                unit_rounding: { ...settings.unit_rounding, [row.key]: count },
+              });
+            }}
+          />
+        </label>
+      {/each}
+    </section>
+    {#if placesInvalid}
+      <p class="text-xs text-danger" role="alert">
+        <span aria-hidden="true">⚠</span>
+        {m.tolerance_places_invalid()}
+      </p>
+    {/if}
   {/if}
-</fieldset>
+</div>
 
 <style>
   .draft {

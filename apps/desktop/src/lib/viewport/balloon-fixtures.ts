@@ -36,6 +36,8 @@ export class FakeCommands implements ProjectCommands {
   saveProject = () => ok(true);
   saveProjectAs = () => ok(true);
   confirmClose = () => ok(null);
+  closeProject = () => ok(null);
+  openRecentProject = () => ok(true);
   undo = () => ok(this.#patched());
   redo = () => ok(this.#patched());
   execute = (command: Command) => {

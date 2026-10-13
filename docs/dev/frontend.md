@@ -95,8 +95,8 @@ is the table's) and shown in the developer tools.
 The shell follows [ADR 0007](../adr/0007-office-style-shell.md) (`src/lib/shell/`): `TitleBar`,
 `TabBar` with one ribbon per tab (`HomeRibbon`, `DrawingRibbon`, ...), the work area and
 `StatusBar`. `stores/view.svelte.ts` holds the tab (`tab`: file, home, drawing, review, measure,
-report, view) and the work area it shows (`current`: drawing, review, measure, export, settings,
-file); Home and Drawing both show the drawing, the View tab keeps the area that was shown. The
+report, view) and the work area it shows (`current`: drawing, review, measure, export, file);
+Home and Drawing both show the drawing, the View tab keeps the area that was shown. The
 drawing stays mounted (hidden) while another area is shown, so tiles, zoom and table scroll are
 kept; drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks the
 others). Hiding the table or the side panel (View tab) hides them with CSS, they stay mounted.
@@ -120,8 +120,21 @@ in place of the side panel; opened projects never match. Its answers go through
 `update_sheet` and `update_project_info`. Empty views and panes use `EmptyState`: a title, one
 sentence and buttons that are registry commands, or a tab to switch to for plain navigation.
 
-- Settings of the user (`stores/settings.svelte.ts`): theme, UI language, audit user name and
-  the last export options. Rust stores them in `settings.json` in the app config directory
+- File page (T3.16, `shell/FilePage.svelte`): a rail with Back, project commands and the panes
+  `info` (`FileInfo`), `open` (with `RecentProjects`), `options` (`OptionsPane`) and `about`
+  (`AboutPane`), chosen by `view.filePane`; `view.openFile(pane)` opens one, `view.back()` returns
+  to the tab before File. There is no settings page: personal settings are in Options, project
+  settings on the tabs. Decimal rules, company tables and the project balloon style open
+  `ProjectSettingsDialog` (`view.projectDialog`) from the Drawing tab.
+- Recent projects (`stores/recent.svelte.ts`, `components/RecentProjects.svelte`): Rust keeps the
+  list in `recent-projects.json` next to `settings.json` (`src-tauri/src/recent.rs`) and adds an
+  entry after open and save as; `open_recent_project` opens only paths on the list. The component
+  takes `compact`, `limit` and `heading`, so other places (start screen) can reuse it.
+- About (`lib/about.ts`): `LICENSE`, `NOTICE`, the OFL files in `data/fonts/` and the Lucide
+  `LICENSE` from `node_modules` are embedded with Vite `?raw`. A new bundled font or asset needs
+  an entry in `BUNDLED`; `about.test.ts` fails for a font file without one.
+- Settings of the user (`stores/settings.svelte.ts`): theme, UI language, audit user name,
+  company name and the last export options. Rust stores them in `settings.json` in the app config directory
   (`src-tauri/src/settings.rs`). `main.ts` reads them before mounting, so the first render has
   the stored language and theme. The theme sets `data-theme` on `<html>` (`theme/theme.ts`);
   colors live only in `theme/tokens.css`.

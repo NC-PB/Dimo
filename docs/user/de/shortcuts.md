@@ -28,7 +28,7 @@ Diese wirken in jeder Ansicht.
 | Prüfen anzeigen | `⌘2` | `Ctrl+2` |
 | Messwerte anzeigen | `⌘3` | `Ctrl+3` |
 | Bericht anzeigen | `⌘E` | `Ctrl+E` |
-| Einstellungen anzeigen | `⌘,` | `Ctrl+,` |
+| Optionen anzeigen | `⌘,` | `Ctrl+,` |
 | Tastenkürzel anzeigen | `?` | `?` |
 <!-- /shortcuts -->
 

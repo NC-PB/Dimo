@@ -46,7 +46,7 @@ export class SettingsStore {
   current = $state.raw<AppSettings>(DEFAULT_SETTINGS);
   /** The operating system user name, used for the audit while `user_name` is empty. */
   osUserName = $state("");
-  /** The last failed change, shown in the settings view. */
+  /** The last failed change, shown in File > Options. */
   error = $state.raw<CommandError | null>(null);
   readonly #api: SettingsApi;
 

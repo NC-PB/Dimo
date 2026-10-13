@@ -82,7 +82,7 @@ drawing gestures ignore the real mouse, and the script prints how many real poin
 5. Tolerance settings (`tolerance.json`): box select without and with a general tolerance, and
    re-interpret.
 6. Project and report details (`details.json`): fields typed into the side panel, company name
-   and inspector from the settings.
+   and inspector from the settings of the user (Options).
 7. Measurement grid (`measure.json`, `measure-setup.json`): three samples, one column typed with
    the keyboard only, a 5 by 3 block pasted (a synthetic paste event), undone and redone.
 8. Report export (`report-export.json`, `report-cancel.json`): the inspection report as PDF and

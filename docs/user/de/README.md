@@ -11,9 +11,9 @@ ist. Dimo liest Nennmaß, Passung und aufgedruckte Toleranzen aus dem Text, best
 Grenzwerte (zuerst aufgedruckte Toleranzen, dann die Passungstabelle nach ISO 286, dann
 Allgemeintoleranz und Regeln des Projekts), erklärt, woher sie stammen, und übernimmt
 Nummerierung, Liste, Speichern und Exporte. Dimo durchsucht die Zeichnung noch nicht
-selbstständig. Ohne Allgemeintoleranz in den Projekteinstellungen wird ein Maß ohne Toleranz als
-"Keine Toleranz festgelegt" markiert; wähle eine in den **Einstellungen** oder trage seine
-Grenzwerte in der Merkmalstabelle ein.
+selbstständig. Ohne Allgemeintoleranz im Projekt wird ein Maß ohne Toleranz als "Keine Toleranz
+festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Registers **Start** oder
+**Zeichnung**, oder trage seine Grenzwerte in der Merkmalstabelle ein.
 
 ## Seiten
 
@@ -29,7 +29,7 @@ Grenzwerte in der Merkmalstabelle ein.
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | Prüfblatt und Prüfbericht, PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen und Berichte |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
-| [Einstellungen](settings.md) | Farbschema, Sprache, Benutzername, Firmenname, Ballonstil, Toleranzen |
+| [Datei-Seite, Optionen und Über Dimo](settings.md) | Projektinfo, zuletzt geöffnete Projekte, Optionen (Farbschema, Sprache, Benutzername, Firmenname, Vorgaben für Exporte), Projekteinstellungen im Register Zeichnung, Lizenzen |
 | [Tastenkürzel](shortcuts.md) | Alle Tasten für macOS sowie Windows und Linux |
 
 Drücke in der App jederzeit **?**, um die Tastenkürzel zu sehen.
@@ -82,7 +82,8 @@ nicht, du sagst es ihm also einmal in **Zeichnung einrichten**:
 **Ballonieren starten** speichert die Angaben (Rückgängig nimmt sie zurück, die Allgemeintoleranz
 als eigenen Schritt) und schaltet **Ballon setzen** ein. Später änderst du sie im Reiter
 **Zeichnung**: **Allgemeintoleranz**, **Einheit** und **Maßstab**, oder **Zeichnung einrichten**,
-das denselben Bereich wieder öffnet. Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser
+das denselben Bereich wieder öffnet. Das Feld **Allgemeintoleranz** steht auch im Reiter **Start**.
+Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser
 Tabelle. Ohne Allgemeintoleranz wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat
 keine Grenzwerte. Die mit Dimo gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre
 Werte geprüft sind. Einzelheiten: [Toleranzen](tolerances.md).
@@ -133,9 +134,9 @@ Zonenraster und Ansichten zeichnest du von Hand unter **Blatteigenschaften**. Ei
 ### 7. Die Ballons gestalten
 
 Wähle Ballons aus und drücke **S**: Form (Kreis, Fahne, Rechteck), Bezugslinie, Größe und Randfarbe.
-Der Stil des ganzen Projekts steht unter **Einstellungen**. Der Status wird neben der Farbe auch
-über die Form gezeigt. Einzelheiten: [Eine Zeichnung ballonieren](ballooning.md),
-[Einstellungen](settings.md).
+Der Stil des ganzen Projekts ist **Ballonstil des Projekts** im Register **Zeichnung**. Der Status
+wird neben der Farbe auch über die Form gezeigt. Einzelheiten: [Eine Zeichnung ballonieren](ballooning.md),
+[Datei-Seite, Optionen und Über Dimo](settings.md).
 
 ### 8. Drehung, Einheit und Maßstab des Blatts einstellen
 
@@ -187,12 +188,15 @@ vorher das Häkchen bei **Als ausgegeben exportieren**: Es sperrt die Nummerieru
 ändern sich danach nie mehr, auch wenn du Merkmale hinzufügst oder löschst, und ein Bericht wird im
 Projekt vermerkt. Einzelheiten: [Exporte](exports.md).
 
-### 12. Einstellungen
+### 12. Optionen
 
-Unter **Einstellungen** (⌘,) wählst du das Farbschema (hell, dunkel oder wie das System), die
-Sprache der App, den Benutzernamen, der in das Änderungsprotokoll jedes Projekts geschrieben wird,
-und den Firmennamen für Berichte. Die Einstellungen bleiben für den nächsten Start erhalten. Die Toleranzregeln des Projekts
-(Schritt 3) stehen in derselben Ansicht. Einzelheiten: [Einstellungen](settings.md).
+Unter **Datei** > **Optionen** (⌘,) wählst du das Farbschema (hell, dunkel oder wie das System),
+die Sprache der App, den Benutzernamen, der in das Änderungsprotokoll jedes Projekts geschrieben
+wird, den Firmennamen für Berichte und die Vorgaben für Exporte. Die Optionen bleiben für den
+nächsten Start erhalten und gehören dir, nicht einem Projekt. Das Projekt selbst (Teil,
+Toleranzen, Berichtskopf, Fortschritt) fasst **Datei** > **Info** zusammen, und **Datei** >
+**Projekt öffnen** listet deine zuletzt geöffneten Projekte. Einzelheiten:
+[Datei-Seite, Optionen und Über Dimo](settings.md).
 
 ### Wie es weitergeht
 
