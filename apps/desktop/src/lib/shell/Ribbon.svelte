@@ -73,7 +73,7 @@
     aria-label={g.label}
     data-group={g.id}
   >
-    <div class="flex min-h-20 items-start gap-1">
+    <div class="flex min-h-[6.5rem] items-start gap-1">
       {@render g.content()}
     </div>
     <div class="pt-0.5 pb-1.5 text-center text-xs text-text-muted" aria-hidden="true">
