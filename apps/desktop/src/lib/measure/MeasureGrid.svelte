@@ -27,6 +27,7 @@
   import { cellKey, editText, parseBlock, pasteEntries, resultsByCell, toggledText } from "./grid";
   import { measureUi, type MeasureUiStore } from "./measure-ui.svelte";
   import { resultTypeLabel, verdictLabel } from "./labels";
+  import MeasureBar, { type BarMove } from "./MeasureBar.svelte";
   import VerdictCounts from "./VerdictCounts.svelte";
   import VerdictMark from "./VerdictMark.svelte";
 
@@ -170,14 +171,21 @@
     return shown;
   });
 
-  /** The cell being typed in. `error`: Rust refused the last attempt. */
+  /**
+   * The cell being typed in. `error`: Rust refused the last attempt. `source`: typed in the cell
+   * (its editor has the focus) or in the value field of the Measure bar (T3.19); both show the
+   * same text.
+   */
   let editing = $state<{
     id: CharId;
     sample: SampleId;
     text: string;
     selectAll: boolean;
     error: boolean;
+    source: "cell" | "bar";
   } | null>(null);
+  /** A pointer went down on the bar's value field while the cell editor had the focus. */
+  let takeover = false;
   /** Why the last change was refused; one line above the grid. */
   let notice = $state<string | null>(null);
 
@@ -328,7 +336,7 @@
     const col = sampleIds.indexOf(sample);
     if (reopen && editing === null && index !== undefined && col >= 0) {
       setActive(index, col);
-      editing = { id, sample, text, selectAll: false, error: true };
+      editing = { id, sample, text, selectAll: false, error: true, source: "cell" };
     }
   }
 
@@ -353,6 +361,7 @@
       text: typed ?? editText(results.get(cellKey(sample, r.c.id))),
       selectAll: typed === null,
       error: false,
+      source: "cell",
     };
   }
 
@@ -391,6 +400,12 @@
     if (edit === null) {
       return;
     }
+    if (step === "blur" && takeover) {
+      // The cell editor lost the focus to the bar's value field: the edit goes on there.
+      takeover = false;
+      editing = { ...edit, source: "bar" };
+      return;
+    }
     editing = null;
     if (step !== "blur") {
       focusGrid();
@@ -400,6 +415,49 @@
       return;
     }
     void setCell(edit.id, edit.sample, edit.text, step !== "blur");
+  }
+
+  // The Measure bar (T3.19): its value field edits the active cell like the cell editor does.
+  const activeChar = $derived(active === null ? undefined : rows[activeRow]?.c);
+  const activeSampleId = $derived(active === null ? undefined : sampleIds[active.col]);
+  const activeEditing = $derived(
+    editing !== null && editing.id === activeChar?.id && editing.sample === activeSampleId
+      ? editing
+      : null,
+  );
+
+  function onBarInput(text: string) {
+    if (editing !== null) {
+      editing = { ...editing, text, error: false };
+      return;
+    }
+    const id = activeChar?.id;
+    const sample = activeSampleId;
+    if (id !== undefined && sample !== undefined) {
+      editing = { id, sample, text, selectAll: false, error: false, source: "bar" };
+    }
+  }
+
+  function onBarCommit(step: BarMove) {
+    if (editing?.source === "bar") {
+      commitEdit(step);
+    } else if (editing === null && step !== "blur") {
+      // Enter on an unchanged value moves on, as Enter on the grid does after an edit.
+      focusGrid();
+      move(step);
+    }
+  }
+
+  function onBarCancel() {
+    if (editing?.source === "bar") {
+      cancelEdit();
+    } else {
+      focusGrid();
+    }
+  }
+
+  function onBarTakeOver() {
+    takeover = editing?.source === "cell";
   }
 
   async function clearCell(id: CharId, sample: SampleId) {
@@ -679,6 +737,26 @@
      sample. A virtualized ARIA grid; the focus stays on it and `aria-activedescendant` names
      the active cell. -->
 <div class="flex min-h-0 flex-1 flex-col">
+  <MeasureBar
+    characteristic={activeChar}
+    serial={samples.find((s) => s.id === activeSampleId)?.serial}
+    value={activeEditing?.text ??
+      (activeChar !== undefined && activeSampleId !== undefined
+        ? editText(results.get(cellKey(activeSampleId, activeChar.id)))
+        : "")}
+    editing={activeEditing !== null}
+    invalid={activeEditing?.error ?? false}
+    verdict={activeChar !== undefined && activeSampleId !== undefined
+      ? (measurement.verdict(activeChar.id, activeSampleId) ?? "missing")
+      : undefined}
+    position={activeChar !== undefined && activeSampleId !== undefined
+      ? measurement.position(activeChar.id, activeSampleId)
+      : null}
+    onInput={onBarInput}
+    onCommit={onBarCommit}
+    onCancel={onBarCancel}
+    onTakeOver={onBarTakeOver}
+  />
   <header class="flex h-7 shrink-0 items-center gap-3 px-3 text-xs text-text-muted">
     <h2 class="font-semibold text-text">{m.measure_grid_label()}</h2>
     <span class="shrink-0"
@@ -963,7 +1041,7 @@
                 style:left="{FROZEN_WIDTH + col * SAMPLE_WIDTH}px"
                 style:width="{SAMPLE_WIDTH}px"
               >
-                {#if isEditing && editing}
+                {#if isEditing && editing && editing.source === "cell"}
                   <CellEditor
                     text={editing.text}
                     pending={false}
@@ -980,6 +1058,13 @@
                     onCommit={commitEdit}
                     onCancel={cancelEdit}
                   />
+                {:else if isEditing && editing}
+                  <!-- Typed in the Measure bar: the cell shows the same text (T3.19). -->
+                  <span
+                    class="editing-text flex h-full flex-1 items-center justify-end truncate px-2 tabular-nums"
+                    class:invalid={editing.error}
+                    data-testid="cell-bar-edit">{editing.text}</span
+                  >
                 {:else}
                   <span class="flex w-4 shrink-0 justify-center pl-1">
                     <VerdictMark {verdict} />
@@ -1048,6 +1133,16 @@
   .cell.active {
     outline: 1px dashed var(--dimo-border);
     outline-offset: -3px;
+  }
+
+  /* The edit of the Measure bar shown in its cell, outlined like the cell editor. */
+  .editing-text {
+    outline: 2px solid var(--dimo-focus);
+    outline-offset: -2px;
+  }
+
+  .editing-text.invalid {
+    outline-color: var(--dimo-danger);
   }
 
   /* Takes the focus for a paste (see catchPaste); invisible and out of the layout. */

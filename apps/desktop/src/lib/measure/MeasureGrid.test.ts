@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   Command,
   CommandError,
+  LimitPosition,
   MeasurementResult,
   MeasurementState,
   ProjectPatched,
@@ -78,6 +79,10 @@ function setup() {
     ...characteristic(`c${String(n)}`, n),
     requirement_text: `R${String(n)}`,
   }));
+  const c1 = project.characteristics[0];
+  if (c1) {
+    project.characteristics[0] = { ...c1, lower_limit: "9.95", upper_limit: "10.05", unit: "mm" };
+  }
   project.samples = [1, 2, 3].map(sample);
   const result = (s: string, c: string, value: MeasurementResult["value"]): MeasurementResult => ({
     sample: s,
@@ -100,13 +105,21 @@ function setup() {
     ["missing", "missing", "missing"],
     ["not_evaluated", "missing", "missing"],
   ];
+  // Where the values lie against the limits, as Rust says (T3.19).
+  const positions: (LimitPosition | null)[][] = [
+    ["on_upper", null, null],
+    [null, null, null],
+    ["above", null, null],
+    [null, null, null],
+    [null, null, null],
+  ];
   const counts = { pass: 0, fail: 0, not_evaluated: 0, missing: 0 };
   const rows: RowState[] = project.characteristics.map((c, i) => ({
     characteristic: c.id,
     result_type: types[i] ?? "variable",
     draft: false,
     cells: cells[i] ?? [],
-    positions: (cells[i] ?? []).map(() => null),
+    positions: positions[i] ?? [],
     counts,
     verdict: "open",
   }));
@@ -496,5 +509,109 @@ describe("measure grid empty states (T3.17)", () => {
   it("shows no empty state with rows and parts", async () => {
     await renderEmpty(() => undefined);
     expect(empty()).toBeNull();
+  });
+});
+
+describe("Measure bar (T3.19)", () => {
+  function bar(): HTMLInputElement {
+    const input = target.querySelector<HTMLInputElement>('[data-testid="measure-bar-value"]');
+    if (!input) {
+      throw new Error("no bar");
+    }
+    return input;
+  }
+
+  function typeInBar(text: string) {
+    const input = bar();
+    input.focus();
+    input.value = text;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+  }
+
+  function shown(testid: string): string {
+    const element = target.querySelector(`[data-testid="${testid}"]`);
+    return element?.textContent.replace(/\s+/g, " ").trim() ?? "";
+  }
+
+  it("names the active cell, its limits and Rust's verdict in words", async () => {
+    const { grid } = await render();
+    expect(shown("measure-bar-cell")).toBe("No. 1 · Part 1");
+    expect(shown("measure-bar-context")).toContain("R1");
+    expect(shown("measure-bar-context")).toContain("limits 9.95 to 10.05 mm");
+    expect(bar().value).toBe("10.05");
+    // Verdict and position are Rust's (fixture: pass, on the upper limit).
+    expect(shown("measure-bar-verdict")).toBe("pass, on the upper limit");
+    key(grid, { key: "ArrowDown" });
+    key(grid, { key: "ArrowDown" });
+    expect(shown("measure-bar-cell")).toBe("No. 3 · Part 1");
+    expect(shown("measure-bar-verdict")).toBe("not OK, above the upper limit");
+    key(grid, { key: "ArrowRight" });
+    expect(bar().value).toBe("");
+    expect(shown("measure-bar-verdict")).toBe("no value yet");
+  });
+
+  it("shows what is typed in the cell", async () => {
+    const { grid } = await render();
+    key(grid, { key: "1" });
+    expect(bar().value).toBe("1");
+    type("10,0");
+    expect(bar().value).toBe("10,0");
+    expect(target.querySelector('[data-testid="measure-bar-verdict"]')).toBeNull();
+  });
+
+  it("types into the cell from the bar; Enter commits through Rust and moves down", async () => {
+    const { rust, grid } = await render();
+    typeInBar("9.97");
+    expect(target.querySelector("input.editor")).toBeNull();
+    expect(shown("cell-bar-edit")).toBe("9.97");
+    bar().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    flushSync();
+    expect(activeCell(grid)).toBe("c2/s1");
+    expect(document.activeElement).toBe(grid);
+    await vi.waitFor(() => {
+      expect(rust.commands).toEqual([
+        {
+          type: "set_results",
+          results: [{ sample: "s1", characteristic: "c1", text: "9.97", comment: null }],
+        },
+      ]);
+    });
+  });
+
+  it("Escape in the bar cancels without a command", async () => {
+    const { rust, grid } = await render();
+    typeInBar("3");
+    bar().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    flushSync();
+    expect(target.querySelector('[data-testid="cell-bar-edit"]')).toBeNull();
+    expect(bar().value).toBe("10.05");
+    expect(activeCell(grid)).toBe("c1/s1");
+    await tick();
+    expect(rust.commands).toEqual([]);
+  });
+
+  it("continues an edit of the cell in the bar when the bar is clicked", async () => {
+    const { rust, grid } = await render();
+    key(grid, { key: "4" });
+    bar().dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    editor().dispatchEvent(new FocusEvent("blur"));
+    flushSync();
+    await tick();
+    expect(rust.commands).toEqual([]);
+    expect(target.querySelector("input.editor")).toBeNull();
+    expect(shown("cell-bar-edit")).toBe("4");
+    typeInBar("4.5");
+    bar().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    flushSync();
+    expect(activeCell(grid)).toBe("c2/s1");
+    await vi.waitFor(() => {
+      expect(rust.commands).toEqual([
+        {
+          type: "set_results",
+          results: [{ sample: "s1", characteristic: "c1", text: "4.5", comment: null }],
+        },
+      ]);
+    });
   });
 });

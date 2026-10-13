@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
 import { documentStore } from "$lib/stores/document.svelte";
 import { characteristic, emptyProject, loaded } from "$lib/stores/fixtures";
+import { measurementStore } from "$lib/stores/measurement.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
 import { view } from "$lib/stores/view.svelte";
@@ -77,6 +78,27 @@ describe("status bar (ADR 0007, T3.15)", () => {
     flushSync();
     expect(target.textContent).toContain("1 selected");
     expect(target.textContent).toContain("General tolerance: None");
+  });
+
+  it("shows Rust's totals and overall verdict with its shape in Measure (T3.19)", () => {
+    openProject();
+    view.set("measure");
+    measurementStore.state = {
+      rows: [],
+      samples: [],
+      counts: { pass: 11, fail: 4, not_evaluated: 0, missing: 2 },
+      verdict: "fail",
+      to_inspect: 6,
+      complete_samples: 2,
+    };
+    flushSync();
+    expect(target.querySelector("[data-testid=measure-totals]")?.textContent.trim()).toBe(
+      "All parts: 11 pass · 4 not OK · 2 missing",
+    );
+    const overall = target.querySelector("[data-testid=measure-overall]");
+    expect(overall?.textContent.replace(/\s+/g, " ").trim()).toBe("Overall: fail");
+    expect(overall?.querySelector("[data-mark]")?.getAttribute("data-mark")).toBe("fail");
+    measurementStore.clear();
   });
 });
 
