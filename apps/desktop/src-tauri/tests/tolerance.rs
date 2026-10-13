@@ -185,6 +185,82 @@ fn reinterpret_after_a_settings_change() {
     assert!(history.iter().all(|h| h.source == ChangeSource::Manual));
 }
 
+/// Adds a characteristic read from typed text with the current settings, as the app does.
+fn typed(session: &mut AppSession, text: &str) -> CharId {
+    use dimo_desktop::recognition::read_typed;
+    let id = add(session, text);
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    let target = session.recognition_target(sheet).unwrap();
+    let reading = read_typed(&target, text, None, ExplainLanguage::En);
+    session
+        .execute(Command::UpdateFields {
+            ids: vec![id],
+            values: reading.values,
+        })
+        .unwrap();
+    id
+}
+
+// T3.13, M3 decision 22: after the general tolerance changed, the update gives characteristics
+// without tolerance or with a general tolerance the new one, in one undo step; limits entered
+// by hand, explicit tolerances and unreadable text stay.
+#[test]
+fn general_tolerance_update_after_a_settings_change() {
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    let plain = typed(&mut session, "50");
+    let explicit = typed(&mut session, "Ø20 +0.1 -0");
+    let thread = typed(&mut session, "M8");
+    let unreadable = typed(&mut session, "SEE NOTE");
+    let manual = typed(&mut session, "60");
+    session
+        .execute(Command::UpdateFields {
+            ids: vec![manual],
+            values: vec![FieldValue::UpperLimit(d("60.5").into())],
+        })
+        .unwrap();
+    assert_eq!(limits(&session, plain), (None, None));
+    // No general tolerance yet: nothing to update.
+    assert_eq!(tolerance::general_update_candidates(&session).unwrap(), []);
+
+    session.execute(general("m")).unwrap();
+    assert_eq!(
+        tolerance::general_update_candidates(&session).unwrap(),
+        [plain]
+    );
+    let before = session.project().unwrap().clone();
+    let result = tolerance::apply_general(&mut session).unwrap();
+    assert_eq!(result.reinterpreted, 1);
+    assert_eq!(limits(&session, plain), (d("50.3"), d("49.7")));
+    for id in [explicit, thread, unreadable, manual] {
+        assert_eq!(
+            session.project().unwrap().characteristic(id),
+            before.characteristic(id)
+        );
+    }
+    assert_eq!(tolerance::general_update_candidates(&session).unwrap(), []);
+
+    // A new class updates the general tolerance again; one undo restores the old limits.
+    session.execute(general("f")).unwrap();
+    assert_eq!(
+        tolerance::general_update_candidates(&session).unwrap(),
+        [plain]
+    );
+    tolerance::apply_general(&mut session).unwrap();
+    assert_eq!(limits(&session, plain), (d("50.15"), d("49.85")));
+    assert_eq!(limits(&session, manual).0, d("60.5"));
+    session.undo().unwrap();
+    assert_eq!(limits(&session, plain), (d("50.3"), d("49.7")));
+    // After the undo the offer applies again.
+    assert_eq!(
+        tolerance::general_update_candidates(&session).unwrap(),
+        [plain]
+    );
+}
+
 // FR-TOL-07: import of a custom table, errors with the line, crash before save (M2 decision 4).
 #[test]
 fn custom_table_import_survives_a_crash() {
@@ -266,6 +342,14 @@ fn commands_need_a_project() {
     assert_eq!(tolerance::tables(&session), Err(CommandError::NoProject));
     assert!(matches!(
         tolerance::reinterpret(&mut session, &[]),
+        Err(CommandError::NoProject)
+    ));
+    assert_eq!(
+        tolerance::general_update_candidates(&session),
+        Err(CommandError::NoProject)
+    );
+    assert!(matches!(
+        tolerance::apply_general(&mut session),
         Err(CommandError::NoProject)
     ));
     assert!(matches!(

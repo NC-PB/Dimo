@@ -42,7 +42,8 @@
  *   typing and leaving the field would (input and change events), e.g. the shorter leg (T2.9a).
  * - `check`: `[label, checked]` sets the check box (or turns on the radio button) inside the
  *   label that starts with this text.
- * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons and selection).
+ * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons, selection, tool
+ *   and limits).
  */
 
 import { commands, type ExportFormat } from "$lib/ipc/bindings";
@@ -259,8 +260,20 @@ function report(label: string): string {
     times.length === 0
       ? "-"
       : `${String(times.length)} mean ${(times.reduce((a, b) => a + b, 0) / times.length).toFixed(1)} ms max ${Math.max(...times).toFixed(1)} ms`;
+  // The active tool and the tool button shown as on (T3.13), and the limits and rule of each
+  // characteristic in number order (M3 decision 22).
+  const toolOn = [...document.querySelectorAll('[data-state="on"]')]
+    .filter((e) => e.getAttribute("role") === "radio" || e.hasAttribute("data-toggle-group-item"))
+    .map((e) => e.textContent.trim())
+    .join(",");
+  const limits = [...(project?.characteristics ?? [])]
+    .map(
+      (c) =>
+        `#${String(c.number)} ${c.upper_limit ?? "-"}/${c.lower_limit ?? "-"} ${c.derivation?.rule.rule ?? "none"}`,
+    )
+    .join("; ");
   const measure = `samples ${String(project?.samples.length ?? 0)} results ${String(project?.results.length ?? 0)} verdicts [${verdicts}] overall ${measurementStore.state?.verdict ?? "-"} commits ${commits}`;
-  return `${label}: ${measure}, card [${card}], view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}`;
+  return `${label}: ${measure}, card [${card}], view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}]`;
 }
 
 async function run(step: UiStep): Promise<void> {

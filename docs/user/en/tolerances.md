@@ -63,11 +63,35 @@ the rules of this project. They are stored in the project file, and every change
   settings that use it switch to the new version.
 
 Changing the settings does not change the limits of characteristics that are already in the
-project. New characteristics, box select and typed values use the new settings.
+project by itself. New characteristics, box select and typed values use the new settings. After a
+change of the general tolerance, Dimo offers to update the existing characteristics it applies
+to, see below.
+
+## Update after a change of the general tolerance
+
+When you change the general tolerance or its class, a notice under it says how many
+characteristics have no tolerance yet or still have the previous general tolerance, and offers
+**Update n** and **Not now**. The notice appears only if at least one characteristic would
+change; other settings never show it.
+
+- **Update n** reads exactly these characteristics again with the new general tolerance, as one
+  step of undo. **Undo** restores their previous limits.
+- **Not now** closes the notice and changes nothing. You can still use **Re-interpret selected**
+  later.
+
+The update considers only characteristics whose rule is **No tolerance defined** or a general
+tolerance (of a shipped or a custom table), and characteristics whose text was never read and
+now gets the general tolerance. Characteristics with limits entered by hand, a written
+tolerance, a fit, a drawing rule or a decimal place rule never change, nor do texts that are not
+a dimension. A characteristic that stays without tolerance, for example a thread or a reference
+dimension, is not counted. The characteristics that are updated are read with all current
+settings, so a drawing rule or decimal place rule you set earlier can apply to them too. If you remove the general tolerance,
+the notice offers to remove the previous general tolerance from the characteristics that still
+have it.
 
 ## Re-interpret after a change
 
-To apply new settings to existing characteristics, select them (in the table or on the drawing)
+To apply other new settings to existing characteristics, select them (in the table or on the drawing)
 and choose **Re-interpret selected** in the side panel. Dimo reads the requirement text of each
 one again with the current settings and sets nominal, unit, deviations, limits, fit and rule. All
 of it is one step of undo.

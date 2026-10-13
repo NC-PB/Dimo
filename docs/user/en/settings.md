@@ -34,4 +34,6 @@ drawing and use **Style** (S).
 
 Shown while a project is open: general tolerance and class, drawing rule, decimal place rules,
 rounding after unit conversion, and the import of custom tables. Each change is one step of undo.
-Details: [Tolerances](tolerances.md).
+After a change of the general tolerance, a notice offers to update the characteristics without
+tolerance or with the previous general tolerance (**Update n**, **Not now**). Details:
+[Tolerances](tolerances.md).

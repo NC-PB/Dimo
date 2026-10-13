@@ -31,6 +31,12 @@
     void tolerance.refreshTables();
   });
 
+  // An offer to update characteristics (M3 decision 22) belongs to the project it was made for.
+  $effect(() => {
+    void project.session;
+    tolerance.declineGeneralUpdate();
+  });
+
   function tableLabel(t: ToleranceTableInfo): string {
     return `${t.title} (${t.table.id} v${String(t.table.version)})`;
   }
@@ -164,6 +170,47 @@
         {/if}
       </div>
     {/each}
+
+    {#if tolerance.generalOffer}
+      {@const offer = tolerance.generalOffer}
+      {@const count = String(offer.count)}
+      <div
+        class="flex flex-wrap items-center gap-2 rounded border border-accent bg-surface-raised px-3 py-2 text-sm"
+        role="status"
+        data-testid="general-offer"
+      >
+        <span aria-hidden="true">ℹ</span>
+        <p class="flex-1">
+          {#if offer.removing}
+            {offer.count === 1
+              ? m.tolerance_general_remove_one()
+              : m.tolerance_general_remove_other({ count })}
+          {:else}
+            {offer.count === 1
+              ? m.tolerance_general_offer_one()
+              : m.tolerance_general_offer_other({ count })}
+          {/if}
+        </p>
+        <button
+          type="button"
+          class="rounded bg-accent px-2 py-1 text-xs text-accent-text disabled:opacity-50"
+          disabled={tolerance.busy}
+          onclick={() => void tolerance.applyGeneralUpdate()}
+          >{m.tolerance_general_update({ count })}</button
+        >
+        <button
+          type="button"
+          class={buttonClass}
+          onclick={() => {
+            tolerance.declineGeneralUpdate();
+          }}>{m.tolerance_general_not_now()}</button
+        >
+      </div>
+    {:else if tolerance.generalUpdated !== null}
+      <p class="text-xs" role="status" data-testid="general-updated">
+        ✓ {m.tolerance_general_updated({ count: String(tolerance.generalUpdated) })}
+      </p>
+    {/if}
 
     <fieldset class="flex flex-col gap-2">
       <legend class="font-semibold">{m.tolerance_decimal_rules()}</legend>

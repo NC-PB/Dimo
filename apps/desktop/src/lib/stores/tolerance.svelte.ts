@@ -2,8 +2,10 @@
  * Tolerance settings, explanations, re-interpretation and history (T2.8, FR-TOL-07, FR-TOL-08,
  * FR-CHR-10). Rust owns every rule (ADR 0001): it lists the tables and their classes, checks
  * imported tables, builds explanations in the UI language, re-interprets characteristics and
- * sets the shorter leg of an angle (T2.9a, `set_shorter_leg`). This store only asks and sends
- * commands; settings change with the undoable `set_tolerance_settings` command.
+ * sets the shorter leg of an angle (T2.9a, `set_shorter_leg`). After the general tolerance
+ * changed, Rust lists the characteristics it would update and updates them on request (T3.13,
+ * M3 decision 22). This store only asks and sends commands; settings change with the undoable
+ * `set_tolerance_settings` command.
  */
 
 import {
@@ -21,6 +23,7 @@ import {
   type ProjectPatched,
   type Reinterpreted,
   type SheetId,
+  type TableClass,
   type TableImport,
   type ToleranceSettings,
   type ToleranceTableInfo,
@@ -38,6 +41,8 @@ export interface ToleranceApi {
   reinterpretCharacteristics(ids: CharId[]): Promise<Result<Reinterpreted>>;
   importToleranceTable(): Promise<Result<TableImport>>;
   setShorterLeg(id: CharId, leg: string | null): Promise<Result<LegSet>>;
+  generalToleranceCandidates(): Promise<Result<CharId[]>>;
+  applyGeneralTolerance(): Promise<Result<Reinterpreted>>;
 }
 
 /**
@@ -54,6 +59,8 @@ export function sheetOf(project: Project, c: Characteristic): SheetId | null {
 /** What the store needs of the project: its state, the command path and patch results. */
 export interface ToleranceProject {
   readonly project: Project | null;
+  /** Revision of the open project; every applied patch raises it. */
+  readonly revision: number;
   execute(command: Command): Promise<Patch | undefined>;
   applyPatched(event: ProjectPatched): void;
 }
@@ -92,6 +99,20 @@ export class ToleranceStore {
   legError = $state.raw<{ id: CharId; error: CommandError } | null>(null);
   /** What the last shorter leg did with the limits of that characteristic (T2.9a). */
   legOutcome = $state.raw<{ id: CharId; outcome: LegOutcome } | null>(null);
+  /**
+   * How many characteristics Rust would give the new general tolerance, offered after the
+   * general tolerance changed (M3 decision 22), and whether the general tolerance was removed
+   * (the update then takes the previous one away); `null` when there is no offer. The offer
+   * holds only for the project revision it was counted on: undo, redo or any other change
+   * withdraws it, so the number shown is always the number Update changes.
+   */
+  get generalOffer(): { count: number; removing: boolean } | null {
+    const offer = this.#offer;
+    return offer !== null && offer.revision === this.#project.revision ? offer : null;
+  }
+  #offer = $state.raw<{ count: number; removing: boolean; revision: number } | null>(null);
+  /** How many characteristics the last accepted offer updated, for a confirmation line. */
+  generalUpdated = $state<number | null>(null);
 
   readonly #api: ToleranceApi;
   readonly #project: ToleranceProject;
@@ -135,17 +156,71 @@ export class ToleranceStore {
     }
   }
 
-  /** Sets tolerance settings as one undo step. Limits of characteristics do not change. */
+  /**
+   * Sets tolerance settings as one undo step. Limits of characteristics do not change. If the
+   * general tolerance changed, asks Rust which characteristics it would update and offers that
+   * (M3 decision 22); other edits withdraw an open offer.
+   */
   async setSettings(change: Partial<ToleranceSettings>): Promise<boolean> {
     const settings = this.settings;
     if (settings === null) {
       return false;
     }
+    const generalChanged =
+      "general" in change && !sameChoice(change.general ?? null, settings.general);
+    this.#offer = null;
+    this.generalUpdated = null;
     const patch = await this.#project.execute({
       type: "set_tolerance_settings",
       settings: { ...settings, ...change },
     });
-    return patch !== undefined;
+    if (patch === undefined) {
+      return false;
+    }
+    if (generalChanged) {
+      await this.#offerGeneralUpdate((change.general ?? null) === null);
+    }
+    return true;
+  }
+
+  async #offerGeneralUpdate(removing: boolean): Promise<void> {
+    const result = await call(() => this.#api.generalToleranceCandidates());
+    if (result.status === "error") {
+      this.error = result.error;
+      return;
+    }
+    const count = result.data.length;
+    this.#offer = count > 0 ? { count, removing, revision: this.#project.revision } : null;
+  }
+
+  /** Not now: the offer goes away, nothing changes. */
+  declineGeneralUpdate(): void {
+    this.#offer = null;
+  }
+
+  /**
+   * Update: Rust gives the characteristics without tolerance or with a general tolerance the
+   * current general tolerance, one undo step; limits entered by hand stay.
+   */
+  async applyGeneralUpdate(): Promise<Reinterpreted | null> {
+    if (this.busy) {
+      return null;
+    }
+    this.busy = true;
+    try {
+      const result = await call(() => this.#api.applyGeneralTolerance());
+      if (result.status === "error") {
+        this.error = result.error;
+        return null;
+      }
+      this.error = null;
+      this.#offer = null;
+      this.generalUpdated = result.data.reinterpreted;
+      this.#project.applyPatched(result.data.patched);
+      return result.data;
+    } finally {
+      this.busy = false;
+    }
   }
 
   /** Lets the user pick a custom table file; Rust reads, checks and stores it. */
@@ -247,7 +322,17 @@ export class ToleranceStore {
     this.lastReinterpretation = null;
     this.legError = null;
     this.legOutcome = null;
+    this.#offer = null;
+    this.generalUpdated = null;
   }
+}
+
+/** True if two table and class choices name the same table version and class. */
+function sameChoice(a: TableClass | null, b: TableClass | null): boolean {
+  if (a === null || b === null) {
+    return a === b;
+  }
+  return a.table.id === b.table.id && a.table.version === b.table.version && a.class === b.class;
 }
 
 /** Tolerance state of the app window. */

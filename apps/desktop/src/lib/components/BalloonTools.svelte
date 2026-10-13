@@ -18,6 +18,15 @@
       null,
   );
 
+  /**
+   * The store owns the tool; the toggle group only reads and writes it (T3.13). A single group
+   * reports "" when its active item is clicked again. That means "stop this tool", so it returns
+   * to Select; a one-way value would leave the button off while the store kept placing.
+   */
+  function toolFromGroup(value: string): Tool {
+    return value === "place" ? "place" : "select";
+  }
+
   function hint(action: ShortcutAction): string {
     return `${shortcutLabel(action)} (${shortcutKeys(action)})`;
   }
@@ -35,12 +44,12 @@
     type="single"
     class="flex items-center gap-0.5"
     aria-label={m.tool_label()}
-    value={balloonTools.tool}
-    onValueChange={(value) => {
-      if (value === "select" || value === "place") {
-        balloonTools.setTool(value satisfies Tool);
+    bind:value={
+      () => balloonTools.tool,
+      (value) => {
+        balloonTools.setTool(toolFromGroup(value));
       }
-    }}
+    }
     disabled={!hasDocument}
   >
     <ToggleGroup.Item value="select" class={itemClass} title={hint("select_tool")}>

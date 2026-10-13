@@ -27,6 +27,8 @@
     "allow-explain-characteristic",
     "allow-characteristic-history",
     "allow-reinterpret-characteristics",
+    "allow-general-tolerance-candidates",
+    "allow-apply-general-tolerance",
     "allow-set-shorter-leg",
     "allow-import-tolerance-table",
     "allow-measurement-state",

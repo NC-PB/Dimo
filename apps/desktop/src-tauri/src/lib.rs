@@ -60,6 +60,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             tolerance::explain_characteristic,
             tolerance::characteristic_history,
             tolerance::reinterpret_characteristics,
+            tolerance::general_tolerance_candidates,
+            tolerance::apply_general_tolerance,
             tolerance::set_shorter_leg,
             tolerance::import_tolerance_table,
             measurement::measurement_state,
