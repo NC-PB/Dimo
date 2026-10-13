@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     blank_columns: 3,
     check_sheet_format: "pdf",
     inspection_report_format: "pdf",
+    open_after_export: false,
   },
 };
 

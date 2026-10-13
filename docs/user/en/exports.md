@@ -17,7 +17,7 @@ The suggested file names follow the project file (or the drawing, for a project 
 saved): `part_ballooned.pdf`, `part_characteristics.csv`, `part_characteristics.xlsx`,
 `part_check-sheet.pdf` or `.xlsx`, and `part_inspection-report.pdf` or `.xlsx`.
 
-Options. All but the last are remembered for the next start, as is the format chosen for each
+Options. All but **Export as issued** are remembered for the next start, as is the format chosen for each
 report:
 
 - **Language**: English or German headers in the CSV and Excel files, and the language of the
@@ -26,6 +26,12 @@ report:
   show, hide or delete.
 - **Blank result columns**: how many empty result columns a check sheet gets when the project
   has no samples, 1 to 10 (default 3).
+- **Open the file after exporting**: when an export has finished and the file is written, Dimo
+  opens it with the program your computer uses for that file type, for example your PDF viewer
+  for a check sheet you want to print. Off by default. It applies to every export in the view.
+  Dimo only opens the file it just wrote, and only if its name still ends in the extension of the
+  export (`.pdf`, `.csv` or `.xlsx`). If no program is set up for the type, the file is still
+  saved and the export shows a notice.
 - **Export as issued**: locks the numbering. Use it for drawings and reports that go to a
   customer. While locked, numbers never change, deleted numbers are not reused, a new
   characteristic gets the highest number ever used plus one, and rows of the table cannot be

@@ -101,6 +101,8 @@ pub struct ExportPreferences {
     pub check_sheet_format: ReportFormat,
     /// File format of the inspection report.
     pub inspection_report_format: ReportFormat,
+    /// Open the written file with the system default application after a successful export.
+    pub open_after_export: bool,
 }
 
 impl Default for ExportPreferences {
@@ -111,6 +113,7 @@ impl Default for ExportPreferences {
             blank_columns: dimo_report::DEFAULT_BLANK_COLUMNS,
             check_sheet_format: ReportFormat::Pdf,
             inspection_report_format: ReportFormat::Pdf,
+            open_after_export: false,
         }
     }
 }
@@ -350,6 +353,7 @@ mod tests {
                 blank_columns: 5,
                 check_sheet_format: ReportFormat::Xlsx,
                 inspection_report_format: ReportFormat::Pdf,
+                open_after_export: true,
             },
         };
         settings.save(&path).unwrap();
@@ -371,6 +375,10 @@ mod tests {
             "older files get the default"
         );
         assert_eq!(loaded.export.check_sheet_format, ReportFormat::Pdf);
+        assert!(
+            !loaded.export.open_after_export,
+            "off unless the file says so"
+        );
         assert_eq!(loaded.theme, Theme::System);
         std::fs::write(&path, r#"{"export": {"blank_columns": 40}}"#).unwrap();
         assert_eq!(AppSettings::load(&path).export.blank_columns, 10);

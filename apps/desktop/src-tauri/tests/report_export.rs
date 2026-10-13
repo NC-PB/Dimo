@@ -53,6 +53,7 @@ fn request(format: ExportFormat, language: ReportLanguage) -> ExportRequest {
         pdf_balloons: PdfBalloons::PageContent,
         blank_columns: 4,
         issued: false,
+        open_after: false,
     }
 }
 

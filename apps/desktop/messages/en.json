@@ -290,6 +290,8 @@
   "export_pdf_balloons": "Balloons in the PDF",
   "export_pdf_page_content": "Part of the page",
   "export_pdf_annotations": "Annotations (PDF viewers can hide them)",
+  "export_open_after": "Open the file after exporting",
+  "export_open_failed": "The file was saved but could not be opened: {message}",
   "export_issued": "Export as issued (locks the numbering)",
   "export_issued_hint": "For drawings and reports that go to a customer. Numbers then stay fixed; new characteristics get the next free number. A report exported as issued is recorded in the project.",
   "export_locked": "The numbering is locked. Reports exported as issued are still recorded.",

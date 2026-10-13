@@ -18,7 +18,7 @@ Die vorgeschlagenen Dateinamen folgen der Projektdatei (bei einem nie gespeicher
 Zeichnung): `teil_ballooned.pdf`, `teil_characteristics.csv`, `teil_characteristics.xlsx`,
 `teil_check-sheet.pdf` oder `.xlsx` und `teil_inspection-report.pdf` oder `.xlsx`.
 
-Optionen. Alle außer der letzten werden für den nächsten Start gespeichert, ebenso das für jeden
+Optionen. Alle außer **Als ausgegeben exportieren** werden für den nächsten Start gespeichert, ebenso das für jeden
 Bericht gewählte Format:
 
 - **Sprache**: englische oder deutsche Überschriften in den CSV- und Excel-Dateien und die
@@ -27,6 +27,13 @@ Bericht gewählte Format:
   ein- und ausblenden oder löschen können.
 - **Leere Ergebnisspalten**: wie viele leere Ergebnisspalten ein Prüfblatt erhält, wenn das
   Projekt keine Teile hat, 1 bis 10 (Standard 3).
+- **Datei nach dem Export öffnen**: Ist ein Export fertig und die Datei geschrieben, öffnet Dimo
+  sie mit dem Programm, das dein Computer für diesen Dateityp verwendet, zum Beispiel dein
+  PDF-Programm für ein Prüfblatt, das du ausdrucken willst. Standardmäßig aus. Es gilt für jeden
+  Export in der Ansicht. Dimo öffnet nur die Datei, die es gerade geschrieben hat, und nur wenn
+  ihr Name noch auf die Endung des Exports lautet (`.pdf`, `.csv` oder `.xlsx`). Ist für den Typ
+  kein Programm eingerichtet, wird die Datei trotzdem gespeichert und der Export zeigt einen
+  Hinweis.
 - **Als ausgegeben exportieren**: sperrt die Nummerierung. Für Zeichnungen und Berichte, die
   an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
   werden nicht wieder vergeben, ein neues Merkmal erhält die höchste je vergebene Nummer plus

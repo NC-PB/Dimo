@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type {
   ExportRequest,
   JobFinished,
@@ -6,6 +6,7 @@ import type {
   ReportKind,
   ReportWarnings,
 } from "$lib/ipc/bindings";
+import { DEFAULT_SETTINGS, settingsStore } from "./settings.svelte";
 import { ExportStore, reportExport, type ExportApi } from "./export.svelte";
 
 const NO_WARNINGS: ReportWarnings = {
@@ -71,14 +72,28 @@ describe("export store (T1.9)", () => {
         pdf_balloons: "page_content",
         blank_columns: 3,
         issued: true,
+        open_after: false,
       },
     ]);
     expect(store.job("csv")).toEqual({ state: "running", fraction: 0 });
     expect(store.busy("csv")).toBe(true);
     rust.progress({ id: 7, fraction: 0.8, message: "writing" });
     expect(store.job("csv")).toEqual({ state: "running", fraction: 0.8 });
-    rust.finished({ id: 7, outcome: { state: "done", file_name: "part.csv", issued: null } });
-    expect(store.job("csv")).toEqual({ state: "done", fileName: "part.csv", issued: null });
+    rust.finished({
+      id: 7,
+      outcome: {
+        state: "done",
+        file_name: "part.csv",
+        issued: null,
+        open_error: null,
+      },
+    });
+    expect(store.job("csv")).toEqual({
+      state: "done",
+      fileName: "part.csv",
+      issued: null,
+      openError: null,
+    });
     expect(store.busy("csv")).toBe(false);
     expect(store.job("xlsx")).toBeNull();
   });
@@ -169,12 +184,18 @@ describe("report exports (T3.8)", () => {
     expect(rust.requests.map((r) => [r.format, r.issued])).toEqual([["check_sheet_pdf", true]]);
     rust.finished({
       id: 5,
-      outcome: { state: "done", file_name: "p.pdf", issued: { state: "recorded" } },
+      outcome: {
+        state: "done",
+        file_name: "p.pdf",
+        issued: { state: "recorded" },
+        open_error: null,
+      },
     });
     expect(store.job("check_sheet_pdf")).toEqual({
       state: "done",
       fileName: "p.pdf",
       issued: { state: "recorded" },
+      openError: null,
     });
   });
 
@@ -186,5 +207,38 @@ describe("report exports (T3.8)", () => {
     expect(rust.asked).toEqual(["inspection_report"]);
     expect(store.pending).toBeNull();
     expect(rust.requests.map((r) => r.format)).toEqual(["inspection_report_pdf"]);
+  });
+});
+
+describe("open after export", () => {
+  afterEach(() => {
+    settingsStore.current = DEFAULT_SETTINGS;
+  });
+
+  it("sends the remembered preference and keeps an open error", async () => {
+    const rust = fakeApi(9);
+    const store = new ExportStore(rust.api);
+    await store.connect();
+    settingsStore.current = {
+      ...DEFAULT_SETTINGS,
+      export: { ...DEFAULT_SETTINGS.export, open_after_export: true },
+    };
+    await store.start("xlsx");
+    expect(rust.requests.map((r) => r.open_after)).toEqual([true]);
+    rust.finished({
+      id: 9,
+      outcome: {
+        state: "done",
+        file_name: "p.xlsx",
+        issued: null,
+        open_error: { kind: "export", message: "no application" },
+      },
+    });
+    expect(store.job("xlsx")).toEqual({
+      state: "done",
+      fileName: "p.xlsx",
+      issued: null,
+      openError: { kind: "export", message: "no application" },
+    });
   });
 });

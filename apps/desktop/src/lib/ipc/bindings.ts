@@ -1120,6 +1120,8 @@ export type ExportPreferences = {
 	check_sheet_format: ReportFormat,
 	/**  File format of the inspection report. */
 	inspection_report_format: ReportFormat,
+	/**  Open the written file with the system default application after a successful export. */
+	open_after_export: boolean,
 };
 
 /**  An export the user asked for. */
@@ -1140,6 +1142,8 @@ export type ExportRequest = {
 	blank_columns: number,
 	/**  Export as issued (D-23): locks the numbering; a report is also recorded as issued. */
 	issued: boolean,
+	/**  After a successful job, open the written file with the system default application. */
+	open_after: boolean,
 };
 
 /**
@@ -1323,7 +1327,12 @@ export type JobOutcome =
 /**  File name of the written file, without the directory. */
 file_name: string; 
 /**  For a report exported as issued: whether it was recorded. `null` otherwise. */
-issued: IssuedRecord | null } | 
+issued: IssuedRecord | null; 
+/**
+ *  If the request asked to open the file and that failed: why. The file was written.
+ *  `null` if the file was opened or not asked for.
+ */
+open_error: CommandError | null } | 
 /**  Nothing was written. */
 { state: "failed"; 
 /**  Why. */

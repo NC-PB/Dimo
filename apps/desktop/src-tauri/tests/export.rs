@@ -43,6 +43,7 @@ fn request(format: ExportFormat) -> ExportRequest {
         pdf_balloons: PdfBalloons::PageContent,
         blank_columns: 3,
         issued: false,
+        open_after: false,
     }
 }
 

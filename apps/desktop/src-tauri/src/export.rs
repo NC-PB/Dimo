@@ -138,6 +138,8 @@ pub struct ExportRequest {
     pub blank_columns: u8,
     /// Export as issued (D-23): locks the numbering; a report is also recorded as issued.
     pub issued: bool,
+    /// After a successful job, open the written file with the system default application.
+    pub open_after: bool,
 }
 
 /// What happened to the "issued" record of a report exported as issued (M3 decision 17).
@@ -166,6 +168,9 @@ pub enum JobOutcome {
         file_name: String,
         /// For a report exported as issued: whether it was recorded. `null` otherwise.
         issued: Option<IssuedRecord>,
+        /// If the request asked to open the file and that failed: why. The file was written.
+        /// `null` if the file was opened or not asked for.
+        open_error: Option<CommandError>,
     },
     /// Nothing was written.
     Failed {
@@ -420,6 +425,68 @@ pub fn write_file(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
     Ok(())
 }
 
+/// Opens the file `path` that an export job just wrote, through `opener`. Refused if the
+/// extension is not the one of `format`: the user can type any file name in the save dialog, and
+/// a file of another type (a script, say) must never be started from here.
+fn open_written_file(
+    path: &Path,
+    format: ExportFormat,
+    opener: impl FnOnce(&Path) -> std::io::Result<()>,
+) -> Result<(), CommandError> {
+    let matches = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case(format.extension()));
+    if !matches {
+        return Err(export_error(format!(
+            "not opened: {} is not a .{} file",
+            path.display(),
+            format.extension()
+        )));
+    }
+    opener(path).map_err(|e| export_error(format!("cannot open {}: {e}", path.display())))
+}
+
+/// The process that opens `path` with the default application of the operating system. The path
+/// is one argument, never part of a shell string. It must be absolute, so it cannot be read as
+/// an option.
+fn open_command(path: &Path) -> std::io::Result<std::process::Command> {
+    let path = std::path::absolute(path)?;
+    let mut command;
+    if cfg!(target_os = "macos") {
+        command = std::process::Command::new("open");
+        command.arg(&path);
+    } else if cfg!(target_os = "windows") {
+        // `start` is a command of cmd.exe. Rust quotes an argument with spaces, which protects
+        // `&` and `^`; `%` would still be expanded by cmd, so such a path is refused.
+        if path.to_string_lossy().contains(['%', '"']) {
+            return Err(std::io::Error::other(
+                "the file name contains % or a double quote",
+            ));
+        }
+        command = std::process::Command::new("cmd");
+        command.args(["/C", "start", ""]).arg(&path);
+    } else {
+        command = std::process::Command::new("xdg-open");
+        command.arg(&path);
+    }
+    Ok(command)
+}
+
+/// Starts the default application for `path` and does not wait for it.
+fn open_with_system(path: &Path) -> std::io::Result<()> {
+    let mut child = open_command(path)?
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()?;
+    // Reap the launcher (`open`, `xdg-open`) without blocking the job thread for long; the
+    // application itself keeps running.
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+    Ok(())
+}
+
 /// `path` with the extension of `format` if it has none.
 fn with_extension(mut path: PathBuf, format: ExportFormat) -> PathBuf {
     if path.extension().is_none() {
@@ -630,6 +697,11 @@ impl Job<'_> {
         let outcome = match result {
             Ok(sha256) => {
                 let issued = issued.map(|info| self.record(info, sha256));
+                let open_error = self
+                    .request
+                    .open_after
+                    .then(|| open_written_file(self.path, self.request.format, open_with_system))
+                    .and_then(Result::err);
                 progress(1.0, "done");
                 JobOutcome::Done {
                     file_name: self
@@ -638,6 +710,7 @@ impl Job<'_> {
                         .map(|n| n.to_string_lossy().into_owned())
                         .unwrap_or_default(),
                     issued,
+                    open_error,
                 }
             }
             Err(JobStop::Cancelled) => JobOutcome::Cancelled,
@@ -694,6 +767,67 @@ impl Job<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn open_after_export_opens_only_files_of_the_exported_type() {
+        let mut opened = Vec::new();
+        let ok = open_written_file(
+            Path::new("/tmp/part_check-sheet.PDF"),
+            ExportFormat::CheckSheetPdf,
+            |p| {
+                opened.push(p.to_path_buf());
+                Ok(())
+            },
+        );
+        assert!(ok.is_ok());
+        assert_eq!(opened, [PathBuf::from("/tmp/part_check-sheet.PDF")]);
+        for (name, format) in [
+            ("/tmp/run.bat", ExportFormat::CheckSheetPdf),
+            ("/tmp/noextension", ExportFormat::Csv),
+            ("/tmp/list.xlsx", ExportFormat::Csv),
+        ] {
+            let refused = open_written_file(Path::new(name), format, |_| {
+                panic!("{name} must not be opened")
+            });
+            assert!(
+                matches!(refused, Err(CommandError::Export { .. })),
+                "{name}"
+            );
+        }
+        let failed = open_written_file(Path::new("/tmp/a.csv"), ExportFormat::Csv, |_| {
+            Err(std::io::Error::other("no application"))
+        });
+        assert!(
+            matches!(&failed, Err(CommandError::Export { message }) if message.contains("no application")),
+            "{failed:?}"
+        );
+    }
+
+    #[test]
+    fn open_command_passes_the_path_as_one_argument() {
+        let path = Path::new("/tmp/a b; touch x & c.pdf");
+        let command = open_command(path).unwrap();
+        let args: Vec<_> = command.get_args().collect();
+        let last = args.last().unwrap();
+        assert_eq!(
+            std::path::Path::new(last),
+            std::path::absolute(path).unwrap()
+        );
+        if cfg!(target_os = "macos") {
+            assert_eq!(command.get_program(), "open");
+            assert_eq!(args.len(), 1);
+        } else if cfg!(target_os = "windows") {
+            assert_eq!(command.get_program(), "cmd");
+            assert_eq!(args.len(), 4);
+        } else {
+            assert_eq!(command.get_program(), "xdg-open");
+            assert_eq!(args.len(), 1);
+        }
+        // A relative path becomes absolute, so it cannot look like an option.
+        let relative = open_command(Path::new("-n.pdf")).unwrap();
+        let arg = relative.get_args().last().unwrap().to_owned();
+        assert!(Path::new(&arg).is_absolute());
+    }
 
     #[test]
     fn file_names_follow_the_project() {
