@@ -9,3 +9,15 @@ This product bundles the fonts Open Sans Regular and Open Sans Bold 1.10
 (data/fonts/OpenSans-Regular.ttf, data/fonts/OpenSans-Bold.ttf),
 Digitized data copyright 2010-2011 Google Corporation, licensed under the Apache License,
 Version 2.0. See data/fonts/README.md.
+
+This product bundles the font Space Grotesk 2.000, Medium and Bold
+(data/fonts/SpaceGrotesk-Medium.woff2, data/fonts/SpaceGrotesk-Bold.woff2),
+Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk),
+licensed under the SIL Open Font License, Version 1.1. The full license text is in
+data/fonts/SpaceGrotesk-OFL.txt. See data/fonts/README.md.
+
+This product bundles the font JetBrains Mono 2.211, upright variable font, Latin subsets
+(data/fonts/JetBrainsMono-latin.woff2, data/fonts/JetBrainsMono-latin-ext.woff2),
+Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono),
+licensed under the SIL Open Font License, Version 1.1. The full license text is in
+data/fonts/JetBrainsMono-OFL.txt. See data/fonts/README.md.

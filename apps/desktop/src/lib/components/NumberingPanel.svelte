@@ -129,7 +129,7 @@
       <div>
         <button
           type="button"
-          class="rounded bg-accent px-3 py-1 text-sm text-accent-text disabled:opacity-50"
+          class="rounded bg-accent-strong px-3 py-1 text-sm text-accent-ink disabled:opacity-50"
           disabled={projectStore.characteristics.length === 0}
           onclick={() => void numberingStore.apply()}>{m.numbering_apply()}</button
         >

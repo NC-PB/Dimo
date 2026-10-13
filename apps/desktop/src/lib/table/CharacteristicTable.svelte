@@ -921,7 +921,7 @@
 
   .ghost.changed {
     border-color: var(--dimo-accent);
-    color: var(--dimo-accent);
+    color: var(--dimo-accent-strong);
     font-weight: 700;
   }
 

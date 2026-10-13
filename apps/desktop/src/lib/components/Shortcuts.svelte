@@ -226,7 +226,7 @@
         </tbody>
       </table>
       <div class="mt-4 flex justify-end">
-        <Dialog.Close class="rounded bg-accent px-3 py-1 text-sm text-accent-text">
+        <Dialog.Close class="rounded bg-accent-strong px-3 py-1 text-sm text-accent-ink">
           {m.close()}
         </Dialog.Close>
       </div>

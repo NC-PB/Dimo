@@ -389,7 +389,7 @@
       <div class="flex gap-2">
         <button
           type="button"
-          class="rounded bg-accent px-3 py-1.5 text-sm text-accent-text disabled:opacity-50"
+          class="rounded bg-accent-strong px-3 py-1.5 text-sm text-accent-ink disabled:opacity-50"
           disabled={projectStore.busy}
           onclick={() => void projectStore.newProject()}
         >

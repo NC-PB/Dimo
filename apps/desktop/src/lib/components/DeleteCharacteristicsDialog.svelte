@@ -48,7 +48,7 @@
         <!-- Plain button: it answers first, which also closes the dialog. -->
         <button
           type="button"
-          class="{buttonClass} bg-danger text-accent-text"
+          class="{buttonClass} bg-danger text-accent-ink"
           onclick={() => void balloonTools.confirmDelete()}
         >
           {m.delete_results_yes()}

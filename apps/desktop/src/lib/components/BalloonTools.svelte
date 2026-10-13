@@ -25,7 +25,7 @@
   const buttonClass =
     "rounded px-2 py-1 text-sm text-text hover:bg-surface-raised disabled:opacity-40 disabled:hover:bg-transparent";
   const itemClass =
-    "rounded px-2 py-1 text-sm text-text hover:bg-surface-raised data-[state=on]:bg-accent data-[state=on]:text-accent-text";
+    "rounded px-2 py-1 text-sm text-text hover:bg-surface-raised data-[state=on]:bg-accent-strong data-[state=on]:text-accent-ink";
   const optionClass =
     "flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-text hover:bg-surface-raised aria-pressed:border-accent aria-pressed:ring-2 aria-pressed:ring-accent";
 </script>
