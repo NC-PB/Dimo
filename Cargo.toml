@@ -23,7 +23,8 @@ dimo-report = { path = "crates/dimo-report" }
 
 # External crates, exact versions (AGENTS.md rule 10)
 # Dates for PDF annotations (T1.2). Already in the tree through pdfium-render, whose
-# annotation API takes chrono types; the clock is never read.
+# annotation API takes chrono types; the clock is never read there.
+# dimo-desktop turns on `clock` for the local report date (T3.9).
 chrono = { version = "=0.4.45", default-features = false }
 clap = { version = "=4.6.7", features = ["derive"] }
 insta = { version = "=1.48.0" }

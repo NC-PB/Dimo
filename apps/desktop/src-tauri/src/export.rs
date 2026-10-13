@@ -456,20 +456,34 @@ fn open_command(path: &Path) -> std::io::Result<std::process::Command> {
         command = std::process::Command::new("open");
         command.arg(&path);
     } else if cfg!(target_os = "windows") {
-        // `start` is a command of cmd.exe. Rust quotes an argument with spaces, which protects
-        // `&` and `^`; `%` would still be expanded by cmd, so such a path is refused.
-        if path.to_string_lossy().contains(['%', '"']) {
-            return Err(std::io::Error::other(
-                "the file name contains % or a double quote",
-            ));
-        }
+        // `start` is a command of cmd.exe. Rust quotes an argument only if it has a space, so the
+        // path is quoted by hand and passed raw: inside double quotes `& | < > ^ ( )` are plain
+        // characters to cmd.
+        let quoted = windows_start_argument(&path)?;
         command = std::process::Command::new("cmd");
-        command.args(["/C", "start", ""]).arg(&path);
+        command.args(["/C", "start", ""]);
+        #[cfg(windows)]
+        std::os::windows::process::CommandExt::raw_arg(&mut command, quoted);
+        #[cfg(not(windows))]
+        command.arg(quoted);
     } else {
         command = std::process::Command::new("xdg-open");
         command.arg(&path);
     }
     Ok(command)
+}
+
+/// The path as the quoted argument of `cmd /C start "" <path>`. Inside double quotes cmd treats
+/// most operators as text, but `%` is still expanded and `"` would end the quote, so a path
+/// with either is refused. Not Windows specific code, so every platform tests it.
+fn windows_start_argument(path: &Path) -> std::io::Result<String> {
+    let text = path.to_string_lossy();
+    if text.contains(['%', '"', '\n', '\r', '\0']) {
+        return Err(std::io::Error::other(
+            "the file name contains %, a double quote or a line break",
+        ));
+    }
+    Ok(format!("\"{text}\""))
 }
 
 /// Starts the default application for `path` and does not wait for it.
@@ -830,6 +844,15 @@ mod tests {
             matches!(&failed, Err(CommandError::Export { message }) if message.contains("no application")),
             "{failed:?}"
         );
+    }
+
+    #[test]
+    fn windows_start_argument_is_quoted_and_refuses_expansion() {
+        let quoted = windows_start_argument(Path::new(r"C:\Temp\a&calc (1) ^b.pdf")).unwrap();
+        assert_eq!(quoted, "\"C:\\Temp\\a&calc (1) ^b.pdf\"");
+        for bad in ["a%PATH%.pdf", "a\"b.pdf", "a\nb.pdf"] {
+            assert!(windows_start_argument(Path::new(bad)).is_err(), "{bad}");
+        }
     }
 
     #[test]
