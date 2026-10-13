@@ -56,7 +56,7 @@ Schritt 9, aber Dimo hält schon jetzt eine wiederherstellbare Kopie von allem, 
 
 Rechts öffnet Dimo **Zeichnung einrichten**. Beantworte es aus dem Schriftfeld (Schritt 3) und
 klicke **Ballonieren starten**, oder klicke **Überspringen** und stelle alles später ein. Liegt
-das Blatt quer, drehe es mit **Nach links drehen** oder **Nach rechts drehen** im Reiter
+das Blatt quer, drehe es mit **Links drehen** oder **Rechts drehen** im Reiter
 **Zeichnung**, wie in Schritt 8.
 
 ### 2. Sich umsehen
@@ -109,8 +109,8 @@ Erklärung und Verlauf eines Merkmals im Eigenschaftenbereich rechts zu sehen
 
 Die Tabelle unter der Zeichnung hat eine Zeile pro Ballon. Der gelesene oder getippte Text steht in
 der Spalte **Anforderung**, Art, Nennmaß, Passung und aufgedruckte Toleranzen sind schon
-ausgefüllt. Ergänze, was die Prüfung braucht: **Art**, **Nennmaß**, **Oberes Abmaß** und
-**Unteres Abmaß** (Dimo berechnet **Obere Grenze** und **Untere Grenze**), **Einheit**,
+ausgefüllt. Ergänze, was die Prüfung braucht: **Art**, **Nennmaß**, **Ob. Abmaß** und
+**Unt. Abmaß** (Dimo berechnet **Obere Grenze** und **Untere Grenze**), **Einheit**,
 **Passung**, **Anzahl**, **Klasse** sowie die Spalten für Prüfmethode, Prüfmittel, Stichprobe und
 Häufigkeit. Doppelklicke eine Zelle oder beginne zu tippen, bestätige mit Enter, gehe mit Tab
 weiter. Nimm bei Hilfsmaßen und theoretisch genauen Maßen, die nicht gemessen werden, das Häkchen

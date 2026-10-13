@@ -43,8 +43,8 @@ muss die Zeichnung den Fokus haben.
 | Vergrößern | `+` oder `=` | `+` oder `=` |
 | Verkleinern | `-` oder `_` | `-` oder `_` |
 | Blatt einpassen | `0` | `0` |
-| Nach rechts drehen | `R` | `R` |
-| Nach links drehen | `⇧R` | `Shift+R` |
+| Rechts drehen | `R` | `R` |
+| Links drehen | `⇧R` | `Shift+R` |
 | Nach links verschieben | `←` | `←` |
 | Nach rechts verschieben | `→` | `→` |
 | Nach oben verschieben | `↑` | `↑` |

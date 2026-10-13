@@ -320,7 +320,20 @@ function report(label: string): string {
   const region = r
     ? ` region ${r.x.toFixed(1)},${r.y.toFixed(1)} ${r.width.toFixed(1)}x${r.height.toFixed(1)}`
     : "";
-  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}]`;
+  // Ribbon fit (T3.20 German length check): groups in the row, whether "More" is shown, and
+  // command labels that wrap to more than two lines.
+  const rowGroups = [...document.querySelectorAll<HTMLElement>("[role=group][data-group]")];
+  const groupsInRow = rowGroups.length;
+  const groupWidths = rowGroups.map((g) => `${g.dataset.group ?? "?"}:${String(g.offsetWidth)}`);
+  const more = document.querySelector("[data-ribbon-more]") !== null;
+  const tall = [...document.querySelectorAll<HTMLElement>("button.cmd > span")]
+    .filter((s) => {
+      const line = parseFloat(getComputedStyle(s).lineHeight);
+      return line > 0 && s.getBoundingClientRect().height > line * 2.5;
+    })
+    .map((s) => s.textContent.trim());
+  const ribbon = `ribbon ${String(groupsInRow)} groups more ${more ? "yes" : "no"} tall [${tall.join("; ")}] width ${String(window.innerWidth)} [${groupWidths.join(" ")}]`;
+  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}], ${ribbon}`;
 }
 
 async function run(step: UiStep): Promise<void> {

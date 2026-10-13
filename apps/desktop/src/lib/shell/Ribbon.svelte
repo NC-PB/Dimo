@@ -93,6 +93,7 @@
       <Popover.Trigger
         class="mx-1 my-1 flex min-h-10 shrink-0 flex-col items-center justify-center gap-0.5 self-start rounded-lg px-2 py-1 text-[13px] text-text hover:bg-hover"
         aria-label={m.ribbon_more()}
+        data-ribbon-more
       >
         <span aria-hidden="true" class="text-lg leading-none text-text-muted">⋯</span>
         <span>{m.ribbon_more()}</span>

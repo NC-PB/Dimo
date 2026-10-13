@@ -12,8 +12,8 @@ Drehe ein Blatt in 90-Grad-Schritten, wenn eine Zeichnung quer gescannt oder exp
 
 | Aktion | Reiter Zeichnung | Taste |
 |---|---|---|
-| Nach rechts drehen (im Uhrzeigersinn) | Nach rechts drehen | R |
-| Nach links drehen (gegen den Uhrzeigersinn) | Nach links drehen | Shift+R |
+| Nach rechts drehen (im Uhrzeigersinn) | Rechts drehen | R |
+| Nach links drehen (gegen den Uhrzeigersinn) | Links drehen | Shift+R |
 
 Die Tasten R und Shift+R wirken, solange weder die Tabelle noch ein Textfeld den Fokus hat.
 

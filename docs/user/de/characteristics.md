@@ -12,7 +12,7 @@ nutze ↑ und ↓).
 | Art | Längenmaß, Durchmesser, Radius, Kugelradius, Winkel, Fase, Gewinde, Flachsenkung, Kegelsenkung, Tiefe, Oberflächenbeschaffenheit, geometrische Toleranz, Hinweis, Fahnenhinweis, Werkstoff oder Verfahren, Sonstiges. Ein von dir gesetzter Ballon beginnt mit Sonstiges, bis Dimo seinen Text liest |
 | Anforderung | Der Text wie auf der Zeichnung, per Rahmenauswahl gelesen oder in den Ballon getippt |
 | Nennmaß | Nennwert |
-| Oberes Abmaß, Unteres Abmaß | Abmaße mit Vorzeichen |
+| Ob. Abmaß, Unt. Abmaß | Abmaße mit Vorzeichen |
 | Obere Grenze, Untere Grenze | Grenzwerte. Dimo berechnet sie aus Nennmaß und Abmaßen; du kannst sie auch eintippen |
 | Einheit | mm, in, ° oder keine. Ein Nennmaß ohne Einheit erhält die Einheit des Blatts (Grad bei Winkeln) |
 | Passung | Passungsangabe wie `H7` |
