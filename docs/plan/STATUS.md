@@ -79,9 +79,9 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.12 ADR for the new shell | done | ADR 0007 accepted by the owner 2026-10-13; spec 12 D-50 points to it |
 | T3.13 UI bug fixes | done | Place balloon toggle bound to the store (clicking the active button returns to Select); after a general tolerance change Dimo offers to update characteristics without tolerance or with the previous general tolerance (`general_tolerance_candidates`, `apply_general_tolerance`, one undo step, hand entered limits untouched). Notice wording confirmed by the owner 2026-10-13 |
 | T3.14 Theme tokens and brand | done | cnc-master colors light/dark (contrast test, 45 checks, danger/success/warning kept apart from orange), Space Grotesk and JetBrains Mono bundled from the owner's own projects with OFL texts in `data/fonts/`, brand mark in the toolbar. Follow-ups: focus ring on sunken areas (2.87:1), values in mono, app icon from the brand mark |
-| T3.15 App shell, tabs and ribbon | in progress | Wave 6 |
-| T3.16 File view, Options and About | todo | Wave 6 |
-| T3.17 Guidance | todo | Wave 6 |
+| T3.15 App shell, tabs and ribbon | done | Title bar, tabs (File, Home, Drawing, Review, Measure, Report, View), one-row ribbon with More overflow, command registry (`commands.svelte.ts`) read by ribbon, tooltips, title bar and cheat sheet, status bar with sheet tabs and zoom, placing bar; Lucide icons (ISC); old toolbars removed. Owner: ribbon labels 13 px and status bar 12 px vs decision 28 (14 px body); native window title above the in-window title bar |
+| T3.16 File view, Options and About | in progress | Wave 6 |
+| T3.17 Guidance | in progress | Wave 6 |
 | T3.18 Properties pane | todo | Wave 7 |
 | T3.19 Measure and Report layout | todo | Wave 7 |
 | T3.20 Wording and German pass | todo | Wave 7 |
@@ -104,6 +104,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-13 | Shell: Lucide 1.48.0 icons (ISC, Feather parts MIT; license texts go into About); no separate Read area tool (Place balloon reads a dragged box); Cmd+2 Review; Esc stops placing before clearing the selection; title bar theme button toggles light/dark, "system" in View > Theme; theme and help buttons icon only with tooltip; Settings page reachable from File until T3.16; Paste values reads the clipboard, falls back to focus plus Cmd+V; Save as only on the File page (smoke uses Cmd+Shift+S) | M3 decisions 18 to 28 | T3.15, agent |
 | 2026-10-13 | Smoke box select flake fixed: the dev UI script used pointer ID 1, the same as the real mouse, so real mouse moves joined scripted drags (reproduced on demand); script events now use ID 41, drag steps wait for box select to finish reading (`boxSelect.busy`, at most 10 s). Not an app bug | Repeated smoke failures | agent |
 | 2026-10-13 | General tolerance offer: counts characteristics with rule "no tolerance defined", a general or custom table tolerance, or never read, and only those whose values change; Update recomputes the list in Rust; hand entered limits, written tolerances, fits and non dimension text untouched; updated characteristics are read with all current settings (drawing and decimal rules may apply); the offer is withdrawn on any project change. Wording "n characteristics have no tolerance yet or the previous general tolerance. Give them the general tolerance now?" and, when set to none, "... still have the previous general tolerance. Remove it now?" Wording confirmed by the owner 2026-10-13 | M3 decision 22 | T3.13, agent |
 | 2026-10-13 | Theme: danger darkened to #991b1b (light) so it stays apart from the orange accent (CIELAB distance test); accent used as text only as accent-strong; fonts in `data/fonts/` with OFL texts next to them; no Reserved Font Name found in the Space Grotesk metadata (upstream not checked offline) | M3 decisions 24, 25 | T3.14, agent |
