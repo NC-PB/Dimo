@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { reportView } from "./report/report-view.svelte";
 import {
   COMMAND_IDS,
   command,
@@ -132,5 +133,31 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
     expect(view.current).toBe("drawing");
     runCommand("setup_checklist");
     expect(setupStore.visible).toBe(false);
+  });
+
+  it("enables Print with a project, shows the Report tab and waits while printing (T3.19)", async () => {
+    expect(disabledReason("print")).toBe("Open or start a project first.");
+    openProject();
+    expect(disabledReason("print")).toBeNull();
+    reportView.print = { state: "running" };
+    expect(disabledReason("print")).toBe("The report is being opened for printing.");
+    reportView.print = { state: "idle" };
+    view.setTab("file");
+    expect(runCommand("print")).toBe(true);
+    expect([view.tab, view.current]).toEqual(["report", "export"]);
+    // Outside Tauri the call fails; the Report pane then says why.
+    await vi.waitFor(() => {
+      expect(reportView.print.state).toBe("failed");
+    });
+    reportView.print = { state: "idle" };
+  });
+
+  it("opens File > Export for the drawing and list exports (T3.19)", () => {
+    openProject();
+    expect(runCommand("export_report")).toBe(true);
+    expect([view.tab, view.filePane]).toEqual(["file", "export"]);
+    view.setTab("report");
+    expect(runCommand("more_exports")).toBe(true);
+    expect([view.tab, view.filePane]).toEqual(["file", "export"]);
   });
 });

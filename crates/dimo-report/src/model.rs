@@ -570,6 +570,7 @@ fn unmeasured(mut state: MeasurementState) -> MeasurementState {
     let (rows, samples) = (state.rows.len(), state.samples.len());
     for row in &mut state.rows {
         row.cells.iter_mut().for_each(|c| *c = Verdict::Missing);
+        row.positions.iter_mut().for_each(|p| *p = None);
         row.counts = missing(samples);
         row.verdict = OverallVerdict::Open;
     }
@@ -579,6 +580,7 @@ fn unmeasured(mut state: MeasurementState) -> MeasurementState {
     }
     state.counts = missing(rows.saturating_mul(samples));
     state.verdict = OverallVerdict::Open;
+    state.complete_samples = 0;
     state
 }
 

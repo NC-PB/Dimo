@@ -1,6 +1,5 @@
 <script lang="ts">
   import EmptyState from "$lib/components/EmptyState.svelte";
-  import ProjectDetails from "$lib/components/ProjectDetails.svelte";
   import { m } from "$lib/i18n";
   import { icons } from "$lib/icons";
   import { measurementStore } from "$lib/stores/measurement.svelte";
@@ -11,9 +10,10 @@
   import SamplePanel from "./SamplePanel.svelte";
 
   /**
-   * The Measure view (ADR 0007, T3.5): the parts line, the measurement grid, and a side panel
-   * with the active part and the project and report details (T3.4). The parts and row commands
-   * are on the Measure ribbon (T3.15).
+   * The Measure view (ADR 0007, T3.5, T3.19): the parts line, the measurement grid with the
+   * Measure bar above it, and a pane with the active part (fields and counts). Project and
+   * report details live in File > Info. The parts and row commands are on the Measure ribbon
+   * (T3.15), the totals in the status bar.
    */
 
   // Verdicts follow every change of the project: Rust computes them (M3 decision 2). The
@@ -42,13 +42,13 @@
       <MeasureGrid />
     {/if}
   </section>
+  <!-- Local pane frame until the shared one of T3.18 is merged. -->
   <aside
-    class="flex min-h-0 w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-3 text-sm text-text-muted"
+    class="flex min-h-0 w-80 shrink-0 flex-col overflow-y-auto border-l border-border bg-surface text-sm text-text-muted"
     aria-label={m.measure_side_panel_label()}
   >
     {#if projectStore.project !== null}
       <SamplePanel activeSample={measureUi.activeSample} />
     {/if}
-    <ProjectDetails />
   </aside>
 </div>

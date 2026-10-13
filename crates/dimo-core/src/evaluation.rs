@@ -40,6 +40,25 @@ pub enum Verdict {
     Missing,
 }
 
+/// Where a measured value lies against the limits of its characteristic (T3.19). Lets the
+/// Measure bar say "pass, on the lower limit" without comparing numbers in the frontend
+/// (rule 2). Only for variable values with at least one limit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "snake_case")]
+pub enum LimitPosition {
+    /// Below the lower limit: fails.
+    Below,
+    /// Exactly on the lower limit (by value, any scale): passes.
+    OnLower,
+    /// Strictly between the limits, or on the open side of a one sided limit: passes.
+    Inside,
+    /// Exactly on the upper limit: passes.
+    OnUpper,
+    /// Above the upper limit: fails.
+    Above,
+}
+
 /// Verdict of a group of cells: a sample, a characteristic or the whole report (decision 3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -131,6 +150,35 @@ pub fn evaluate(characteristic: &Characteristic, result: Option<&MeasurementResu
     }
 }
 
+/// Where the value of `result` lies against the current limits of `characteristic` (T3.19).
+/// `None` for no result, an attribute result or a characteristic without limits. Agrees with
+/// [`evaluate`]: [`LimitPosition::Below`] and [`LimitPosition::Above`] fail, the others pass.
+/// With equal limits a value on them is [`LimitPosition::OnLower`].
+pub fn limit_position(
+    characteristic: &Characteristic,
+    result: Option<&MeasurementResult>,
+) -> Option<LimitPosition> {
+    let Some(ResultValue::Variable { value }) = result.map(|r| r.value) else {
+        return None;
+    };
+    let (lower, upper) = (characteristic.lower_limit, characteristic.upper_limit);
+    if lower.is_none() && upper.is_none() {
+        return None;
+    }
+    // Decimal comparison is by value, independent of scale: 12 == 12.000.
+    Some(if lower.is_some_and(|l| value < l) {
+        LimitPosition::Below
+    } else if upper.is_some_and(|u| value > u) {
+        LimitPosition::Above
+    } else if lower.is_some_and(|l| value == l) {
+        LimitPosition::OnLower
+    } else if upper.is_some_and(|u| value == u) {
+        LimitPosition::OnUpper
+    } else {
+        LimitPosition::Inside
+    })
+}
+
 /// True if the characteristic is measured: inspected and not rejected (decision 5).
 pub fn is_measured(characteristic: &Characteristic) -> bool {
     characteristic.inspect && characteristic.status != CharacteristicStatus::Rejected
@@ -162,6 +210,9 @@ pub struct RowState {
     pub draft: bool,
     /// One verdict per sample, in sample order.
     pub cells: Vec<Verdict>,
+    /// Per sample, in sample order: where a variable value lies against the limits, `null` for
+    /// missing and attribute results and without limits (T3.19).
+    pub positions: Vec<Option<LimitPosition>>,
     /// Cells per verdict.
     pub counts: VerdictCounts,
     /// Fail, pass or open over all samples.
@@ -195,6 +246,12 @@ pub struct MeasurementState {
     pub counts: VerdictCounts,
     /// Overall verdict of the report.
     pub verdict: OverallVerdict,
+    /// Progress (T3.19): number of characteristics to inspect, the measured ones of
+    /// [`Self::rows`] (decision 5).
+    pub to_inspect: u32,
+    /// Progress (T3.19): samples with a result for every characteristic to inspect. A sample
+    /// is never complete while there is nothing to inspect (decision 3: nothing was shown).
+    pub complete_samples: u32,
 }
 
 /// Evaluates every cell of the measurement grid of `project`.
@@ -210,28 +267,31 @@ pub fn measurement_state(project: &Project) -> MeasurementState {
         .into_iter()
         .map(|c| {
             let mut row_counts = VerdictCounts::default();
-            let cells = project
+            let (cells, positions) = project
                 .samples
                 .iter()
                 .zip(sample_counts.iter_mut())
                 .map(|(sample, sample_counts)| {
-                    let verdict = evaluate(c, results.get(&(sample.id, c.id)).copied());
+                    let result = results.get(&(sample.id, c.id)).copied();
+                    let verdict = evaluate(c, result);
                     row_counts.add(verdict);
                     sample_counts.add(verdict);
                     counts.add(verdict);
-                    verdict
+                    (verdict, limit_position(c, result))
                 })
-                .collect();
+                .unzip();
             RowState {
                 characteristic: c.id,
                 result_type: c.effective_result_type(),
                 draft: c.derivation.as_ref().is_some_and(|d| d.draft),
                 cells,
+                positions,
                 counts: row_counts,
                 verdict: row_counts.verdict(),
             }
         })
-        .collect();
+        .collect::<Vec<RowState>>();
+    let to_inspect = u32::try_from(rows.len()).unwrap_or(u32::MAX);
     let samples = project
         .samples
         .iter()
@@ -241,11 +301,19 @@ pub fn measurement_state(project: &Project) -> MeasurementState {
             counts,
             verdict: counts.verdict(),
         })
-        .collect();
+        .collect::<Vec<SampleState>>();
+    let complete_samples = if to_inspect == 0 {
+        0
+    } else {
+        let complete = samples.iter().filter(|s| s.counts.missing == 0).count();
+        u32::try_from(complete).unwrap_or(u32::MAX)
+    };
     MeasurementState {
         rows,
         samples,
         counts,
         verdict: counts.verdict(),
+        to_inspect,
+        complete_samples,
     }
 }

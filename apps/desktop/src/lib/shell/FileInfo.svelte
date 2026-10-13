@@ -72,8 +72,10 @@
       : m.export_inspection_report_title();
   }
 
-  const toInspect = $derived(project?.characteristics.filter((c) => c.inspect).length ?? 0);
-  const complete = $derived(counts?.samples.filter((s) => s.counts.missing === 0).length ?? 0);
+  // Both counts come from Rust (rule 2, T3.19): the characteristics to inspect are the measured
+  // ones, a part counts when it has a result for each of them.
+  const toInspect = $derived(counts?.to_inspect ?? 0);
+  const complete = $derived(counts?.complete_samples ?? 0);
   const lastIssued = $derived(project?.issued_reports.at(-1));
 
   let copied = $state(false);

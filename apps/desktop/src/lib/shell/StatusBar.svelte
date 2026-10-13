@@ -2,6 +2,8 @@
   import { commandTooltip, disabledReason, runCommand } from "$lib/commands.svelte";
   import { m, unitLabel } from "$lib/i18n";
   import { icons } from "$lib/icons";
+  import { verdictLabel } from "$lib/measure/labels";
+  import VerdictMark from "$lib/measure/VerdictMark.svelte";
   import { scaleText, shownSheet } from "$lib/sheet-properties";
   import { balloonTools } from "$lib/stores/balloon-tools.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
@@ -26,6 +28,7 @@
   const sheet = $derived(shownSheet());
   const measuring = $derived(view.current === "measure");
   const counts = $derived(measurementStore.state?.counts ?? null);
+  const overall = $derived(measurementStore.state?.verdict ?? null);
   const zoomReason = $derived(disabledReason("zoom_in"));
   const percent = $derived(zoomPercent(viewport.view.scale));
 
@@ -92,13 +95,27 @@
         · {m.status_selected({ count: String(selection.size) })}
       {/if}
     </span>
-  {:else if open && counts !== null}
+  {:else if open && counts !== null && overall !== null}
     <span data-testid="measure-totals">
       {m.status_totals({
         pass: String(counts.pass),
         fail: String(counts.fail),
         missing: String(counts.missing),
       })}
+    </span>
+    <!-- Rust's overall verdict with its shape (M3 decisions 3 and 9). -->
+    <span class="flex items-center gap-1" data-testid="measure-overall">
+      {m.status_overall()}
+      {#if overall !== "open"}
+        <VerdictMark verdict={overall} size={12} />
+      {/if}
+      <strong
+        class={overall === "fail"
+          ? "text-danger"
+          : overall === "pass"
+            ? "text-success"
+            : "text-text-muted"}>{verdictLabel(overall)}</strong
+      >
     </span>
   {/if}
 

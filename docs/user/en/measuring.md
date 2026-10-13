@@ -12,8 +12,10 @@ measure in **Number** (1 to 100 at a time) and choose **Add parts** on the Measu
 500 samples. The serials continue from the highest plain number (`1`, `2`, `3`); the date is empty
 and the inspector is your user name from **Options**.
 
-Click the header or a cell of a sample column to make it the active sample. The panel on the
-right shows its serial, date, inspector, gauges and comment; change them there. A serial is
+Click the header or a cell of a sample column to make it the active sample. The pane on the
+right shows its serial, date, inspector, gauges and comment; change them there. Below the fields
+it counts the results of that part: pass, not OK, not evaluated and missing. Project and report
+details are in **File > Info**. A serial is
 trimmed, must not be empty and must be unique in the project (upper and lower case count as
 different). Serials may be any text, for example `A-17`. **Move left** and **Move right** change
 the column order, which is also the order in the reports. **Delete part** deletes the column;
@@ -38,7 +40,19 @@ cell empty.
 | Sample header | Serial of the part and the same counts for that part |
 
 The line above the grid shows the overall verdict of all parts, and why Dimo did not accept the
-last entry.
+last entry. The status bar at the bottom shows the totals of all parts and the overall verdict.
+
+## The Measure bar
+
+The bar above the grid works like the formula bar of a spreadsheet. It names the active cell
+(characteristic number and part), shows the requirement with its limits and the tolerance rule,
+and has a **Value** field with the value of the active cell. Next to it Dimo says the verdict in
+words, for example "pass, on the lower limit" or "not OK, above the upper limit".
+
+You can type a value in the cell or in the **Value** field; both show the same text while you
+type. **Enter** in the field stores the value and moves to the next characteristic, as in the
+grid; **Shift+Enter** goes up and **Escape** cancels. Clicking the field while you type in a cell
+carries on the same entry in the field.
 
 A triangle next to the number means the limits or the result type of that characteristic changed
 after the last issued report ([When limits change](#when-limits-change)).

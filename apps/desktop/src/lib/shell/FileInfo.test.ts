@@ -33,6 +33,9 @@ const MEASURED: MeasurementState = {
   ],
   counts: { pass: 3, fail: 1, not_evaluated: 0, missing: 2 },
   verdict: "fail",
+  // Rust's counts, deliberately not derivable from the fixture: the page shows them as given.
+  to_inspect: 4,
+  complete_samples: 1,
 };
 
 function setup() {
@@ -164,7 +167,7 @@ describe("File > Info (T3.16)", () => {
     await settle();
     const progress = target.querySelector("[data-testid='info-progress']")?.textContent ?? "";
     expect(progress).toContain("Characteristics 2");
-    expect(progress).toContain("To inspect 1");
+    expect(progress).toContain("To inspect 4");
     expect(progress).toContain("1 of 2");
     expect(progress).toContain("Not OK (1)");
   });

@@ -2,6 +2,7 @@ import {
   commands,
   type CharId,
   type CommandError,
+  type LimitPosition,
   type MeasurementState,
   type RowState,
   type SampleId,
@@ -102,6 +103,13 @@ export class MeasurementStore {
     const row = this.row(characteristic);
     const index = this.#sampleIndex.get(sample);
     return index === undefined ? undefined : row?.cells[index];
+  }
+
+  /** Where the value of one cell lies against the limits (T3.19), `null` if it has no place. */
+  position(characteristic: CharId, sample: SampleId): LimitPosition | null {
+    const row = this.row(characteristic);
+    const index = this.#sampleIndex.get(sample);
+    return index === undefined ? null : (row?.positions[index] ?? null);
   }
 }
 

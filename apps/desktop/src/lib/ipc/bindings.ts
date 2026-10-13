@@ -89,6 +89,23 @@ export const commands = {
 	 */
 	reportExportWarnings: (kind: ReportKind) => typedError<ReportWarnings, CommandError>(__TAURI_INVOKE("report_export_warnings", { kind })),
 	/**
+	 *  Renders the PDF of report `view` of the open project, as "Save copy" would write it today,
+	 *  and opens it for the `dimo://tile/...` route. Returns its content hash and page sizes; the
+	 *  pages are the sheets of the returned document.
+	 */
+	reportPreview: (view: ReportView) => typedError<DocumentInfo, CommandError>(__TAURI_INVOKE("report_preview", { view })),
+	/**
+	 *  What to look at before report `kind` of the open project is issued: warnings with counts
+	 *  and empty header fields. Never blocks issuing.
+	 */
+	reportChecks: (kind: ReportKind) => typedError<ReportChecks, CommandError>(__TAURI_INVOKE("report_checks", { kind })),
+	/**
+	 *  Opens the PDF of report `view` of the open project with the system's PDF viewer for
+	 *  printing: the file "Save copy" would write, in the app's cache folder. Returns its file
+	 *  name. Debug builds with `DIMO_DEV_EXPORT_DIR` write it there and do not open it.
+	 */
+	printReport: (view: ReportView) => typedError<string, CommandError>(__TAURI_INVOKE("print_report", { view })),
+	/**
 	 *  Box select: proposals for the text inside `region` of `sheet` (FR-REC-01, FR-REC-02), with
 	 *  explanations in `language`. Changes nothing; accept them with the `accept_proposals`
 	 *  document command (ADR 0006). An empty list means the region holds no PDF text.
@@ -1422,6 +1439,23 @@ export type Length = {
 	unit: Unit,
 };
 
+/**
+ *  Where a measured value lies against the limits of its characteristic (T3.19). Lets the
+ *  Measure bar say "pass, on the lower limit" without comparing numbers in the frontend
+ *  (rule 2). Only for variable values with at least one limit.
+ */
+export type LimitPosition = 
+/**  Below the lower limit: fails. */
+"below" | 
+/**  Exactly on the lower limit (by value, any scale): passes. */
+"on_lower" | 
+/**  Strictly between the limits, or on the open side of a one sided limit: passes. */
+"inside" | 
+/**  Exactly on the upper limit: passes. */
+"on_upper" | 
+/**  Above the upper limit: fails. */
+"above";
+
 /**  Why numbering was locked (FR-BAL-10). */
 export type LockReason = 
 /**  The user locked it. */
@@ -1461,6 +1495,16 @@ export type MeasurementState = {
 	counts: VerdictCounts,
 	/**  Overall verdict of the report. */
 	verdict: OverallVerdict,
+	/**
+	 *  Progress (T3.19): number of characteristics to inspect, the measured ones of
+	 *  [`Self::rows`] (decision 5).
+	 */
+	to_inspect: number,
+	/**
+	 *  Progress (T3.19): samples with a result for every characteristic to inspect. A sample
+	 *  is never complete while there is nothing to inspect (decision 3: nothing was shown).
+	 */
+	complete_samples: number,
 };
 
 /**  How a callout for several features (`4X`, `2 PL`) is numbered (FR-BAL-07, D-22). */
@@ -1923,6 +1967,43 @@ export type RejectReason =
 /**  Internal inconsistency; a bug. */
 "internal";
 
+/**
+ *  What to look at before report `kind` is issued (T3.19, M3 decisions 15 to 17). Nothing here
+ *  blocks issuing.
+ */
+export type ReportChecks = {
+	/**  The warnings confirmed before an issued export (decision 17). */
+	warnings: ReportWarnings,
+	/**  Parts (samples) of the project. */
+	samples: number,
+	/**  Characteristics the report lists (measured ones, decision 5). */
+	rows: number,
+	/**  Inspection report: cells without a result. Zero for the check sheet. */
+	missing_values: number,
+	/**  Inspection report: values without limits, not evaluated. Zero for the check sheet. */
+	not_evaluated: number,
+	/**  Listed characteristics whose limits come from a draft tolerance table (D-43). */
+	draft_rows: number,
+	/**
+	 *  Listed characteristics whose limits or result type changed after the last issued report
+	 *  (decision 16).
+	 */
+	changed_rows: number,
+	/**  Header fields that would still be empty on the issued report, in header order. */
+	missing_fields: ReportField[],
+};
+
+/**  A report header field the Report tab asks for before issuing (T3.19). */
+export type ReportField = 
+/**  Part number (project info). */
+"part_number" | 
+/**  Report number. */
+"report_number" | 
+/**  Company name; filled from the settings when a report is issued. */
+"company_name" | 
+/**  Inspected by; filled with the user name when a report is issued. */
+"inspected_by";
+
 /**  File format of a written report. */
 export type ReportFormat = 
 /**  PDF. */
@@ -1959,6 +2040,16 @@ export type ReportLanguage =
 "en" | 
 /**  German. */
 "de";
+
+/**  The report the Report tab shows or prints, with the options of a normal export. */
+export type ReportView = {
+	/**  Check sheet or inspection report. */
+	kind: ReportKind,
+	/**  Language of the report (D-32). */
+	language: ReportLanguage,
+	/**  Blank result columns of a check sheet without samples, 1 to 10 (M3 decision 12). */
+	blank_columns: number,
+};
 
 /**
  *  Warnings before a report is exported as issued (M3 decision 17). They never block the
@@ -2071,6 +2162,11 @@ export type RowState = {
 	draft: boolean,
 	/**  One verdict per sample, in sample order. */
 	cells: Verdict[],
+	/**
+	 *  Per sample, in sample order: where a variable value lies against the limits, `null` for
+	 *  missing and attribute results and without limits (T3.19).
+	 */
+	positions: (LimitPosition | null)[],
 	/**  Cells per verdict. */
 	counts: VerdictCounts,
 	/**  Fail, pass or open over all samples. */

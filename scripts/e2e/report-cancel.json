@@ -3,7 +3,7 @@
   { "wait": 800 },
   { "show": "export" },
   { "wait": 400 },
-  { "button": "Export inspection report…" },
+  { "button": "Save copy (not issued)" },
   { "wait": 800 },
   { "button": "Cancel export" },
   { "wait": 4000 },

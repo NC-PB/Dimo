@@ -15,6 +15,7 @@ import { m } from "$lib/i18n";
 import { icons, type Icon } from "$lib/icons";
 import { measureUi } from "$lib/measure/measure-ui.svelte";
 import { parts } from "$lib/measure/parts.svelte";
+import { currentView, reportView } from "$lib/report/report-view.svelte";
 import { rotateShownSheet, shownSheet } from "$lib/sheet-properties";
 import {
   formatCombo,
@@ -178,17 +179,23 @@ export const COMMANDS = {
     icon: icons.saveCopy,
     description: () => m.cmd_export_desc(),
     disabled: needProject,
+    // The ballooned PDF and the lists; the reports are on the Report tab (T3.19).
     run: () => {
-      view.setTab("report");
+      view.openFile("export");
     },
   },
   print: {
     label: () => m.cmd_print(),
     icon: icons.print,
     description: () => m.cmd_print_desc(),
-    // Printing comes with the report preview (T3.19); until then the reason says what to do.
-    disabled: () => needProject() ?? m.reason_print_later(),
-    run: () => false,
+    disabled: () =>
+      needProject() ?? (reportView.print.state === "running" ? m.reason_print_running() : null),
+    // Rust opens the PDF that Save copy would write in the system viewer, which prints it
+    // (T3.19). The Report tab shows what is printed and how it went.
+    run: () => {
+      view.set("export");
+      return reportView.printReport(currentView());
+    },
   },
   options: {
     label: () => m.cmd_options(),
@@ -496,8 +503,17 @@ export const COMMANDS = {
     description: () => m.cmd_issue_report_desc(),
     disabled: () => reportBusy(exportStore.document),
     run: () => {
-      view.set("export"); // The warnings before issuing are shown on the report page.
+      view.set("export"); // The warnings before issuing are shown in the Report pane.
       return exportStore.startReport(exportStore.document, true);
+    },
+  },
+  more_exports: {
+    label: () => m.cmd_more_exports(),
+    icon: icons.saveCopy,
+    description: () => m.cmd_more_exports_desc(),
+    disabled: needProject,
+    run: () => {
+      view.openFile("export");
     },
   },
 

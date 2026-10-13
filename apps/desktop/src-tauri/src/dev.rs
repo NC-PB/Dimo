@@ -20,7 +20,8 @@
 //!   once per process: a script that switches the UI language (which reloads the window) does
 //!   not start again.
 //! - `DIMO_DEV_EXPORT_DIR=<dir>`: exports skip the save dialog and write their suggested file
-//!   name into this directory (T1.9), so a UI script can click the export buttons.
+//!   name into this directory (T1.9), so a UI script can click the export buttons. Print
+//!   writes its PDF there too and does not open the PDF viewer (T3.19).
 //! - `DIMO_DEV_EXPORT_DELAY_MS=<ms>`: export jobs wait this long before each step (build,
 //!   render, write), so a UI script can cancel a running export (T3.8).
 //!

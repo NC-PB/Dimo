@@ -2,18 +2,37 @@
 
 ## Exporting from the app
 
-Open the **Report** tab (⌘E on macOS, Ctrl+E elsewhere). Its commands choose the check sheet or
-the inspection report, the format, the language and **Open after export**; **Save copy** exports
-the chosen document, **Issue report** exports it as issued. Below them every export has a card.
-The tab needs an open project. Each export asks where to save the file and then runs in the
+Open the **Report** tab (⌘E on macOS, Ctrl+E elsewhere) for the check sheet and the inspection
+report. Its commands choose the document, the format, the language, the blank result columns
+and **Open after export**. **Save copy** exports the chosen document, **Print** prints it,
+**Issue report** exports it as issued.
+
+The work area shows a **preview** of the chosen document: the PDF exactly as **Save copy** would
+write it now, page by page. It follows every change of the project and of the options after a
+short pause. With **Excel** as format the preview still shows the PDF; the workbook has the same
+content.
+
+The pane on the right, **Before you issue the report**, lists what to look at first: missing
+values (with **Go to Measure**, which shows only the rows with missing values), values without
+limits, limits from draft tolerance tables, limits changed since the last issued report, and the
+report header fields that are still empty (with a link to **File > Info**). Company and inspector
+count as filled when issuing would fill them from **Options**. Nothing in the list stops you from
+issuing. Below the list are **Issue report…** and **Save copy (not issued)**.
+
+**Print** opens the PDF of the chosen document in the PDF viewer of your computer; print it from
+there with its own print dialog. The file is a copy in a temporary folder, the same file that
+**Save copy** would write. Like **Save copy**, the first print of a project without a report
+date enters today's date as the report date ([below](#check-sheet-and-inspection-report)).
+
+The ballooned PDF and the characteristic list are on **File > Export** (also **Drawing and
+list** on the Report tab).
+
+Every export needs an open project, asks where to save the file and then runs in the
 background; you can keep working meanwhile. The file contains the project as it was when you
 clicked the button. A progress bar and then the saved file name appear below the export, or the
 reason why it failed. While a report export runs, **Cancel export** stops it; no file is
 written then. Dimo stops between the steps of the export (prepare, render, write), so a cancel
 can take a moment to take effect.
-
-The view has two groups: **Reports** (check sheet and inspection report) and **Drawing and
-characteristic list** (ballooned PDF, CSV and Excel list).
 
 The suggested file names follow the project file (or the drawing, for a project that was never
 saved): `part_ballooned.pdf`, `part_characteristics.csv`, `part_characteristics.xlsx`,
@@ -26,15 +45,16 @@ report:
   reports, independent of the language of the app.
 - **Balloons in the PDF**: as part of the page (default), or as annotations that PDF viewers can
   show, hide or delete.
-- **Blank result columns**: how many empty result columns a check sheet gets when the project
-  has no samples, 1 to 10 (default 3).
+- **Blank result columns** (Report tab, check sheet only): how many empty result columns a check
+  sheet gets when the project has no samples, 1 to 10 (default 3).
 - **Open the file after exporting**: when an export has finished and the file is written, Dimo
   opens it with the program your computer uses for that file type, for example your PDF viewer
-  for a check sheet you want to print. Off by default. It applies to every export in the view.
+  for a check sheet you want to print. Off by default. It applies to every export.
   Dimo only opens the file it just wrote, and only if its name still ends in the extension of the
   export (`.pdf`, `.csv` or `.xlsx`). If no program is set up for the type, the file is still
   saved and the export shows a notice.
-- **Export as issued**: locks the numbering. Use it for drawings and reports that go to a
+- **Export as issued** (File > Export; on the Report tab use **Issue report**): locks the
+  numbering. Use it for drawings and reports that go to a
   customer. While locked, numbers never change, deleted numbers are not reused, a new
   characteristic gets the highest number ever used plus one, and rows of the table cannot be
   moved. The lock is recorded in the change log. A report exported as issued is also recorded
@@ -72,7 +92,8 @@ an empty field for a handwritten signature. The names come from the report field
 There are no digital signatures. If the overall verdict is open, the report says that not every
 result is entered and evaluated. The failing cells and the failing samples have a bold border.
 
-Choose **PDF** or **Excel** under **Format** of each report. Both contain the same values.
+Choose **PDF** or **Excel** under **Format** on the Report tab, once for each report. Both
+contain the same values.
 
 - **PDF**: A4 landscape, header on every page, table header repeated on every page. With more than
   six samples the table is printed in blocks of six sample columns, each block on a new page, with

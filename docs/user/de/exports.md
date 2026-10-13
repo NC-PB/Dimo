@@ -2,19 +2,40 @@
 
 ## Aus der App exportieren
 
-Öffne das Register **Bericht** (⌘E auf macOS, Strg+E sonst). Oben wählst du Prüfblatt oder
-Prüfbericht, Format, Sprache und **Nach dem Export öffnen**; **Kopie speichern** exportiert das
-gewählte Dokument, **Bericht ausgeben** exportiert es als ausgegeben. Darunter stehen alle Exporte
-als Karten. Das Register braucht ein offenes Projekt. Jeder Export fragt, wo die Datei gespeichert
-wird, und läuft dann im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das
-Projekt so, wie es war, als du die Schaltfläche geklickt hast. Unter dem Export erscheinen ein
-Fortschrittsbalken und danach der Dateiname, oder der Grund, warum der Export fehlschlug.
-Während ein Bericht exportiert wird, hält **Export abbrechen** ihn an; dann wird keine Datei
-geschrieben. Dimo hält zwischen den Schritten des Exports an (vorbereiten, erzeugen, schreiben),
-das Abbrechen kann also einen Moment dauern.
+Öffne das Register **Bericht** (⌘E auf macOS, Strg+E sonst) für Prüfblatt und Prüfbericht. Oben
+wählst du das Dokument, Format, Sprache, die leeren Ergebnisspalten und **Nach dem Export
+öffnen**. **Kopie speichern** exportiert das gewählte Dokument, **Drucken** druckt es,
+**Bericht ausgeben** exportiert es als ausgegeben.
 
-Die Ansicht hat zwei Gruppen: **Berichte** (Prüfblatt und Prüfbericht) und **Zeichnung und
-Merkmalsliste** (PDF mit Ballons, CSV- und Excel-Liste).
+Der Arbeitsbereich zeigt eine **Vorschau** des gewählten Dokuments: das PDF genau so, wie
+**Kopie speichern** es jetzt schreiben würde, Seite für Seite. Sie folgt jeder Änderung am
+Projekt und an den Optionen nach einer kurzen Pause. Mit **Excel** als Format zeigt die Vorschau
+trotzdem das PDF; die Excel-Datei hat denselben Inhalt.
+
+Der Bereich rechts, **Bevor du den Bericht ausgibst**, zeigt, was du zuerst anschauen solltest:
+fehlende Werte (mit **Zum Messen**, das nur die Zeilen mit fehlenden Werten zeigt), Werte ohne
+Grenzen, Grenzen aus Entwurfstabellen, seit dem letzten ausgegebenen Bericht geänderte Grenzen
+und die Felder im Berichtskopf, die noch leer sind (mit einem Link zu **Datei > Info**). Firma
+und Prüfer gelten als ausgefüllt, wenn das Ausgeben sie aus den **Optionen** einträgt. Nichts in
+der Liste hindert dich am Ausgeben. Darunter stehen **Bericht ausgeben…** und **Kopie speichern
+(nicht ausgegeben)**.
+
+**Drucken** öffnet das PDF des gewählten Dokuments im PDF-Programm deines Computers; drucke es
+dort mit dessen Druckdialog. Die Datei ist eine Kopie in einem temporären Ordner, dieselbe
+Datei, die **Kopie speichern** schreiben würde. Wie bei **Kopie speichern** trägt der erste
+Druck eines Projekts ohne Berichtsdatum das heutige Datum als Berichtsdatum ein
+([unten](#prüfblatt-und-prüfbericht)).
+
+Das PDF mit Ballons und die Merkmalsliste findest du unter **Datei > Exportieren** (auch
+**Zeichnung und Liste** im Register Bericht).
+
+Jeder Export braucht ein offenes Projekt, fragt, wo die Datei gespeichert wird, und läuft dann
+im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das Projekt so, wie es
+war, als du die Schaltfläche geklickt hast. Unter dem Export erscheinen ein Fortschrittsbalken
+und danach der Dateiname, oder der Grund, warum der Export fehlschlug. Während ein Bericht
+exportiert wird, hält **Export abbrechen** ihn an; dann wird keine Datei geschrieben. Dimo hält
+zwischen den Schritten des Exports an (vorbereiten, erzeugen, schreiben), das Abbrechen kann
+also einen Moment dauern.
 
 Die vorgeschlagenen Dateinamen folgen der Projektdatei (bei einem nie gespeicherten Projekt der
 Zeichnung): `teil_ballooned.pdf`, `teil_characteristics.csv`, `teil_characteristics.xlsx`,
@@ -27,16 +48,18 @@ Bericht gewählte Format:
   Sprache der Berichte, unabhängig von der Sprache der App.
 - **Ballons im PDF**: als Teil der Seite (Standard) oder als Anmerkungen, die PDF-Programme
   ein- und ausblenden oder löschen können.
-- **Leere Ergebnisspalten**: wie viele leere Ergebnisspalten ein Prüfblatt erhält, wenn das
+- **Leere Ergebnisspalten** (Register Bericht, nur Prüfblatt): wie viele leere Ergebnisspalten
+  ein Prüfblatt erhält, wenn das
   Projekt keine Teile hat, 1 bis 10 (Standard 3).
 - **Datei nach dem Export öffnen**: Ist ein Export fertig und die Datei geschrieben, öffnet Dimo
   sie mit dem Programm, das dein Computer für diesen Dateityp verwendet, zum Beispiel dein
   PDF-Programm für ein Prüfblatt, das du ausdrucken willst. Standardmäßig aus. Es gilt für jeden
-  Export in der Ansicht. Dimo öffnet nur die Datei, die es gerade geschrieben hat, und nur wenn
+  Export. Dimo öffnet nur die Datei, die es gerade geschrieben hat, und nur wenn
   ihr Name noch auf die Endung des Exports lautet (`.pdf`, `.csv` oder `.xlsx`). Ist für den Typ
   kein Programm eingerichtet, wird die Datei trotzdem gespeichert und der Export zeigt einen
   Hinweis.
-- **Als ausgegeben exportieren**: sperrt die Nummerierung. Für Zeichnungen und Berichte, die
+- **Als ausgegeben exportieren** (Datei > Exportieren; im Register Bericht **Bericht
+  ausgeben**): sperrt die Nummerierung. Für Zeichnungen und Berichte, die
   an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
   werden nicht wieder vergeben, ein neues Merkmal erhält die höchste je vergebene Nummer plus
   eins, und Zeilen der Tabelle lassen sich nicht verschieben. Die Sperre steht im
@@ -79,7 +102,8 @@ bleibt leer und wird von Hand eingetragen. Digitale Signaturen gibt es nicht. Is
 Gesamtergebnis offen, sagt der Bericht, dass nicht alle Ergebnisse erfasst und bewertet sind.
 Nicht bestandene Zellen und Teile haben einen fetten Rand.
 
-Wähle unter **Format** jedes Berichts **PDF** oder **Excel**. Beide enthalten dieselben Werte.
+Wähle im Register Bericht unter **Format** für jeden Bericht **PDF** oder **Excel**. Beide
+enthalten dieselben Werte.
 
 - **PDF**: A4 quer, Kopf auf jeder Seite, Tabellenkopf auf jeder Seite wiederholt. Bei mehr als
   sechs Teilen wird die Tabelle in Blöcken von sechs Teilespalten gedruckt, jeder Block auf

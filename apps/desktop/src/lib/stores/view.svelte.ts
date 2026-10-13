@@ -3,9 +3,10 @@
  * this store, no router.
  *
  * A tab picks the ribbon; the work area below follows it: Home and Drawing both show the
- * drawing, Report shows the export view, File a full page. The View tab keeps the work area that
- * was shown, so its zoom and pane commands act on it. The File page has its own panes: Info,
- * Open (with the recent projects), Options and About (T3.16).
+ * drawing, Report shows the report preview (area `export`, T3.19), File a full page. The View
+ * tab keeps the work area that was shown, so its zoom and pane commands act on it. The File page
+ * has its own panes: Info, Open (with the recent projects), Export (ballooned PDF and lists,
+ * T3.19), Options and About (T3.16).
  */
 export const TABS = ["file", "home", "drawing", "review", "measure", "report", "view"] as const;
 
@@ -17,7 +18,7 @@ export const VIEWS = ["drawing", "review", "measure", "export", "file"] as const
 export type View = (typeof VIEWS)[number];
 
 /** Panes of the File page (ADR 0007). */
-export const FILE_PANES = ["info", "open", "options", "about"] as const;
+export const FILE_PANES = ["info", "open", "export", "options", "about"] as const;
 
 export type FilePane = (typeof FILE_PANES)[number];
 

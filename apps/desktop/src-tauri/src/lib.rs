@@ -12,6 +12,7 @@ pub mod numbering;
 pub mod project;
 pub mod recent;
 pub mod recognition;
+pub mod report;
 pub mod session;
 pub mod settings;
 pub mod tiles;
@@ -57,6 +58,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             export::export_project,
             export::cancel_job,
             export::report_export_warnings,
+            report::report_preview,
+            report::report_checks,
+            report::print_report,
             recognition::propose_from_region,
             recognition::read_callout_text,
             numbering::preview_numbering,
@@ -151,6 +155,7 @@ pub fn run() -> tauri::Result<()> {
                 .map(|dir| dir.join(AUTOSAVE_FOLDER));
             app.manage(project::SessionState::new(autosave_dir));
             app.manage(export::JobRegistry::default());
+            app.manage(report::PreviewState::default());
             // Settings of the user in the app config directory (T1.9).
             let settings_path = dev::dev_folder("config", app.path().app_config_dir().ok())
                 .map(|dir| dir.join(settings::SETTINGS_FILE));
