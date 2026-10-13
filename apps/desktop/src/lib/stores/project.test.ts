@@ -230,6 +230,22 @@ describe("project store (T1.5)", () => {
     expect(store.characteristics.map((c) => c.id)).toEqual(["c1"]);
   });
 
+  it("builds an executeWith command from the project after the edits before it (T3.18)", async () => {
+    const { rust, store } = await connected();
+    rust.script = [{ changes: addChanges("c1", 1, 0), canUndo: true, canRedo: false }];
+    const seen: number[] = [];
+    await Promise.all([
+      store.execute(ADD),
+      store.executeWith((project) => {
+        seen.push(project.characteristics.length);
+        return null;
+      }),
+    ]);
+    // The builder ran after the first command was applied; `null` sent nothing.
+    expect(seen).toEqual([1]);
+    expect(rust.calls).toEqual(["execute"]);
+  });
+
   it("does not call undo or redo without a step", async () => {
     const { rust, store } = await connected();
     await store.undo();

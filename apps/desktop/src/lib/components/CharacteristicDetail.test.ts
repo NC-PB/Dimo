@@ -260,7 +260,10 @@ describe("characteristic detail panel (T2.8)", () => {
     stores.selection.select(["c1"]);
     render(stores);
     await settle();
-    expect(target.querySelector("h2")?.textContent).toContain("1");
+    expect(
+      target.querySelector<HTMLElement>("[data-testid='characteristic-properties']")?.dataset
+        .characteristic,
+    ).toBe("c1");
     expect(target.querySelector("[data-field='rule']")?.textContent).toContain("General tolerance");
     expect(badges()).toEqual(["draft"]);
     expect(target.querySelector("[data-field='explanation']")?.textContent?.trim()).toBe(
@@ -305,8 +308,6 @@ describe("characteristic detail panel (T2.8)", () => {
     stores.selection.select(["c1"]);
     render(stores);
     await settle();
-    target.querySelector<HTMLButtonElement>("#detail-tab-history")?.click();
-    await settle();
     const items = [...target.querySelectorAll<HTMLElement>("[data-testid='detail-history'] li")];
     expect(items.map((li) => li.dataset.source)).toEqual(["rule", "recognition"]);
     expect(items[0]?.textContent).toContain("Upper limit, Rule");
@@ -314,19 +315,74 @@ describe("characteristic detail panel (T2.8)", () => {
     expect(items[1]?.textContent).toContain("Created");
   });
 
-  it("re-interprets the selection with one request", async () => {
+  it("updates the limits of the shown characteristic with one request", async () => {
     const stores = setup();
-    stores.selection.select(["c1", "c3"]);
+    stores.selection.select(["c3"]);
     render(stores);
     await settle();
-    const button = [...target.querySelectorAll("button")].find((b) =>
-      b.textContent?.includes("Re-interpret"),
-    );
-    expect(button?.textContent).toContain("(2)");
-    button?.click();
+    target.querySelector<HTMLButtonElement>("[data-action='update_limits']")?.click();
     await settle();
-    expect(stores.reinterpreted).toEqual([["c1", "c3"]]);
+    expect(stores.reinterpreted).toEqual([["c3"]]);
     expect(target.querySelector("[role='status']")?.textContent).toContain("by hand: 1");
+  });
+
+  it("edits text, kind, quantity, method and gauge as update_fields commands", async () => {
+    const stores = setup();
+    stores.selection.select(["c1"]);
+    render(stores);
+    await settle();
+    const set = (field: string, value: string) => {
+      const control = target.querySelector<HTMLInputElement | HTMLSelectElement>(
+        `[data-field='${field}']`,
+      );
+      if (control) {
+        control.value = value;
+        control.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    };
+    set("requirement_text", "Ø8 f7");
+    await settle();
+    set("kind", "diameter");
+    await settle();
+    set("quantity", "4");
+    await settle();
+    set("inspection_method", "CMM");
+    await settle();
+    set("gauge", "Plug gauge");
+    await settle();
+    expect(stores.commands).toEqual([
+      {
+        type: "update_fields",
+        ids: ["c1"],
+        values: [{ field: "requirement_text", value: "Ø8 f7" }],
+      },
+      { type: "update_fields", ids: ["c1"], values: [{ field: "kind", value: "diameter" }] },
+      { type: "update_fields", ids: ["c1"], values: [{ field: "quantity", value: 4 }] },
+      {
+        type: "update_fields",
+        ids: ["c1"],
+        values: [{ field: "inspection_method", value: "CMM" }],
+      },
+      { type: "update_fields", ids: ["c1"], values: [{ field: "gauge", value: "Plug gauge" }] },
+    ]);
+  });
+
+  it("asks for the history only while its section is open", async () => {
+    const stores = setup();
+    stores.selection.select(["c1"]);
+    render(stores);
+    await settle();
+    expect(target.querySelector("[data-testid='detail-history']")).not.toBeNull();
+    const heading = [...target.querySelectorAll<HTMLButtonElement>("button[aria-expanded]")].find(
+      (b) => b.textContent.trim() === "History",
+    );
+    heading?.click();
+    await settle();
+    expect(heading?.getAttribute("aria-expanded")).toBe("false");
+    expect(target.querySelector("[data-testid='detail-history']")).toBeNull();
+    heading?.click();
+    await settle();
+    expect(target.querySelector("[data-testid='detail-history']")).not.toBeNull();
   });
 });
 

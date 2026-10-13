@@ -33,7 +33,7 @@
   { "wait": 500 },
 
   { "row": 1 },
-  { "button": "Re-interpret selected (1)" },
+  { "button": "Update limits" },
   { "wait": 500 },
   { "report": "reinterpreted" },
 

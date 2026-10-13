@@ -418,6 +418,23 @@ export class ProjectStore {
     return this.#edit(() => this.#api.execute(command));
   }
 
+  /**
+   * Executes the document command `build` makes from the project as it is when the command's
+   * turn comes, after every earlier edit is applied. Forms that send a whole record for one
+   * changed field (project info, report header, a sample) use it, so two fast edits of two
+   * fields both survive instead of the second sending the first field's old value (T3.18).
+   * `build` returns `null` when there is nothing to send any more.
+   */
+  executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined> {
+    return this.#edit(() => {
+      const project = this.project;
+      const command = project === null ? null : build(project);
+      return command === null
+        ? Promise.resolve({ status: "ok", data: this.#unchanged() })
+        : this.#api.execute(command);
+    });
+  }
+
   /** Undoes the last command, if there is one when its turn comes. */
   async undo(): Promise<void> {
     await this.#edit(() =>

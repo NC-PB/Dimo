@@ -18,7 +18,7 @@ tolerance is marked "No tolerance defined"; choose one in the **General toleranc
 
 | Page | Content |
 |---|---|
-| [Looking at a drawing](drawing-view.md) | Zoom, move, sheets, the side panel |
+| [Looking at a drawing](drawing-view.md) | Zoom, move, sheets, the properties pane |
 | [Ballooning a drawing](ballooning.md) | Place, select, move, style and delete balloons |
 | [Characteristic table](characteristics.md) | Values, selecting, editing, changing the order |
 | [Sheets: rotation, unit and scale](sheets.md) | Properties of every sheet |
@@ -95,7 +95,7 @@ carry the marker **Draft** until their values have been verified. Details:
 The balloons are numbered 1, 2, 3 in the order you place them. If you made a mistake, press ⌘Z.
 Press **V** to go back to the **Select** tool. Details: [Ballooning a drawing](ballooning.md).
 Click a balloon or a row to see the rule, the explanation and the history of a characteristic in
-the side panel ([Tolerances](tolerances.md)).
+the properties pane on the right ([Tolerances](tolerances.md)).
 
 ### 5. Complete the values in the characteristic table
 
@@ -115,9 +115,10 @@ Click a row to see its balloon in the drawing, and click a balloon to see its ro
 Drag the handle ⠿ of a row, or select rows and press ⌥↑ or ⌥↓. All characteristics are numbered
 again, and the balloons on the drawing follow. One ⌘Z puts everything back.
 
-To number by zone, by view or by type, use the **Numbering** panel in the side panel: choose a
-strategy, tick **Preview new numbers** to see the result on the drawing and in the table, and
-choose **Apply numbering**. Zone grid and views are drawn by hand in **Sheet properties**.
+To number by zone, by view or by type, use the group **Numbering** on the Home tab: choose the
+order, choose **Preview numbers** to see the result on the drawing and in the table, and choose
+**Renumber**. Zone grid and views are drawn by hand with **Zone grid** and **Draw view** on the
+Drawing tab.
 Details: [Numbering strategies, zones and views](numbering.md).
 
 ### 7. Style the balloons

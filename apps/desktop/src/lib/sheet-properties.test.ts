@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Command, Patch, Sheet } from "$lib/ipc/bindings";
+import type { Command, Patch, Project, Sheet } from "$lib/ipc/bindings";
 
 const mocks = vi.hoisted(() => ({
   sheets: [] as Sheet[],
   executed: [] as Command[],
+  queue: Promise.resolve() as Promise<unknown>,
 }));
 
 // The singletons talk to Tauri; the tests give them a fake project that applies the command.
@@ -33,6 +34,19 @@ vi.mock("$lib/stores/project.svelte", () => ({
         }, 1);
       });
     },
+    // Like the real store: built in turn, from the sheets after the earlier commands.
+    executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined> {
+      const run = mocks.queue.then(() => {
+        const project = {
+          current_revision: "r",
+          revisions: [{ id: "r", sheets: mocks.sheets }],
+        } as unknown as Project;
+        const command = build(project);
+        return command === null ? undefined : this.execute(command);
+      });
+      mocks.queue = run.catch(() => undefined);
+      return run;
+    },
   },
 }));
 vi.mock("$lib/stores/document.svelte", () => ({ documentStore: { sheet: 0 } }));
@@ -43,6 +57,7 @@ import {
   presetFor,
   rotateShownSheet,
   scaleText,
+  setShownScalePart,
   updateShownSheet,
 } from "./sheet-properties";
 
@@ -120,6 +135,13 @@ describe("sheet commands (T1.8)", () => {
       "deg180",
       "deg270",
     ]);
+  });
+
+  it("keeps both parts of a custom scale typed fast (T3.18)", async () => {
+    await Promise.all([setShownScalePart("drawing", 3), setShownScalePart("actual", 7)]);
+    expect(mocks.sheets[0]?.scale).toEqual({ drawing: 3, actual: 7 });
+    await setShownScalePart("actual", 7);
+    expect(mocks.executed).toHaveLength(2);
   });
 
   it("does nothing without a sheet", async () => {

@@ -51,9 +51,10 @@
   { "key": "ArrowUp", "alt": true },
   { "report": "reordered" },
 
-  { "button": "↻" },
+  { "show": "tab:drawing" },
+  { "button": "Rotate right" },
   { "select": ["Scale", "2:1"] },
-  { "check": ["Inch", true] },
+  { "select": ["Unit", "in"] },
   { "report": "sheet set" },
 
   { "key": "s", "mod": true, "shift": true },

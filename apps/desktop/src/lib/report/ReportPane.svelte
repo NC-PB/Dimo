@@ -4,6 +4,7 @@
   import { commandErrorMessage, m } from "$lib/i18n";
   import type { ReportField } from "$lib/ipc/bindings";
   import { measureUi } from "$lib/measure/measure-ui.svelte";
+  import Pane from "$lib/pane/Pane.svelte";
   import { exportStore as appExport, type ExportStore } from "$lib/stores/export.svelte";
   import { view } from "$lib/stores/view.svelte";
   import { reportView as appReportView, type ReportViewStore } from "./report-view.svelte";
@@ -134,151 +135,153 @@
     "inline-flex min-h-8 items-center px-1 font-medium text-accent-strong underline-offset-2 hover:underline";
 </script>
 
-<section class="flex min-h-0 flex-1 flex-col" aria-labelledby="report-pane-title">
-  <h2
-    id="report-pane-title"
-    class="border-b border-border px-4 py-3 font-heading text-base font-semibold text-text"
-  >
-    {m.report_pane_title()}
-  </h2>
-  <ul class="flex flex-col" data-testid="report-checks">
-    {#each items as item (item.id)}
-      <li
-        class="flex gap-2.5 border-b border-border px-4 py-3 text-sm leading-snug text-text"
-        data-check={item.id}
-        data-ok={item.ok}
-      >
-        {#if item.ok}
-          <!-- Check mark: done (shape plus color, NFR-UX-05). -->
-          <svg
-            class="mt-0.5 size-4 shrink-0 text-success"
-            viewBox="0 0 16 16"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M2.5 8.5 6.5 12.5 13.5 3.5"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        {:else}
-          <!-- Triangle with "!": look at this before issuing. -->
-          <svg
-            class="mt-0.5 size-4 shrink-0 text-warning"
-            viewBox="0 0 16 16"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M8 1.5 15 14H1L8 1.5Z"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linejoin="round"
-            />
-            <path d="M8 6.5v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-            <circle cx="8" cy="12" r="0.9" fill="currentColor" />
-          </svg>
-        {/if}
-        <span>
-          {item.text}
-          {#if item.action}
-            <button type="button" class={linkClass} onclick={item.action.run}
-              >{item.action.label}</button
+<Pane title={m.report_pane_title()} label={m.report_pane_title()} testid="report-pane">
+  <!-- Fills the scrolling body of the pane, so the actions sit at its foot. -->
+  <div class="flex min-h-full flex-col">
+    <ul class="flex flex-col" data-testid="report-checks">
+      {#each items as item (item.id)}
+        <li
+          class="flex gap-2.5 border-b border-border px-3.5 py-3 text-sm leading-snug text-text"
+          data-check={item.id}
+          data-ok={item.ok}
+        >
+          {#if item.ok}
+            <!-- Check mark: done (shape plus color, NFR-UX-05). -->
+            <svg
+              class="mt-0.5 size-4 shrink-0 text-success"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
             >
+              <path
+                d="M2.5 8.5 6.5 12.5 13.5 3.5"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          {:else}
+            <!-- Triangle with "!": look at this before issuing. -->
+            <svg
+              class="mt-0.5 size-4 shrink-0 text-warning"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M8 1.5 15 14H1L8 1.5Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8 6.5v3.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+              <circle cx="8" cy="12" r="0.9" fill="currentColor" />
+            </svg>
           {/if}
-        </span>
-      </li>
-    {/each}
-  </ul>
-  {#if store.checksError}
-    <p class="px-4 py-3 text-sm text-danger" role="alert">
-      {commandErrorMessage(store.checksError)}
-    </p>
-  {/if}
+          <span>
+            {item.text}
+            {#if item.action}
+              <button type="button" class={linkClass} onclick={item.action.run}
+                >{item.action.label}</button
+              >
+            {/if}
+          </span>
+        </li>
+      {/each}
+    </ul>
+    {#if store.checksError}
+      <p class="px-4 py-3 text-sm text-danger" role="alert">
+        {commandErrorMessage(store.checksError)}
+      </p>
+    {/if}
 
-  <div class="mt-auto flex flex-col gap-2 border-t border-border p-4">
-    {#if pending}
-      <div
-        class="flex flex-col gap-2 rounded-lg border border-warning bg-bg p-3 text-sm"
-        role="alertdialog"
-        aria-labelledby="report-warnings-title"
-      >
-        <p id="report-warnings-title" class="font-semibold">
-          <span aria-hidden="true">⚠</span>
-          {m.export_warnings_title()}
-        </p>
-        <ul class="list-disc pl-5">
-          {#if pending.warnings.draft_limits}
-            <li>{m.export_warning_draft()}</li>
-          {/if}
-          {#if pending.warnings.open_results}
-            <li>{m.export_warning_open()}</li>
-          {/if}
-          {#if pending.warnings.limits_changed}
-            <li>{m.export_warning_changed()}</li>
-          {/if}
-        </ul>
-        <div class="flex flex-wrap gap-2">
-          <button
-            type="button"
-            class={primaryClass}
-            onclick={() => void exports.confirmPending()}
-            {@attach (el: HTMLButtonElement) => {
-              el.focus();
-            }}>{m.export_warnings_confirm()}</button
-          >
-          <button
-            type="button"
-            class={secondaryClass}
-            onclick={() => {
-              exports.dismissPending();
-            }}>{m.export_warnings_back()}</button
-          >
+    <div class="mt-auto flex flex-col gap-2 border-t border-border p-4">
+      {#if pending}
+        <div
+          class="flex flex-col gap-2 rounded-lg border border-warning bg-bg p-3 text-sm"
+          role="alertdialog"
+          aria-labelledby="report-warnings-title"
+        >
+          <p id="report-warnings-title" class="font-semibold">
+            <span aria-hidden="true">⚠</span>
+            {m.export_warnings_title()}
+          </p>
+          <ul class="list-disc pl-5">
+            {#if pending.warnings.draft_limits}
+              <li>{m.export_warning_draft()}</li>
+            {/if}
+            {#if pending.warnings.open_results}
+              <li>{m.export_warning_open()}</li>
+            {/if}
+            {#if pending.warnings.limits_changed}
+              <li>{m.export_warning_changed()}</li>
+            {/if}
+          </ul>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class={primaryClass}
+              onclick={() => void exports.confirmPending()}
+              {@attach (el: HTMLButtonElement) => {
+                el.focus();
+              }}>{m.export_warnings_confirm()}</button
+            >
+            <button
+              type="button"
+              class={secondaryClass}
+              onclick={() => {
+                exports.dismissPending();
+              }}>{m.export_warnings_back()}</button
+            >
+          </div>
         </div>
-      </div>
-    {:else if exports.job(format)?.state === "running"}
-      <button type="button" class={secondaryClass} onclick={() => void exports.cancel(format)}
-        >{m.export_cancel()}</button
-      >
-    {:else}
-      <button
-        type="button"
-        class={primaryClass}
-        title={issueReason ?? m.cmd_issue_report_desc()}
-        aria-disabled={issueReason !== null ? "true" : undefined}
-        data-action="issue_report"
-        onclick={() => {
-          runCommand("issue_report");
-        }}>{m.report_issue_button()}</button
-      >
-      <button
-        type="button"
-        class={secondaryClass}
-        title={copyReason ?? m.cmd_save_copy_desc()}
-        aria-disabled={copyReason !== null ? "true" : undefined}
-        data-action="save_copy"
-        onclick={() => {
-          runCommand("save_copy");
-        }}>{m.report_save_copy_button()}</button
-      >
-    {/if}
-    <JobStatus {format} store={exports} />
-    {#if store.print.state === "running"}
-      <p class="text-sm text-text-muted" aria-live="polite">{m.report_print_running()}</p>
-    {:else if store.print.state === "done"}
-      <p class="text-sm text-success" aria-live="polite">
-        <span aria-hidden="true">✓</span>
-        {m.report_print_done({ file: store.print.fileName })}
-      </p>
-    {:else if store.print.state === "failed"}
-      <p class="text-sm text-danger" role="alert">
-        <span aria-hidden="true">⚠</span>
-        {m.report_print_failed({ message: commandErrorMessage(store.print.error) })}
-      </p>
-    {/if}
-    <p class="text-xs text-text-muted">{m.report_issue_hint()}</p>
+      {:else if exports.job(format)?.state === "running"}
+        <button type="button" class={secondaryClass} onclick={() => void exports.cancel(format)}
+          >{m.export_cancel()}</button
+        >
+      {:else}
+        <button
+          type="button"
+          class={primaryClass}
+          title={issueReason ?? m.cmd_issue_report_desc()}
+          aria-disabled={issueReason !== null ? "true" : undefined}
+          data-action="issue_report"
+          onclick={() => {
+            runCommand("issue_report");
+          }}>{m.report_issue_button()}</button
+        >
+        <button
+          type="button"
+          class={secondaryClass}
+          title={copyReason ?? m.cmd_save_copy_desc()}
+          aria-disabled={copyReason !== null ? "true" : undefined}
+          data-action="save_copy"
+          onclick={() => {
+            runCommand("save_copy");
+          }}>{m.report_save_copy_button()}</button
+        >
+      {/if}
+      <JobStatus {format} store={exports} />
+      {#if store.print.state === "running"}
+        <p class="text-sm text-text-muted" aria-live="polite">{m.report_print_running()}</p>
+      {:else if store.print.state === "done"}
+        <p class="text-sm text-success" aria-live="polite">
+          <span aria-hidden="true">✓</span>
+          {m.report_print_done({ file: store.print.fileName })}
+        </p>
+      {:else if store.print.state === "failed"}
+        <p class="text-sm text-danger" role="alert">
+          <span aria-hidden="true">⚠</span>
+          {m.report_print_failed({ message: commandErrorMessage(store.print.error) })}
+        </p>
+      {/if}
+      <p class="text-xs text-text-muted">{m.report_issue_hint()}</p>
+    </div>
   </div>
-</section>
+</Pane>

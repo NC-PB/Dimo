@@ -3,7 +3,7 @@
   import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import ProjectMessages from "$lib/components/ProjectMessages.svelte";
   import Shortcuts from "$lib/components/Shortcuts.svelte";
-  import SidePanel from "$lib/components/SidePanel.svelte";
+  import PropertiesPane from "$lib/components/PropertiesPane.svelte";
   import DeleteCharacteristicsDialog from "$lib/components/DeleteCharacteristicsDialog.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SetupPane from "$lib/components/SetupPane.svelte";
@@ -23,6 +23,7 @@
   import { appInfo } from "$lib/stores/app-info.svelte";
   import { documentStore } from "$lib/stores/document.svelte";
   import { exportStore } from "$lib/stores/export.svelte";
+  import { numberingStore } from "$lib/stores/numbering.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { setupStore } from "$lib/stores/setup.svelte";
   import { toleranceStore } from "$lib/stores/tolerance.svelte";
@@ -38,6 +39,17 @@
     toleranceStore.declineGeneralUpdate();
     measureUi.onlyMissing = false;
     measureUi.onlyFailed = false;
+    view.paneTool = null;
+  });
+
+  // The numbering preview follows the project: every change (also undo and redo) and every
+  // other strategy asks Rust again. It is switched on from the Home tab (T3.18).
+  $effect(() => {
+    void projectStore.revision;
+    void projectStore.session;
+    void numberingStore.strategy;
+    void numberingStore.previewing;
+    untrack(() => void numberingStore.refresh());
   });
 
   // A project opened or created from the File page shows its drawing, so work can start
@@ -119,14 +131,14 @@
         <TablePanel />
       </div>
     </div>
-    <!-- The setup pane of a new project takes the place of the side panel (decision 23). -->
+    <!-- The setup pane of a new project takes the place of the properties pane (decision 23). -->
     <SetupPane sheetCount={projectStore.sheets.length} />
     <div
       class="contents"
       style:display={view.showSidePanel && !setupStore.visible ? null : "none"}
       inert={!projectStore.isOpen}
     >
-      <SidePanel />
+      <PropertiesPane />
     </div>
   </div>
   {#if view.current === "measure"}

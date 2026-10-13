@@ -2,6 +2,8 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/i18n";
   import type { Sample, SampleId } from "$lib/ipc/bindings";
+  import Pane from "$lib/pane/Pane.svelte";
+  import PaneSection from "$lib/pane/PaneSection.svelte";
   import { measurementStore, type MeasurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore, type ProjectStore } from "$lib/stores/project.svelte";
   import { refusalDetail } from "$lib/table/refusal";
@@ -23,7 +25,8 @@
    * (FR-MEA-01, M3 decision 6: serial, date, inspector, gauges, comment) and its counts per
    * verdict from Rust. Each field change is one `update_sample`; Rust trims the serial, checks
    * that it is unique and that the date is a calendar date, and the field then shows what the
-   * project holds.
+   * project holds. It fills the shared pane frame (T3.18): the header names the part, the fields
+   * follow, then the counts as a section that folds.
    */
   const uid = $props.id();
   const sample = $derived(project.project?.samples.find((s) => s.id === activeSample));
@@ -43,8 +46,17 @@
     if (current === undefined || input.value === current[field]) {
       return;
     }
-    const next: Sample = { ...current, [field]: input.value };
-    const patch = await project.execute({ type: "update_sample", sample: next });
+    // The sample is built when the command runs, so a fast edit of another field of the same
+    // part is not overwritten with its old value (T3.18).
+    const value = input.value;
+    const patch = await project.executeWith((p) => {
+      const latest = p.samples.find((s) => s.id === current.id);
+      if (latest === undefined || latest[field] === value) {
+        return null;
+      }
+      const next: Sample = { ...latest, [field]: value };
+      return { type: "update_sample", sample: next };
+    });
     if (patch === undefined) {
       const error = project.error;
       project.dismissError();
@@ -61,13 +73,11 @@
     "inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-sm font-semibold";
 </script>
 
-<section class="flex flex-col" aria-labelledby="{uid}-title">
-  <h2
-    id="{uid}-title"
-    class="border-b border-border px-3.5 py-3 font-heading text-base font-semibold text-text"
-  >
-    {sample ? m.measure_part_title({ serial: sample.serial }) : m.sample_panel_title()}
-  </h2>
+<Pane
+  title={sample ? m.measure_part_title({ serial: sample.serial }) : m.sample_panel_title()}
+  label={m.measure_side_panel_label()}
+  testid="measure-pane"
+>
   {#if sample}
     {#key sample.id}
       <div
@@ -108,9 +118,8 @@
     {/if}
     {#if counts}
       <!-- Counts of this part from Rust, each with the shape of its verdict (decision 9). -->
-      <div class="flex flex-col gap-2 px-3.5 py-2.5" data-testid="part-counts">
-        <h3 class="text-xs font-semibold text-text-muted">{m.measure_part_counts()}</h3>
-        <div class="flex flex-wrap gap-2">
+      <PaneSection id="measure.counts" title={m.measure_part_counts()}>
+        <div class="flex flex-wrap gap-2" data-testid="part-counts">
           <span class="{pillClass} text-success"
             ><VerdictMark verdict="pass" size={12} />{m.measure_part_pass({
               count: String(counts.pass),
@@ -132,7 +141,7 @@
             >{m.measure_part_missing({ count: String(counts.missing) })}</span
           >
         </div>
-      </div>
+      </PaneSection>
     {/if}
   {:else}
     <div class="px-3.5 py-2.5">
@@ -148,4 +157,4 @@
       {/if}
     </div>
   {/if}
-</section>
+</Pane>

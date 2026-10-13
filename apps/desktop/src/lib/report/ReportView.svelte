@@ -2,6 +2,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { commandErrorMessage, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
+  import Pane from "$lib/pane/Pane.svelte";
   import { exportStore } from "$lib/stores/export.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
@@ -143,13 +144,10 @@
       </div>
     {/if}
   </section>
-  <!-- Local pane frame until the shared one of T3.18 is merged. -->
-  <aside
-    class="flex min-h-0 w-80 shrink-0 flex-col overflow-y-auto border-l border-border bg-surface"
-    aria-label={m.report_pane_title()}
-  >
-    {#if project !== null}
-      <ReportPane {store} />
-    {/if}
-  </aside>
+  <!-- The shared pane frame of T3.18, filled with the checks (T3.19). -->
+  {#if project !== null}
+    <ReportPane {store} />
+  {:else}
+    <Pane title={m.report_pane_title()} label={m.report_pane_title()} />
+  {/if}
 </div>

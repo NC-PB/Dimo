@@ -14,8 +14,8 @@
 #   5. Tolerance settings (T2.10): a box select without a general tolerance is discarded with
 #      Escape, the project gets ISO 2768-1 class m (general tolerance field on the Home tab,
 #      T3.16), the same box is accepted with the general limits, and a typed balloon is read again with "Re-interpret selected".
-#   6. Project and report details (T3.4): part, revision and report fields are typed into the
-#      side panel and saved; the company name comes from the settings of the user (Options).
+#   6. Project and report details (T3.4): part, revision and report fields are typed into
+#      File > Info (T3.18) and saved; the company name comes from the settings of the user.
 #   7. Measurement grid (T3.5): five characteristics from a dev script, three samples added, one
 #      column typed with the keyboard only, a 5 by 3 block pasted, undone and redone in one step
 #      each, saved; verdicts from the app and results from project.json.

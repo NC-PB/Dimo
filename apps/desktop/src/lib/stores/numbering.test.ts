@@ -30,6 +30,10 @@ function fakeRust(project: Project | null = projectOf(3)) {
       commands.push(command);
       return Promise.resolve({ changes: [] });
     },
+    executeWith(build) {
+      const command = state.project === null ? null : build(state.project);
+      return command === null ? Promise.resolve({ changes: [] }) : state.execute(command);
+    },
   };
   return {
     api,

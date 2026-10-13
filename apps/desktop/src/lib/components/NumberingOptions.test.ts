@@ -5,7 +5,7 @@ import type { Command, NumberingStrategy, Project } from "$lib/ipc/bindings";
 import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { NumberingStore, type NumberingApi } from "$lib/stores/numbering.svelte";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
-import NumberingPanel from "./NumberingPanel.svelte";
+import NumberingOptions from "./NumberingOptions.svelte";
 
 function projectOf(locked: boolean): Project {
   const project = emptyProject();
@@ -75,9 +75,9 @@ let target: HTMLElement;
 function render(stores: ReturnType<typeof setup>) {
   target = document.createElement("div");
   document.body.append(target);
-  component = mount(NumberingPanel, {
+  component = mount(NumberingOptions, {
     target,
-    props: { numberingStore: stores.numberingStore, projectStore: stores.projectStore },
+    props: { numberingStore: stores.numberingStore },
   });
   flushSync();
 }
@@ -98,58 +98,41 @@ async function settle(): Promise<void> {
   flushSync();
 }
 
-function button(text: string): HTMLButtonElement | undefined {
-  return [...target.querySelectorAll("button")].find((b) => b.textContent.trim() === text);
+function choose(value: string, option: string): void {
+  const select = [...target.querySelectorAll("select")].find((s) =>
+    [...s.options].some((o) => o.value === option),
+  );
+  if (select) {
+    select.value = value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }
 }
 
-describe("numbering panel (T2.7, FR-BAL-04, FR-BAL-05)", () => {
-  it("previews the picked strategy and applies it as one command", async () => {
-    const stores = setup();
-    render(stores);
-    const strategy = target.querySelector("select");
-    expect(strategy?.value).toBe("sheet_zone");
-    expect([...(strategy?.options ?? [])].map((o) => o.value)).toEqual([
-      "sheet_zone",
-      "view",
-      "view_clockwise",
-      "kind",
-      "manual",
-    ]);
-    if (strategy) {
-      strategy.value = "view_clockwise";
-      strategy.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-    const preview = target.querySelector<HTMLInputElement>("input[type=checkbox]");
-    preview?.click();
-    await settle();
-    expect(stores.previews.at(-1)).toBe("view_clockwise");
-    expect(stores.numberingStore.ghosts).toEqual({ c1: "2", c2: "1" });
-    expect(target.textContent).toContain("Numbers that change: 2");
-
-    button("Apply numbering")?.click();
-    await settle();
-    expect(stores.commands).toEqual([{ type: "apply_numbering", strategy: "view_clockwise" }]);
-    expect(stores.numberingStore.previewing).toBe(false);
-  });
-
-  it("explains a locked project and offers no apply (D-23)", async () => {
+describe("numbering options (D-22, D-23, T3.18)", () => {
+  it("explains a locked project and still offers the insert policy (D-23)", async () => {
     const stores = setup(true);
     render(stores);
     await settle();
     expect(target.textContent).toContain("Numbering is locked");
-    expect(button("Apply numbering")).toBeUndefined();
+    choose("letter_suffix", "letter_suffix");
+    await settle();
+    expect(stores.commands).toEqual([
+      {
+        type: "set_numbering_settings",
+        settings: {
+          strategy: "sheet_zone",
+          multi_instance: "quantity",
+          insert_when_locked: "letter_suffix",
+        },
+      },
+    ]);
     expect(stores.previews).toEqual([]);
   });
 
   it("sets multi-instance numbering (D-22)", async () => {
     const stores = setup();
     render(stores);
-    const selects = [...target.querySelectorAll("select")];
-    const multi = selects.find((s) => [...s.options].some((o) => o.value === "sub_number"));
-    if (multi) {
-      multi.value = "sub_number";
-      multi.dispatchEvent(new Event("change", { bubbles: true }));
-    }
+    choose("sub_number", "sub_number");
     await settle();
     expect(stores.commands).toEqual([
       {

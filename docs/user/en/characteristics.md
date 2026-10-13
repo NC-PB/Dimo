@@ -54,10 +54,12 @@ lower limit `7.95`. When you change the nominal value or a deviation, the limits
 remove a deviation, the limits that were worked out go too. A limit you type yourself is kept and
 wins over the deviations. All numbers are exact decimals; nothing is rounded.
 
-Limits read from the drawing come with their rule and an explanation in the side panel. Limits
-you type get the rule "Entered by hand" and are never changed by a re-interpretation. Editing
-the **Requirement** cell stores only the text; select the characteristic and use **Re-interpret
-selected** in the side panel to read it again. Details: [Tolerances](tolerances.md).
+Limits read from the drawing come with their rule and an explanation in the properties pane on the
+right ([Looking at a drawing](drawing-view.md)). Limits you type get the rule "Entered by hand" and
+are never changed by a re-interpretation. Editing the **Requirement** cell stores only the text;
+select the characteristic and use **Update limits** (Home tab or properties pane) to read it again.
+Text, kind, quantity, inspection method and gauge of one selected characteristic can also be
+changed in the properties pane. Details: [Tolerances](tolerances.md).
 
 ## Deleting
 

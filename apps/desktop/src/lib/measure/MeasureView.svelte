@@ -2,6 +2,7 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/i18n";
   import { icons } from "$lib/icons";
+  import Pane from "$lib/pane/Pane.svelte";
   import { measurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import MeasureGrid from "./MeasureGrid.svelte";
@@ -42,13 +43,10 @@
       <MeasureGrid />
     {/if}
   </section>
-  <!-- Local pane frame until the shared one of T3.18 is merged. -->
-  <aside
-    class="flex min-h-0 w-80 shrink-0 flex-col overflow-y-auto border-l border-border bg-surface text-sm text-text-muted"
-    aria-label={m.measure_side_panel_label()}
-  >
-    {#if projectStore.project !== null}
-      <SamplePanel activeSample={measureUi.activeSample} />
-    {/if}
-  </aside>
+  <!-- The shared pane frame of T3.18, filled with the active part (T3.19). -->
+  {#if projectStore.project !== null}
+    <SamplePanel activeSample={measureUi.activeSample} />
+  {:else}
+    <Pane title={m.sample_panel_title()} label={m.measure_side_panel_label()} />
+  {/if}
 </div>

@@ -167,7 +167,8 @@ export class SetupStore {
           return false;
         }
       }
-      const commands = this.#changes(project.info, answers);
+      // The part data as it is after the tolerance step, not as it was before (T3.18).
+      const commands = this.#changes(this.#project.project?.info ?? project.info, answers);
       if (commands.length > 0) {
         const command: Command =
           commands.length === 1 && commands[0] !== undefined

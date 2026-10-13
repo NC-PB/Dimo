@@ -10,7 +10,7 @@ import EmptyState, { type EmptyAction } from "./EmptyState.svelte";
 import { ReportViewStore } from "$lib/report/report-view.svelte";
 import ReportView from "$lib/report/ReportView.svelte";
 import ExportView from "./ExportView.svelte";
-import SelectionSummary from "./SelectionSummary.svelte";
+import ProjectSummary from "./ProjectSummary.svelte";
 import StartScreen from "./StartScreen.svelte";
 
 let component: ReturnType<typeof mount> | null = null;
@@ -148,12 +148,13 @@ describe("empty states (T3.17)", () => {
     expect(balloonTools.tool).toBe("select");
   });
 
-  it("explains an empty selection in the side panel and offers Place balloon", () => {
+  it("explains an empty selection in the properties pane and offers Place balloon", () => {
     projectStore.load(loaded(++session, emptyProject()));
-    render((t) => mount(SelectionSummary, { target: t }));
-    expect(target.querySelector("h2")?.textContent.trim()).toBe("Nothing selected");
-    expect(target.textContent).toContain("There are no balloons yet.");
-    expect(target.querySelector<HTMLElement>("button")?.dataset.action).toBe("place_tool");
+    render((t) => mount(ProjectSummary, { target: t }));
+    const box = target.querySelector('[data-testid="empty-state"]');
+    expect(box?.querySelector("h2")?.textContent.trim()).toBe("Nothing selected");
+    expect(box?.textContent).toContain("There are no balloons yet.");
+    expect(box?.querySelector<HTMLElement>("button")?.dataset.action).toBe("place_tool");
   });
 
   function reportEmpty(): { title: string; actions: string[] } | null {
