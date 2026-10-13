@@ -10,7 +10,7 @@ page, on the right the pane you chose. **Back** (or any other tab) returns to wh
 | **Open project** | Shows the recent projects and **Open project** for any other file (⌘O) |
 | **Save**, **Save as…** | Save the project ([Projects](projects.md)) |
 | **Export** | Opens the **Report** tab ([Exports](exports.md)) |
-| **Print** | Not in this version: save a copy on the Report tab and print it from your PDF viewer |
+| **Print** | Opens the report chosen on the Report tab in your PDF viewer, where you print it ([Exports](exports.md)) |
 | **Close project** | Closes the project and keeps Dimo open. Dimo asks first if there are unsaved changes |
 | **About Dimo** | Version and licenses, see below |
 | **Options** | Your personal settings (⌘,), see below |
@@ -83,7 +83,7 @@ tab; you can change it here or there ([Exports](exports.md)).
   ([Tolerances](tolerances.md)).
 - **Decimal rules…**: a small window with the decimal place rules and the rounding after unit
   conversion.
-- **Company tables**: a small window with the custom tables of the project, **Import table…**
+- **Company tables**: a small window with the company tables of the project, **Import table…**
   and the drawing rule.
 - **Project balloon style**: a small window with shape, size, line width, outline color and
   leader line of all balloons of the project that have no style of their own. To give single

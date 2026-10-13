@@ -17,7 +17,7 @@ Drehe ein Blatt in 90-Grad-Schritten, wenn eine Zeichnung quer gescannt oder exp
 
 Die Tasten R und Shift+R wirken, solange weder die Tabelle noch ein Textfeld den Fokus hat.
 
-Die Drehung ändert nur die Anzeige. Ballone und Bereiche bleiben an ihrer Stelle auf der
+Die Drehung ändert nur die Anzeige. Ballons und Bereiche bleiben an ihrer Stelle auf der
 Zeichnung, und Exporte sind nicht betroffen. Der Punkt in der Fenstermitte bleibt beim Drehen in
 der Mitte. Die Drehung wird mit dem Projekt gespeichert.
 

@@ -5,8 +5,8 @@ On Windows and Linux the same keys are Ctrl and Alt. Where an action has more th
 them works.
 
 Single keys such as **B**, **V**, **R** or **0** act on the drawing only while the drawing, not a
-text field or the characteristic table, has the keyboard focus, and only while the Drawing view is
-shown. Combinations with ⌘ (Ctrl) work everywhere.
+text field or the characteristic table, has the keyboard focus, and only while the drawing is
+shown (Home or Drawing tab). Combinations with ⌘ (Ctrl) work everywhere.
 
 The tables below are checked against the shortcut definitions of the app by a test, so they stay
 complete.
@@ -34,7 +34,7 @@ These work in every view.
 
 ## Drawing
 
-These act on the drawing in the Drawing view. For the arrow keys and Enter the drawing must have
+These act on the drawing while it is shown. For the arrow keys and Enter the drawing must have
 the focus.
 
 <!-- shortcuts:drawing -->

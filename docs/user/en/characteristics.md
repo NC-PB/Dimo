@@ -56,7 +56,7 @@ wins over the deviations. All numbers are exact decimals; nothing is rounded.
 
 Limits read from the drawing come with their rule and an explanation in the properties pane on the
 right ([Looking at a drawing](drawing-view.md)). Limits you type get the rule "Entered by hand" and
-are never changed by a re-interpretation. Editing the **Requirement** cell stores only the text;
+are never changed by **Update limits**. Editing the **Requirement** cell stores only the text;
 select the characteristic and use **Update limits** (Home tab or properties pane) to read it again.
 Text, kind, quantity, inspection method and gauge of one selected characteristic can also be
 changed in the properties pane. Details: [Tolerances](tolerances.md).

@@ -24,10 +24,10 @@ tolerance is marked "No tolerance defined"; choose one in the **General toleranc
 | [Sheets: rotation, unit and scale](sheets.md) | Properties of every sheet |
 | [Numbering strategies, zones and views](numbering.md) | Number by zone, view or type, preview, sub-numbers, locked numbering |
 | [Project and report details](project-details.md) | Part, customer, revision, drawing hash, report header and approval fields |
-| [Entering results](measuring.md) | Samples, the measurement grid, keyboard entry, pasting, pass/fail marks, result types |
+| [Entering results](measuring.md) | Parts, the measurement grid, keyboard entry, pasting, pass/fail marks, result types |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
 | [Exports](exports.md) | Check sheet and inspection report, ballooned PDF, CSV and Excel list, issued drawings and reports |
-| [Tolerances](tolerances.md) | Rules, general tolerance, custom tables, explanations, draft tables, history |
+| [Tolerances](tolerances.md) | Rules, general tolerance, company tables, explanations, draft tables, history |
 | [File page, options and About](settings.md) | Project info, recent projects, options (theme, language, user name, company name, export defaults), project settings of the Drawing tab, licenses |
 | [Keyboard shortcuts](shortcuts.md) | Every key, for macOS and for Windows and Linux |
 
@@ -130,7 +130,7 @@ is shown by shape as well as color. Details: [Ballooning a drawing](ballooning.m
 
 ### 8. Set rotation, unit and scale of the sheet
 
-In **Sheet properties** on the right: rotate the sheet in steps of 90 degrees (**R** and
+In the group **Sheet** of the **Drawing** tab: rotate the sheet in steps of 90 degrees (**R** and
 **Shift+R**), choose millimeter or inch, and the scale of the title block. Each sheet has its own
 values. Details: [Sheets](sheets.md).
 
@@ -156,22 +156,24 @@ decides pass or fail for you. Details: [Entering results](measuring.md).
 
 ### 11. Export
 
-First fill in the part, drawing revision and report fields in **Project and report**
-([Project and report details](project-details.md)). Then open the **Report** tab (⌘E).
+First fill in the part, drawing revision and report fields in **File** > **Info**
+([Project and report details](project-details.md)). Then open the **Report** tab (⌘E). Choose
+**Check sheet** or **Inspection report**; the work area shows a preview of the document and the
+pane on the right lists what to check before you issue it.
 
 - **Check sheet** (PDF or Excel): the characteristics with empty result columns, to print before
   you measure.
-- **Inspection report** (PDF or Excel): summary, samples, results with verdicts and the signature
+- **Inspection report** (PDF or Excel): summary, parts, results with verdicts and the signature
   block.
-- **Ballooned PDF**: the drawing with the balloons drawn in. The original file is not changed.
-- **Characteristic list (CSV)** and **(Excel)**: one row per characteristic, in balloon order,
-  with the rule that gave each limit.
+- **Ballooned PDF**, **Characteristic list (CSV)** and **(Excel)**: in **File** > **Export**
+  (or **Drawing and list** on the Report tab). The PDF is the drawing with the balloons drawn in;
+  the lists have one row per characteristic, in balloon order, with the rule that gave each limit.
 
-Pick the language of the reports and column headers and how the PDF carries the balloons. Each
-export asks where to save the file and runs in the background; **Cancel export** stops a report
-export. For a drawing or report that goes to a customer, tick **Export as issued** first: it locks
-the numbering, so numbers never change afterwards, even if you add or delete characteristics, and a
-report is recorded in the project. Details: [Exports](exports.md).
+Pick the format and the language of the report on the ribbon. **Save copy** writes the file,
+**Print** opens it in your PDF viewer. For a report that goes to a customer choose **Issue
+report**: it locks the numbering, so numbers never change afterwards, even if you add or delete
+characteristics, and the report is recorded in the project. Each export asks where to save the
+file and runs in the background; **Cancel export** stops it. Details: [Exports](exports.md).
 
 ### 12. Options
 
@@ -186,9 +188,9 @@ project. The project itself (part, tolerances, report header, progress) is summe
 
 - Open the project later with **Open project** (⌘O) and carry on. Every change you made is recorded
   in the change log inside the project.
-- Enter the measured values of your parts in the **Measure** view (⌘3), see
+- Enter the measured values of your parts on the **Measure** tab (⌘3), see
   [Entering results](measuring.md).
 - If limits change after you entered results, the results stay and the verdicts follow the new
   limits ([Entering results](measuring.md#when-limits-change)).
-- Not yet in this version: searching the drawing automatically. The **Review** view shows a note
+- Not yet in this version: searching the drawing automatically. The **Review** tab shows a note
   that it comes in a later version.

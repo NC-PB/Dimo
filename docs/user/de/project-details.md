@@ -1,8 +1,9 @@
 # Projekt- und Berichtsdaten
 
-**Datei > Info** enthält die Daten, die Teil, Zeichnung und Prüfbericht kennzeichnen; auch die
-Seitenleiste der Ansicht Messen zeigt sie. Ist nichts ausgewählt, zeigt der Eigenschaftenbereich
-der Zeichnung eine Übersicht mit dem Weg zu Datei > Info. Die Daten liegen im Projekt und stehen in Kopfzeile und Unterschriftsblock der
+**Datei > Info** ist der eine Ort, an dem du die Daten änderst, die Teil, Zeichnung und
+Prüfbericht kennzeichnen. Ist nichts ausgewählt, zeigt der Eigenschaftenbereich eine Übersicht mit
+**Unter Datei > Info bearbeiten**, und der Reiter Bericht verweist dorthin, wenn ein Feld im
+Berichtskopf leer ist. Die Daten liegen im Projekt und stehen in Kopfzeile und Unterschriftsblock der
 Berichte.
 
 Jedes Feld wird gespeichert, wenn du es verlässt oder Enter drückst. Jede Änderung ist ein Schritt
@@ -42,7 +43,7 @@ ihn auf jeden Bericht.
 
 „Geprüft von“ und „Freigegeben von“ stehen im Unterschriftenblock des Prüfberichts. Das Datum bei
 „Geprüft von“ ist das Berichtsdatum; „Freigegeben von“ bekommt kein Datum, das schreibst du von
-Hand. Das ist getrennt vom Prüfer jedes Teils, den du im Bereich **Teil** der Seitenleiste einstellst
+Hand. Das ist getrennt vom Prüfer jedes Teils, den du im Eigenschaftenbereich des Reiters Messen einstellst
 ([Ergebnisse eingeben](measuring.md)). Ist das Berichtsdatum beim Export eines Prüfblatts oder
 Prüfberichts leer, trägt Dimo zuerst das heutige Datum ein, als eine Änderung, die du rückgängig
 machen kannst ([Exporte](exports.md)).

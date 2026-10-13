@@ -6,7 +6,7 @@ Aktion mehrere Tasten, funktioniert jede davon.
 
 Einzelne Tasten wie **B**, **V**, **R** oder **0** wirken nur dann auf die Zeichnung, wenn die
 Zeichnung, nicht ein Textfeld oder die Merkmalstabelle, den Tastaturfokus hat, und nur solange die
-Ansicht Zeichnung gezeigt wird. Kombinationen mit ⌘ (Ctrl) wirken überall.
+Zeichnung gezeigt wird (Reiter Start oder Zeichnung). Kombinationen mit ⌘ (Ctrl) wirken überall.
 
 Die Tabellen unten werden von einem Test gegen die Kürzeldefinitionen der App geprüft und bleiben
 darum vollständig.
@@ -34,7 +34,7 @@ Diese wirken in jeder Ansicht.
 
 ## Zeichnung
 
-Diese wirken in der Ansicht Zeichnung auf die Zeichnung. Für die Pfeiltasten und die Eingabetaste
+Diese wirken auf die Zeichnung, solange sie gezeigt wird. Für die Pfeiltasten und die Eingabetaste
 muss die Zeichnung den Fokus haben.
 
 <!-- shortcuts:drawing -->

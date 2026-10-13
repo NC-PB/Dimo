@@ -46,7 +46,7 @@ Typing a new value into a balloon that already has one reads it again and replac
 deviations, limits, fit and rule, also limits you had entered by hand. Text that is not read as a
 dimension changes only the requirement text; the other values stay as they are. Editing the
 **Requirement** cell in the table also stores only the text; to read it again, select the
-characteristic and use **Re-interpret selected** ([Tolerances](tolerances.md)).
+characteristic and use **Update limits** ([Tolerances](tolerances.md)).
 
 ## Box select
 

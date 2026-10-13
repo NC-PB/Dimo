@@ -1,6 +1,6 @@
 # Ergebnisse eingeben
 
-Im Register **Messen** (⌘3) gibst du ein, was du an den Teilen gemessen hast. Die Zeilen sind
+Im Reiter **Messen** (⌘3) gibst du ein, was du an den Teilen gemessen hast. Die Zeilen sind
 die zu prüfenden Merkmale, jede Spalte ist ein Teil. Dimo vergleicht jeden Wert mit den
 Grenzmaßen und markiert ihn als i.O. oder n.i.O. Teile, Ergebnisse und Bewertungen werden im
 Projekt gespeichert und stehen im [Prüfbericht](exports.md).
@@ -8,20 +8,20 @@ Projekt gespeichert und stehen im [Prüfbericht](exports.md).
 ## Teile
 
 Ein Teil ist ein Stück, das du misst. Ein neues Projekt hat keine Teile. Gib unter **Anzahl** ein,
-wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Teile hinzufügen** im Register
+wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Teile hinzufügen** im Reiter
 Messen. Ein Projekt kann
 bis zu 500 Teile enthalten. Die Seriennummern zählen von der höchsten reinen Zahl weiter (`1`, `2`,
 `3`); das Datum ist leer, als Prüfer steht dein Benutzername aus den **Optionen**.
 
 Klicke auf den Kopf oder eine Zelle einer Teilespalte, um sie zum aktiven Teil zu machen. Die
-Seitenleiste rechts zeigt Seriennummer, Datum, Prüfer, Prüfmittel und Bemerkung; dort änderst du
+Eigenschaftenbereich rechts zeigt Seriennummer, Datum, Prüfer, Prüfmittel und Kommentar; dort änderst du
 sie. Darunter zählt sie die Ergebnisse dieses Teils: i.O., n.i.O., nicht bewertet und fehlend.
 Projekt- und Berichtsdaten findest du unter **Datei > Info**. Eine Seriennummer wird von Leerzeichen am Rand befreit, darf nicht leer sein und muss im
 Projekt eindeutig sein (Groß- und Kleinschreibung zählt als Unterschied). Seriennummern können
 beliebiger Text sein, zum Beispiel `A-17`. **Nach links** und **Nach rechts** ändern die
 Reihenfolge der Spalten, die auch die Reihenfolge in den Berichten ist. **Teil löschen** löscht
 die Spalte; hat das Teil Ergebnisse, fragt Dimo vorher, weil sie mit gelöscht werden. Jede
-Änderung machst du mit ⌘Z rückgängig. Das Register hat auch **Werte einfügen** und **Zelle
+Änderung machst du mit ⌘Z rückgängig. Der Reiter hat auch **Werte einfügen** und **Zelle
 leeren** für die aktive Zelle, **Ergebnis dieser Zeile** für die aktive Zeile, und **Nur fehlende
 Werte** und **Nur n.i.O.**, um weniger Zeilen zu zeigen; die Zeile, in der du bist, bleibt sichtbar.
 
@@ -46,7 +46,7 @@ nicht angenommen hat. Die Statusleiste unten zeigt die Summen aller Teile und da
 ## Die Messleiste
 
 Die Leiste über der Tabelle funktioniert wie die Bearbeitungszeile einer Tabellenkalkulation. Sie
-nennt die aktive Zelle (Merkmalsnummer und Teil), zeigt die Anforderung mit ihren Grenzen und der
+nennt die aktive Zelle (Merkmalsnummer und Teil), zeigt die Anforderung mit ihren Grenzmaßen und der
 Toleranzregel und hat ein Feld **Wert** mit dem Wert der aktiven Zelle. Daneben sagt Dimo das
 Ergebnis in Worten, zum Beispiel „i.O., auf der unteren Grenze“ oder „n.i.O., über der oberen
 Grenze“.
@@ -74,7 +74,7 @@ Die Tabelle ist dafür gemacht, ein Teil von oben nach unten ohne Maus zu messen
 3. Drücke **Enter**. Dimo speichert den Wert und geht zum nächsten Merkmal.
 
 **Shift+Enter** geht stattdessen nach oben, **Tab** und **Shift+Tab** bestätigen und gehen zum
-nächsten oder vorherigen Teil; nach dem letzten Teil führt Tab aus der Tabelle zur Seitenleiste.
+nächsten oder vorherigen Teil; nach dem letzten Teil führt Tab aus der Tabelle in den Eigenschaftenbereich.
 Die Pfeiltasten bewegen, ohne etwas zu ändern, **F2** bearbeitet den Wert in der Zelle, **Entf**
 löscht ihn und **Escape** bricht die Eingabe ab. Nimmt Dimo einen Wert nicht an (zum Beispiel
 Buchstaben in einer Messwertzelle), öffnet sich die Zelle wieder und die Zeile über der Tabelle

@@ -12,7 +12,7 @@ Grenzwerte (zuerst aufgedruckte Toleranzen, dann die Passungstabelle nach ISO 28
 Allgemeintoleranz und Regeln des Projekts), erklärt, woher sie stammen, und übernimmt
 Nummerierung, Liste, Speichern und Exporte. Dimo durchsucht die Zeichnung noch nicht
 selbstständig. Ohne Allgemeintoleranz im Projekt wird ein Maß ohne Toleranz als "Keine Toleranz
-festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Registers **Start** oder
+festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Reiters **Start** oder
 **Zeichnung**, oder trage seine Grenzwerte in der Merkmalstabelle ein.
 
 ## Seiten
@@ -28,8 +28,8 @@ festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Registers **
 | [Ergebnisse eingeben](measuring.md) | Teile, Messwerttabelle, Eingabe mit der Tastatur, Einfügen, Markierungen für i.O. und n.i.O., Ergebnisarten |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | Prüfblatt und Prüfbericht, PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen und Berichte |
-| [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, eigene Tabellen, Erklärungen, Entwurfstabellen, Verlauf |
-| [Datei-Seite, Optionen und Über Dimo](settings.md) | Projektinfo, zuletzt geöffnete Projekte, Optionen (Farbschema, Sprache, Benutzername, Firmenname, Vorgaben für Exporte), Projekteinstellungen im Register Zeichnung, Lizenzen |
+| [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, Firmentabellen, Erklärungen, Entwurfstabellen, Verlauf |
+| [Datei-Seite, Optionen und Über Dimo](settings.md) | Projektinfo, zuletzt geöffnete Projekte, Optionen (Farbschema, Sprache, Benutzername, Firmenname, Vorgaben für Exporte), Projekteinstellungen im Reiter Zeichnung, Lizenzen |
 | [Tastenkürzel](shortcuts.md) | Alle Tasten für macOS sowie Windows und Linux |
 
 Drücke in der App jederzeit **?**, um die Tastenkürzel zu sehen.
@@ -126,22 +126,22 @@ Zeile zu sehen.
 Ziehe den Griff ⠿ einer Zeile, oder wähle Zeilen aus und drücke ⌥↑ oder ⌥↓. Alle Merkmale werden
 neu nummeriert, und die Ballons auf der Zeichnung folgen. Ein ⌘Z stellt alles wieder her.
 
-Um nach Zone, Ansicht oder Art zu nummerieren, nimm die Gruppe **Nummerierung** im Register
-Start: Wähle die Reihenfolge, wähle **Neue Nummern zeigen**, um das Ergebnis auf der Zeichnung und
+Um nach Zone, Ansicht oder Art zu nummerieren, nimm die Gruppe **Nummerierung** im Reiter
+Start: Wähle die Reihenfolge, wähle **Nummern-Vorschau**, um das Ergebnis auf der Zeichnung und
 in der Tabelle zu sehen, und wähle **Neu nummerieren**. Zonenraster und Ansichten zeichnest du
-von Hand mit **Zonenraster** und **Ansicht zeichnen** im Register Zeichnung. Einzelheiten:
+von Hand mit **Zonenraster** und **Ansicht zeichnen** im Reiter Zeichnung. Einzelheiten:
 [Nummerierungsstrategien, Zonen und Ansichten](numbering.md).
 
 ### 7. Die Ballons gestalten
 
 Wähle Ballons aus und drücke **S**: Form (Kreis, Fahne, Rechteck), Bezugslinie, Größe und Randfarbe.
-Der Stil des ganzen Projekts ist **Ballonstil des Projekts** im Register **Zeichnung**. Der Status
+Der Stil des ganzen Projekts ist **Ballonstil des Projekts** im Reiter **Zeichnung**. Der Status
 wird neben der Farbe auch über die Form gezeigt. Einzelheiten: [Eine Zeichnung ballonieren](ballooning.md),
 [Datei-Seite, Optionen und Über Dimo](settings.md).
 
 ### 8. Drehung, Einheit und Maßstab des Blatts einstellen
 
-Unter **Blatteigenschaften** rechts: Drehe das Blatt in 90-Grad-Schritten (**R** und
+In der Gruppe **Blatt** des Reiters **Zeichnung**: Drehe das Blatt in 90-Grad-Schritten (**R** und
 **Shift+R**), wähle Millimeter oder Zoll und den Maßstab aus dem Schriftfeld. Jedes Blatt hat
 eigene Werte. Einzelheiten: [Blätter](sheets.md).
 
@@ -160,7 +160,7 @@ fragt Dimo zuerst nach. Einzelheiten: [Projekte](projects.md).
 
 ### 10. Die Ergebnisse eingeben
 
-Öffne das Register **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
+Öffne den Reiter **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
 **Teile hinzufügen**. Klicke auf die erste Zelle eines Teils, tippe den Wert, drücke **Enter** und
 mach in der Spalte nach unten weiter: Dimo speichert den Wert, geht zum nächsten Merkmal und
 markiert das Ergebnis mit ✓ (i.O.), ✗ (n.i.O.) oder ○ (Wert ohne Grenzmaße). Bei Gewinden und
@@ -170,24 +170,26 @@ kopierter Bereich wird mit ⌘V eingefügt. Die Grenzmaße gehören dazu, und Di
 
 ### 11. Exportieren
 
-Trage zuerst Teil, Änderungsstand der Zeichnung und die Berichtsfelder unter **Projekt und Bericht**
-ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann das Register **Bericht** (⌘E).
+Trage zuerst Teil, Änderungsstand der Zeichnung und die Berichtsfelder unter **Datei** > **Info**
+ein ([Projekt- und Berichtsdaten](project-details.md)). Öffne dann den Reiter **Bericht** (⌘E).
+Wähle **Prüfblatt** oder **Prüfbericht**; der Arbeitsbereich zeigt eine Vorschau des Dokuments,
+und der Bereich rechts listet, was du vor dem Ausgeben prüfen solltest.
 
 - **Prüfblatt** (PDF oder Excel): die Merkmale mit leeren Ergebnisspalten, zum Ausdrucken vor dem
   Messen.
 - **Prüfbericht** (PDF oder Excel): Übersicht, Teile, Ergebnisse mit Bewertungen und
   Unterschriftenblock.
-- **PDF mit Ballons**: die Zeichnung mit eingezeichneten Ballons. Die Originaldatei bleibt
-  unverändert.
-- **Merkmalsliste (CSV)** und **(Excel)**: eine Zeile pro Merkmal, in Ballonreihenfolge, mit der
-  Regel, die jedes Grenzmaß ergeben hat.
+- **PDF mit Ballons**, **Merkmalsliste (CSV)** und **(Excel)**: unter **Datei** > **Exportieren**
+  (oder **Zeichnung und Liste** im Reiter Bericht). Das PDF ist die Zeichnung mit eingezeichneten
+  Ballons; die Listen haben eine Zeile pro Merkmal, in Ballonreihenfolge, mit der Regel, die jedes
+  Grenzmaß ergeben hat.
 
-Wähle die Sprache der Berichte und Spaltenüberschriften und wie das PDF die Ballons enthält. Jeder
-Export fragt, wo die Datei gespeichert wird, und läuft im Hintergrund; **Export abbrechen** stoppt
-einen Berichtsexport. Setze für eine Zeichnung oder einen Bericht, der an einen Kunden geht,
-vorher das Häkchen bei **Als ausgegeben exportieren**: Es sperrt die Nummerierung, die Nummern
-ändern sich danach nie mehr, auch wenn du Merkmale hinzufügst oder löschst, und ein Bericht wird im
-Projekt vermerkt. Einzelheiten: [Exporte](exports.md).
+Wähle im Menüband Format und Sprache des Berichts. **Kopie speichern** schreibt die Datei,
+**Drucken** öffnet sie in deinem PDF-Programm. Für einen Bericht, der an einen Kunden geht, wähle
+**Bericht ausgeben**: Es sperrt die Nummerierung, die Nummern ändern sich danach nie mehr, auch
+wenn du Merkmale hinzufügst oder löschst, und der Bericht wird im Projekt vermerkt. Jeder Export
+fragt, wo die Datei gespeichert wird, und läuft im Hintergrund; **Export abbrechen** stoppt ihn.
+Einzelheiten: [Exporte](exports.md).
 
 ### 12. Optionen
 
@@ -203,10 +205,10 @@ Toleranzen, Berichtskopf, Fortschritt) fasst **Datei** > **Info** zusammen, und 
 
 - Öffne das Projekt später mit **Projekt öffnen** (⌘O) und mache weiter. Jede Änderung, die du
   gemacht hast, steht im Änderungsprotokoll im Projekt.
-- Gib die gemessenen Werte deiner Teile in der Ansicht **Messen** (⌘3) ein, siehe
+- Gib die gemessenen Werte deiner Teile im Reiter **Messen** (⌘3) ein, siehe
   [Ergebnisse eingeben](measuring.md).
 - Ändern sich Grenzmaße, nachdem du Ergebnisse eingegeben hast, bleiben die Ergebnisse, und die
   Bewertungen folgen den neuen Grenzmaßen
   ([Ergebnisse eingeben](measuring.md#wenn-sich-grenzmaße-ändern)).
-- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung. Die Ansicht **Prüfen**
-  zeigt einen Hinweis, dass sie in einer späteren Version folgt.
+- Noch nicht in dieser Version: automatisches Durchsuchen der Zeichnung. Der Reiter **Überprüfen**
+  zeigt einen Hinweis, dass diese Funktion in einer späteren Version folgt.
