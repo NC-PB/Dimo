@@ -102,8 +102,10 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
 - **Remove a worktree only after the agent is fully finished.** Removing it while the agent still
   had background work made it re-send its final report in a loop until it was stopped
   (`TaskStop`). Wait for the notification without "background work still running".
-- **Smoke flake under load:** step 5 (box select card text) failed once at load average about 30
-  and passed 3 of 3 on a quiet machine. If it repeats on a quiet machine, investigate.
+- **Smoke flake under load (fixed 2026-10-13):** the dev UI script shared pointer ID 1 with the
+  real mouse, so moving the mouse over the window during a scripted drag changed the box. Script
+  events now use ID 41 and the smoke output counts real pointer events. Heavy load can still make
+  a hidden or covered window stall (WebKit throttling); if so, try Tauri `backgroundThrottling`.
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 
