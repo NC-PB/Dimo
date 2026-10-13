@@ -28,8 +28,9 @@ Berichtsangaben (Datei > Info und die Seitenleiste). Deine persönlichen Einstel
 Rückgängig-Schritt.
 
 - **Teil**: Teilenummer, Teilebezeichnung, Kunde und Auftragsnummer.
-- **Toleranzen**: die Allgemeintoleranz, die Regeln nach Dezimalstellen und die Firmentabellen
-  des Projekts. **Im Register Zeichnung ändern** bringt dich dorthin, wo du sie änderst.
+- **Toleranzen**: das Feld **Allgemeintoleranz** (dasselbe wie in den Registern Start und
+  Zeichnung) sowie die Regeln nach Dezimalstellen und die Firmentabellen des Projekts. **Im
+  Register Zeichnung ändern** bringt dich dorthin, wo du die Regeln änderst.
 - **Zeichnung**: die Zeichnungsdatei mit der Anzahl Blätter, der Änderungsstand und der
   SHA-256-Fingerabdruck der Datei mit **Kopieren**.
 - **Fortschritt**: die Anzahl Merkmale und zu prüfender Merkmale, wie viele Teile für jedes
@@ -82,7 +83,8 @@ hier oder dort ändern ([Exporte](exports.md)).
 
 ## Projekteinstellungen im Register Zeichnung
 
-- **Allgemeintoleranz**: ein Feld in den Registern Start und Zeichnung ([Toleranzen](tolerances.md)).
+- **Allgemeintoleranz**: ein Feld in den Registern Start und Zeichnung und unter Datei > Info
+  ([Toleranzen](tolerances.md)).
 - **Dezimalregeln…**: ein kleines Fenster mit den Regeln nach Dezimalstellen und der Rundung nach
   Einheitenumrechnung.
 - **Firmentabellen**: ein kleines Fenster mit den eigenen Tabellen des Projekts, **Tabelle

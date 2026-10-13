@@ -1,8 +1,9 @@
 <script lang="ts">
   /**
    * File > Info (ADR 0007, M3 decision 21, mockup "File view, project info", T3.16): what is
-   * saved with the project. Part, a summary of the tolerance rules with the way to the Drawing
-   * tab, the drawing (file, revision, fingerprint), progress counts and the report header.
+   * saved with the project. Part, the general tolerance and a summary of the other tolerance
+   * rules with the way to the Drawing tab, the drawing (file, revision, fingerprint), progress
+   * counts and the report header.
    * Edits go through the same undoable commands as the side panel (`update_project_info`,
    * `update_report_info`, `update_revision_label`); counts come from Rust (`measurement_state`).
    */
@@ -14,12 +15,33 @@
     editRevisionLabel,
     setReportDateToday,
   } from "$lib/project-details";
-  import { measurementStore } from "$lib/stores/measurement.svelte";
-  import { projectStore } from "$lib/stores/project.svelte";
-  import { toleranceStore } from "$lib/stores/tolerance.svelte";
+  import {
+    measurementStore as appMeasurement,
+    type MeasurementStore,
+  } from "$lib/stores/measurement.svelte";
+  import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
+  import {
+    toleranceStore as appTolerance,
+    type ToleranceStore,
+  } from "$lib/stores/tolerance.svelte";
   import { view } from "$lib/stores/view.svelte";
   import { untrack } from "svelte";
+  import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import CommandButton from "./CommandButton.svelte";
+  import GeneralToleranceField from "./GeneralToleranceField.svelte";
+
+  interface Props {
+    /** The stores; the app's by default, fakes in tests. */
+    projectStore?: ProjectStore;
+    toleranceStore?: ToleranceStore;
+    measurementStore?: MeasurementStore;
+  }
+
+  let {
+    projectStore = appProject,
+    toleranceStore = appTolerance,
+    measurementStore = appMeasurement,
+  }: Props = $props();
 
   const uid = $props.id();
   const project = $derived(projectStore.project);
@@ -42,10 +64,6 @@
   function tableName(choice: TableClass, list: typeof toleranceStore.tables): string {
     const table = list.find((t) => t.table.id === choice.table.id);
     return `${table?.title ?? choice.table.id} ${choice.class}`;
-  }
-
-  function isDraft(choice: TableClass): boolean {
-    return toleranceStore.tables.some((t) => t.table.id === choice.table.id && t.draft);
   }
 
   function reportKind(kind: ReportKind): string {
@@ -144,21 +162,11 @@
               }}>{m.info_change_on_drawing()}</button
             >
           </div>
+          <!-- The general tolerance is set here too (M3 decision 21), with the same field and
+               offer as on the Home and Drawing tabs. -->
+          <GeneralToleranceField tolerance={toleranceStore} />
+          <GeneralToleranceOffer tolerance={toleranceStore} />
           <dl class={gridClass} data-testid="info-tolerances">
-            <dt class="text-text-muted">{m.tolerance_general()}</dt>
-            <dd class="flex flex-wrap items-center gap-2">
-              {#if tolerance?.general}
-                <span>{tableName(tolerance.general, toleranceStore.generalTables)}</span>
-                {#if isDraft(tolerance.general)}
-                  <span
-                    class="rounded-full border border-dashed border-warning px-2 text-[11px] font-semibold text-warning"
-                    title={m.badge_draft_title()}>{m.badge_draft()}</span
-                  >
-                {/if}
-              {:else}
-                <span>{m.tolerance_none()}</span>
-              {/if}
-            </dd>
             <dt class="text-text-muted">{m.tolerance_decimal_rules()}</dt>
             <dd>
               {#if tolerance && tolerance.decimal_rules.length > 0}

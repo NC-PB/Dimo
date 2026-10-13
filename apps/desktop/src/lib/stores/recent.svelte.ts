@@ -14,9 +14,20 @@ export interface RecentApi {
   remove: (path: string) => Promise<RecentProject[]>;
 }
 
+/** The list of a command result; a failed call keeps the list shown (see the callers). */
+async function listOf(
+  call: Promise<{ status: "ok"; data: RecentProject[] } | { status: "error"; error: unknown }>,
+): Promise<RecentProject[]> {
+  const result = await call;
+  if (result.status === "error") {
+    throw new Error(JSON.stringify(result.error));
+  }
+  return result.data;
+}
+
 const tauriApi: RecentApi = {
-  list: () => commands.recentProjects(),
-  remove: (path) => commands.removeRecentProject(path),
+  list: () => listOf(commands.recentProjects()),
+  remove: (path) => listOf(commands.removeRecentProject(path)),
 };
 
 export class RecentStore {
@@ -34,7 +45,7 @@ export class RecentStore {
     try {
       this.items = await this.#api.list();
     } catch {
-      // Outside Tauri, for example in a plain browser.
+      // Outside Tauri, for example in a plain browser, or the list could not be read.
     }
   }
 

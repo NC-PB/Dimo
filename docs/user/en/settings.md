@@ -25,8 +25,9 @@ personal settings are under **Options** and are never saved in a project.
 **Project info** shows what is saved with the open project. Every change is one step of undo.
 
 - **Part**: part number, part name, customer and order reference.
-- **Tolerances**: the general tolerance, the decimal place rules and the company tables of the
-  project. **Change on the Drawing tab** takes you to the place where you change them.
+- **Tolerances**: the **General tolerance** field (the same as on the Home and Drawing tabs),
+  and the decimal place rules and company tables of the project. **Change on the Drawing tab**
+  takes you to the place where you change the rules.
 - **Drawing**: the drawing file with its number of sheets, the revision, and the SHA-256
   fingerprint of the file with **Copy**.
 - **Progress**: the number of characteristics and of characteristics to inspect, how many parts
@@ -78,7 +79,8 @@ tab; you can change it here or there ([Exports](exports.md)).
 
 ## Project settings on the Drawing tab
 
-- **General tolerance**: a field on the Home and Drawing tabs ([Tolerances](tolerances.md)).
+- **General tolerance**: a field on the Home and Drawing tabs and in File > Info
+  ([Tolerances](tolerances.md)).
 - **Decimal rules…**: a small window with the decimal place rules and the rounding after unit
   conversion.
 - **Company tables**: a small window with the custom tables of the project, **Import table…**

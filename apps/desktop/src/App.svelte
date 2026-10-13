@@ -35,8 +35,9 @@
     measureUi.onlyFailed = false;
   });
 
-  // A project opened or created from the File page shows its drawing, as office software
-  // does (T3.16). Closing a project stays on the File page, which then offers New and Open.
+  // A project opened or created from the File page shows its drawing, so work can start
+  // at once (ADR 0007, T3.16). Closing a project stays on the File page, which then offers
+  // New and Open.
   $effect(() => {
     void projectStore.session;
     untrack(() => {

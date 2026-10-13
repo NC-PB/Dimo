@@ -203,32 +203,40 @@ pub fn remember(app: &AppHandle, path: &Path) {
     }
 }
 
+/// Runs `work` with the list on the blocking pool: checking whether files exist can wait for a
+/// network drive, which must never block the main thread or the async runtime.
+async fn blocking<T: Send + 'static>(
+    app: AppHandle,
+    work: impl FnOnce(&RecentState) -> T + Send + 'static,
+) -> Result<T, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || work(&app.state::<RecentState>()))
+        .await
+        .map_err(|e| CommandError::Io {
+            message: e.to_string(),
+        })
+}
+
 /// The recent projects, most recent first.
 #[tauri::command]
 #[specta::specta]
-#[allow(
-    clippy::needless_pass_by_value,
-    reason = "Tauri commands take arguments by value"
-)]
-pub fn recent_projects(state: tauri::State<'_, RecentState>) -> Vec<RecentProject> {
-    state.entries()
+pub async fn recent_projects(app: AppHandle) -> Result<Vec<RecentProject>, CommandError> {
+    blocking(app, RecentState::entries).await
 }
 
 /// Removes one entry from the list (the file itself is not touched). Returns the new list.
 #[tauri::command]
 #[specta::specta]
-#[allow(
-    clippy::needless_pass_by_value,
-    reason = "Tauri commands take arguments by value"
-)]
-pub fn remove_recent_project(
-    state: tauri::State<'_, RecentState>,
+pub async fn remove_recent_project(
+    app: AppHandle,
     path: String,
-) -> Vec<RecentProject> {
-    if let Some(entry) = state.find(&path) {
-        state.remove(&entry);
-    }
-    state.entries()
+) -> Result<Vec<RecentProject>, CommandError> {
+    blocking(app, move |state| {
+        if let Some(entry) = state.find(&path) {
+            state.remove(&entry);
+        }
+        state.entries()
+    })
+    .await
 }
 
 /// Opens a project of the recent list without a file dialog. `path` must be an entry of the
@@ -242,16 +250,21 @@ pub async fn open_recent_project(
     path: String,
     discard: bool,
 ) -> Result<bool, CommandError> {
-    let Some(entry) = app.state::<RecentState>().find(&path) else {
-        return Err(CommandError::InvalidArgument {
-            message: "not a recent project".to_owned(),
-        });
-    };
-    if !entry.exists() {
-        return Err(CommandError::Io {
-            message: format!("{} no longer exists", entry.display()),
-        });
-    }
+    let entry = blocking(app.clone(), move |state| {
+        let entry = state
+            .find(&path)
+            .ok_or_else(|| CommandError::InvalidArgument {
+                message: "not a recent project".to_owned(),
+            })?;
+        if entry.exists() {
+            Ok(entry)
+        } else {
+            Err(CommandError::Io {
+                message: format!("{} no longer exists", entry.display()),
+            })
+        }
+    })
+    .await??;
     if !discard && app.state::<SessionState>().has_unsaved_changes() {
         return Err(CommandError::UnsavedChanges);
     }

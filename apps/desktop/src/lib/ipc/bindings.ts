@@ -51,9 +51,9 @@ export const commands = {
 	 */
 	closeProject: (discard: boolean) => typedError<null, CommandError>(__TAURI_INVOKE("close_project", { discard })),
 	/**  The recent projects, most recent first. */
-	recentProjects: () => __TAURI_INVOKE<RecentProject[]>("recent_projects"),
+	recentProjects: () => typedError<RecentProject[], CommandError>(__TAURI_INVOKE("recent_projects")),
 	/**  Removes one entry from the list (the file itself is not touched). Returns the new list. */
-	removeRecentProject: (path: string) => __TAURI_INVOKE<RecentProject[]>("remove_recent_project", { path }),
+	removeRecentProject: (path: string) => typedError<RecentProject[], CommandError>(__TAURI_INVOKE("remove_recent_project", { path })),
 	/**
 	 *  Opens a project of the recent list without a file dialog. `path` must be an entry of the
 	 *  list exactly as [`recent_projects`] returned it; other paths are refused. `discard` as for
@@ -2121,7 +2121,7 @@ export type Scale = {
 	actual: number,
 };
 
-/**  The settings and what the settings view shows next to them. */
+/**  The settings and what File > Options shows next to them. */
 export type SettingsView = {
 	/**  The stored settings. */
 	settings: AppSettings,

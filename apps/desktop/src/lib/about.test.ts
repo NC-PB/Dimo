@@ -7,6 +7,7 @@ import { flushSync, mount, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
 import { BUNDLED, DIMO_LICENSE, DIMO_NOTICE } from "./about";
 import AboutPane from "./shell/AboutPane.svelte";
+import packageJson from "../../package.json";
 
 /** Every font file in data/fonts, by file name. */
 const FONT_FILES = Object.keys(
@@ -86,6 +87,8 @@ describe("About licenses (M3 decision 29)", () => {
     expect(lucide?.text).toContain("Lucide Icons and Contributors");
     expect(lucide?.text).toContain("The MIT License (MIT)");
     expect(lucide?.text).toContain("Cole Bemis");
+    // The version shown is the pinned one, so a dependency bump updates About too.
+    expect(lucide?.name).toContain(packageJson.dependencies["@lucide/svelte"]);
   });
 
   it("includes the Apache 2.0 license and the NOTICE of Dimo", () => {
