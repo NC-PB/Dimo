@@ -41,16 +41,19 @@ on Windows and Linux use Ctrl instead of ⌘ and Alt instead of ⌥.
 
 ### 1. Start a project from a drawing
 
-Start Dimo and choose **New project** (⌘N). Pick the PDF of the drawing. Dimo copies the drawing
-into the project, so the project does not depend on the original file afterwards, and shows the
-first sheet fitted into the window. A drawing with several sheets (pages) shows one tab per sheet
-in the status bar at the bottom.
+Start Dimo. Without an open project it shows the start screen: **New project from drawing**,
+**Open project** and the three steps of the work. Click **New project from drawing** (or press
+⌘N) and pick the PDF of the drawing. Dimo copies the drawing into the project, so the project
+does not depend on the original file afterwards, and shows the first sheet fitted into the
+window. A drawing with several sheets (pages) shows one tab per sheet in the status bar at the
+bottom.
 
 The project has no file yet. The title bar says "Untitled"; you save it in step 9, but Dimo already
 keeps a recoverable copy of everything you do ([Projects](projects.md)).
 
-If the sheet is sideways, set its rotation, unit and scale in **Sheet properties** on the right
-now, as in step 8. Setting the unit and the scale early saves you from forgetting them.
+On the right Dimo opens **Set up this drawing**. Answer it from the title block (step 3) and
+click **Start ballooning**, or click **Skip** and set everything later. If the sheet is sideways,
+turn it with **Rotate left** or **Rotate right** on the **Drawing** tab, as in step 8.
 
 ### 2. Look around
 
@@ -61,11 +64,20 @@ switch sheets. Details: [Looking at a drawing](drawing-view.md).
 
 ### 3. Choose the general tolerance of the project
 
-Most drawings print a general tolerance in the title block, for example ISO 2768-m. Dimo does not
-read the title block yet, so tell it once: open **Settings** (⌘,), go to **Tolerances of the
-project**, choose **ISO 2768-1** as **General tolerance** and the class from the drawing, then
-return to the drawing with ⌘1. From now on a dimension without a tolerance gets its limits from
-that table. Without a general tolerance such a dimension is marked **No tolerance defined** and
+Most drawings print a general tolerance in the title block, for example ISO 2768-mK: the small
+letter is the class of ISO 2768-1. Dimo does not read the title block yet, so tell it once in
+**Set up this drawing**:
+
+1. **General tolerance**: choose **None** or the ISO 2768-1 class of the drawing (f fine,
+   m medium, c coarse, v very coarse).
+2. **Unit and scale**: millimeter or inch, and the scale printed in the title block. They apply
+   to every sheet of the drawing; change single sheets later on the **Drawing** tab.
+3. **Part (optional)**: part number and customer, for the reports.
+
+**Start ballooning** stores the answers (undo takes them back) and switches on **Place balloon**.
+To change them later, use the **Drawing** tab: **General tolerance**, **Unit** and **Scale**, or
+**Setup checklist**, which opens the same pane again. From now on a dimension without a tolerance
+gets its limits from that table. Without a general tolerance such a dimension is marked **No tolerance defined** and
 has no limits. The tables shipped with Dimo carry the marker **Draft** until their values have
 been verified. Details: [Tolerances](tolerances.md).
 
