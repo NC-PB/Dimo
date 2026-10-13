@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.8 done; T3.1 to T3.10 done, T3.11 procedure and dry run done; last follow-up (open after export, report date) running; then owner exit run
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.8 done; all agent tasks done (T3.1 to T3.10, T3.11 procedure and dry run); waiting for the owner: exit run `docs/perf/M3-exit.md` on a real drawing and `docs/dev/manual-test-m3.md`
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
@@ -94,7 +94,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
-| 2026-10-13 | "Open after export" option (opens the written file with the system default app) and report date filled with today's date at the first report export when empty; empty header fields print no label; XLSX legend gains "open" (T3.9 follow-up running) | M3 dry run friction | owner |
+| 2026-10-13 | Open after export: checkbox remembered per user (default off); Rust opens only the file the job just wrote, path made absolute, `open` / `xdg-open` / `cmd /C start "" "<path>"` (Windows path quoted by hand, `%`, `"` and line breaks refused, Windows path untested on hardware); refused when the extension differs from the export format; spawn failures shown as a notice. Report date: local calendar day stored at the first report export when empty (normal export: own undo step before rendering, kept even if the export fails or is cancelled; issued export: in the lock and record step); `chrono` `clock` feature enabled in dimo-desktop only. Empty header fields hide their label | Owner decisions 2026-10-13, FR-EXP-11 | T3.9c, agent |
+| 2026-10-13 | "Open after export" option and report date filled at the first report export when empty; empty header fields print no label; XLSX legend gains "open" | M3 dry run friction | owner |
 | 2026-10-13 | German wording: "Änderungsstand" for the drawing revision, "Teil"/"Teile" for samples, "Als ausgegeben exportieren" for export as issued ("Freigegeben von" stays for approval) | T3.10 mismatches | owner |
 | 2026-10-13 | `SetResultType auto` with results refused (`ResultTypeConflict`), `auto` on an `auto` row is a no-op; identical custom table import has its own outcome `unchanged` (equal resulting tolerance settings incl. sha256; same id with different text still replaces); XLSX counts per sample as four rows under the per sample verdict row | Owner decision 2026-10-12, T3.7 review, M2 leftovers | T3.9, agent |
 | 2026-10-12 | Issued report export fills empty company name and inspector only for "export as issued", in the undo step that records the report; normal exports print the project as is. `SetResultType auto` while results exist is refused (T3.9) | M3 decisions 4, 15 | owner |

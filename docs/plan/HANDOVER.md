@@ -96,6 +96,14 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
   (a `.gitignore` with `*` inside, delete it after merging). In a worktree, point the smoke test
   and tests at PDFium with `DIMO_PDFIUM_PATH` instead of a `vendor` symlink, and never delete
   files in another agent's worktree while it runs.
+- **Port 1420 is shared.** Every smoke test and `tauri dev` binds the Vite port 1420, so parallel
+  agents and the coordinator collide ("port 1420 is in use"). Retry until the port is free; a
+  smoke failure caused by the port is not a test failure.
+- **Remove a worktree only after the agent is fully finished.** Removing it while the agent still
+  had background work made it re-send its final report in a loop until it was stopped
+  (`TaskStop`). Wait for the notification without "background work still running".
+- **Smoke flake under load:** step 5 (box select card text) failed once at load average about 30
+  and passed 3 of 3 on a quiet machine. If it repeats on a quiet machine, investigate.
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 
