@@ -35,6 +35,17 @@
     measureUi.onlyFailed = false;
   });
 
+  // A project opened or created from the File page shows its drawing, as office software
+  // does (T3.16). Closing a project stays on the File page, which then offers New and Open.
+  $effect(() => {
+    void projectStore.session;
+    untrack(() => {
+      if (projectStore.isOpen && view.tab === "file") {
+        view.setTab("home");
+      }
+    });
+  });
+
   // The tolerance table list (ribbon fields, status bar) follows the project: an import, undo or
   // another project. Only these two values are tracked, not every patch.
   $effect(() => {
