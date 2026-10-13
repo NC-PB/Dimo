@@ -46,11 +46,11 @@ separate from the inspector of each sample, which you set in the sample panel
 ([Entering results](measuring.md)). If the report date is empty when you export a check sheet or an inspection report,
 Dimo enters today's date first, as one change you can undo ([Exports](exports.md)).
 
-Empty fields stay empty on the report. A new project starts with the company name from the settings and with the user name of the settings (or of your system) as inspector. Dimo does not change an existing project when you open it.
+Empty fields stay empty on the report. A new project starts with the company name from **Options** and with the user name of **Options** (or of your system) as inspector. Dimo does not change an existing project when you open it.
 
 ### Company name
 
-Enter your company name once in **Settings**, under **Reports**
-([Settings](settings.md)). A new project starts with that name in the field, as part of its first
+Enter your company name once in **File** > **Options**, under **You and your company**
+([File page, options and About](settings.md)). A new project starts with that name in the field, as part of its first
 state (it is not a step of undo and does not mark the project as changed). Changing the setting
 later does not change existing projects; you can edit the field in each project.

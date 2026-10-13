@@ -11,7 +11,7 @@ Ein Teil ist ein Stück, das du misst. Ein neues Projekt hat keine Teile. Gib un
 wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Teile hinzufügen** im Register
 Messen. Ein Projekt kann
 bis zu 500 Teile enthalten. Die Seriennummern zählen von der höchsten reinen Zahl weiter (`1`, `2`,
-`3`); das Datum ist leer, als Prüfer steht dein Benutzername aus den Einstellungen.
+`3`); das Datum ist leer, als Prüfer steht dein Benutzername aus den **Optionen**.
 
 Klicke auf den Kopf oder eine Zelle einer Teilespalte, um sie zum aktiven Teil zu machen. Die
 Seitenleiste rechts zeigt Seriennummer, Datum, Prüfer, Prüfmittel und Bemerkung; dort änderst du

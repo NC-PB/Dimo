@@ -33,7 +33,7 @@ Eine `.dimo`-Datei enthält die Zeichnung, wie du sie importiert hast, die Merkm
 die Einstellungen des Projekts (Ballonstil, Toleranzregeln mit den importierten eigenen
 Tabellen, Nummerierungsstrategie), Drehung, Einheit, Maßstab, Zonenraster und Ansichten jedes
 Blatts, die Nummerierungssperre und das Änderungsprotokoll: jede Änderung mit Zeit und dem
-Benutzernamen aus den [Einstellungen](settings.md). Die Datei ist ein ZIP-Archiv, du kannst sie also
+Benutzernamen aus den **Optionen** ([Datei-Seite, Optionen und Über Dimo](settings.md)). Die Datei ist ein ZIP-Archiv, du kannst sie also
 mit jedem ZIP-Programm ansehen, aber nur Dimo sollte sie schreiben.
 
 Ein Projekt, das eine ältere Dimo-Version gespeichert hat, lässt sich öffnen, und ein Hinweis sagt,

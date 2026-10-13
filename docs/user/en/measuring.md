@@ -10,7 +10,7 @@ end up in the [inspection report](exports.md).
 A sample is one part that you measure. A new project has no samples. Type how many parts you
 measure in **Number** (1 to 100 at a time) and choose **Add parts** on the Measure tab. A project can hold up to
 500 samples. The serials continue from the highest plain number (`1`, `2`, `3`); the date is empty
-and the inspector is your user name from the settings.
+and the inspector is your user name from **Options**.
 
 Click the header or a cell of a sample column to make it the active sample. The panel on the
 right shows its serial, date, inspector, gauges and comment; change them there. A serial is

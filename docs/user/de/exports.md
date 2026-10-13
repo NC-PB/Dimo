@@ -117,7 +117,7 @@ Mit **Als ausgegeben exportieren** erledigt ein Berichtsexport nach dem Schreibe
 Dinge in einem Schritt:
 
 1. Die Nummerierung wird gesperrt, falls sie es noch nicht ist.
-2. Ein leerer Firmenname wird aus den **Einstellungen** ergänzt, ein leeres „geprüft von“ mit
+2. Ein leerer Firmenname wird aus den **Optionen** ergänzt, ein leeres „geprüft von“ mit
    deinem Benutzernamen und ein leeres Berichtsdatum mit dem heutigen Datum. Der Bericht zeigt
    diese Werte bereits. Ein normaler Export druckt das Projekt, wie es ist, und lässt die
    anderen leeren Felder leer; nur das Berichtsdatum wird dann ebenfalls eingetragen, wie oben

@@ -41,8 +41,10 @@ Schenkel zu entfernen.
 
 ## Toleranzeinstellungen des Projekts
 
-Öffne **Einstellungen** (⌘,), während ein Projekt offen ist. Der Abschnitt **Toleranzen des
-Projekts** enthält die Regeln dieses Projekts. Sie werden in der Projektdatei gespeichert, und
+Die Regeln dieses Projekts stehen im Register **Zeichnung**: das Feld **Allgemeintoleranz** (auch
+im Register **Start**), **Dezimalregeln…** (Regeln nach Dezimalstellen und Rundung nach
+Einheitenumrechnung) und **Firmentabellen** (eigene Tabellen und Zeichnungsregel) öffnen je ein
+kleines Fenster. **Datei** > **Info** fasst sie zusammen. Sie werden in der Projektdatei gespeichert, und
 jede Änderung ist ein Rückgängig-Schritt.
 
 - **Allgemeintoleranz**: Tabelle und Klasse für Maße ohne Toleranz, zum Beispiel ISO 2768-1
@@ -153,8 +155,8 @@ Regel entfernt, und das Merkmal kann wieder gelesen werden.
 Die mitgelieferten Tabellen sind Entwürfe, bis ihre Werte mit der gedruckten Norm verglichen
 wurden. Grenzmaße aus einer Entwurfstabelle funktionieren wie alle anderen, tragen aber die
 Markierung **Entwurf** in der Tabelle, in der Seitenleiste und auf der Karte der Rahmenauswahl.
-Auch eine importierte eigene Tabelle kann ein Entwurf sein. Die Einstellungen zeigen die
-Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
+Auch eine importierte eigene Tabelle kann ein Entwurf sein. Das Register Zeichnung und
+**Datei** > **Info** zeigen die Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
 Entwurfstabelle mit deiner eigenen Norm, bevor du dich darauf verlässt. Eine Tabelle ist erst
 kein Entwurf mehr, wenn ihre Datei von der Person als geprüft gekennzeichnet ist, die jeden Wert
 verglichen hat; Dimo ändert das nie selbst.

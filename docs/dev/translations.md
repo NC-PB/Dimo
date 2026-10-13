@@ -34,7 +34,7 @@ changes beyond one table entry (FR-SET-04). Every visible string of the app goes
    pnpm -C apps/desktop tauri dev
    ```
 
-   In the app open Settings, choose the language and look through every view. The window
+   In the app open File > Options, choose the language and look through every view. The window
    reloads when the language changes.
 
 6. Optional: translate the user guide into `docs/user/<tag>/`. Copy `docs/user/en/shortcuts.md`

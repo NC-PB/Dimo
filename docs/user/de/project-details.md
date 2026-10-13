@@ -47,12 +47,12 @@ Hand. Das ist getrennt vom Prüfer jedes Teils, den du im Bereich **Teil** der S
 Prüfberichts leer, trägt Dimo zuerst das heutige Datum ein, als eine Änderung, die du rückgängig
 machen kannst ([Exporte](exports.md)).
 
-Leere Felder bleiben auf dem Bericht leer. Ein neues Projekt beginnt mit dem Firmennamen aus den Einstellungen und mit dem Benutzernamen der Einstellungen (oder deines Systems) als Prüfer. Dimo ändert ein bestehendes Projekt nicht, wenn du es öffnest.
+Leere Felder bleiben auf dem Bericht leer. Ein neues Projekt beginnt mit dem Firmennamen aus den **Optionen** und mit dem Benutzernamen der **Optionen** (oder deines Systems) als Prüfer. Dimo ändert ein bestehendes Projekt nicht, wenn du es öffnest.
 
 ### Firmenname
 
-Trage deinen Firmennamen einmal in den **Einstellungen** unter **Berichte** ein
-([Einstellungen](settings.md)). Ein neues Projekt beginnt mit diesem Namen im Feld, als Teil seines
+Trage deinen Firmennamen einmal unter **Datei** > **Optionen** bei **Du und deine Firma** ein
+([Datei-Seite, Optionen und Über Dimo](settings.md)). Ein neues Projekt beginnt mit diesem Namen im Feld, als Teil seines
 ersten Zustands (kein Rückgängig-Schritt, das Projekt gilt nicht als geändert). Eine spätere
 Änderung der Einstellung ändert bestehende Projekte nicht; du kannst das Feld in jedem Projekt
 bearbeiten.

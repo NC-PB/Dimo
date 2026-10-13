@@ -106,7 +106,7 @@ With **Export as issued** a report export does three things in one step, after t
 written:
 
 1. The numbering is locked, if it is not locked yet.
-2. An empty company name is filled in from **Settings**, an empty "inspected by" with your
+2. An empty company name is filled in from **Options**, an empty "inspected by" with your
    user name and an empty report date with today's date. The report already shows these
    values. A normal export prints the project as it is and leaves the other empty fields empty;
    only the report date is entered then too, as described above.

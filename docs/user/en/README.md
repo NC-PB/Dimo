@@ -10,9 +10,9 @@ PDF text, or you click a feature and type the value as it is printed. Dimo reads
 fit and written tolerances from the text, works out the limits (written tolerances first, then
 the ISO 286 fit table, then the general tolerance and the rules of the project), explains where
 they come from, and takes care of numbering, the list, saving and the exports. Dimo does not
-search the drawing by itself yet. Without a general tolerance in the project settings, a dimension
-without tolerance is marked "No tolerance defined"; choose one in **Settings** or enter its limits
-in the characteristic table.
+search the drawing by itself yet. Without a general tolerance in the project, a dimension without
+tolerance is marked "No tolerance defined"; choose one in the **General tolerance** field of the
+**Home** or **Drawing** tab, or enter its limits in the characteristic table.
 
 ## Pages
 
@@ -28,7 +28,7 @@ in the characteristic table.
 | [Projects](projects.md) | New, open, save, autosave, recovery |
 | [Exports](exports.md) | Check sheet and inspection report, ballooned PDF, CSV and Excel list, issued drawings and reports |
 | [Tolerances](tolerances.md) | Rules, general tolerance, custom tables, explanations, draft tables, history |
-| [Settings](settings.md) | Theme, language, user name, company name, balloon style, tolerances |
+| [File page, options and About](settings.md) | Project info, recent projects, options (theme, language, user name, company name, export defaults), project settings of the Drawing tab, licenses |
 | [Keyboard shortcuts](shortcuts.md) | Every key, for macOS and for Windows and Linux |
 
 Press **?** in the app at any time to see the keyboard shortcuts.
@@ -62,9 +62,9 @@ switch sheets. Details: [Looking at a drawing](drawing-view.md).
 ### 3. Choose the general tolerance of the project
 
 Most drawings print a general tolerance in the title block, for example ISO 2768-m. Dimo does not
-read the title block yet, so tell it once: open **Settings** (⌘,), go to **Tolerances of the
-project**, choose **ISO 2768-1** as **General tolerance** and the class from the drawing, then
-return to the drawing with ⌘1. From now on a dimension without a tolerance gets its limits from
+read the title block yet, so tell it once: on the **Home** tab (or the **Drawing** tab), choose
+**ISO 2768-1** with the class from the drawing in the **General tolerance** field, for example
+"ISO 2768-1 general tolerances m". From now on a dimension without a tolerance gets its limits from
 that table. Without a general tolerance such a dimension is marked **No tolerance defined** and
 has no limits. The tables shipped with Dimo carry the marker **Draft** until their values have
 been verified. Details: [Tolerances](tolerances.md).
@@ -110,8 +110,9 @@ Details: [Numbering strategies, zones and views](numbering.md).
 ### 7. Style the balloons
 
 Select balloons and press **S**: shape (circle, flag, rectangle), leader line, size and outline
-color. The style of the whole project is in **Settings**. Status is shown by shape as well as
-color. Details: [Ballooning a drawing](ballooning.md), [Settings](settings.md).
+color. The style of the whole project is **Project balloon style** on the **Drawing** tab. Status
+is shown by shape as well as color. Details: [Ballooning a drawing](ballooning.md),
+[File page, options and About](settings.md).
 
 ### 8. Set rotation, unit and scale of the sheet
 
@@ -158,12 +159,14 @@ export. For a drawing or report that goes to a customer, tick **Export as issued
 the numbering, so numbers never change afterwards, even if you add or delete characteristics, and a
 report is recorded in the project. Details: [Exports](exports.md).
 
-### 12. Settings
+### 12. Options
 
-In **Settings** (⌘,) choose the theme (light, dark or as the system), the language of the app, and
-the user name that is written into the change log of each project, and the company name for
-reports. Settings are kept for the next start. The tolerance rules of the project (step 3) are in the same view. Details:
-[Settings](settings.md).
+In **File** > **Options** (⌘,) choose the theme (light, dark or as the system), the language of
+the app, the user name that is written into the change log of each project, the company name for
+reports and the export defaults. Options are kept for the next start and belong to you, not to a
+project. The project itself (part, tolerances, report header, progress) is summed up in
+**File** > **Info**, and **File** > **Open project** lists your recent projects. Details:
+[File page, options and About](settings.md).
 
 ### What next
 

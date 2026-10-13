@@ -8,7 +8,7 @@ Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalsta
 - **Titelleiste**: Speichern, Rückgängig und Wiederholen, der Name des Projekts mit "gespeichert"
   oder "nicht gespeichert", der Schalter hell oder dunkel und **Hilfe** (die Liste der
   Tastenkürzel).
-- **Register**: **Datei** (neu, öffnen, speichern, speichern unter, Einstellungen), **Start**
+- **Register**: **Datei** (Projektinfo, neu, öffnen mit den zuletzt geöffneten Projekten, speichern, speichern unter, schließen, Optionen, über Dimo), **Start**
   (Ballons setzen und bearbeiten, Nummerierung, Allgemeintoleranz), **Zeichnung** (Drehung,
   Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Prüfen** (in dieser
   Version ein Platzhalter), **Messen** ([Ergebnisse eingeben](measuring.md)), **Bericht**

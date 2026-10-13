@@ -7,7 +7,7 @@ The drawing is where you work. It shows the sheet in the middle, the characteris
 
 - **Title bar**: Save, Undo and Redo, the name of the project with "saved" or "not saved", the
   light or dark switch and **Help** (the list of keyboard shortcuts).
-- **Tabs**: **File** (new, open, save, save as, settings), **Home** (place and edit balloons,
+- **Tabs**: **File** (project info, new, open with the recent projects, save, save as, close, options, about), **Home** (place and edit balloons,
   numbering, general tolerance), **Drawing** (rotation, unit, scale, zone grid, views,
   tolerances, project info), **Review** (a placeholder in this version), **Measure**
   ([Entering results](measuring.md)), **Report** ([Exports](exports.md)) and **View** (zoom,
