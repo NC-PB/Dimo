@@ -60,7 +60,9 @@ measurements and screenshots.
 
 It builds the app and the `text_runs` example, starts the Vite dev server (port 1420 must be
 free, so stop `tauri dev` first), and runs the app several times. The window opens on screen and
-the test needs a desktop session. It is not part of `check.sh`.
+the test needs a desktop session. It is not part of `check.sh`. Moving the mouse over the window
+while it runs is harmless: the UI script's pointer events carry their own pointer ID, so the
+drawing gestures ignore the real mouse, and the script prints how many real pointer events it saw.
 
 1. Main flow on `corpus/drawings/test_drawing_1.pdf`: place five balloons (one by dragging a box,
    two typed as key events right after the click without waiting for the value field),

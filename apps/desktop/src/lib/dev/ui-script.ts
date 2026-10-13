@@ -20,7 +20,9 @@
  *
  * - `key`: key down and up on the focused element (`mod`, `shift`, `alt` for modifiers).
  * - `click`, `dblclick`, `drag`: pointer events on the drawing (`shift`, `mod`). With
- *   `"pause": false` the next step starts right after the pointer is released.
+ *   `"pause": false` the next step starts right after the pointer is released; otherwise a
+ *   dragged box has been read (its card is open) before the next step. The script's pointer
+ *   has its own ID, so the real mouse moving over the window does not change its gestures.
  * - `type`: waits for a text field to take the focus, then sets its text as typing would.
  * - `keys`: types the characters one by one as key events on whatever has the focus, without
  *   waiting for a field (`\n` is Enter). In a text field each character is inserted as a real
@@ -100,8 +102,18 @@ const STEP_PAUSE_MS = 120;
 /** Time between two keys of a `keys` step, a fast typist. */
 const KEY_GAP_MS = 8;
 const DRAG_STEPS = 6;
+/**
+ * Pointer ID of the script's drawing events. Not 1, the ID of the real mouse in WebKit: the real
+ * mouse over the window sends trusted moves with ID 1, and a gesture would take them as its own
+ * and end a dragged box at the cursor instead of the scripted point (smoke flake, 2026-10-13).
+ * A gesture follows only the pointer that started it, so these events and the real mouse never
+ * mix.
+ */
+const SCRIPT_POINTER_ID = 41;
 /** Longest wait for a text field to take the focus before a `type` step. */
 const FIELD_WAIT_MS = 3000;
+/** Longest wait for Rust to read a dragged box before the next step. */
+const BOX_WAIT_MS = 10000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -137,7 +149,7 @@ function pointer(type: string, at: Point, m: Mods, buttons: number): void {
     new PointerEvent(type, {
       bubbles: true,
       cancelable: true,
-      pointerId: 1,
+      pointerId: SCRIPT_POINTER_ID,
       pointerType: "mouse",
       isPrimary: true,
       button: 0,
@@ -159,9 +171,15 @@ async function press(from: Pair, to: Pair, m: Mods & Pause): Promise<void> {
     await sleep(16);
   }
   pointer("pointerup", b, m, 0);
-  if (m.pause !== false) {
-    await sleep(STEP_PAUSE_MS);
+  if (m.pause === false) {
+    return;
   }
+  // A dragged box is read by Rust before the card opens (box select, T2.6); the release starts
+  // that read synchronously. Wait for it, so the next step sees the card on a slow machine.
+  for (let waited = 0; boxSelect.busy && waited < BOX_WAIT_MS; waited += 20) {
+    await sleep(20);
+  }
+  await sleep(STEP_PAUSE_MS);
 }
 
 /**
@@ -273,7 +291,12 @@ function report(label: string): string {
     )
     .join("; ");
   const measure = `samples ${String(project?.samples.length ?? 0)} results ${String(project?.results.length ?? 0)} verdicts [${verdicts}] overall ${measurementStore.state?.verdict ?? "-"} commits ${commits}`;
-  return `${label}: ${measure}, card [${card}], view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}]`;
+  // The box the open card was read from, in sheet space: shows where a box select landed.
+  const r = boxSelect.region;
+  const region = r
+    ? ` region ${r.x.toFixed(1)},${r.y.toFixed(1)} ${r.width.toFixed(1)}x${r.height.toFixed(1)}`
+    : "";
+  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}]`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -433,12 +456,28 @@ export async function runUiScript(text: string): Promise<void> {
     return;
   }
   await log(`script start, ${String(steps.length)} steps`);
-  for (const [index, step] of steps.entries()) {
-    try {
-      await run(step);
-    } catch (e) {
-      await log(`step ${String(index + 1)} failed: ${String(e)}`);
+  // Real mouse input while the script plays. The script's own pointer ID keeps it out of the
+  // scripted gestures; the count is reported to explain a run that still looks odd.
+  let real = 0;
+  const countReal = (e: PointerEvent) => {
+    if (e.isTrusted) {
+      real += 1;
     }
+  };
+  window.addEventListener("pointermove", countReal, true);
+  window.addEventListener("pointerdown", countReal, true);
+  try {
+    for (const [index, step] of steps.entries()) {
+      try {
+        await run(step);
+      } catch (e) {
+        await log(`step ${String(index + 1)} failed: ${String(e)}`);
+      }
+    }
+  } finally {
+    window.removeEventListener("pointermove", countReal, true);
+    window.removeEventListener("pointerdown", countReal, true);
   }
+  await log(`real pointer events during the script: ${String(real)}`);
   await log("script done");
 }

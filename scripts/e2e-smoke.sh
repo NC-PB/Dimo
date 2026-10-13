@@ -146,6 +146,13 @@ run_app() {
   if grep -q "ui: step .* failed" "$WORK/$name.log"; then
     fail "$name: a UI script step failed: $(grep -m1 'ui: step .* failed' "$WORK/$name.log")"
   fi
+  # The script's pointer has its own ID, so moving the mouse over the window does not change its
+  # gestures; the count only helps to explain an odd run.
+  local real
+  real=$({ grep -o 'real pointer events during the script: [0-9]*' "$WORK/$name.log" || true; } | grep -o '[0-9]*$' || true)
+  if [[ -n "$real" && "$real" != 0 ]]; then
+    echo "note: $name: $real real pointer events while the UI script ran"
+  fi
 }
 
 # report <name> <label>: the last "report" line of that label from the terminal output.

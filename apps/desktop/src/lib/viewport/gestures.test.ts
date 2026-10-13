@@ -181,6 +181,29 @@ describe("balloon gestures (T1.6)", () => {
     });
   });
 
+  it("place tool: a drag follows only its own pointer, moves of another pointer are ignored", async () => {
+    // The dev UI script drags with its own pointer ID while the real mouse (ID 1) may move over
+    // the window; its moves must not change the dragged region (smoke flake, 2026-10-13).
+    const { gestures, tools, api } = setup();
+    tools.setTool("place");
+    api.reply = { changes: addChanges("c", 3, 2) };
+    const script = { pointerId: 41 };
+    gestures.down(at(420, 310, script));
+    gestures.move(at(400, 300, script));
+    gestures.move(at(380, 290, script));
+    gestures.move(at(700, 40));
+    await gestures.up(at(700, 40));
+    expect(gestures.active).toBe(true);
+    expect(api.commands).toEqual([]);
+    await gestures.up(at(380, 290, script));
+    const command = api.commands[0];
+    expect(command?.type === "add_characteristic" && command.region).toEqual({
+      center: { x: 400, y: 300 },
+      size: { width: 40, height: 20 },
+      angle: 0,
+    });
+  });
+
   it("place tool: a drag along one axis has no area and places like a click", async () => {
     const { gestures, tools, api } = setup();
     tools.setTool("place");
