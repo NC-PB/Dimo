@@ -34,7 +34,7 @@ prints it on every report.
 | Field | Meaning |
 |---|---|
 | Report number | Number of the inspection report |
-| Report date | Date of the report. **Today** fills in the date of your computer once; the date is then stored in the project and does not change by itself |
+| Report date | Date of the report. Leave it empty and the first report export enters today's date; or choose **Today** to fill it in now, or type a date. Once stored, the date is part of the project and does not change by itself |
 | Company | Name of your company. See below |
 | Inspected by | Who inspected the parts |
 | Approved by | Who approved the report |
@@ -43,8 +43,8 @@ prints it on every report.
 "Inspected by" and "Approved by" print in the signature block of the inspection report. The date
 of "Inspected by" is the report date; "Approved by" gets no date, you write it by hand. This is
 separate from the inspector of each sample, which you set in the sample panel
-([Entering results](measuring.md)). If the report date is empty, the report prints the date of the
-last change of the project ([Exports](exports.md)).
+([Entering results](measuring.md)). If the report date is empty when you export a check sheet or an inspection report,
+Dimo enters today's date first, as one change you can undo ([Exports](exports.md)).
 
 Empty fields stay empty on the report. A new project starts with the company name from the settings and with the user name of the settings (or of your system) as inspector. Dimo does not change an existing project when you open it.
 

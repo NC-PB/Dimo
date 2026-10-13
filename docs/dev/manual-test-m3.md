@@ -168,7 +168,7 @@ for sections 8 to 10.
 | 6.1 | Open **Settings**, enter the company name `Test Works`, close the project and create a new one from the drawing | The new project's **Company** field shows `Test Works` and **Inspected by** shows your user name; the project is not marked as changed |
 | 6.2 | Open `m3-test.dimo` again | Company and inspector of this project are what they were (an empty company stays empty). Opening never changes them |
 | 6.3 | In `m3-test.dimo` enter company `Test Works`, inspected by `A. Tester`, approved by `B. Boss`, report number `R-1`, remarks `Test run` | Each field saves when you leave it; each is one undo step |
-| 6.4 | Choose **Today** next to the report date | The date of your computer is entered once; it does not change by itself later |
+| 6.4 | Choose **Today** next to the report date, then undo (⌘Z), then leave the field empty | **Today** enters the date of your computer once; it does not change by itself later. After the undo the field is empty again; leave it empty, step 9 covers the export |
 | 6.5 | Check the SHA-256 and **Copy** | The value equals `shasum -a 256` of the drawing file |
 | 6.6 | Save, close, reopen | Revision, report number, date and all fields are kept |
 
@@ -214,9 +214,9 @@ Then export the same report in **German**.
 | # | Step | Expected |
 |---|---|---|
 | 9.1 | Export the English inspection report PDF and Excel twice to two folders and compare with `cmp` | Byte identical |
-| 9.2 | Clear the **Report date**, export the PDF | The header shows the date of the last change of the project, not today |
-| 9.3 | Wait a minute and export again | Same date, byte identical file |
-| 9.4 | Enter the report date again (**Today**) | The header shows it |
+| 9.2 | With the **Report date** empty, export the PDF | The header shows today's date, and the **Report date** field in the side panel now shows it too. One ⌘Z empties the field again |
+| 9.3 | Export again, also after changing the clock or on the next day if you can | Same date, byte identical file |
+| 9.4 | Type another date (for example `2026-01-05`) as report date and export | The header shows the date you typed; a later export does not replace it |
 
 ## 10. The four XLSX files in a spreadsheet program
 

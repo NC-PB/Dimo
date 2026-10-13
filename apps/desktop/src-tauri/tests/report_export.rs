@@ -53,6 +53,7 @@ fn request(format: ExportFormat, language: ReportLanguage) -> ExportRequest {
         pdf_balloons: PdfBalloons::PageContent,
         blank_columns: 4,
         issued: false,
+        open_after: false,
     }
 }
 
@@ -254,6 +255,108 @@ fn snapshots_lock_drawing_exports_at_once_and_fill_issued_reports_only() {
     let list = take_snapshot(&mut session, issued(ExportFormat::Csv)).unwrap();
     assert!(list.lock.is_some() && list.issued.is_none());
     assert!(list.snapshot.project.is_numbering_locked());
+}
+
+/// T3.9: the first report export of a project without a report date stores today's date as one
+/// undo step; later exports reuse it, even on another day, and print identical files.
+#[test]
+fn first_report_export_stores_the_report_date_once() {
+    let Some(tiles) = service() else { return };
+    let mut session = session(&tiles);
+    session.set_fixed_local_date(Some("2026-10-13"));
+    assert_eq!(session.project().unwrap().report_info.report_date, "");
+    let before = session.project().unwrap().clone();
+
+    for format in REPORTS {
+        let request = request(format, ReportLanguage::En);
+        let first = take_snapshot(&mut session, request).unwrap();
+        // The first export stores the date; the later ones find it.
+        assert_eq!(
+            first.date.is_some(),
+            format == ExportFormat::CheckSheetPdf,
+            "{format:?}"
+        );
+        assert_eq!(
+            session.project().unwrap().report_info.report_date,
+            "2026-10-13"
+        );
+        assert_eq!(first.snapshot.project.report_info.report_date, "2026-10-13");
+    }
+
+    // Another day: the stored date stays, so a re-export is byte identical.
+    let inspection = request(ExportFormat::InspectionReportPdf, ReportLanguage::En);
+    let one = render(&session.export_snapshot(false).unwrap(), &inspection, None).unwrap();
+    session.set_fixed_local_date(Some("2026-11-02"));
+    let again = take_snapshot(&mut session, inspection).unwrap();
+    assert!(again.date.is_none());
+    let two = render(&again.snapshot, &inspection, None).unwrap();
+    assert_eq!(one, two);
+    assert_eq!(
+        session.project().unwrap().report_info.report_date,
+        "2026-10-13"
+    );
+
+    // One undo step took the date; it is gone again.
+    session.undo().unwrap();
+    assert_eq!(session.project().unwrap(), &before);
+
+    // A date the user entered is never replaced, and list exports do not store one.
+    let mut info = before.report_info.clone();
+    info.report_date = "2026-01-05".into();
+    session.execute(Command::UpdateReportInfo { info }).unwrap();
+    let kept = take_snapshot(
+        &mut session,
+        request(ExportFormat::CheckSheetXlsx, ReportLanguage::En),
+    )
+    .unwrap();
+    assert!(kept.date.is_none());
+    assert_eq!(kept.snapshot.project.report_info.report_date, "2026-01-05");
+    session.undo().unwrap();
+    let list = take_snapshot(&mut session, request(ExportFormat::Csv, ReportLanguage::En)).unwrap();
+    assert!(list.date.is_none());
+    assert_eq!(session.project().unwrap().report_info.report_date, "");
+}
+
+/// T3.9: an issued report stores the date in the same undo step as the lock and the record.
+#[test]
+fn issued_report_stores_the_report_date_in_its_one_undo_step() {
+    let Some(tiles) = service() else { return };
+    let mut session = session(&tiles);
+    session.set_fixed_local_date(Some("2026-10-13"));
+    let before = session.project().unwrap().clone();
+    let issued = ExportRequest {
+        issued: true,
+        ..request(ExportFormat::CheckSheetPdf, ReportLanguage::En)
+    };
+    let start = take_snapshot(&mut session, issued).unwrap();
+    assert!(start.date.is_none(), "nothing is stored before the write");
+    assert_eq!(session.project().unwrap(), &before);
+    let info = start.issued.unwrap();
+    assert_eq!(info.report_date, "2026-10-13");
+    assert_eq!(start.snapshot.project.report_info.report_date, "2026-10-13");
+    let template = report_template().unwrap();
+    session
+        .record_issued_report(
+            start.snapshot.state,
+            info,
+            Command::RecordIssuedReport {
+                kind: ReportKind::CheckSheet,
+                template: TemplateRef {
+                    id: template.id().to_owned(),
+                    version: template.version(),
+                },
+                format: ReportFormat::Pdf,
+                output_sha256: Sha256Hex::parse(&"c".repeat(64)).unwrap(),
+            },
+        )
+        .unwrap()
+        .expect("recorded");
+    assert_eq!(
+        session.project().unwrap().report_info.report_date,
+        "2026-10-13"
+    );
+    session.undo().unwrap();
+    assert_eq!(session.project().unwrap(), &before);
 }
 
 #[test]

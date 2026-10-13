@@ -170,3 +170,21 @@ fn large_report_repeats_page_and_table_headers() {
         assert!(text.contains("S-007 S-008 S-009 S-010"), "{kind:?}");
     }
 }
+
+/// An empty header field prints no label: the order label is there with a value and gone
+/// without one.
+#[test]
+fn empty_header_field_prints_no_label() {
+    let Some(engine) = engine() else { return };
+    let mut project = fixture::project();
+    for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
+        let text = pdf_text(&engine, render(&project, kind, Language::En));
+        assert!(text.contains("Order"), "{kind:?}: {text}");
+    }
+    project.info.order_reference.clear();
+    for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
+        let text = pdf_text(&engine, render(&project, kind, Language::En));
+        assert!(!text.contains("Order"), "{kind:?}: {text}");
+        assert!(text.contains("Customer"), "{kind:?}: {text}");
+    }
+}

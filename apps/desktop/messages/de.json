@@ -290,6 +290,8 @@
   "export_pdf_balloons": "Ballons im PDF",
   "export_pdf_page_content": "Teil der Seite",
   "export_pdf_annotations": "Anmerkungen (in PDF-Programmen ausblendbar)",
+  "export_open_after": "Datei nach dem Export öffnen",
+  "export_open_failed": "Die Datei wurde gespeichert, ließ sich aber nicht öffnen: {message}",
   "export_issued": "Als ausgegeben exportieren (sperrt die Nummerierung)",
   "export_issued_hint": "Für Zeichnungen und Berichte, die an einen Kunden gehen. Die Nummern bleiben dann fest; neue Merkmale erhalten die nächste freie Nummer. Ein als ausgegeben exportierter Bericht wird im Projekt vermerkt.",
   "export_locked": "Die Nummerierung ist gesperrt. Als ausgegeben exportierte Berichte werden trotzdem vermerkt.",

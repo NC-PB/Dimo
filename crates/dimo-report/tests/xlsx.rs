@@ -241,3 +241,18 @@ fn large_report_300_rows_by_10_samples() {
     let check = xlsx(&project, ReportKind::CheckSheet, Language::En);
     assert!(read_entry(&check, "xl/worksheets/sheet1.xml").contains(r#"<row r="1""#));
 }
+
+/// An empty header field writes no label; the legend lists the open mark.
+#[test]
+fn empty_header_field_has_no_label_and_legend_lists_open() {
+    let mut project = fixture::project();
+    let full = xlsx(&project, ReportKind::InspectionReport, Language::En);
+    let strings = read_entry(&full, "xl/sharedStrings.xml");
+    assert!(strings.contains("<t>Order</t>"));
+    assert!(strings.contains("- Open"), "legend lists open");
+    project.info.order_reference.clear();
+    let bytes = xlsx(&project, ReportKind::InspectionReport, Language::En);
+    let strings = read_entry(&bytes, "xl/sharedStrings.xml");
+    assert!(!strings.contains("<t>Order</t>"));
+    assert!(strings.contains("<t>Customer</t>"));
+}

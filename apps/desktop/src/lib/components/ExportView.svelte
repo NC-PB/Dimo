@@ -139,6 +139,12 @@
         <span aria-hidden="true">✓</span>
         {m.export_done({ file: job.fileName })}
       </p>
+      {#if job.openError}
+        <p class="text-danger" role="alert">
+          <span aria-hidden="true">⚠</span>
+          {m.export_open_failed({ message: commandErrorMessage(job.openError) })}
+        </p>
+      {/if}
       {#if job.issued?.state === "recorded"}
         <p class="text-success">
           <span aria-hidden="true">✓</span>
@@ -238,6 +244,16 @@
         <span id="export-blank-hint" class="text-xs text-text-muted">
           {m.export_blank_columns_hint()}
         </span>
+      </label>
+      <label class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={prefs.open_after_export}
+          onchange={(e) => {
+            setPrefs({ open_after_export: e.currentTarget.checked });
+          }}
+        />
+        {m.export_open_after()}
       </label>
       <div class="flex flex-col gap-1">
         <label class="flex items-center gap-2">

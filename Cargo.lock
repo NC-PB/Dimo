@@ -1128,6 +1128,7 @@ dependencies = [
 name = "dimo-desktop"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "dimo-core",
  "dimo-detect",
  "dimo-io",

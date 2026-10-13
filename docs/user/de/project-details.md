@@ -34,7 +34,7 @@ ihn auf jeden Bericht.
 | Feld | Bedeutung |
 |---|---|
 | Berichtsnummer | Nummer des Prüfberichts |
-| Berichtsdatum | Datum des Berichts. **Heute** trägt einmalig das Datum deines Computers ein; das Datum steht dann im Projekt und ändert sich nicht von selbst |
+| Berichtsdatum | Datum des Berichts. Lass es leer, dann trägt der erste Berichtsexport das heutige Datum ein; oder wähle **Heute**, um es jetzt einzutragen, oder tippe ein Datum. Einmal gespeichert, gehört das Datum zum Projekt und ändert sich nicht von selbst |
 | Firma | Name deiner Firma. Siehe unten |
 | Geprüft von | Wer die Teile geprüft hat |
 | Freigegeben von | Wer den Bericht freigegeben hat |
@@ -43,8 +43,9 @@ ihn auf jeden Bericht.
 „Geprüft von“ und „Freigegeben von“ stehen im Unterschriftenblock des Prüfberichts. Das Datum bei
 „Geprüft von“ ist das Berichtsdatum; „Freigegeben von“ bekommt kein Datum, das schreibst du von
 Hand. Das ist getrennt vom Prüfer jedes Teils, den du im Bereich **Teil** der Seitenleiste einstellst
-([Ergebnisse eingeben](measuring.md)). Ist das Berichtsdatum leer, druckt der Bericht das Datum der
-letzten Änderung am Projekt ([Exporte](exports.md)).
+([Ergebnisse eingeben](measuring.md)). Ist das Berichtsdatum beim Export eines Prüfblatts oder
+Prüfberichts leer, trägt Dimo zuerst das heutige Datum ein, als eine Änderung, die du rückgängig
+machen kannst ([Exporte](exports.md)).
 
 Leere Felder bleiben auf dem Bericht leer. Ein neues Projekt beginnt mit dem Firmennamen aus den Einstellungen und mit dem Benutzernamen der Einstellungen (oder deines Systems) als Prüfer. Dimo ändert ein bestehendes Projekt nicht, wenn du es öffnest.
 

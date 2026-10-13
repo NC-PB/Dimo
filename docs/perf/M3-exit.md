@@ -91,7 +91,8 @@ export is written (condition 1). Take a lap at the end of each of the four laps 
    Dimo, not on paper.
 5. Fill **Project and report** in the side panel: part number, part name, customer, order
    reference if you have one, **Revision** (German UI: **Änderungsstand**) as printed in the title
-   block, report number, **Report date** with **Today**, inspected by and approved by.
+   block, report number, inspected by and approved by. Leave **Report date** empty: the first report
+   export enters today's date and every later export prints it.
 6. Save the project (⌘S) into the run folder.
 
 **Lap** when the project is saved.
@@ -157,10 +158,9 @@ Without changing anything in the project:
 
    Each pair must have the same SHA-256. Copy the four hashes into the result table.
 
-Condition 4 holds when no report date is set too, but only on the same calendar day: without a
-report date the report prints the date of the last change of the project, and an issued export is
-a change. Setting the report date with **Today** in lap 1 keeps the files identical on any later
-day.
+Condition 4 holds with an empty report date too: the first report export enters today's date in
+the project, and every later export, also an issued one, prints that stored date, so the files
+stay identical on any later day.
 
 ## Checking the report (not timed, condition 3)
 
@@ -292,7 +292,7 @@ Put these in `docs/plan/STATUS.md`:
    characteristics, 3 parts (<s> per characteristic). Longest lap: <lap>. Errors: <count>.
    Re-export identical: <yes/no>. Friction: <top three>`.
 3. In the decision log, any decision that follows from the result (for example "print command in
-   the Export view", or "fill the report date by default").
+   the Export view").
 4. In `docs/plan/M3.md`, tick the acceptance criterion "Owner ran the exit criterion and recorded
    the result in STATUS.md". With a "met" verdict M3 is done and release 0.1 can be prepared; with
    "not met" write the follow up tasks first.
@@ -377,20 +377,21 @@ No bug in the app was found. Friction and points for the owner:
 
 1. **Report date left empty is easy to miss.** Nothing asks for it; without it the report prints
    the date of the last change of the project. Re-export stayed identical in the dry run because
-   all exports were on the same day. The procedure therefore sets it with **Today** in lap 1.
-   Possible follow up: fill the report date at the first report export, or show the date that will
-   be printed next to the empty field.
+   all exports were on the same day. The procedure therefore set it with **Today** in lap 1.
+   Fixed afterwards (T3.9 follow up): the first report export stores today's date as the report
+   date, so the procedure no longer sets it.
 2. **No print command.** The check sheet has to be opened in the system PDF viewer to print it.
    The procedure allows this as "printing only" under condition 1; the owner decides whether that
-   is acceptable or whether M3 needs a print or "open after export" button.
+   is acceptable or whether M3 needs a print or "open after export" button. Fixed afterwards
+   (T3.9 follow up): the Export view has an option "Open the file after exporting".
 3. **Angles need the shorter leg.** An angle without tolerance gets no limits until the shorter
    leg is entered, and then shows as OK / not OK if you skip it. The owner should note the legs
    while reading the drawing (Preparation, step 2).
 4. **`Ra 1.6` typed as text becomes kind `other`,** not a surface texture, with OK / not OK. Fine
    for the report; noted in case the owner expects a surface kind.
 5. **Empty order reference** still prints the label "Auftrag" with no value in the PDF header and
-   in the XLSX header block. Cosmetic.
+   in the XLSX header block. Cosmetic. Fixed afterwards: an empty header field prints no label.
 6. **Legend differs slightly:** the PDF legend lists "Offen", the XLSX legend does not (open cells
-   show `-` in the XLSX). Cosmetic.
+   show `-` in the XLSX). Cosmetic. Fixed afterwards: the XLSX legend lists "Offen" too.
 7. Development hook only, not a user problem: the UI script's `fill` step finds a field only
    inside its `<label>`; the report date field uses `<label for>`, so the script used **Today**.

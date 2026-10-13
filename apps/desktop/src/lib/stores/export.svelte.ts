@@ -48,7 +48,12 @@ export function reportExport(kind: ReportKind, format: ReportFormat): ExportForm
 /** State of one export job. */
 export type JobState =
   | { state: "running"; fraction: number }
-  | { state: "done"; fileName: string; issued: IssuedRecord | null }
+  | {
+      state: "done";
+      fileName: string;
+      issued: IssuedRecord | null;
+      openError: CommandError | null;
+    }
   | { state: "failed"; error: CommandError }
   | { state: "cancelled" };
 
@@ -164,6 +169,7 @@ export class ExportStore {
         pdf_balloons: prefs.pdf_balloons,
         blank_columns: prefs.blank_columns,
         issued,
+        open_after: prefs.open_after_export,
       });
       if (result.status === "error") {
         this.startError[format] = result.error;
@@ -229,7 +235,12 @@ export class ExportStore {
 function finishedState(f: JobFinished): JobState {
   switch (f.outcome.state) {
     case "done":
-      return { state: "done", fileName: f.outcome.file_name, issued: f.outcome.issued };
+      return {
+        state: "done",
+        fileName: f.outcome.file_name,
+        issued: f.outcome.issued,
+        openError: f.outcome.open_error,
+      };
     case "failed":
       return { state: "failed", error: f.outcome.error };
     case "cancelled":
