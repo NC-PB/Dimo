@@ -58,6 +58,8 @@ impl ReportView {
         ExportRequest {
             format: ExportFormat::report_export(self.kind, ReportFormat::Pdf),
             language: self.language,
+            // Ignored for reports (only the ballooned PDF draws balloons), so the preview equals
+            // a Save copy whatever balloon mode the user chose.
             pdf_balloons: PdfBalloons::PageContent,
             blank_columns: self.blank_columns,
             issued: false,
@@ -229,49 +231,77 @@ pub async fn report_checks(app: AppHandle, kind: ReportKind) -> Result<ReportChe
     with_session(app, move |_, session| checks(session, kind)).await
 }
 
-/// Where Print writes its file: a `dimo-print` folder in the temporary directory, or in debug
-/// builds the folder of `DIMO_DEV_EXPORT_DIR`.
-fn print_dir() -> PathBuf {
-    crate::dev::dev_export_dir().unwrap_or_else(|| std::env::temp_dir().join("dimo-print"))
+/// Where Print writes its files: a `print` folder in the app's cache folder, which belongs to
+/// the user (not a shared temporary folder), or in debug builds the folder of
+/// `DIMO_DEV_EXPORT_DIR`.
+fn print_dir(app: &AppHandle) -> Result<PathBuf, CommandError> {
+    if let Some(dir) = crate::dev::dev_export_dir() {
+        return Ok(dir);
+    }
+    crate::dev::dev_folder("cache", app.path().app_cache_dir().ok())
+        .map(|cache| cache.join("print"))
+        .ok_or_else(|| CommandError::Io {
+            message: "no cache folder for printing".to_owned(),
+        })
+}
+
+/// Name of a print file: the Save copy name with the first 12 hex digits of the SHA-256 of the
+/// bytes, `<stem>_<report>_<hash>.pdf`. Another content gets another file, so a file still open
+/// in the viewer is never replaced, and a print never overwrites a saved copy.
+pub fn print_file_name(save_copy_name: &str, bytes: &[u8]) -> String {
+    let hash = dimo_io::project::sha256(bytes);
+    let short: String = hash.as_str().chars().take(12).collect();
+    let stem = save_copy_name
+        .strip_suffix(".pdf")
+        .unwrap_or(save_copy_name);
+    format!("{stem}_{short}.pdf")
 }
 
 /// Takes the "Save copy" snapshot for printing `view`, storing today's report date first when it
-/// is empty (T3.9). Returns where the PDF goes, `<stem>_<report>.pdf` in `dir`, and the snapshot
-/// with the patch of the stored date, if any.
+/// is empty (T3.9). Returns the Save copy file name and the snapshot with the patch of the
+/// stored date, if any.
 pub fn print_snapshot(
     session: &mut AppSession,
     view: ReportView,
-    dir: &Path,
-) -> Result<(PathBuf, ExportStart), CommandError> {
+) -> Result<(String, ExportStart), CommandError> {
     let request = view.save_copy();
     let start = take_snapshot(session, request)?;
-    let path = dir.join(request.format.file_name(&session.file_stem()));
-    Ok((path, start))
+    Ok((request.format.file_name(&session.file_stem()), start))
+}
+
+/// Writes the print file of `bytes` into `dir` (see [`print_file_name`]) unless a file of that
+/// name, and so of that content, is already there. Returns its path.
+pub fn write_print_file(
+    dir: &Path,
+    save_copy_name: &str,
+    bytes: &[u8],
+) -> Result<PathBuf, CommandError> {
+    std::fs::create_dir_all(dir).map_err(|e| CommandError::Io {
+        message: format!("{}: {e}", dir.display()),
+    })?;
+    let path = dir.join(print_file_name(save_copy_name, bytes));
+    if !path.is_file() {
+        write_file(&path, bytes)?;
+    }
+    Ok(path)
 }
 
 /// Opens the PDF of report `view` of the open project with the system's PDF viewer for
-/// printing: the file "Save copy" would write, in a temporary folder. Returns its file name.
-/// Debug builds with `DIMO_DEV_EXPORT_DIR` write it there and do not open it.
+/// printing: the file "Save copy" would write, in the app's cache folder. Returns its file
+/// name. Debug builds with `DIMO_DEV_EXPORT_DIR` write it there and do not open it.
 #[tauri::command]
 #[specta::specta]
 pub async fn print_report(app: AppHandle, view: ReportView) -> Result<String, CommandError> {
-    let dir = print_dir();
-    let (path, start) = with_session(app.clone(), move |_, session| {
-        print_snapshot(session, view, &dir)
-    })
-    .await?;
+    let dir = print_dir(&app)?;
+    let (name, start) =
+        with_session(app.clone(), move |_, session| print_snapshot(session, view)).await?;
     if let Some(patched) = start.date {
         emit_patched(&app, patched);
     }
     let format = view.save_copy().format;
     tauri::async_runtime::spawn_blocking(move || {
         let bytes = render(&start.snapshot, &view.save_copy(), None)?;
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| CommandError::Io {
-                message: format!("{}: {e}", parent.display()),
-            })?;
-        }
-        write_file(&path, &bytes)?;
+        let path = write_print_file(&dir, &name, &bytes)?;
         if crate::dev::dev_export_dir().is_none() {
             open_written_file(&path, format, open_with_system)?;
         }
@@ -323,9 +353,22 @@ mod tests {
     }
 
     #[test]
-    fn print_goes_to_a_temporary_folder() {
-        if crate::dev::dev_export_dir().is_none() {
-            assert_eq!(print_dir(), std::env::temp_dir().join("dimo-print"));
-        }
+    fn print_files_are_named_by_content() {
+        let a = print_file_name("part_inspection-report.pdf", b"one");
+        assert!(
+            a.starts_with("part_inspection-report_")
+                && Path::new(&a).extension() == Some("pdf".as_ref()),
+            "{a}"
+        );
+        assert_eq!(a.len(), "part_inspection-report_".len() + 12 + 4);
+        assert_eq!(a, print_file_name("part_inspection-report.pdf", b"one"));
+        assert_ne!(a, print_file_name("part_inspection-report.pdf", b"two"));
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_print_file(dir.path(), "part_check-sheet.pdf", b"%PDF-1").unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), b"%PDF-1");
+        assert_eq!(
+            write_print_file(dir.path(), "part_check-sheet.pdf", b"%PDF-1").unwrap(),
+            path
+        );
     }
 }

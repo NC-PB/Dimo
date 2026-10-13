@@ -53,7 +53,6 @@
    * show the same edit; Enter commits and moves down as in the grid. Limits and the verdict are
    * Rust's (rule 2); this only puts them into words.
    */
-  const uid = $props.id();
   const hasCell = $derived(characteristic !== undefined && serial !== undefined);
   const unit = $derived(characteristic?.unit == null ? "" : unitLabel(characteristic.unit));
 
@@ -124,31 +123,33 @@
     </div>
   {/if}
   <div class="flex min-w-60 flex-1 flex-wrap items-center gap-2 px-3 py-1">
-    <label for="{uid}-value" class="text-text-muted">{m.measure_bar_value()}</label>
-    <input
-      id="{uid}-value"
-      type="text"
-      class="min-h-8 w-36 rounded-md border-2 bg-surface px-2 font-mono text-sm text-text outline-none disabled:border-border disabled:opacity-60 {invalid
-        ? 'border-danger'
-        : 'border-accent'}"
-      autocomplete="off"
-      spellcheck="false"
-      disabled={!hasCell}
-      aria-invalid={invalid}
-      title={hasCell ? m.measure_bar_value_desc() : m.reason_no_part()}
-      {value}
-      data-testid="measure-bar-value"
-      onpointerdown={() => {
-        onTakeOver();
-      }}
-      oninput={(event) => {
-        onInput(event.currentTarget.value);
-      }}
-      onkeydown={onKeyDown}
-      onblur={() => {
-        onCommit("blur");
-      }}
-    />
+    <!-- The field sits inside its label, so scripts and assistive tools find it by the text. -->
+    <label class="flex items-center gap-2 text-text-muted">
+      {m.measure_bar_value()}
+      <input
+        type="text"
+        class="min-h-8 w-36 rounded-md border-2 bg-surface px-2 font-mono text-sm text-text outline-none disabled:border-border disabled:opacity-60 {invalid
+          ? 'border-danger'
+          : 'border-accent'}"
+        autocomplete="off"
+        spellcheck="false"
+        disabled={!hasCell}
+        aria-invalid={invalid}
+        title={hasCell ? m.measure_bar_value_desc() : m.reason_no_part()}
+        {value}
+        data-testid="measure-bar-value"
+        onpointerdown={() => {
+          onTakeOver();
+        }}
+        oninput={(event) => {
+          onInput(event.currentTarget.value);
+        }}
+        onkeydown={onKeyDown}
+        onblur={() => {
+          onCommit("blur");
+        }}
+      />
+    </label>
     {#if hasCell && verdict !== undefined && !editing}
       <span
         class="flex items-center gap-1 {verdict === 'fail'

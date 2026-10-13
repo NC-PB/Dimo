@@ -15,6 +15,7 @@ use dimo_core::{Command, FieldValue, Point, ReportKind, ResultEntry};
 use dimo_desktop::export::{render, run_steps, take_snapshot};
 use dimo_desktop::report::{
     ReportField, ReportView, checks, preview_bytes, print_snapshot, save_copy_snapshot,
+    write_print_file,
 };
 use dimo_desktop::session::AppSession;
 use dimo_desktop::settings::ReportLanguage;
@@ -248,21 +249,15 @@ fn print_prints_the_preview_and_stores_the_date_like_save_copy() {
     let mut session = session(&tiles);
     let view = view(ReportKind::InspectionReport, ReportLanguage::De);
     let preview = preview_bytes(&save_copy_snapshot(&session).unwrap(), view).unwrap();
-    let dir = tempfile::tempdir().unwrap();
-    let (path, start) = print_snapshot(&mut session, view, dir.path()).unwrap();
+    let (name, start) = print_snapshot(&mut session, view).unwrap();
     assert!(start.date.is_some(), "the date was stored");
     assert!(start.issued.is_none() && start.lock.is_none());
-    assert_eq!(path.parent(), Some(dir.path()));
-    assert!(
-        path.file_name()
-            .unwrap()
-            .to_string_lossy()
-            .ends_with("_inspection-report.pdf")
-    );
-    assert_eq!(
-        render(&start.snapshot, &view.save_copy(), None).unwrap(),
-        preview
-    );
-    let (_, again) = print_snapshot(&mut session, view, dir.path()).unwrap();
+    assert!(name.ends_with("_inspection-report.pdf"), "{name}");
+    let printed = render(&start.snapshot, &view.save_copy(), None).unwrap();
+    assert_eq!(printed, preview);
+    let dir = tempfile::tempdir().unwrap();
+    let path = write_print_file(dir.path(), &name, &printed).unwrap();
+    assert_eq!(std::fs::read(path).unwrap(), preview);
+    let (_, again) = print_snapshot(&mut session, view).unwrap();
     assert!(again.date.is_none(), "stored once");
 }

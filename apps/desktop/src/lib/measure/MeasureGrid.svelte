@@ -355,6 +355,7 @@
       return;
     }
     setActive(index, col);
+    takeover = false;
     editing = {
       id: r.c.id,
       sample,
@@ -366,6 +367,7 @@
   }
 
   function cancelEdit() {
+    takeover = false;
     editing = null;
     notice = null;
     focusGrid();

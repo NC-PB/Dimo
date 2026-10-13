@@ -13,7 +13,7 @@
    * area below shows the preview of what Save copy writes, Print opens it in the PDF viewer
    * (T3.19). Blank result columns apply to a check sheet of a project without parts.
    */
-  /** Bounds of the blank check sheet columns (M3 decision 12); Rust clamps them too. */
+  /** Bounds of the blank check sheet columns (M3 decision 12); Rust refuses others. */
   const MIN_BLANK = 1;
   const MAX_BLANK = 10;
   const FORMATS: readonly { value: ReportFormat; label: () => string }[] = [
@@ -101,8 +101,9 @@
       disabled={blankReason !== null}
       value={prefs.blank_columns}
       onchange={(e) => {
-        const value = Math.round(Number(e.currentTarget.value));
-        if (Number.isFinite(value)) {
+        const text = e.currentTarget.value.trim();
+        const value = Math.round(Number(text));
+        if (text !== "" && Number.isFinite(value)) {
           const blank_columns = Math.min(MAX_BLANK, Math.max(MIN_BLANK, value));
           void settingsStore.update({ export: { ...prefs, blank_columns } });
         }

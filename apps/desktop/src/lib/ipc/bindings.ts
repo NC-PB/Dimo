@@ -101,8 +101,8 @@ export const commands = {
 	reportChecks: (kind: ReportKind) => typedError<ReportChecks, CommandError>(__TAURI_INVOKE("report_checks", { kind })),
 	/**
 	 *  Opens the PDF of report `view` of the open project with the system's PDF viewer for
-	 *  printing: the file "Save copy" would write, in a temporary folder. Returns its file name.
-	 *  Debug builds with `DIMO_DEV_EXPORT_DIR` write it there and do not open it.
+	 *  printing: the file "Save copy" would write, in the app's cache folder. Returns its file
+	 *  name. Debug builds with `DIMO_DEV_EXPORT_DIR` write it there and do not open it.
 	 */
 	printReport: (view: ReportView) => typedError<string, CommandError>(__TAURI_INVOKE("print_report", { view })),
 	/**

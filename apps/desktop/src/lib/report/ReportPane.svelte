@@ -129,7 +129,9 @@
     "min-h-10 rounded-lg bg-accent-strong px-4 font-semibold text-accent-ink hover:opacity-90 aria-disabled:opacity-45";
   const secondaryClass =
     "min-h-10 rounded-lg border border-border-strong bg-surface px-4 text-text hover:bg-hover aria-disabled:opacity-45";
-  const linkClass = "font-medium text-accent-strong underline-offset-2 hover:underline";
+  // A link inside the text, still at least 32 px high (M3 decision 28).
+  const linkClass =
+    "inline-flex min-h-8 items-center px-1 font-medium text-accent-strong underline-offset-2 hover:underline";
 </script>
 
 <section class="flex min-h-0 flex-1 flex-col" aria-labelledby="report-pane-title">
