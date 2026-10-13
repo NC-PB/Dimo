@@ -42,7 +42,7 @@ on Windows and Linux use Ctrl instead of ⌘ and Alt instead of ⌥.
 ### 1. Start a project from a drawing
 
 Start Dimo. Without an open project it shows the start screen: **New project from drawing**,
-**Open project** and the three steps of the work. Click **New project from drawing** (or press
+**Open project**, the five most recent projects and the three steps of the work. Click **New project from drawing** (or press
 ⌘N) and pick the PDF of the drawing. Dimo copies the drawing into the project, so the project
 does not depend on the original file afterwards, and shows the first sheet fitted into the
 window. A drawing with several sheets (pages) shows one tab per sheet in the status bar at the

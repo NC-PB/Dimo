@@ -44,7 +44,7 @@ und Alt statt ⌥.
 ### 1. Ein Projekt aus einer Zeichnung anlegen
 
 Starte Dimo. Ohne offenes Projekt zeigt es den Startbildschirm: **Neues Projekt aus Zeichnung**,
-**Projekt öffnen** und die drei Schritte der Arbeit. Klicke **Neues Projekt aus Zeichnung** (oder
+**Projekt öffnen**, die fünf zuletzt geöffneten Projekte und die drei Schritte der Arbeit. Klicke **Neues Projekt aus Zeichnung** (oder
 drücke ⌘N) und wähle das PDF der Zeichnung. Dimo kopiert die Zeichnung in das Projekt, das
 Projekt hängt danach also nicht mehr von der Originaldatei ab, und zeigt das erste Blatt
 eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter (Seiten), zeigt

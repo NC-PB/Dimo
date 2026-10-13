@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
 import { characteristic, emptyProject, loaded } from "$lib/stores/fixtures";
 import { projectStore } from "$lib/stores/project.svelte";
+import { recentStore } from "$lib/stores/recent.svelte";
 import { view } from "$lib/stores/view.svelte";
 import EmptyState, { type EmptyAction } from "./EmptyState.svelte";
 import ExportView from "./ExportView.svelte";
@@ -37,6 +38,7 @@ afterEach(() => {
   target.remove();
   vi.restoreAllMocks();
   projectStore.busy = false;
+  recentStore.items = [];
   projectStore.load(loaded(++session, null));
   balloonTools.setTool("select");
   view.setTab("home");
@@ -60,8 +62,31 @@ describe("start screen (T3.17)", () => {
     expect(card("Open project").getAttribute("aria-disabled")).toBeNull();
     const steps = [...target.querySelectorAll("ol li strong")].map((s) => s.textContent);
     expect(steps).toEqual(["Balloon the drawing", "Measure the parts", "Print the report"]);
-    // The place T3.16's recent projects list goes into.
-    expect(target.querySelector('[data-slot="recent-projects"]')).not.toBeNull();
+    // Without recent projects the slot says so instead of listing anything.
+    const slot = target.querySelector('[data-slot="recent-projects"]');
+    expect(slot?.querySelector('[data-testid="recent-empty"]')).not.toBeNull();
+  });
+
+  it("lists the five most recent projects compact under a heading (T3.16 in T3.17)", () => {
+    const items = ["a", "b", "c", "d", "e", "f"].map((name) => ({
+      path: `/work/${name}.dimo`,
+      name: `${name}.dimo`,
+      folder: "/work",
+      exists: true,
+    }));
+    vi.spyOn(recentStore, "load").mockResolvedValue();
+    recentStore.items = items;
+    start();
+    const slot = target.querySelector('[data-slot="recent-projects"]');
+    expect(slot?.querySelector("h2")?.textContent).toBe("Recent projects");
+    const rows = [...(slot?.querySelectorAll("[data-recent]") ?? [])];
+    expect(rows.map((r) => r.getAttribute("data-recent"))).toEqual(
+      items.slice(0, 5).map((i) => i.path),
+    );
+    // The recent list comes before the three steps, as in the mockup.
+    const steps = target.querySelector("ol");
+    expect(steps).not.toBeNull();
+    expect(slot?.compareDocumentPosition(steps as Node)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("says good afternoon and good evening later in the day", () => {

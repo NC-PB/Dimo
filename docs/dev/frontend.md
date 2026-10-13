@@ -129,7 +129,7 @@ sentence and buttons that are registry commands, or a tab to switch to for plain
 - Recent projects (`stores/recent.svelte.ts`, `components/RecentProjects.svelte`): Rust keeps the
   list in `recent-projects.json` next to `settings.json` (`src-tauri/src/recent.rs`) and adds an
   entry after open and save as; `open_recent_project` opens only paths on the list. The component
-  takes `compact`, `limit` and `heading`, so other places (start screen) can reuse it.
+  takes `compact`, `limit` and `heading`; the start screen shows it compact with five entries.
 - About (`lib/about.ts`): `LICENSE`, `NOTICE`, the OFL files in `data/fonts/` and the Lucide
   `LICENSE` from `node_modules` are embedded with Vite `?raw`. A new bundled font or asset needs
   an entry in `BUNDLED`; `about.test.ts` fails for a font file without one.

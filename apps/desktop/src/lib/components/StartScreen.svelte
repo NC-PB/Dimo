@@ -2,12 +2,13 @@
   import { commandTooltip, disabledReason, runCommand, type CommandId } from "$lib/commands.svelte";
   import { m } from "$lib/i18n";
   import { icons, type Icon } from "$lib/icons";
+  import RecentProjects from "./RecentProjects.svelte";
 
   /**
    * Start screen while no project is open (T3.17, mockup "Start"): a greeting, the two ways in
-   * (new project from a drawing, open a project), how the work goes in three steps, and the
-   * place for the recent projects. The cards run the registry commands, so the File page, the
-   * keys and this screen share one disabled state.
+   * (new project from a drawing, open a project), the last five recent projects (T3.16's
+   * `RecentProjects`, compact) and how the work goes in three steps. The cards run the registry
+   * commands, so the File page, the keys and this screen share one disabled state.
    */
   interface Props {
     /** The time the greeting is for; tests pass a fixed one. */
@@ -102,6 +103,10 @@
       {/each}
     </div>
 
+    <div data-slot="recent-projects">
+      <RecentProjects compact limit={5} heading={m.recent_title()} />
+    </div>
+
     <section aria-labelledby="start-steps-title">
       <h2
         id="start-steps-title"
@@ -124,9 +129,5 @@
         {/each}
       </ol>
     </section>
-
-    <!-- Recent projects (T3.16): the coordinator places the shared RecentProjects component
-         here after T3.16 and T3.17 are merged. Kept empty until then. -->
-    <div data-slot="recent-projects"></div>
   </div>
 </section>
