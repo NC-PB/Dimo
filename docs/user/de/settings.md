@@ -35,4 +35,6 @@ in der Zeichnung auswählst und **Stil** (S) verwendest.
 
 Sichtbar, solange ein Projekt offen ist: Allgemeintoleranz und Klasse, Zeichnungsregel, Regeln nach
 Dezimalstellen, Rundung nach Einheitenumrechnung und der Import eigener Tabellen. Jede Änderung ist
-ein Rückgängig-Schritt. Details: [Toleranzen](tolerances.md).
+ein Rückgängig-Schritt. Nach einer Änderung der Allgemeintoleranz bietet ein Hinweis an, die
+Merkmale ohne Toleranz oder mit der bisherigen Allgemeintoleranz anzupassen (**n aktualisieren**,
+**Jetzt nicht**). Details: [Toleranzen](tolerances.md).

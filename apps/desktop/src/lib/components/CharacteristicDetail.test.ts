@@ -120,6 +120,12 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
   const reinterpreted: CharId[][] = [];
   const legs: [CharId, string | null][] = [];
   const leg: { refuse: boolean; outcome: LegOutcome } = { refuse: false, outcome: "interpreted" };
+  /** What the fake Rust lists for the general tolerance offer, and how often it applied it. */
+  const general: { candidates: CharId[]; asked: number; applied: number } = {
+    candidates: ["c2"],
+    asked: 0,
+    applied: 0,
+  };
   const api: ProjectCommands = {
     projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf()) }),
     newProject: () => Promise.resolve({ status: "ok", data: true }),
@@ -181,12 +187,28 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
           : { status: "ok", data: { patched: patched(), outcome: leg.outcome } },
       );
     },
+    generalToleranceCandidates: () => {
+      general.asked += 1;
+      return Promise.resolve({ status: "ok", data: general.candidates });
+    },
+    applyGeneralTolerance: () => {
+      general.applied += 1;
+      return Promise.resolve({
+        status: "ok",
+        data: {
+          patched: patched(),
+          reinterpreted: general.candidates.length,
+          skipped_manual: 0,
+          skipped_unreadable: 0,
+        },
+      });
+    },
   };
   const projectStore = new ProjectStore(api);
   projectStore.load(loaded(1, projectOf()));
   const selection = new SelectionStore();
   const tolerance = new ToleranceStore(toleranceApi, projectStore);
-  return { projectStore, selection, tolerance, commands, reinterpreted, legs, leg };
+  return { projectStore, selection, tolerance, commands, reinterpreted, legs, leg, general };
 }
 
 let component: ReturnType<typeof mount> | null = null;
@@ -452,5 +474,74 @@ describe("tolerance settings (T2.8)", () => {
     expect(target.querySelector("[data-testid='import-refusal']")?.textContent).toContain(
       "line 6: shop.toml: bad value",
     );
+  });
+
+  function pickGeneral(value: string): void {
+    const select = target.querySelector<HTMLSelectElement>("[data-setting='general']");
+    if (select) {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  function buttonNamed(text: string): HTMLButtonElement | undefined {
+    return [...target.querySelectorAll("button")].find((b) => b.textContent.trim() === text);
+  }
+
+  // T3.13, M3 decision 22: after the general tolerance changed, Dimo offers the update.
+  it("offers to update characteristics after the general tolerance changed", async () => {
+    const stores = setup();
+    stores.general.candidates = ["c1", "c2"];
+    renderSettings(stores);
+    await settle();
+    expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
+    pickGeneral("iso-2768-1");
+    await settle();
+    expect(stores.general.asked).toBe(1);
+    const offer = target.querySelector("[data-testid='general-offer']")?.textContent ?? "";
+    expect(offer).toContain(
+      "2 characteristics have no tolerance yet or the previous general tolerance.",
+    );
+    buttonNamed("Update 2")?.click();
+    await settle();
+    expect(stores.general.applied).toBe(1);
+    expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
+    expect(target.querySelector("[data-testid='general-updated']")?.textContent).toContain(
+      "Characteristics updated: 2.",
+    );
+  });
+
+  it("Not now closes the offer and changes nothing", async () => {
+    const stores = setup();
+    renderSettings(stores);
+    await settle();
+    pickGeneral("iso-2768-1");
+    await settle();
+    expect(target.querySelector("[data-testid='general-offer']")?.textContent).toContain(
+      "1 characteristic has no tolerance yet",
+    );
+    const commands = stores.commands.length;
+    buttonNamed("Not now")?.click();
+    await settle();
+    expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
+    expect(stores.general.applied).toBe(0);
+    expect(stores.commands.length).toBe(commands);
+  });
+
+  it("makes no offer when nothing would change or another setting changed", async () => {
+    const stores = setup();
+    stores.general.candidates = [];
+    renderSettings(stores);
+    await settle();
+    pickGeneral("iso-2768-1");
+    await settle();
+    expect(stores.general.asked).toBe(1);
+    expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
+
+    stores.general.candidates = ["c2"];
+    await stores.tolerance.setSettings({ unit_rounding: { mm_places: 3, inch_places: 4 } });
+    await settle();
+    expect(stores.general.asked).toBe(1);
+    expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
   });
 });

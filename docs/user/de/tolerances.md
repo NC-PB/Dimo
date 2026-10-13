@@ -71,12 +71,34 @@ jede Änderung ist ein Rückgängig-Schritt.
   derselben Kennung erneut importiert, ersetzt sie die alte, und die Einstellungen, die sie
   verwenden, wechseln auf die neue Version.
 
-Eine Änderung der Einstellungen ändert die Grenzmaße der Merkmale nicht, die schon im Projekt
-sind. Neue Merkmale, die Rahmenauswahl und eingetippte Werte verwenden die neuen Einstellungen.
+Eine Änderung der Einstellungen ändert die Grenzmaße der Merkmale, die schon im Projekt sind,
+nicht von selbst. Neue Merkmale, die Rahmenauswahl und eingetippte Werte verwenden die neuen
+Einstellungen. Nach einer Änderung der Allgemeintoleranz bietet Dimo an, die bestehenden Merkmale
+anzupassen, für die sie gilt, siehe unten.
+
+## Anpassen nach einer Änderung der Allgemeintoleranz
+
+Wenn du die Allgemeintoleranz oder ihre Klasse änderst, sagt ein Hinweis darunter, wie viele
+Merkmale noch keine Toleranz oder noch die bisherige Allgemeintoleranz haben, und bietet
+**n aktualisieren** und **Jetzt nicht** an. Der Hinweis erscheint nur, wenn sich mindestens ein
+Merkmal ändern würde; andere Einstellungen zeigen ihn nie.
+
+- **n aktualisieren** liest genau diese Merkmale mit der neuen Allgemeintoleranz neu, als ein
+  Rückgängig-Schritt. **Rückgängig** stellt ihre bisherigen Grenzmaße wieder her.
+- **Jetzt nicht** schließt den Hinweis und ändert nichts. **Ausgewählte neu auswerten** kannst du
+  später trotzdem verwenden.
+
+Das Anpassen berücksichtigt nur Merkmale, deren Regel **Keine Toleranz festgelegt** oder eine
+Allgemeintoleranz ist (aus einer mitgelieferten oder einer eigenen Tabelle), und Merkmale, deren
+Text noch nie gelesen wurde. Von Hand eingegebene Grenzmaße, geschriebene Toleranzen, Passungen,
+Zeichnungsregeln, Regeln nach Dezimalstellen und Texte, die kein Maß sind, ändern sich nie. Ein
+Merkmal, das ohne Toleranz bleibt, zum Beispiel ein Gewinde oder ein Hilfsmaß, wird nicht
+gezählt. Entfernst du die Allgemeintoleranz, bietet der Hinweis an, die bisherige
+Allgemeintoleranz bei den Merkmalen zu entfernen, die sie noch haben.
 
 ## Nach einer Änderung neu auswerten
 
-Um neue Einstellungen auf bestehende Merkmale anzuwenden, wähle sie aus (in der Tabelle oder in
+Um andere neue Einstellungen auf bestehende Merkmale anzuwenden, wähle sie aus (in der Tabelle oder in
 der Zeichnung) und wähle **Ausgewählte neu auswerten** in der Seitenleiste. Dimo liest die
 Anforderung jedes Merkmals mit den aktuellen Einstellungen neu und setzt Nennmaß, Einheit,
 Abmaße, Grenzmaße, Passung und Regel. Das Ganze ist ein Rückgängig-Schritt.
