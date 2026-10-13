@@ -13,6 +13,8 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: system-ui, sans-serif;
+  /* Check boxes, radio buttons and range sliders in the brand orange, not the system blue. */
+  accent-color: var(--color-accent-strong);
 }
 
 /* Headings in Space Grotesk (M3 decision 24); body text stays the system font. */
