@@ -14,6 +14,15 @@ Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no S
   Do not render per element transforms for pan and zoom.
 - Tables: TanStack Table plus TanStack Virtual. Never render all rows.
 - UI primitives: Bits UI. Styling: Tailwind 4 with design tokens in one theme file, light and dark (D-51).
+- Colors (M3 decision 24): `bg`, `surface`, `sunken`, `hover`, `border`, `border-strong`, `text`,
+  `text-muted`. `accent` (orange) is for marks only: selection bars, underlines, outlines, the
+  focus ring. Filled buttons and accent colored text use `bg-accent-strong text-accent-ink`
+  (plain `accent` with white text is below 4.5:1). `accent-soft` tints a selected background.
+  `danger`, `success` and `warning` never use the accent. `tokens.test.ts` checks the contrast of
+  every pair in both themes; add a pair there when you introduce a new combination.
+- Fonts (decision 25): body text is `system-ui`; `h1` to `h3` and the brand name use Space
+  Grotesk (`font-heading`), values and code `font-mono` (JetBrains Mono). The files are bundled
+  from `data/fonts/` (`theme/fonts.css`), never loaded from the network.
 - Text: every user visible string goes through Paraglide messages, English and German (FR-SET-04).
 - Shortcuts: defined in one file, shown in the `?` cheat sheet (D-52). Every action reachable by keyboard.
 - Pass/fail and status always use shape plus color, never color alone (NFR-UX-05, D-24).
