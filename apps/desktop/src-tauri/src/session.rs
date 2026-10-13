@@ -350,6 +350,15 @@ impl AppSession {
         self.open.as_ref().is_some_and(|o| o.path().is_some())
     }
 
+    /// The file (or folder) of the open project, `None` without a project or before the first
+    /// save. For the recent projects list (T3.16).
+    pub fn file_path(&self) -> Option<PathBuf> {
+        self.open
+            .as_ref()
+            .and_then(OpenProject::path)
+            .map(Path::to_path_buf)
+    }
+
     /// Suggested file name for "save as": the project file name, else the drawing name with the
     /// project extension.
     pub fn suggested_file_name(&self) -> String {

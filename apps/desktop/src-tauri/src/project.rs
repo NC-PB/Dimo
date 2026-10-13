@@ -10,11 +10,12 @@
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use dimo_core::Command;
 use dimo_io::journal::AUTOSAVE_INTERVAL;
 use dimo_io::project::EXTENSION;
+use dimo_pdf::tiles::TileService;
 use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 use tauri_specta::Event;
@@ -172,12 +173,23 @@ pub async fn open_project(
     let Some(file) = picked else {
         return Ok(false);
     };
-    let path = file.path().to_path_buf();
+    open_path(app, tiles, file.path().to_path_buf(), discard).await
+}
+
+/// Opens the project at `path` (from the file dialog or the recent list) and puts it first on
+/// the recent list.
+pub(crate) async fn open_path(
+    app: AppHandle,
+    tiles: Arc<TileService>,
+    path: PathBuf,
+    discard: bool,
+) -> Result<bool, CommandError> {
     with_session(app, move |app, session| {
         let before = session.session();
         match session.open_file(&tiles, &path, discard) {
             Ok(loaded) => {
                 emit(app, &loaded);
+                crate::recent::remember(app, &path);
                 Ok(true)
             }
             Err(error) => {
@@ -249,7 +261,25 @@ pub async fn save_project_as(app: AppHandle, window: WebviewWindow) -> Result<bo
     with_session(app, move |app, session| {
         let status = session.save_as(&path)?;
         emit(app, &status);
+        if let Some(file) = session.file_path() {
+            crate::recent::remember(app, &file);
+        }
         Ok(true)
+    })
+    .await
+}
+
+/// Closes the project and keeps the window open (File > Close project). Unsaved changes are
+/// refused with `unsaved_changes` unless `discard` is set; ask the user first.
+#[tauri::command]
+#[specta::specta]
+pub async fn close_project(app: AppHandle, discard: bool) -> Result<(), CommandError> {
+    check_unsaved(&app.state::<SessionState>(), discard)?;
+    let tiles = tile_service(&app.state::<TileState>()).ok();
+    with_session(app, move |app, session| {
+        let loaded = session.close(tiles.as_deref(), discard)?;
+        emit(app, &loaded);
+        Ok(())
     })
     .await
 }
