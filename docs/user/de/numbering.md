@@ -1,7 +1,7 @@
 # Nummerierungsstrategien, Zonen und Ansichten
 
-Dimo nummeriert die Ballons in der Reihenfolge der Merkmalstabelle. Der Bereich **Nummerierung**
-rechts bringt diese Reihenfolge in ein Muster: Blatt für Blatt und Zone für Zone, Ansicht für
+Dimo nummeriert die Ballons in der Reihenfolge der Merkmalstabelle. Die Gruppe **Nummerierung**
+auf dem Reiter **Start** bringt diese Reihenfolge in ein Muster: Blatt für Blatt und Zone für Zone, Ansicht für
 Ansicht, im Uhrzeigersinn um jede Ansicht oder nach Art. Du siehst die neuen Nummern, bevor sie
 sich ändern, und das Anwenden ist ein Schritt, den ⌘Z zurücknimmt.
 
@@ -9,10 +9,11 @@ sich ändern, und das Anwenden ist ein Schritt, den ⌘Z zurücknimmt.
 
 Die meisten Zeichnungsrahmen sind in Zonen eingeteilt, mit Buchstaben an einem Rand und Zahlen am
 anderen, zum Beispiel `B3`. Dimo liest den Rahmen noch nicht selbst, darum legst du das Raster
-einmal je Blatt in den **Blatteigenschaften** unter **Zonenraster** fest:
+einmal je Blatt fest: Wähle **Zonenraster** auf dem Reiter **Zeichnung**. Der
+Eigenschaftenbereich rechts zeigt den Abschnitt **Zonenraster**, bis du ihn mit seinem × schließt.
 
-1. Wähle **Rahmen zeichnen** und ziehe ein Rechteck entlang der Innenkante des Zeichnungsrahmens
-   auf. Esc bricht ab. (**Zonenraster hinzufügen** setzt stattdessen einen Rahmen 10 mm innerhalb
+1. Ziehe ein Rechteck entlang der Innenkante des Zeichnungsrahmens auf (**Zonenraster** startet
+   es; **Rahmen zeichnen** im Abschnitt zeichnet es neu). Esc bricht ab. (**Zonenraster hinzufügen** setzt stattdessen einen Rahmen 10 mm innerhalb
    des Blattrands, den du später neu zeichnen kannst.) Ein Blatt ohne Raster erhält ein neues mit
    Standardbezeichnungen: Spalten 1 bis 8 und Zeilen A bis F bei einem Blatt im Querformat, Spalten
    1 bis 6 und Zeilen A bis H bei einem Blatt im Hochformat.
@@ -28,11 +29,12 @@ Das Raster wird mit gestrichelten Linien und seinen Bezeichnungen auf dem Blatt 
 
 ## Ansichten
 
-Die Strategien je Ansicht brauchen die Ansichten der Zeichnung. Wähle unter **Ansichten**
-**Ansicht zeichnen** und ziehe ein Rechteck um eine Ansicht auf, zum Beispiel die Vorderansicht
+Die Strategien je Ansicht brauchen die Ansichten der Zeichnung. Wähle **Ansicht zeichnen** auf
+dem Reiter **Zeichnung** und ziehe ein Rechteck um eine Ansicht auf, zum Beispiel die Vorderansicht
 oder einen Schnitt. Zeichne die Ansichten in der Reihenfolge, in der sie nummeriert werden
 sollen. Jede Ansicht kann einen Namen wie `A-A` oder `Einzelheit B` erhalten; die Schaltfläche ×
-entfernt sie. Ansichten werden als gepunktete Rechtecke auf dem Blatt gezeigt.
+entfernt sie; die Liste steht im Abschnitt **Ansichten** des Eigenschaftenbereichs. Ansichten
+werden als gepunktete Rechtecke auf dem Blatt gezeigt.
 
 ## Strategien
 
@@ -55,12 +57,12 @@ Zonenrahmens gehört zur nächsten Zone.
 
 ## Vorschau und Anwenden
 
-1. Wähle die Strategie im Bereich **Nummerierung**. Ein kurzer Text erklärt sie.
-2. Setze den Haken bei **Neue Nummern als Vorschau zeigen**. Jeder Ballon erhält seine neue
+1. Wähle die Strategie im Feld **Reihenfolge** auf dem Reiter **Start**. Ihr Tooltip erklärt sie.
+2. Wähle **Neue Nummern zeigen**. Jeder Ballon erhält seine neue
    Nummer in einem gestrichelten Kasten daneben, und die Tabelle zeigt sie als Pfeil und neue
    Nummer in der Spalte **Nr**. Nummern, die sich ändern, sind fett und farbig, Nummern, die
-   bleiben, kursiv und grau. Der Bereich zählt, wie viele Nummern sich ändern.
-3. Wähle **Nummerierung anwenden**. Die Tabelle wird in die neue Reihenfolge gebracht, alle
+   bleiben, kursiv und grau. Der Eigenschaftenbereich zählt, wie viele Nummern sich ändern.
+3. Wähle **Neu nummerieren**. Die Tabelle wird in die neue Reihenfolge gebracht, alle
    Ballons erhalten ihre neuen Nummern, und die Strategie wird mit dem Projekt gespeichert. ⌘Z
    macht den ganzen Schritt rückgängig. Das Anwenden schaltet auch die Vorschau aus.
 
@@ -70,8 +72,8 @@ wende die Strategie erneut an, wenn du mit dem Setzen fertig bist.
 
 ## Wiederholte Elemente
 
-Eine Angabe wie `4X Ø5` steht für mehrere Elemente. **Wiederholte Elemente (4X)** legt fest, wie
-sie nummeriert werden:
+Eine Angabe wie `4X Ø5` steht für mehrere Elemente. **Wiederholte Elemente (4X)** unter
+**Nummerierung…** auf dem Reiter **Start** legt fest, wie sie nummeriert werden:
 
 | Einstellung | Ergebnis |
 |---|---|
@@ -90,8 +92,8 @@ ihrer Anzahl.
 ## Gesperrte Nummerierung
 
 Nach einem Export als ausgegeben ist die Nummerierung gesperrt ([Exporte](exports.md)). Die
-Nummern ändern sich dann nie, und **Nummerierung anwenden** wird nicht angeboten. **Hinzugefügt
-bei Sperre** legt die Nummer eines danach hinzugefügten Merkmals fest:
+Nummern ändern sich dann nie, und **Neu nummerieren** wird nicht angeboten. **Hinzugefügt bei
+Sperre** unter **Nummerierung…** legt die Nummer eines danach hinzugefügten Merkmals fest:
 
 | Einstellung | Beispiel |
 |---|---|

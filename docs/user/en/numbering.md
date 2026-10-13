@@ -1,7 +1,7 @@
 # Numbering strategies, zones and views
 
-Dimo numbers the balloons in the order of the characteristic table. The **Numbering** panel on
-the right puts that order in a pattern: sheet by sheet and zone by zone, view by view, clockwise
+Dimo numbers the balloons in the order of the characteristic table. The group **Numbering** on
+the **Home** tab puts that order in a pattern: sheet by sheet and zone by zone, view by view, clockwise
 around each view, or by type. You see the new numbers before they change, and applying them is
 one step that ⌘Z takes back.
 
@@ -9,10 +9,11 @@ one step that ⌘Z takes back.
 
 Most drawing frames are divided into zones, with letters along one edge and numbers along the
 other, for example `B3`. Dimo does not read the frame by itself yet, so you set the grid once per
-sheet in **Sheet properties**, under **Zone grid**:
+sheet: choose **Zone grid** on the **Drawing** tab. The properties pane on the right shows the
+section **Zone grid** until you close it with its ×.
 
-1. Choose **Draw frame** and drag a rectangle along the inner edge of the drawing frame. Esc
-   cancels. (**Add zone grid** puts a frame 10 mm inside the sheet edge instead, which you can draw
+1. Drag a rectangle along the inner edge of the drawing frame (**Zone grid** starts it; **Draw
+   frame** in the section draws it again). Esc cancels. (**Add zone grid** puts a frame 10 mm inside the sheet edge instead, which you can draw
    again later.) A sheet without a grid gets a new one with default labels: columns 1 to 8 and
    rows A to F on a landscape sheet, columns 1 to 6 and rows A to H on a portrait sheet.
 2. Set the number of **Columns** and **Rows**.
@@ -25,10 +26,11 @@ The grid is drawn on the sheet as dashed lines with its labels. **Remove zone gr
 
 ## Views
 
-The strategies per view need the views of the drawing. Under **Views** choose **Draw view** and
-drag a rectangle around a view, for example the front view or a section. Draw the views in the
+The strategies per view need the views of the drawing. Choose **Draw view** on the **Drawing** tab
+and drag a rectangle around a view, for example the front view or a section. Draw the views in the
 order you want them numbered. Each view can get a name such as `A-A` or `Detail B`; the × button
-removes it. Views are drawn on the sheet as dotted rectangles.
+removes it; the list is in the section **Views** of the properties pane. Views are drawn on the
+sheet as dotted rectangles.
 
 ## Strategies
 
@@ -50,12 +52,12 @@ A point outside the zone frame belongs to the nearest zone.
 
 ## Preview and apply
 
-1. Pick the strategy in the **Numbering** panel. A short text explains it.
-2. Tick **Preview new numbers**. Each balloon gets its new number in a dashed box next to it, and
+1. Pick the strategy in the field **Order** on the **Home** tab. Its tooltip explains it.
+2. Choose **Preview numbers**. Each balloon gets its new number in a dashed box next to it, and
    the table shows it as an arrow and the new number in the **No** column. Numbers that change
-   are drawn bold and in color, numbers that stay are italic and grey. The panel counts how many
-   numbers change.
-3. Choose **Apply numbering**. The table is sorted in the new order, all balloons get their new
+   are drawn bold and in color, numbers that stay are italic and grey. The properties pane counts
+   how many numbers change.
+3. Choose **Renumber**. The table is sorted in the new order, all balloons get their new
    numbers, and the strategy is saved with the project. ⌘Z undoes the whole step. Applying
    also turns the preview off.
 
@@ -65,8 +67,8 @@ you are done placing them.
 
 ## Repeated features
 
-A callout such as `4X Ø5` stands for several features. **Repeated features (4X)** sets how they
-are numbered:
+A callout such as `4X Ø5` stands for several features. **Repeated features (4X)** in **Numbering
+options…** on the **Home** tab sets how they are numbered:
 
 | Setting | Result |
 |---|---|
@@ -85,8 +87,8 @@ with its quantity.
 ## Locked numbering
 
 After an export as issued the numbering is locked ([Exports](exports.md)). Numbers then never
-change and **Apply numbering** is not offered. **Added while locked** sets the number of a
-characteristic you add after that:
+change and **Renumber** is not offered. **Added while locked** in **Numbering options…** sets the
+number of a characteristic you add after that:
 
 | Setting | Example |
 |---|---|

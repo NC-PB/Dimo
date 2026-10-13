@@ -26,7 +26,7 @@ deviations are used and the characteristic gets a note.
 
 The general tolerance for an angle (ISO 2768-1) depends on the length of its shorter leg, which is
 not written on the drawing. For an angle without a written tolerance, type the length of the
-shorter leg in the field **Shorter leg** on the proposal card or in the side panel, tab
+shorter leg in the field **Shorter leg** on the proposal card or in the properties pane, section
 **Tolerance**. The field is in the unit of the sheet (mm or inch). Dimo then sets the limits of the
 angle, and the explanation names the leg, its range and the limits. Without a leg the angle gets
 no limits and a note. The leg is stored with the characteristic and its unit, so **Re-interpret
@@ -95,7 +95,7 @@ have it.
 ## Re-interpret after a change
 
 To apply other new settings to existing characteristics, select them (in the table or on the drawing)
-and choose **Re-interpret selected** in the side panel. Dimo reads the requirement text of each
+and choose **Update limits** on the Home tab or in the properties pane. Dimo reads the requirement text of each
 one again with the current settings and sets nominal, unit, deviations, limits, fit and rule. All
 of it is one step of undo.
 
@@ -110,7 +110,7 @@ The line under the button says how many were read again, kept or not readable.
 ## Rule, explanation and markers
 
 The **Rule** column of the characteristic table shows the rule of each characteristic. Select a
-characteristic to see its rule, its limits and the explanation in the side panel, tab
+characteristic to see its rule, its limits and the explanation in the properties pane, section
 **Tolerance**. The explanation names the table, the class and the size range the value came from,
 in the language of the app. The rule is also exported in the CSV and Excel list
 ([Exports](exports.md)).
@@ -144,7 +144,7 @@ removed and the characteristic can be read again.
 
 The tables shipped with Dimo are drafts until their values have been checked against the printed
 standard. Limits from a draft table work like any other but carry the **Draft** marker in the
-table, in the side panel and on the box select card. A custom table you import can be a draft too.
+table, in the properties pane and on the box select card. A custom table you import can be a draft too.
 The Drawing tab and **File** > **Info** show the marker next to a table that is a draft. Check limits from a draft table
 against your own standard before you rely on them. A table stops being a draft only when its
 file is marked as verified by the person who checked each value; Dimo never changes that itself.
@@ -153,11 +153,11 @@ file is marked as verified by the person who checked each value; Dimo never chan
 
 Reference dimensions (in parentheses or with `REF`) and basic dimensions (in a frame) get no
 limits and are not inspected: their **Inspect** box starts cleared. You can tick it in the table
-or in the side panel if you want to measure them anyway; re-interpreting keeps your choice.
+or in the properties pane if you want to measure them anyway; re-interpreting keeps your choice.
 
 ## History of a characteristic
 
-The tab **History** in the side panel lists every change of the selected characteristic, newest
+The section **History** of the properties pane lists every change of the selected characteristic, newest
 first, from the change log of the project. Each entry shows when, who, and the source of the
 change:
 

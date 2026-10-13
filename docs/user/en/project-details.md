@@ -1,8 +1,8 @@
 # Project and report details
 
-The panel **Project and report** in the side panel holds the data that identifies the part, the
-drawing and the inspection report. It is shown while a project is open, below the sheet
-properties, and in the side panel of the Measure view. The data is stored in the project and printed in the header and the signature block
+**File > Info** holds the data that identifies the part, the drawing and the inspection report;
+the side panel of the Measure view shows it too. With nothing selected, the properties pane of the
+drawing shows a summary with the way to File > Info. The data is stored in the project and printed in the header and the signature block
 of the reports.
 
 Every field is saved when you leave it or press Enter. Each change is one step of undo

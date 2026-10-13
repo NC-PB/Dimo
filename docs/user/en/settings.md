@@ -17,7 +17,7 @@ page, on the right the pane you chose. **Back** (or any other tab) returns to wh
 
 Settings have one home each. Settings of a project are saved in the project file and travel with
 it: the general tolerance (Home and Drawing tabs), the other tolerance rules and the balloon style
-(Drawing tab), and the part, drawing and report data (File > Info and the side panel). Your
+(Drawing tab), and the part, drawing and report data (File > Info). Your
 personal settings are under **Options** and are never saved in a project.
 
 ## Info
