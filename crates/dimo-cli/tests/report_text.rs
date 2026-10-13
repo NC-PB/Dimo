@@ -122,9 +122,9 @@ fn twelve_samples_print_in_two_column_blocks() {
     let project = fixture::with_samples(12);
     for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
         let text = pdf_text(&engine, render(&project, kind, Language::En));
-        assert!(text.contains("Samples 1 to 6 of 12"), "{kind:?}: {text}");
+        assert!(text.contains("Parts 1 to 6 of 12"), "{kind:?}: {text}");
         let second = text
-            .find("Samples 7 to 12 of 12")
+            .find("Parts 7 to 12 of 12")
             .unwrap_or_else(|| panic!("{kind:?}: second block missing: {text}"));
         let block = &text[second..];
         assert!(
