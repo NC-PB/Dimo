@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createColumnHelper, createTable, tableFeatures } from "@tanstack/svelte-table";
   import { untrack } from "svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import ToleranceBadges from "$lib/components/ToleranceBadges.svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { m, unitLabel } from "$lib/i18n";
@@ -782,10 +783,41 @@
         {/each}
       </div>
     </div>
-    {#if rows.length === 0}
-      <p class="px-3 py-4 text-text-muted">{m.measure_no_rows()}</p>
-    {:else if samples.length === 0}
-      <p class="sticky left-0 px-3 py-2 text-text-muted">{m.measure_no_samples()}</p>
+    {#if measurement.state !== null && (rows.length === 0 || samples.length === 0)}
+      <div class="sticky left-0 w-fit max-w-xl">
+        {#if rows.length === 0 && measurement.rows.length > 0}
+          <EmptyState
+            size="inline"
+            title={m.empty_measure_filtered_title()}
+            text={m.empty_measure_filtered_text()}
+            actions={[
+              ...(ui.onlyMissing ? [{ command: "only_missing" as const }] : []),
+              ...(ui.onlyFailed ? [{ command: "only_failed" as const }] : []),
+            ]}
+          />
+        {:else if rows.length === 0 && project.characteristics.length === 0}
+          <EmptyState
+            size="inline"
+            title={m.empty_measure_no_chars_title()}
+            text={m.empty_measure_no_chars_text()}
+            actions={[{ command: "place_tool" }]}
+          />
+        {:else if rows.length === 0}
+          <EmptyState
+            size="inline"
+            title={m.empty_measure_no_chars_title()}
+            text={m.empty_measure_not_inspected()}
+            actions={[{ tab: "home", label: m.empty_go_drawing() }]}
+          />
+        {:else}
+          <EmptyState
+            size="inline"
+            title={m.empty_measure_no_parts_title()}
+            text={m.empty_measure_no_parts_text()}
+            actions={[{ command: "add_parts" }]}
+          />
+        {/if}
+      </div>
     {/if}
     <div
       class="relative"

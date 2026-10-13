@@ -6,10 +6,14 @@
   import Shortcuts from "$lib/components/Shortcuts.svelte";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import DeleteCharacteristicsDialog from "$lib/components/DeleteCharacteristicsDialog.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import SetupPane from "$lib/components/SetupPane.svelte";
+  import StartScreen from "$lib/components/StartScreen.svelte";
   import UnsavedChangesDialog from "$lib/components/UnsavedChangesDialog.svelte";
   import Viewport from "$lib/components/Viewport.svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { m } from "$lib/i18n";
+  import { icons } from "$lib/icons";
   import MeasureView from "$lib/measure/MeasureView.svelte";
   import FilePage from "$lib/shell/FilePage.svelte";
   import StatusBar from "$lib/shell/StatusBar.svelte";
@@ -20,6 +24,7 @@
   import { documentStore } from "$lib/stores/document.svelte";
   import { exportStore } from "$lib/stores/export.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
+  import { setupStore } from "$lib/stores/setup.svelte";
   import { toleranceStore } from "$lib/stores/tolerance.svelte";
   import { view } from "$lib/stores/view.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
@@ -81,9 +86,18 @@
   <TabBar />
   <ProjectMessages />
   <!-- The drawing stays mounted while another area is shown, so tiles, zoom and table
-       scrolling are kept. Hidden panes stay mounted for the same reason. -->
-  <div class="flex min-h-0 flex-1" style:display={view.current === "drawing" ? null : "none"}>
-    <div class="relative flex min-w-0 flex-1 flex-col">
+       scrolling are kept. Hidden panes stay mounted for the same reason. Without a project the
+       start screen covers it (T3.17); the drawing keeps its size underneath. -->
+  <div
+    class="relative flex min-h-0 flex-1"
+    style:display={view.current === "drawing" ? null : "none"}
+  >
+    {#if !projectStore.isOpen}
+      <div class="absolute inset-0 z-40 flex">
+        <StartScreen />
+      </div>
+    {/if}
+    <div class="relative flex min-w-0 flex-1 flex-col" inert={!projectStore.isOpen}>
       <GeneralToleranceOffer
         class="absolute top-14 left-1/2 z-30 w-[min(40rem,calc(100%-2rem))] -translate-x-1/2 shadow-lg"
         confirmation={false}
@@ -93,7 +107,13 @@
         <TablePanel />
       </div>
     </div>
-    <div class="contents" style:display={view.showSidePanel ? null : "none"}>
+    <!-- The setup pane of a new project takes the place of the side panel (decision 23). -->
+    <SetupPane sheetCount={projectStore.sheets.length} />
+    <div
+      class="contents"
+      style:display={view.showSidePanel && !setupStore.visible ? null : "none"}
+      inert={!projectStore.isOpen}
+    >
       <SidePanel />
     </div>
   </div>
@@ -106,8 +126,15 @@
   {:else if view.current === "file"}
     <FilePage />
   {:else if view.current === "review"}
-    <section class="flex flex-1 items-center justify-center bg-bg text-sm text-text-muted">
-      <p>{m.view_planned()}</p>
+    <section class="flex flex-1 overflow-auto bg-bg" aria-label={m.tab_review()}>
+      <EmptyState
+        icon={icons.review}
+        title={m.review_title()}
+        text={m.review_text()}
+        actions={projectStore.isOpen
+          ? [{ command: "place_tool" }]
+          : [{ command: "new_project" }, { command: "open_project" }]}
+      />
     </section>
   {/if}
   <StatusBar />

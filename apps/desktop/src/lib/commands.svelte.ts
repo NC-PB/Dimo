@@ -30,6 +30,7 @@ import { numberingStore } from "$lib/stores/numbering.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
 import { settingsStore } from "$lib/stores/settings.svelte";
+import { setupStore } from "$lib/stores/setup.svelte";
 import { sheetRegions } from "$lib/stores/sheet-regions.svelte";
 import { toleranceStore } from "$lib/stores/tolerance.svelte";
 import { view } from "$lib/stores/view.svelte";
@@ -201,9 +202,14 @@ export const COMMANDS = {
     shortcut: "place_tool",
     disabled: needSheet,
     pressed: () => balloonTools.tool === "place",
-    // Clicking the active tool again stops it (T3.13).
+    // Clicking the active tool again stops it (T3.13). Switching it on shows the drawing, so
+    // the empty states of other views can offer it (T3.17).
     run: () => {
-      balloonTools.setTool(balloonTools.tool === "place" ? "select" : "place");
+      const placing = balloonTools.tool === "place";
+      if (!placing && view.current !== "drawing") {
+        view.set("drawing");
+      }
+      balloonTools.setTool(placing ? "select" : "place");
     },
   },
   edit_value: {
@@ -326,6 +332,17 @@ export const COMMANDS = {
     description: () => m.cmd_project_info_desc(),
     disabled: needProject,
     run: () => revealInSidePanel('[aria-labelledby$="-project-details-title"]'),
+  },
+  // T3.17, decision 23: the setup pane of a new project, opened again from the Drawing tab.
+  setup_checklist: {
+    label: () => m.cmd_setup_checklist(),
+    icon: icons.setupChecklist,
+    description: () => m.cmd_setup_checklist_desc(),
+    disabled: needSheet,
+    pressed: () => setupStore.visible,
+    run: () => {
+      setupStore.toggle();
+    },
   },
 
   // Measure: parts, values, show.

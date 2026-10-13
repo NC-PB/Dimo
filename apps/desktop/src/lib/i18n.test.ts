@@ -27,12 +27,8 @@ describe("i18n (FR-SET-04)", () => {
   });
 
   it("translates the sample message", () => {
-    expect(m.sample_greeting({}, { locale: "en" })).toBe(
-      "Create a project from a drawing, or open a project.",
-    );
-    expect(m.sample_greeting({}, { locale: "de" })).toBe(
-      "Lege ein Projekt aus einer Zeichnung an oder öffne ein Projekt.",
-    );
+    expect(m.start_new_title({}, { locale: "en" })).toBe("New project from drawing");
+    expect(m.start_new_title({}, { locale: "de" })).toBe("Neues Projekt aus Zeichnung");
   });
 
   it("translates the sample, date and result refusals added in T3.1", () => {

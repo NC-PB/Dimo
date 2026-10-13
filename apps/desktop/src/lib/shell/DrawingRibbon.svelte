@@ -111,6 +111,7 @@
 
 {#snippet project()}
   <CommandButton id="project_info" size="large" />
+  <CommandButton id="setup_checklist" size="large" />
 {/snippet}
 
 <Ribbon
