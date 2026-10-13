@@ -35,8 +35,17 @@
     if (current === undefined || input.value === current[field]) {
       return;
     }
-    const next: Sample = { ...current, [field]: input.value };
-    const patch = await project.execute({ type: "update_sample", sample: next });
+    // The sample is built when the command runs, so a fast edit of another field of the same
+    // part is not overwritten with its old value (T3.18).
+    const value = input.value;
+    const patch = await project.executeWith((p) => {
+      const latest = p.samples.find((s) => s.id === current.id);
+      if (latest === undefined || latest[field] === value) {
+        return null;
+      }
+      const next: Sample = { ...latest, [field]: value };
+      return { type: "update_sample", sample: next };
+    });
     if (patch === undefined) {
       const error = project.error;
       project.dismissError();

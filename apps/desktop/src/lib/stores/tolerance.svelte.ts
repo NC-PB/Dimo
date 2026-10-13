@@ -62,6 +62,7 @@ export interface ToleranceProject {
   /** Revision of the open project; every applied patch raises it. */
   readonly revision: number;
   execute(command: Command): Promise<Patch | undefined>;
+  executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined>;
   applyPatched(event: ProjectPatched): void;
 }
 
@@ -170,10 +171,11 @@ export class ToleranceStore {
       "general" in change && !sameChoice(change.general ?? null, settings.general);
     this.#offer = null;
     this.generalUpdated = null;
-    const patch = await this.#project.execute({
+    // Built when the command runs, so a fast second edit keeps the first one (T3.18).
+    const patch = await this.#project.executeWith((project) => ({
       type: "set_tolerance_settings",
-      settings: { ...settings, ...change },
-    });
+      settings: { ...project.settings.tolerance, ...change },
+    }));
     if (patch === undefined) {
       return false;
     }

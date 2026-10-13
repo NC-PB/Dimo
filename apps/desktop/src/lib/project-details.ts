@@ -18,6 +18,7 @@ export function localDate(date: Date): string {
 interface DetailsStore {
   readonly project: Project | null;
   execute(command: Command): Promise<unknown>;
+  executeWith(build: (project: Project) => Command | null): Promise<unknown>;
 }
 
 /**
@@ -37,43 +38,58 @@ async function send(
   input.value = read() ?? "";
 }
 
-/** Sends a changed part field with `update_project_info` (one undo step). */
+/**
+ * Sends a changed part field with `update_project_info` (one undo step). The whole info is
+ * built when the command runs, from the project after every earlier edit, so a fast second
+ * edit of another field never sends this field's old value (T3.18).
+ */
 export function editProjectInfo(
   store: DetailsStore,
   input: HTMLInputElement,
   field: keyof ProjectInfo,
 ): Promise<void> {
-  const project = store.project;
-  if (!project) {
-    return Promise.resolve();
-  }
-  const info = { ...project.info, [field]: input.value };
+  const value = input.value;
   return send(
     input,
     () => store.project?.info[field],
-    () => store.execute({ type: "update_project_info", info }),
+    () =>
+      store.executeWith((project) =>
+        project.info[field] === value
+          ? null
+          : { type: "update_project_info", info: { ...project.info, [field]: value } },
+      ),
   );
 }
 
-/** Sends a changed report header field with `update_report_info` (one undo step). */
+/** Sends a changed report header field with `update_report_info`, built like the part info. */
 export function editReportInfo(
   store: DetailsStore,
   input: HTMLInputElement | HTMLTextAreaElement,
   field: keyof ReportInfo,
 ): Promise<void> {
-  const project = store.project;
-  if (!project) {
-    return Promise.resolve();
-  }
-  const info = { ...project.report_info, [field]: input.value };
+  const value = input.value;
   return send(
     input,
     () => store.project?.report_info[field],
-    () => store.execute({ type: "update_report_info", info }),
+    () => store.executeWith((project) => reportInfoCommand(project, field, value)),
   );
 }
 
-/** Sends a changed label of drawing revision `id` with `update_revision_label`. */
+/** `update_report_info` with one field changed, or `null` when it already has that value. */
+function reportInfoCommand(
+  project: Project,
+  field: keyof ReportInfo,
+  value: string,
+): Command | null {
+  return project.report_info[field] === value
+    ? null
+    : { type: "update_report_info", info: { ...project.report_info, [field]: value } };
+}
+
+/**
+ * Sends a changed label of drawing revision `id` with `update_revision_label`. The command
+ * carries only the label, so it cannot overwrite another field.
+ */
 export function editRevisionLabel(
   store: DetailsStore,
   input: HTMLInputElement,
@@ -89,9 +105,6 @@ export function editRevisionLabel(
 
 /** Sets the report date to today (local calendar day). */
 export function setReportDateToday(store: DetailsStore): void {
-  const project = store.project;
-  if (project) {
-    const info = { ...project.report_info, report_date: localDate(new Date()) };
-    void store.execute({ type: "update_report_info", info });
-  }
+  const today = localDate(new Date());
+  void store.executeWith((project) => reportInfoCommand(project, "report_date", today));
 }
