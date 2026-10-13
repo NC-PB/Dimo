@@ -79,13 +79,13 @@ nicht, du sagst es ihm also einmal in **Zeichnung einrichten**:
    für alle Blätter der Zeichnung; einzelne Blätter änderst du später im Reiter **Zeichnung**.
 3. **Teil (optional)**: Teilenummer und Kunde, für die Berichte.
 
-**Ballonieren starten** speichert die Angaben (Rückgängig nimmt sie zurück) und schaltet
-**Ballon setzen** ein. Später änderst du sie im Reiter **Zeichnung**: **Allgemeintoleranz**,
-**Einheit** und **Maßstab**, oder **Einrichten**, das denselben Bereich wieder öffnet. Ein Maß
-ohne Toleranz erhält seine Grenzwerte danach aus dieser Tabelle. Ohne Allgemeintoleranz
-wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat keine Grenzwerte. Die mit Dimo
-gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre Werte geprüft sind.
-Einzelheiten: [Toleranzen](tolerances.md).
+**Ballonieren starten** speichert die Angaben (Rückgängig nimmt sie zurück, die Allgemeintoleranz
+als eigenen Schritt) und schaltet **Ballon setzen** ein. Später änderst du sie im Reiter
+**Zeichnung**: **Allgemeintoleranz**, **Einheit** und **Maßstab**, oder **Zeichnung einrichten**,
+das denselben Bereich wieder öffnet. Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser
+Tabelle. Ohne Allgemeintoleranz wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat
+keine Grenzwerte. Die mit Dimo gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre
+Werte geprüft sind. Einzelheiten: [Toleranzen](tolerances.md).
 
 ### 4. Ballons setzen und Werte erfassen
 

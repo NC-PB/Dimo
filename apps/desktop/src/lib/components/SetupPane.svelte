@@ -80,11 +80,11 @@
   let scale = $state("1:1");
   let partNumber = $state("");
   let customer = $state("");
-  let filledFor = false;
+  let filledFor = -1;
 
   $effect(() => {
-    const visible = setup.visible;
-    if (visible && !filledFor) {
+    const session = setup.shownFor;
+    if (session !== -1 && session !== filledFor) {
       const current = setup.current();
       if (current !== null) {
         general = keyOf(current.general);
@@ -94,7 +94,7 @@
         customer = current.customer;
       }
     }
-    filledFor = visible;
+    filledFor = session;
   });
 
   const customScale = $derived.by(() => {

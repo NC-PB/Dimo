@@ -26,8 +26,8 @@ neu.
 Ohne offenes Projekt zeigt Dimo den Startbildschirm mit **Neues Projekt aus Zeichnung** und
 **Projekt öffnen**. Gleich nach dem Anlegen eines neuen Projekts fragt der Bereich **Zeichnung
 einrichten** nach Allgemeintoleranz, Einheit und Maßstab, Teilenummer und Kunde; **Überspringen**
-schließt ihn, und **Einrichten** im Reiter **Zeichnung** öffnet ihn wieder. Geöffnete Projekte
-zeigen ihn nicht. Ansichten und Bereiche ohne Inhalt (keine Merkmale, keine Teile, keine
+schließt ihn, und **Zeichnung einrichten** im Reiter **Zeichnung** öffnet ihn wieder. Geöffnete
+Projekte zeigen ihn nicht. Ansichten und Bereiche ohne Inhalt (keine Merkmale, keine Teile, keine
 Messwerte) sagen, was fehlt, und bieten eine Schaltfläche für den nächsten Schritt.
 
 Hat ein Projekt ungespeicherte Änderungen, fragt Dimo vor dem Anlegen oder Öffnen eines anderen

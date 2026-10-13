@@ -74,12 +74,13 @@ letter is the class of ISO 2768-1. Dimo does not read the title block yet, so te
    to every sheet of the drawing; change single sheets later on the **Drawing** tab.
 3. **Part (optional)**: part number and customer, for the reports.
 
-**Start ballooning** stores the answers (undo takes them back) and switches on **Place balloon**.
-To change them later, use the **Drawing** tab: **General tolerance**, **Unit** and **Scale**, or
-**Setup checklist**, which opens the same pane again. From now on a dimension without a tolerance
-gets its limits from that table. Without a general tolerance such a dimension is marked **No tolerance defined** and
-has no limits. The tables shipped with Dimo carry the marker **Draft** until their values have
-been verified. Details: [Tolerances](tolerances.md).
+**Start ballooning** stores the answers (undo takes them back, the general tolerance as its own
+step) and switches on **Place balloon**. To change them later, use the **Drawing** tab: **General
+tolerance**, **Unit** and **Scale**, or **Set up drawing**, which opens the same pane again. From
+now on a dimension without a tolerance gets its limits from that table. Without a general tolerance
+such a dimension is marked **No tolerance defined** and has no limits. The tables shipped with Dimo
+carry the marker **Draft** until their values have been verified. Details:
+[Tolerances](tolerances.md).
 
 ### 4. Place balloons and capture the values
 

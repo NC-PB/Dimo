@@ -104,7 +104,12 @@ export class SetupStore {
     );
   }
 
-  /** Opens the pane for the open project (Drawing tab, "Setup checklist"). */
+  /** Session the pane is shown for, `-1` while it is hidden; the form refills when it changes. */
+  get shownFor(): number {
+    return this.visible ? this.#project.session : -1;
+  }
+
+  /** Opens the pane for the open project (Drawing tab, "Set up drawing"). */
   show(): void {
     if (this.#project.project !== null) {
       this.#openedFor = this.#project.session;

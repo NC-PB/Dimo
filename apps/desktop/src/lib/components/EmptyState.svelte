@@ -15,7 +15,7 @@
   import { view } from "$lib/stores/view.svelte";
 
   /**
-   * Empty state of a view or pane (T3.17, NN/g pattern): what is (not) here, why, and a button
+   * Empty state of a view or pane (T3.17): what is (not) here, why, and a button
    * for the next step. `page` fills a work area, `inline` sits inside a pane or above content.
    */
   interface Props {

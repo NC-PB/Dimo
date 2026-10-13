@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/i18n";
   import type { Sample, SampleId } from "$lib/ipc/bindings";
   import { projectStore, type ProjectStore } from "$lib/stores/project.svelte";
@@ -90,6 +91,15 @@
       <p class="text-xs text-danger" role="alert">{notice}</p>
     {/if}
   {:else}
-    <p class="text-xs text-text-muted">{m.sample_panel_empty()}</p>
+    {#if (project.project?.samples.length ?? 0) === 0}
+      <EmptyState
+        size="inline"
+        title={m.empty_measure_no_parts_title()}
+        text={m.empty_measure_no_parts_text()}
+        actions={[{ command: "add_parts" }]}
+      />
+    {:else}
+      <p class="text-xs text-text-muted">{m.sample_panel_empty()}</p>
+    {/if}
   {/if}
 </section>
