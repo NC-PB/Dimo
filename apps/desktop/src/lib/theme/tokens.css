@@ -1,22 +1,31 @@
-/* Design tokens (D-51). The only place where colors are defined.
+/* Design tokens (D-51, M3 decision 24). The only place where colors are defined.
    Light on :root, dark on :root[data-theme="dark"]. `theme.ts` sets data-theme from the
-   theme setting (system, light, dark) and follows the operating system for "system". */
+   theme setting (system, light, dark) and follows the operating system for "system".
+   `tokens.test.ts` reads this file and checks the WCAG contrast of the token pairs, so keep
+   every color a plain `#rrggbb` (or `rgb()` for the soft tints) on its own line.
+
+   Accent use: `accent` for marks (selection bars, underlines, outlines, drop lines) and the
+   focus ring; `accent-strong` with `accent-ink` for filled buttons and for accent colored text.
+   Pass, fail and warnings never use the accent; they keep green, red and amber with a shape. */
 
 :root {
   color-scheme: light;
-  --dimo-bg: #f6f7f9;
+  --dimo-bg: #f5f6f8;
   --dimo-surface: #ffffff;
-  --dimo-surface-raised: #eef0f3;
-  --dimo-border: #d5d9e0;
-  --dimo-text: #1b1f24;
-  --dimo-text-muted: #5b6470;
-  --dimo-accent: #1f6feb;
-  --dimo-accent-text: #ffffff;
-  --dimo-focus: #1f6feb;
-  --dimo-danger: #b42318;
-  --dimo-success: #1a7f37;
+  --dimo-sunken: #e6e9ed;
+  --dimo-hover: #eef1f4;
+  --dimo-border: #dee3e9;
+  --dimo-border-strong: #c3ccd5;
+  --dimo-text: #1a222c;
+  --dimo-text-muted: #46545f;
+  --dimo-accent: #e85d04;
+  --dimo-accent-strong: #c2410c;
+  --dimo-accent-ink: #ffffff;
+  --dimo-accent-soft: rgb(232 93 4 / 0.1);
+  --dimo-danger: #991b1b;
+  --dimo-success: #17703a;
   /* Draft tables and tolerance hints (D-43), always with a shape as well. */
-  --dimo-warning: #8a5a00;
+  --dimo-warning: #7a5200;
   /* Overlay on the drawing. The sheet stays white in both themes, so these do not change. */
   --dimo-balloon-selected: #e8590c;
   --dimo-balloon-selected-fill: rgb(232 89 12 / 0.08);
@@ -27,28 +36,44 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --dimo-bg: #121417;
-  --dimo-surface: #1a1d21;
-  --dimo-surface-raised: #24282d;
-  --dimo-border: #353b42;
-  --dimo-text: #e6e9ed;
-  --dimo-text-muted: #9aa3ad;
-  --dimo-accent: #4c8dff;
-  --dimo-accent-text: #0b0d10;
-  --dimo-focus: #79a8ff;
-  --dimo-danger: #ff8a80;
+  --dimo-bg: #0c1016;
+  --dimo-surface: #141a23;
+  --dimo-sunken: #080b0f;
+  --dimo-hover: #1b232e;
+  --dimo-border: #232d3a;
+  --dimo-border-strong: #35414f;
+  --dimo-text: #e7ecf2;
+  --dimo-text-muted: #a8b4c1;
+  --dimo-accent: #ff7a1a;
+  --dimo-accent-strong: #ff8f40;
+  --dimo-accent-ink: #1a1004;
+  --dimo-accent-soft: rgb(255 122 26 / 0.14);
+  --dimo-danger: #ffa8a8;
   --dimo-success: #6fdd8b;
   --dimo-warning: #e3b341;
+}
+
+/* Older names, kept so existing components keep working. */
+:root {
+  --dimo-surface-raised: var(--dimo-hover);
+  --dimo-accent-text: var(--dimo-accent-ink);
+  --dimo-focus: var(--dimo-accent);
 }
 
 @theme inline {
   --color-bg: var(--dimo-bg);
   --color-surface: var(--dimo-surface);
+  --color-sunken: var(--dimo-sunken);
+  --color-hover: var(--dimo-hover);
   --color-surface-raised: var(--dimo-surface-raised);
   --color-border: var(--dimo-border);
+  --color-border-strong: var(--dimo-border-strong);
   --color-text: var(--dimo-text);
   --color-text-muted: var(--dimo-text-muted);
   --color-accent: var(--dimo-accent);
+  --color-accent-strong: var(--dimo-accent-strong);
+  --color-accent-ink: var(--dimo-accent-ink);
+  --color-accent-soft: var(--dimo-accent-soft);
   --color-accent-text: var(--dimo-accent-text);
   --color-focus: var(--dimo-focus);
   --color-danger: var(--dimo-danger);

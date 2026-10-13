@@ -43,7 +43,7 @@
         <!-- Plain buttons: they answer first, which also closes the dialog. -->
         <button
           type="button"
-          class="{buttonClass} bg-accent text-accent-text"
+          class="{buttonClass} bg-accent-strong text-accent-ink"
           onclick={() => {
             unsavedPrompt.answer("save");
           }}

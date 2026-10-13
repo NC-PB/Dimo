@@ -103,7 +103,7 @@
       }}
     />
   </label>
-  <button class="h-7 rounded bg-accent px-3 text-sm text-accent-text" onclick={add}
+  <button class="h-7 rounded bg-accent-strong px-3 text-sm text-accent-ink" onclick={add}
     >{m.samples_add()}</button
   >
   <span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
@@ -130,7 +130,7 @@
           count: String(resultCount(sample.id)),
         })}</span
       >
-      <button class="h-7 rounded bg-danger px-2 text-sm text-accent-text" onclick={remove}
+      <button class="h-7 rounded bg-danger px-2 text-sm text-accent-ink" onclick={remove}
         >{m.samples_delete_yes()}</button
       >
       <button

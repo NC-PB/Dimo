@@ -191,7 +191,7 @@
   }
 
   const buttonClass =
-    "rounded border border-border px-2 py-1 text-sm text-text hover:bg-surface-raised aria-pressed:bg-accent aria-pressed:text-accent-text";
+    "rounded border border-border px-2 py-1 text-sm text-text hover:bg-surface-raised aria-pressed:bg-accent-strong aria-pressed:text-accent-ink";
   const fieldClass = "rounded border border-border bg-surface px-2 py-1 text-sm text-text";
 </script>
 

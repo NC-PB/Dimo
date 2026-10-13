@@ -279,7 +279,7 @@
         </button>
         <button
           type="button"
-          class="rounded bg-accent px-2 py-0.5 text-xs text-accent-text"
+          class="rounded bg-accent-strong px-2 py-0.5 text-xs text-accent-ink"
           onclick={() => void accept()}
         >
           {m.proposal_accept()}

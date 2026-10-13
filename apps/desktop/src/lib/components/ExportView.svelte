@@ -107,7 +107,7 @@
 
   const fieldClass = "rounded border border-border bg-surface px-2 py-1 text-text";
   const buttonClass =
-    "shrink-0 rounded bg-accent px-3 py-1.5 text-accent-text hover:opacity-90 disabled:opacity-40";
+    "shrink-0 rounded bg-accent-strong px-3 py-1.5 text-accent-ink hover:opacity-90 disabled:opacity-40";
   const secondaryClass =
     "shrink-0 rounded border border-border px-3 py-1.5 text-text hover:bg-bg disabled:opacity-40";
 </script>
