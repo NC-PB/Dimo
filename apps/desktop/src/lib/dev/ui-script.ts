@@ -39,15 +39,16 @@
  *   text on the clipboard would (T3.5).
  * - `view`: zoom percent and the sheet point in the viewport center.
  * - `show`: switches to a work area (`drawing`, `measure`, `export`, `file`, ...), a
- *   ribbon tab (`home`, `report`, `view`, ...) or a pane of the File page (`file:open`,
- *   `file:options`, ...).
- * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
- *   or the `<select>` whose `aria-label` starts with it.
+ *   ribbon tab (`home`, `report`, `view`, ...; `tab:drawing` for the Drawing tab, whose name is
+ *   also a work area) or a pane of the File page (`file:open`, `file:options`, ...).
+ * - `select`: `[label, value]` sets the `<select>` of the label that starts with this text
+ *   (inside it or named by its `for`), or the `<select>` whose `aria-label` starts with it.
  * - `reveal`: scrolls the field inside the label that starts with this text into view.
- * - `fill`: `[label, text]` sets the text, number or date field inside the label that starts with this text, as
+ * - `fill`: `[label, text]` sets the text, number or date field or text area of the label that
+ *   starts with this text (inside it or named by its `for`), as
  *   typing and leaving the field would (input and change events), e.g. the shorter leg (T2.9a).
- * - `check`: `[label, checked]` sets the check box (or turns on the radio button) inside the
- *   label that starts with this text.
+ * - `check`: `[label, checked]` sets the check box (or turns on the radio button) of the label
+ *   that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons, selection, tool
  *   and limits).
  */
@@ -209,6 +210,19 @@ async function typeKeys(text: string): Promise<void> {
 /** The label element whose text starts with `text`. */
 function labelled(text: string): HTMLLabelElement | undefined {
   return [...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith(text));
+}
+
+/**
+ * The form field of the label that starts with `text` and matches `selector`: the field inside
+ * the label, or the one the label names with `for` (File > Info, the properties pane).
+ */
+function labelledField<T extends Element>(text: string, selector: string): T | undefined {
+  const label = labelled(text);
+  const control = label?.control;
+  if (control?.matches(selector)) {
+    return control as unknown as T;
+  }
+  return label?.querySelector<T>(selector) ?? undefined;
 }
 
 function exportState(format: ExportFormat): string {
@@ -420,6 +434,8 @@ async function run(step: UiStep): Promise<void> {
     const pane = FILE_PANES.find((p) => step.show === `file:${p}`);
     if (pane !== undefined) {
       view.openFile(pane);
+    } else if (step.show.startsWith("tab:")) {
+      view.setTab(step.show.slice(4)); // `tab:drawing`: the Drawing tab, not only its work area.
     } else if (isView(step.show)) {
       view.set(step.show);
     } else {
@@ -428,7 +444,7 @@ async function run(step: UiStep): Promise<void> {
     await sleep(STEP_PAUSE_MS);
   } else if ("select" in step) {
     const field =
-      labelled(step.select[0])?.querySelector("select") ??
+      labelledField<HTMLSelectElement>(step.select[0], "select") ??
       [...document.querySelectorAll("select")].find((f) =>
         (f.getAttribute("aria-label") ?? "").startsWith(step.select[0]),
       );
@@ -441,8 +457,9 @@ async function run(step: UiStep): Promise<void> {
     labelled(step.reveal)?.scrollIntoView({ block: "center" });
     await sleep(STEP_PAUSE_MS);
   } else if ("fill" in step) {
-    const field = labelled(step.fill[0])?.querySelector<HTMLInputElement>(
-      "input[type=text], input[type=number], input[type=date]",
+    const field = labelledField<HTMLInputElement | HTMLTextAreaElement>(
+      step.fill[0],
+      "input[type=text], input[type=number], input[type=date], textarea",
     );
     if (field) {
       field.focus({ preventScroll: true });
@@ -452,7 +469,8 @@ async function run(step: UiStep): Promise<void> {
     }
     await sleep(STEP_PAUSE_MS);
   } else if ("check" in step) {
-    const box = labelled(step.check[0])?.querySelector<HTMLInputElement>(
+    const box = labelledField<HTMLInputElement>(
+      step.check[0],
       "input[type=checkbox], input[type=radio]",
     );
     if (box && box.checked !== step.check[1]) {

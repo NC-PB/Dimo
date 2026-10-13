@@ -3,6 +3,7 @@
   import ProjectDetails from "$lib/components/ProjectDetails.svelte";
   import { m } from "$lib/i18n";
   import { icons } from "$lib/icons";
+  import Pane from "$lib/pane/Pane.svelte";
   import { measurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import MeasureGrid from "./MeasureGrid.svelte";
@@ -42,13 +43,13 @@
       <MeasureGrid />
     {/if}
   </section>
-  <aside
-    class="flex min-h-0 w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface p-3 text-sm text-text-muted"
-    aria-label={m.measure_side_panel_label()}
-  >
-    {#if projectStore.project !== null}
-      <SamplePanel activeSample={measureUi.activeSample} />
-    {/if}
-    <ProjectDetails />
-  </aside>
+  <!-- The generic pane frame of T3.18; T3.19 fills it with sections. -->
+  <Pane title={m.measure_side_panel_label()} label={m.measure_side_panel_label()}>
+    <div class="flex flex-col gap-4 p-3 text-text-muted">
+      {#if projectStore.project !== null}
+        <SamplePanel activeSample={measureUi.activeSample} />
+      {/if}
+      <ProjectDetails />
+    </div>
+  </Pane>
 </div>

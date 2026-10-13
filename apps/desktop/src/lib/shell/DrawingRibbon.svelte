@@ -12,7 +12,6 @@
     updateShownSheet,
   } from "$lib/sheet-properties";
   import { view } from "$lib/stores/view.svelte";
-  import { tick } from "svelte";
   import CommandButton from "./CommandButton.svelte";
   import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
   import GeneralToleranceField from "./GeneralToleranceField.svelte";
@@ -22,8 +21,9 @@
    * Drawing tab (ADR 0007, mockup "Drawing tab"): sheet, zones and views, tolerances, project.
    * Decimal rules, company tables and the project balloon style open a small dialog
    * (`ProjectSettingsDialog`, T3.16).
-   * Unit and scale act on the sheet on screen with the same undoable `update_sheet` as the side
-   * panel; a scale that is not in the list is typed in the side panel.
+   * Unit and scale act on the sheet on screen with an undoable `update_sheet`; a scale that is
+   * not in the list is typed in the dialog that "Custom" opens. Zone grid and Draw view open a
+   * section of the properties pane where the grid and the views are edited (T3.18).
    */
   const sheet = $derived(shownSheet());
   const reason = $derived(disabledReason("rotate_left"));
@@ -34,17 +34,12 @@
     return unit === "in" ? m.sheet_unit_in() : m.sheet_unit_mm();
   }
 
-  async function onScale(event: Event & { currentTarget: HTMLSelectElement }): Promise<void> {
+  function onScale(event: Event & { currentTarget: HTMLSelectElement }): void {
     const value = event.currentTarget.value;
     if (value === CUSTOM) {
-      // Other scales are typed in the sheet properties of the side panel.
+      // Other scales are typed in a small dialog (T3.18).
       event.currentTarget.value = sheet ? scaleText(sheet.scale) : "";
-      view.set("drawing");
-      view.showSidePanel = true;
-      await tick();
-      document
-        .querySelector('[aria-labelledby="sheet-properties-title"]')
-        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+      view.projectDialog = "sheet_scale";
       return;
     }
     const chosen = SCALE_PRESETS.find((p) => scaleText(p) === value);
@@ -84,7 +79,7 @@
         data-field="scale"
         disabled={sheet === undefined}
         value={sheet ? scaleText(sheet.scale) : ""}
-        onchange={(e) => void onScale(e)}
+        onchange={onScale}
       >
         {#if sheet && !isPreset}
           <option value={scaleText(sheet.scale)}>{scaleText(sheet.scale)}</option>

@@ -21,8 +21,19 @@ export const FILE_PANES = ["info", "open", "options", "about"] as const;
 
 export type FilePane = (typeof FILE_PANES)[number];
 
-/** Project settings dialogs of the Drawing tab (M3 decision 21, T3.16). */
-export type ProjectDialog = "decimal_rules" | "company_tables" | "balloon_style";
+/**
+ * Project settings dialogs of the Home and Drawing tabs (M3 decision 21, T3.16, T3.18): settings
+ * that need more room than a ribbon field.
+ */
+export type ProjectDialog =
+  "decimal_rules" | "company_tables" | "balloon_style" | "numbering" | "sheet_scale";
+
+/**
+ * Sections of the properties pane that a ribbon command opens (T3.18): the zone grid and the
+ * views of the shown sheet. They show until closed, so the grid can be edited after its frame
+ * is drawn.
+ */
+export type PaneTool = "zones" | "views";
 
 export function isTab(value: string): value is Tab {
   return (TABS as readonly string[]).includes(value);
@@ -72,8 +83,10 @@ export class ViewStore {
   #area = $state<View>("drawing");
   /** View tab: the characteristic table under the drawing. */
   showTable = $state(true);
-  /** View tab: the side panel right of the drawing. */
+  /** View tab: the properties pane right of the drawing. */
   showSidePanel = $state(true);
+  /** The pane section a ribbon command opened, `null` when the pane follows the selection. */
+  paneTool = $state<PaneTool | null>(null);
   /** Whether the keyboard shortcut cheat sheet (help) is open. */
   shortcutsOpen = $state(false);
   /** The pane shown on the File page. */

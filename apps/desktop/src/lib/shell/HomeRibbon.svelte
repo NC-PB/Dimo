@@ -53,6 +53,7 @@
       </select>
     </label>
     <CommandButton id="preview_numbers" />
+    <CommandButton id="numbering_options" />
   </div>
 {/snippet}
 
