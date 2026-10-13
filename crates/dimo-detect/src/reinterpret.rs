@@ -21,7 +21,7 @@
 //! the same command.
 
 use dimo_core::characteristic::{Characteristic, FieldValue};
-use dimo_core::derivation::{DerivationHint, DerivationRule};
+use dimo_core::derivation::{DerivationHint, DerivationRule, ToleranceDerivation};
 use dimo_core::{CharId, Command, Length, Project, Unit};
 
 use dimo_tolerance::Measures;
@@ -86,12 +86,14 @@ pub fn reinterpret(
 ///
 /// Only characteristics whose tolerance follows the general tolerance are considered: rule
 /// "no tolerance defined", a general tolerance (shipped or custom table), or never interpreted
-/// (no derivation and no limits). Limits entered by hand (rule `manual`, or limits without a
-/// derivation), explicit tolerances, fits, drawing and decimal place rules are never touched,
-/// and unreadable text is left as it is. Of these, only the characteristics whose stored values
-/// the new reading changes are returned in `reinterpreted`, so a thread or a reference
-/// dimension that stays without tolerance is not counted. `command` sets them through the
-/// re-interpretation path as one batch, so the update is one undo step. Changes nothing.
+/// (no derivation and no limits) when the reading gives it a general tolerance. Limits entered
+/// by hand (rule `manual`, or limits without a derivation), explicit tolerances, fits, drawing
+/// and decimal place rules are never touched, and unreadable text is left as it is. Of these,
+/// only the characteristics whose stored values the new reading changes are returned in
+/// `reinterpreted`, so a thread or a reference dimension that stays without tolerance is not
+/// counted. A characteristic is read with all current settings like any re-interpretation, so
+/// a drawing or decimal place rule set earlier can apply to it too. `command` sets them through
+/// the re-interpretation path as one batch, so the update is one undo step. Changes nothing.
 pub fn general_tolerance_update(
     project: &Project,
     interpreter: &dyn Interpreter,
@@ -110,6 +112,11 @@ pub fn general_tolerance_update(
         if updated.set_values(&values).is_err() || updated == *c {
             continue;
         }
+        // A characteristic never read is offered only if the reading gives it a general
+        // tolerance; without one, reading it is not what the offer is about.
+        if c.derivation.is_none() && !updated.derivation.as_ref().is_some_and(is_general) {
+            continue;
+        }
         out.reinterpreted.push(c.id);
         commands.push(Command::UpdateFields {
             ids: vec![c.id],
@@ -126,14 +133,17 @@ pub fn general_tolerance_update(
 /// (M3 decision 22).
 fn follows_general(c: &Characteristic) -> bool {
     match &c.derivation {
-        Some(d) => matches!(
-            d.rule,
-            DerivationRule::NoToleranceDefined
-                | DerivationRule::General { .. }
-                | DerivationRule::CustomTable { .. }
-        ),
+        Some(d) => d.rule == DerivationRule::NoToleranceDefined || is_general(d),
         None => !has_manual_limits(c),
     }
+}
+
+/// True for a general tolerance from a shipped or a custom table.
+fn is_general(d: &ToleranceDerivation) -> bool {
+    matches!(
+        d.rule,
+        DerivationRule::General { .. } | DerivationRule::CustomTable { .. }
+    )
 }
 
 /// True for limits edited by hand. Limits without any derivation come from a project older than
@@ -613,6 +623,11 @@ mod tests {
         execute(&mut project, &update.command.unwrap(), &mut env).unwrap();
         assert_eq!(limits(&project, ids[0]), (None, None));
         // Nothing left to change: no command.
+        // A characteristic never read gets no tolerance without a general one: not offered.
+        let c = &mut project.characteristics[1];
+        c.derivation = None;
+        let skipped = general_tolerance_update(&project, &none);
+        assert_eq!(skipped.reinterpreted, []);
         let again = general_tolerance_update(&project, &none);
         assert_eq!(again, Reinterpretation::default());
     }

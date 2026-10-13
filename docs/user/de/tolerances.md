@@ -90,10 +90,12 @@ Merkmal ändern würde; andere Einstellungen zeigen ihn nie.
 
 Das Anpassen berücksichtigt nur Merkmale, deren Regel **Keine Toleranz festgelegt** oder eine
 Allgemeintoleranz ist (aus einer mitgelieferten oder einer eigenen Tabelle), und Merkmale, deren
-Text noch nie gelesen wurde. Von Hand eingegebene Grenzmaße, geschriebene Toleranzen, Passungen,
-Zeichnungsregeln, Regeln nach Dezimalstellen und Texte, die kein Maß sind, ändern sich nie. Ein
+Text noch nie gelesen wurde und die jetzt die Allgemeintoleranz erhalten. Merkmale mit von Hand
+eingegebenen Grenzmaßen, einer geschriebenen Toleranz, einer Passung, einer Zeichnungsregel oder
+einer Regel nach Dezimalstellen ändern sich nie, ebenso wenig Texte, die kein Maß sind. Ein
 Merkmal, das ohne Toleranz bleibt, zum Beispiel ein Gewinde oder ein Hilfsmaß, wird nicht
-gezählt. Entfernst du die Allgemeintoleranz, bietet der Hinweis an, die bisherige
+gezählt. Die angepassten Merkmale werden mit allen aktuellen Einstellungen gelesen, eine früher
+gesetzte Zeichnungsregel oder Regel nach Dezimalstellen kann also auch für sie gelten. Entfernst du die Allgemeintoleranz, bietet der Hinweis an, die bisherige
 Allgemeintoleranz bei den Merkmalen zu entfernen, die sie noch haben.
 
 ## Nach einer Änderung neu auswerten

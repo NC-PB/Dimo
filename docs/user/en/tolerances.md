@@ -80,10 +80,12 @@ change; other settings never show it.
   later.
 
 The update considers only characteristics whose rule is **No tolerance defined** or a general
-tolerance (of a shipped or a custom table), and characteristics whose text was never read.
-Limits entered by hand, written tolerances, fits, drawing rules, decimal place rules and texts
-that are not a dimension never change. A characteristic that stays without tolerance, for
-example a thread or a reference dimension, is not counted. If you remove the general tolerance,
+tolerance (of a shipped or a custom table), and characteristics whose text was never read and
+now gets the general tolerance. Characteristics with limits entered by hand, a written
+tolerance, a fit, a drawing rule or a decimal place rule never change, nor do texts that are not
+a dimension. A characteristic that stays without tolerance, for example a thread or a reference
+dimension, is not counted. The characteristics that are updated are read with all current
+settings, so a drawing rule or decimal place rule you set earlier can apply to them too. If you remove the general tolerance,
 the notice offers to remove the previous general tolerance from the characteristics that still
 have it.
 

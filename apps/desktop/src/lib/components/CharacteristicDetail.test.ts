@@ -528,6 +528,23 @@ describe("tolerance settings (T2.8)", () => {
     expect(stores.commands.length).toBe(commands);
   });
 
+  it("withdraws the offer when the project changes (undo, redo, edits)", async () => {
+    const stores = setup();
+    renderSettings(stores);
+    await settle();
+    pickGeneral("iso-2768-1");
+    await settle();
+    expect(target.querySelector("[data-testid='general-offer']")).not.toBeNull();
+    stores.projectStore.applyPatched({
+      session: 1,
+      revision: stores.projectStore.revision + 1,
+      patch: { changes: [] },
+      status: status(),
+    });
+    await settle();
+    expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
+  });
+
   it("makes no offer when nothing would change or another setting changed", async () => {
     const stores = setup();
     stores.general.candidates = [];

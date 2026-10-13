@@ -59,6 +59,8 @@ export function sheetOf(project: Project, c: Characteristic): SheetId | null {
 /** What the store needs of the project: its state, the command path and patch results. */
 export interface ToleranceProject {
   readonly project: Project | null;
+  /** Revision of the open project; every applied patch raises it. */
+  readonly revision: number;
   execute(command: Command): Promise<Patch | undefined>;
   applyPatched(event: ProjectPatched): void;
 }
@@ -100,9 +102,15 @@ export class ToleranceStore {
   /**
    * How many characteristics Rust would give the new general tolerance, offered after the
    * general tolerance changed (M3 decision 22), and whether the general tolerance was removed
-   * (the update then takes the previous one away); `null` when there is no offer.
+   * (the update then takes the previous one away); `null` when there is no offer. The offer
+   * holds only for the project revision it was counted on: undo, redo or any other change
+   * withdraws it, so the number shown is always the number Update changes.
    */
-  generalOffer = $state.raw<{ count: number; removing: boolean } | null>(null);
+  get generalOffer(): { count: number; removing: boolean } | null {
+    const offer = this.#offer;
+    return offer !== null && offer.revision === this.#project.revision ? offer : null;
+  }
+  #offer = $state.raw<{ count: number; removing: boolean; revision: number } | null>(null);
   /** How many characteristics the last accepted offer updated, for a confirmation line. */
   generalUpdated = $state<number | null>(null);
 
@@ -160,7 +168,7 @@ export class ToleranceStore {
     }
     const generalChanged =
       "general" in change && !sameChoice(change.general ?? null, settings.general);
-    this.generalOffer = null;
+    this.#offer = null;
     this.generalUpdated = null;
     const patch = await this.#project.execute({
       type: "set_tolerance_settings",
@@ -182,12 +190,12 @@ export class ToleranceStore {
       return;
     }
     const count = result.data.length;
-    this.generalOffer = count > 0 ? { count, removing } : null;
+    this.#offer = count > 0 ? { count, removing, revision: this.#project.revision } : null;
   }
 
   /** Not now: the offer goes away, nothing changes. */
   declineGeneralUpdate(): void {
-    this.generalOffer = null;
+    this.#offer = null;
   }
 
   /**
@@ -206,7 +214,7 @@ export class ToleranceStore {
         return null;
       }
       this.error = null;
-      this.generalOffer = null;
+      this.#offer = null;
       this.generalUpdated = result.data.reinterpreted;
       this.#project.applyPatched(result.data.patched);
       return result.data;
@@ -314,7 +322,7 @@ export class ToleranceStore {
     this.lastReinterpretation = null;
     this.legError = null;
     this.legOutcome = null;
-    this.generalOffer = null;
+    this.#offer = null;
     this.generalUpdated = null;
   }
 }
