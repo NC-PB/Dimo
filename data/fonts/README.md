@@ -53,9 +53,10 @@ text and its provenance sit in one place.
   rule 10 on the condition the license sets: every copy carries the copyright notice and the
   full license text. Each family has its license as a plain text file next to it
   (`SpaceGrotesk-OFL.txt`, `JetBrainsMono-OFL.txt`), starting with the copyright notice. The
-  About page (M3 decision 29) embeds these files. The fonts are not sold on their own and are
-  not modified (byte identical to the source files below), so no Reserved Font Name question
-  arises.
+  About page (M3 decision 29) embeds these files. The fonts are not sold on their own. Dimo does
+  not modify them: they are byte identical to the source files below, which are the
+  distributors' Latin and Latin Extended subsets of the upstream releases. Neither font's
+  `name` table names a Reserved Font Name.
 - Check after copying: the copyright line and version were read from the `name` table of
   each file (macOS Core Text, name IDs 0 and 5); the license URL in name ID 14 is
   `https://scripts.sil.org/OFL` in all four files.
