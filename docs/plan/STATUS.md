@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; T3.1 to T3.8 done; all agent tasks done (T3.1 to T3.10, T3.11 procedure and dry run); waiting for the owner: exit run `docs/perf/M3-exit.md` on a real drawing and `docs/dev/manual-test-m3.md`
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)) in progress, plan confirmed by the owner 2026-10-12; all agent tasks done (T3.1 to T3.10, T3.11 procedure and dry run); waiting for the owner: exit run `docs/perf/M3-exit.md` on a real drawing and `docs/dev/manual-test-m3.md`
 - M2 implemented (all tasks done or in owner review); M2 exit waits for the owner: truth file review, box select confirmed on a real drawing, manual test `docs/dev/manual-test-m2.md`. M0 and M1 implemented, waiting for owner reviews
 - Owner, blocking release 0.1: Tabellenbuch check of the tolerance tables (D-43)
 - Release target: 0.1 after M3
