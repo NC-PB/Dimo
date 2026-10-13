@@ -13,6 +13,9 @@
 //! the reading like typed text. The stored shorter leg of an angle is read with the text, so an
 //! angular general tolerance keeps its row (T2.9a).
 //!
+//! [`general_tolerance_update`] picks the characteristics a new general tolerance applies to
+//! (T3.13, M3 decision 22) and reads exactly those again by the same rules, also as one step.
+//!
 //! [`set_shorter_leg`] changes the shorter leg of one characteristic by the same rules: the
 //! text is read again with the new leg, limits edited by hand stay, and the leg is stored in
 //! the same command.
@@ -76,6 +79,61 @@ pub fn reinterpret(
         out.command = Some(Command::Batch { commands });
     }
     out
+}
+
+/// The update of existing characteristics after the general tolerance changed (T3.13, M3
+/// decision 22), read with `interpreter` (the tolerance engine with the new settings).
+///
+/// Only characteristics whose tolerance follows the general tolerance are considered: rule
+/// "no tolerance defined", a general tolerance (shipped or custom table), or never interpreted
+/// (no derivation and no limits). Limits entered by hand (rule `manual`, or limits without a
+/// derivation), explicit tolerances, fits, drawing and decimal place rules are never touched,
+/// and unreadable text is left as it is. Of these, only the characteristics whose stored values
+/// the new reading changes are returned in `reinterpreted`, so a thread or a reference
+/// dimension that stays without tolerance is not counted. `command` sets them through the
+/// re-interpretation path as one batch, so the update is one undo step. Changes nothing.
+pub fn general_tolerance_update(
+    project: &Project,
+    interpreter: &dyn Interpreter,
+) -> Reinterpretation {
+    let mut out = Reinterpretation::default();
+    let mut commands = Vec::new();
+    for c in project
+        .characteristics
+        .iter()
+        .filter(|c| follows_general(c))
+    {
+        let Some(values) = tolerance_values(project, c, interpreter, c.shorter_leg) else {
+            continue;
+        };
+        let mut updated = c.clone();
+        if updated.set_values(&values).is_err() || updated == *c {
+            continue;
+        }
+        out.reinterpreted.push(c.id);
+        commands.push(Command::UpdateFields {
+            ids: vec![c.id],
+            values,
+        });
+    }
+    if !commands.is_empty() {
+        out.command = Some(Command::Batch { commands });
+    }
+    out
+}
+
+/// True if the tolerance of `c` comes from the general tolerance or there is none yet
+/// (M3 decision 22).
+fn follows_general(c: &Characteristic) -> bool {
+    match &c.derivation {
+        Some(d) => matches!(
+            d.rule,
+            DerivationRule::NoToleranceDefined
+                | DerivationRule::General { .. }
+                | DerivationRule::CustomTable { .. }
+        ),
+        None => !has_manual_limits(c),
+    }
 }
 
 /// True for limits edited by hand. Limits without any derivation come from a project older than
@@ -486,6 +544,77 @@ mod tests {
                 .as_ref()
                 .is_some_and(|d| d.hints.contains(&DerivationHint::BasicDimension))
         );
+    }
+
+    // T3.13, M3 decision 22: a new general tolerance updates characteristics without tolerance
+    // or with a general tolerance; explicit, fit, manual, unreadable and unchanged ones stay.
+    #[test]
+    fn general_tolerance_update_selects_by_rule() {
+        let none = engine(None);
+        let texts = [
+            "50",
+            "Ø20 +0.1 -0",
+            "Ø8 H7",
+            "SEE NOTE",
+            "M8",
+            "(42)",
+            "60",
+            "70",
+        ];
+        let (mut project, ids, mut env) = project(&texts);
+        // "50" without general tolerance: rule no_tolerance_defined, no limits.
+        let reading = read_callout("50", false, Unit::Mm, &none, &Measures::default());
+        project.characteristics[0]
+            .set_values(&reading.field_values())
+            .unwrap();
+        // "60" has limits entered by hand.
+        let c = &mut project.characteristics[6];
+        c.upper_limit = d("60.5");
+        c.derivation = Some(ToleranceDerivation::manual());
+        // "70" was typed before T2.6: no derivation, no limits.
+        let c = &mut project.characteristics[7];
+        c.derivation = None;
+        c.upper_limit = None;
+        c.lower_limit = None;
+        c.nominal = None;
+        let before = project.clone();
+
+        // ISO 2768-m read them; class f changes the plain size only.
+        let update = general_tolerance_update(&project, &engine(Some("f")));
+        assert_eq!(update.reinterpreted, [ids[0], ids[7]]);
+        assert_eq!(update.skipped_manual, []);
+        assert_eq!(update.skipped_unreadable, []);
+        let changes = execute(&mut project, &update.command.unwrap(), &mut env).unwrap();
+        assert_eq!(limits(&project, ids[0]), (d("50.15"), d("49.85")));
+        assert_eq!(limits(&project, ids[7]), (d("70.15"), d("69.85")));
+        for (i, id) in ids.iter().enumerate().skip(1).take(6) {
+            assert_eq!(
+                project.characteristic(*id),
+                before.characteristic(*id),
+                "{}",
+                texts[i]
+            );
+        }
+        // One command: undoing its changes restores the project.
+        for change in dimo_core::patch::invert(&changes) {
+            project.apply_change(&change).unwrap();
+        }
+        assert_eq!(project, before);
+    }
+
+    // T3.13: a general tolerance that no longer applies is updated too; afterwards nothing is
+    // left to change.
+    #[test]
+    fn general_tolerance_update_removes_a_general_tolerance() {
+        let none = engine(None);
+        let (mut project, ids, mut env) = project(&["50", "M8"]);
+        let update = general_tolerance_update(&project, &none);
+        assert_eq!(update.reinterpreted, [ids[0]]);
+        execute(&mut project, &update.command.unwrap(), &mut env).unwrap();
+        assert_eq!(limits(&project, ids[0]), (None, None));
+        // Nothing left to change: no command.
+        let again = general_tolerance_update(&project, &none);
+        assert_eq!(again, Reinterpretation::default());
     }
 
     // FR-CHR-08: the inspect flag the user set on a reference dimension stays.

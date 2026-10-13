@@ -227,6 +227,33 @@ pub fn reinterpret(
     })
 }
 
+/// The characteristics a new general tolerance would change (T3.13, M3 decision 22): rule "no
+/// tolerance defined", a general tolerance or never interpreted, and whose values the current
+/// settings change. Limits entered by hand and unreadable text are never listed.
+pub fn general_update_candidates(session: &AppSession) -> Result<Vec<CharId>, CommandError> {
+    let engine = ToleranceEngine::new(context(session)?);
+    let project = session.project().ok_or(CommandError::NoProject)?;
+    Ok(dimo_detect::general_tolerance_update(project, &engine).reinterpreted)
+}
+
+/// Gives the characteristics listed by [`general_update_candidates`] the current general
+/// tolerance through the re-interpretation path, as one undo step (T3.13, M3 decision 22).
+/// The list is computed again here, so it always matches the current project.
+pub fn apply_general(session: &mut AppSession) -> Result<Reinterpreted, CommandError> {
+    let engine = ToleranceEngine::new(context(session)?);
+    let project = session.project().ok_or(CommandError::NoProject)?;
+    let plan = dimo_detect::general_tolerance_update(project, &engine);
+    let command = plan.command.unwrap_or(Command::Batch {
+        commands: Vec::new(),
+    });
+    Ok(Reinterpreted {
+        patched: session.execute(command)?,
+        reinterpreted: count(&plan.reinterpreted),
+        skipped_manual: 0,
+        skipped_unreadable: 0,
+    })
+}
+
 /// Sets the shorter leg of characteristic `id` (T2.9a): `leg` is typed in the unit of the
 /// characteristic's sheet, `None` or empty text removes it. The requirement text is read again
 /// with the leg and the current settings, by the rules of re-interpretation (limits entered by
@@ -346,6 +373,28 @@ pub async fn reinterpret_characteristics(
 ) -> Result<Reinterpreted, CommandError> {
     with_session(app, move |app, session| {
         let mut result = reinterpret(session, &ids)?;
+        result.patched = emit_patched(app, result.patched);
+        Ok(result)
+    })
+    .await
+}
+
+/// The characteristics the update after a general tolerance change would change (T3.13, M3
+/// decision 22): no tolerance yet or a general tolerance, never limits entered by hand. Empty
+/// if there is nothing to update.
+#[tauri::command]
+#[specta::specta]
+pub async fn general_tolerance_candidates(app: AppHandle) -> Result<Vec<CharId>, CommandError> {
+    with_session(app, |_, session| general_update_candidates(session)).await
+}
+
+/// Gives the characteristics without tolerance or with a general tolerance the current general
+/// tolerance, as one undo step (T3.13, M3 decision 22). Limits entered by hand never change.
+#[tauri::command]
+#[specta::specta]
+pub async fn apply_general_tolerance(app: AppHandle) -> Result<Reinterpreted, CommandError> {
+    with_session(app, |app, session| {
+        let mut result = apply_general(session)?;
         result.patched = emit_patched(app, result.patched);
         Ok(result)
     })

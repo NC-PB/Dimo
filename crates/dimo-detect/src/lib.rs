@@ -24,5 +24,6 @@ pub use interpret::{
 };
 pub use read::{PARSER_ENGINE, Reading, read_callout};
 pub use reinterpret::{
-    LegChange, LegOutcome, Reinterpretation, reinterpret, set_shorter_leg, sheet_unit,
+    LegChange, LegOutcome, Reinterpretation, general_tolerance_update, reinterpret,
+    set_shorter_leg, sheet_unit,
 };

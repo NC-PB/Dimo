@@ -27,6 +27,8 @@ fn main() {
         "explain_characteristic",
         "characteristic_history",
         "reinterpret_characteristics",
+        "general_tolerance_candidates",
+        "apply_general_tolerance",
         "set_shorter_leg",
         "import_tolerance_table",
         "measurement_state",

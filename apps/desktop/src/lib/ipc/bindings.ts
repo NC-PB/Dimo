@@ -118,6 +118,17 @@ export const commands = {
 	 */
 	reinterpretCharacteristics: (ids: CharId[]) => typedError<Reinterpreted, CommandError>(__TAURI_INVOKE("reinterpret_characteristics", { ids })),
 	/**
+	 *  The characteristics the update after a general tolerance change would change (T3.13, M3
+	 *  decision 22): no tolerance yet or a general tolerance, never limits entered by hand. Empty
+	 *  if there is nothing to update.
+	 */
+	generalToleranceCandidates: () => typedError<CharId[], CommandError>(__TAURI_INVOKE("general_tolerance_candidates")),
+	/**
+	 *  Gives the characteristics without tolerance or with a general tolerance the current general
+	 *  tolerance, as one undo step (T3.13, M3 decision 22). Limits entered by hand never change.
+	 */
+	applyGeneralTolerance: () => typedError<Reinterpreted, CommandError>(__TAURI_INVOKE("apply_general_tolerance")),
+	/**
 	 *  Sets the shorter leg of an angle (T2.9a) as typed in the unit of its sheet, `null` or empty
 	 *  text to remove it, and reads its requirement text again with it as one undo step. Limits
 	 *  entered by hand stay; the outcome says so. Text that is not a positive number is refused.
