@@ -20,9 +20,9 @@
  *
  * - `key`: key down and up on the focused element (`mod`, `shift`, `alt` for modifiers).
  * - `click`, `dblclick`, `drag`: pointer events on the drawing (`shift`, `mod`). With
- *   `"pause": false` the next step starts right after the pointer is released. The script's
- *   pointer has its own ID, so the real mouse moving over the window does not change its
- *   gestures.
+ *   `"pause": false` the next step starts right after the pointer is released; otherwise a
+ *   dragged box has been read (its card is open) before the next step. The script's pointer
+ *   has its own ID, so the real mouse moving over the window does not change its gestures.
  * - `type`: waits for a text field to take the focus, then sets its text as typing would.
  * - `keys`: types the characters one by one as key events on whatever has the focus, without
  *   waiting for a field (`\n` is Enter). In a text field each character is inserted as a real
@@ -112,6 +112,8 @@ const DRAG_STEPS = 6;
 const SCRIPT_POINTER_ID = 41;
 /** Longest wait for a text field to take the focus before a `type` step. */
 const FIELD_WAIT_MS = 3000;
+/** Longest wait for Rust to read a dragged box before the next step. */
+const BOX_WAIT_MS = 10000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -169,9 +171,15 @@ async function press(from: Pair, to: Pair, m: Mods & Pause): Promise<void> {
     await sleep(16);
   }
   pointer("pointerup", b, m, 0);
-  if (m.pause !== false) {
-    await sleep(STEP_PAUSE_MS);
+  if (m.pause === false) {
+    return;
   }
+  // A dragged box is read by Rust before the card opens (box select, T2.6); the release starts
+  // that read synchronously. Wait for it, so the next step sees the card on a slow machine.
+  for (let waited = 0; boxSelect.busy && waited < BOX_WAIT_MS; waited += 20) {
+    await sleep(20);
+  }
+  await sleep(STEP_PAUSE_MS);
 }
 
 /**
