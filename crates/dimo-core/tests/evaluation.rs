@@ -12,9 +12,9 @@ use dimo_core::derivation::DerivationRule;
 use dimo_core::{
     AttributeValue, ChangeSource, CharId, Characteristic, CharacteristicField,
     CharacteristicStatus, Command, CommandError, DisplayNumber, Document, FixedEnvironment,
-    MeasurementResult, OverallVerdict, ResultEntry, ResultParseError, ResultSource, ResultType,
-    ResultValue, SampleId, ToleranceDerivation, Unit, Verdict, VerdictCounts,
-    characteristic_history, evaluate, measured_characteristics, measurement_state,
+    LimitPosition, MeasurementResult, OverallVerdict, ResultEntry, ResultParseError, ResultSource,
+    ResultType, ResultValue, SampleId, ToleranceDerivation, Unit, Verdict, VerdictCounts,
+    characteristic_history, evaluate, limit_position, measured_characteristics, measurement_state,
 };
 use proptest::prelude::*;
 use rust_decimal::Decimal;
@@ -130,6 +130,45 @@ fn variable_results_against_limits() {
             "[{lower}, {upper}] {unit:?} value {value}"
         );
     }
+}
+
+/// T3.19: where a value lies against the limits, for the Measure bar. Exact on `Decimal`, by
+/// value (scale ignored), one sided limits, no limits, attribute and missing results.
+#[test]
+fn limit_positions_name_the_limit_a_value_is_on() {
+    use LimitPosition::{Above, Below, Inside, OnLower, OnUpper};
+    let cases: &[(&str, &str, &str, Option<LimitPosition>)] = &[
+        ("9.95", "10.05", "9.95", Some(OnLower)),
+        ("9.95", "10.05", "9.950", Some(OnLower)),
+        ("9.95", "10.05", "10.05", Some(OnUpper)),
+        ("9.95", "10.05", "10.0500", Some(OnUpper)),
+        ("9.95", "10.05", "10", Some(Inside)),
+        ("9.95", "10.05", "9.9499", Some(Below)),
+        ("9.95", "10.05", "10.0501", Some(Above)),
+        ("5", "5", "5.000", Some(OnLower)),
+        ("5", "5", "5.001", Some(Above)),
+        ("", "0.8", "0.8", Some(OnUpper)),
+        ("", "0.8", "-100", Some(Inside)),
+        ("", "0.8", "0.81", Some(Above)),
+        ("20", "", "20", Some(OnLower)),
+        ("20", "", "99999", Some(Inside)),
+        ("20", "", "19.9", Some(Below)),
+        ("", "", "12.3", None),
+    ];
+    for &(lower, upper, value, want) in cases {
+        let c = characteristic(opt(lower), opt(upper), Unit::Mm);
+        assert_eq!(
+            limit_position(&c, Some(&variable(value))),
+            want,
+            "[{lower}, {upper}] value {value}"
+        );
+    }
+    let c = characteristic(opt("9.95"), opt("10.05"), Unit::Mm);
+    assert_eq!(limit_position(&c, None), None);
+    assert_eq!(
+        limit_position(&c, Some(&attribute(AttributeValue::Ok))),
+        None
+    );
 }
 
 /// Decision 3: attribute results ignore limits; no result is missing.
@@ -378,6 +417,64 @@ fn measurement_state_summarizes_rows_samples_and_report() {
     assert!(state.samples.iter().all(|s| s.verdict == O::Pass));
 }
 
+/// T3.19: progress counts of File > Info. "To inspect" counts the measured characteristics,
+/// "complete" the samples with a result for each of them; without anything to inspect no sample
+/// is complete. Cells carry their limit position.
+#[test]
+fn progress_counts_to_inspect_and_complete_samples() {
+    let (mut doc, mut env) = doc_with(3);
+    let (c, s) = ids(&doc);
+    let state = measurement_state(doc.project());
+    assert_eq!((state.to_inspect, state.complete_samples), (3, 0));
+    set(
+        &mut doc,
+        &mut env,
+        &[
+            (s[0], c[0], "9.9"),
+            (s[0], c[1], "ok"),
+            (s[0], c[2], "20.06"),
+            (s[1], c[0], "10"),
+        ],
+    );
+    let state = measurement_state(doc.project());
+    assert_eq!((state.to_inspect, state.complete_samples), (3, 1));
+    assert_eq!(
+        state.rows[0].positions,
+        [
+            Some(LimitPosition::OnLower),
+            Some(LimitPosition::Inside),
+            None
+        ]
+    );
+    assert_eq!(state.rows[1].positions, [None; 3], "attribute results");
+    assert_eq!(
+        state.rows[2].positions,
+        [Some(LimitPosition::Above), None, None]
+    );
+    // A characteristic that is not inspected leaves the count and no longer needs a result.
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![c[2]],
+            values: vec![FieldValue::Inspect(false)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    let state = measurement_state(doc.project());
+    assert_eq!((state.to_inspect, state.complete_samples), (2, 1));
+    // Nothing to inspect: no sample counts as complete.
+    doc.execute(
+        Command::UpdateFields {
+            ids: vec![c[0], c[1]],
+            values: vec![FieldValue::Inspect(false)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    let state = measurement_state(doc.project());
+    assert_eq!((state.to_inspect, state.complete_samples), (0, 0));
+}
+
 /// Decision 3: a variable result without limits is not evaluated and keeps the sample, the
 /// row and the report open, never failing them.
 #[test]
@@ -560,6 +657,31 @@ proptest! {
         }
         for value in outside {
             prop_assert_eq!(evaluate(&c, Some(&variable_of(value))), Fail, "value {}", value);
+        }
+    }
+
+    /// T3.19: the limit position agrees with the verdict: below or above fails, on a limit or
+    /// inside passes, none means not evaluated.
+    #[test]
+    fn limit_position_agrees_with_the_verdict(
+        a in decimal(), b in decimal(), v in decimal(), sides in 0u8..4,
+    ) {
+        let (lower, upper) = if a <= b { (a, b) } else { (b, a) };
+        let (lower, upper) = match sides {
+            0 => (Some(lower), Some(upper)),
+            1 => (None, Some(upper)),
+            2 => (Some(lower), None),
+            _ => (None, None),
+        };
+        let c = characteristic(lower, upper, Unit::Mm);
+        for value in [v, lower.unwrap_or(v), upper.unwrap_or(v)] {
+            let result = variable_of(value);
+            let want = match limit_position(&c, Some(&result)) {
+                None => NotEvaluated,
+                Some(LimitPosition::Below | LimitPosition::Above) => Fail,
+                Some(_) => Pass,
+            };
+            prop_assert_eq!(evaluate(&c, Some(&result)), want, "value {}", value);
         }
     }
 }

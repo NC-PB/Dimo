@@ -53,8 +53,8 @@ pub use derivation::{
 pub use document::{AuditAction, AuditEntry, Document};
 pub use env::{Environment, FixedEnvironment, Timestamp};
 pub use evaluation::{
-    MeasurementState, OverallVerdict, RowState, SampleState, Verdict, VerdictCounts, evaluate,
-    measured_characteristics, measurement_state,
+    LimitPosition, MeasurementState, OverallVerdict, RowState, SampleState, Verdict, VerdictCounts,
+    evaluate, limit_position, measured_characteristics, measurement_state,
 };
 pub use geometry::{OrientedBox, Point, Rect, Size};
 pub use history::{

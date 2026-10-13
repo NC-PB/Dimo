@@ -12,6 +12,7 @@ function state(verdict: "pass" | "fail"): MeasurementState {
         result_type: "variable",
         draft: false,
         cells: [verdict, "missing"],
+        positions: [verdict === "pass" ? "inside" : "above", null],
         counts,
         verdict: "open",
       },
@@ -22,6 +23,8 @@ function state(verdict: "pass" | "fail"): MeasurementState {
     ],
     counts,
     verdict: "open",
+    to_inspect: 1,
+    complete_samples: 0,
   };
 }
 

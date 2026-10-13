@@ -428,7 +428,7 @@ pub fn write_file(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
 /// Opens the file `path` that an export job just wrote, through `opener`. Refused if the
 /// extension is not the one of `format`: the user can type any file name in the save dialog, and
 /// a file of another type (a script, say) must never be started from here.
-fn open_written_file(
+pub(crate) fn open_written_file(
     path: &Path,
     format: ExportFormat,
     opener: impl FnOnce(&Path) -> std::io::Result<()>,
@@ -487,7 +487,7 @@ fn windows_start_argument(path: &Path) -> std::io::Result<String> {
 }
 
 /// Starts the default application for `path` and does not wait for it.
-fn open_with_system(path: &Path) -> std::io::Result<()> {
+pub(crate) fn open_with_system(path: &Path) -> std::io::Result<()> {
     let mut child = open_command(path)?
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())

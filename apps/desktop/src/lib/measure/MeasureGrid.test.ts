@@ -106,6 +106,7 @@ function setup() {
     result_type: types[i] ?? "variable",
     draft: false,
     cells: cells[i] ?? [],
+    positions: (cells[i] ?? []).map(() => null),
     counts,
     verdict: "open",
   }));
@@ -114,6 +115,8 @@ function setup() {
     samples: project.samples.map((s) => ({ sample: s.id, counts, verdict: "open" })),
     counts,
     verdict: "fail",
+    to_inspect: rows.length,
+    complete_samples: 0,
   };
   return { project, state };
 }
