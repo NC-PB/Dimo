@@ -10,7 +10,6 @@
  * limits, numbers or verdicts.
  */
 
-import { tick } from "svelte";
 import { m } from "$lib/i18n";
 import { icons, type Icon } from "$lib/icons";
 import { measureUi } from "$lib/measure/measure-ui.svelte";
@@ -32,9 +31,9 @@ import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
 import { settingsStore } from "$lib/stores/settings.svelte";
 import { setupStore } from "$lib/stores/setup.svelte";
-import { sheetRegions } from "$lib/stores/sheet-regions.svelte";
+import { sheetRegions, type RegionTool } from "$lib/stores/sheet-regions.svelte";
 import { toleranceStore } from "$lib/stores/tolerance.svelte";
-import { view } from "$lib/stores/view.svelte";
+import { view, type PaneTool } from "$lib/stores/view.svelte";
 import { viewport } from "$lib/stores/viewport.svelte";
 import type { ReportKind } from "$lib/ipc/bindings";
 
@@ -87,12 +86,34 @@ function reportBusy(kind: ReportKind): string | null {
   );
 }
 
-/** Shows the drawing with its side panel and scrolls to an element of the panel. */
-async function revealInSidePanel(selector: string): Promise<void> {
+/**
+ * Opens the pane section of a ribbon command (zone grid, views; T3.18); the same command again
+ * closes the section. Drawing the rectangle starts at once only when the sheet has no grid (no
+ * views) yet, so opening the section to edit labels never replaces the frame by a stray drag;
+ * "Draw frame" and "Draw view" in the section start it otherwise. The section stays after the
+ * rectangle is drawn, so the grid or the view names can be edited.
+ */
+function togglePaneTool(tool: PaneTool, region: RegionTool): void {
+  if (view.paneTool === tool) {
+    view.paneTool = null;
+    if (sheetRegions.tool === region) {
+      sheetRegions.cancel();
+    }
+    return;
+  }
   view.set("drawing");
   view.showSidePanel = true;
-  await tick();
-  document.querySelector(selector)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  if (setupStore.visible) {
+    setupStore.close(); // The setup pane takes the place of the properties pane.
+  }
+  view.paneTool = tool;
+  const sheet = shownSheet();
+  const empty = tool === "zones" ? sheet?.zone_grid === null : sheet?.views.length === 0;
+  if (empty && sheetRegions.tool !== region) {
+    sheetRegions.toggle(region);
+  } else if (!empty && sheetRegions.tool !== null) {
+    sheetRegions.cancel();
+  }
 }
 
 /** The theme in effect, read from the document root (`theme.ts` sets it). */
@@ -297,6 +318,15 @@ export const COMMANDS = {
       numberingStore.setPreviewing(!numberingStore.previewing);
     },
   },
+  numbering_options: {
+    label: () => m.cmd_numbering_options(),
+    icon: icons.numberingOptions,
+    description: () => m.cmd_numbering_options_desc(),
+    disabled: needProject,
+    run: () => {
+      view.projectDialog = "numbering";
+    },
+  },
   update_limits: {
     label: () => m.cmd_update_limits(),
     icon: icons.updateLimits,
@@ -327,10 +357,9 @@ export const COMMANDS = {
     icon: icons.zoneGrid,
     description: () => m.cmd_zone_grid_desc(),
     disabled: needSheet,
-    pressed: () => sheetRegions.tool === "zone_frame",
+    pressed: () => view.paneTool === "zones",
     run: () => {
-      view.set("drawing");
-      sheetRegions.toggle("zone_frame");
+      togglePaneTool("zones", "zone_frame");
     },
   },
   draw_view: {
@@ -338,10 +367,9 @@ export const COMMANDS = {
     icon: icons.drawView,
     description: () => m.cmd_draw_view_desc(),
     disabled: needSheet,
-    pressed: () => sheetRegions.tool === "view",
+    pressed: () => view.paneTool === "views",
     run: () => {
-      view.set("drawing");
-      sheetRegions.toggle("view");
+      togglePaneTool("views", "view");
     },
   },
   decimal_rules: {
@@ -376,7 +404,10 @@ export const COMMANDS = {
     icon: icons.projectInfo,
     description: () => m.cmd_project_info_desc(),
     disabled: needProject,
-    run: () => revealInSidePanel('[aria-labelledby$="-project-details-title"]'),
+    // Part, drawing and report data have one home: File > Info (M3 decision 21, T3.18).
+    run: () => {
+      view.openFile("info");
+    },
   },
   // T3.17, decision 23: the setup pane of a new project, opened again from the Drawing tab.
   setup_checklist: {

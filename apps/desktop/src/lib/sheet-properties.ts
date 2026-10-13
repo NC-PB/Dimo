@@ -86,6 +86,25 @@ export function updateShownSheet(change: SheetChange): Promise<Patch | undefined
     : Promise.resolve(undefined);
 }
 
+/**
+ * Sets one part of the scale of the shown sheet. The scale is built when the command runs, from
+ * the sheet after every earlier edit, so typing both parts fast keeps both (T3.18).
+ */
+export function setShownScalePart(part: keyof Scale, value: number): Promise<Patch | undefined> {
+  const id = shownSheet()?.id;
+  if (id === undefined) {
+    return Promise.resolve(undefined);
+  }
+  return projectStore.executeWith((project) => {
+    const sheet = project.revisions
+      .find((r) => r.id === project.current_revision)
+      ?.sheets.find((s) => s.id === id);
+    return sheet === undefined || sheet.scale[part] === value
+      ? null
+      : updateSheetCommand(sheet, { scale: { ...sheet.scale, [part]: value } });
+  });
+}
+
 let rotating: Promise<unknown> = Promise.resolve();
 
 /**

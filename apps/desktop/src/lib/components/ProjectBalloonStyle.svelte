@@ -23,7 +23,11 @@
     if (style === null) {
       return;
     }
-    void project.execute({ type: "set_default_balloon_style", style: { ...style, ...change } });
+    // Built when the command runs, so a fast second change keeps the first one (T3.18).
+    void project.executeWith((p) => ({
+      type: "set_default_balloon_style",
+      style: { ...p.settings.balloon_style, ...change },
+    }));
   }
 
   const fieldClass = "min-h-8 rounded border border-border-strong bg-surface px-2 py-1 text-text";

@@ -31,7 +31,7 @@ Abmaß, und das Merkmal erhält einen Hinweis.
 Die Allgemeintoleranz eines Winkels (ISO 2768-1) hängt von der Länge seines kürzeren Schenkels
 ab, die nicht in der Zeichnung steht. Gib bei einem Winkel ohne eingetragene Toleranz die Länge
 des kürzeren Schenkels im Feld **Kürzerer Schenkel** ein, auf der Karte der Rahmenauswahl oder
-in der Seitenleiste, Reiter **Toleranz**. Das Feld ist in der Einheit des Blatts (mm oder Zoll).
+im Eigenschaftenbereich, Abschnitt **Toleranz**. Das Feld ist in der Einheit des Blatts (mm oder Zoll).
 Dimo setzt dann die Grenzmaße des Winkels, und die Erklärung nennt den Schenkel, seinen Bereich
 und die Grenzmaße. Ohne Schenkel erhält der Winkel keine Grenzmaße und einen Hinweis. Der
 Schenkel wird mit seiner Einheit beim Merkmal gespeichert, daher verwenden ihn **Ausgewählte neu
@@ -103,7 +103,7 @@ Allgemeintoleranz bei den Merkmalen zu entfernen, die sie noch haben.
 ## Nach einer Änderung neu auswerten
 
 Um andere neue Einstellungen auf bestehende Merkmale anzuwenden, wähle sie aus (in der Tabelle oder in
-der Zeichnung) und wähle **Ausgewählte neu auswerten** in der Seitenleiste. Dimo liest die
+der Zeichnung) und wähle **Grenzen aktualisieren** im Register Start oder im Eigenschaftenbereich. Dimo liest die
 Anforderung jedes Merkmals mit den aktuellen Einstellungen neu und setzt Nennmaß, Einheit,
 Abmaße, Grenzmaße, Passung und Regel. Das Ganze ist ein Rückgängig-Schritt.
 
@@ -119,7 +119,7 @@ Die Zeile unter der Schaltfläche sagt, wie viele neu gelesen, behalten oder nic
 ## Regel, Erklärung und Markierungen
 
 Die Spalte **Regel** der Merkmalstabelle zeigt die Regel jedes Merkmals. Wähle ein Merkmal aus,
-um Regel, Grenzmaße und Erklärung in der Seitenleiste zu sehen, Reiter **Toleranz**. Die
+um Regel, Grenzmaße und Erklärung im Eigenschaftenbereich zu sehen, Abschnitt **Toleranz**. Die
 Erklärung nennt Tabelle, Klasse und Nennmaßbereich, aus denen der Wert stammt, in der Sprache der
 App. Die Regel wird auch in die CSV- und Excel-Liste exportiert ([Exporte](exports.md)).
 
@@ -154,7 +154,8 @@ Regel entfernt, und das Merkmal kann wieder gelesen werden.
 
 Die mitgelieferten Tabellen sind Entwürfe, bis ihre Werte mit der gedruckten Norm verglichen
 wurden. Grenzmaße aus einer Entwurfstabelle funktionieren wie alle anderen, tragen aber die
-Markierung **Entwurf** in der Tabelle, in der Seitenleiste und auf der Karte der Rahmenauswahl.
+Markierung **Entwurf** in der Tabelle, im Eigenschaftenbereich und auf der Karte der
+Rahmenauswahl.
 Auch eine importierte eigene Tabelle kann ein Entwurf sein. Das Register Zeichnung und
 **Datei** > **Info** zeigen die Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
 Entwurfstabelle mit deiner eigenen Norm, bevor du dich darauf verlässt. Eine Tabelle ist erst
@@ -165,12 +166,12 @@ verglichen hat; Dimo ändert das nie selbst.
 
 Hilfsmaße (in Klammern oder mit `REF`) und theoretisch genaue Maße (im Rahmen) erhalten keine
 Grenzmaße und werden nicht geprüft: Ihr Feld **Prüfen** ist zu Beginn leer. Du kannst es in der
-Tabelle oder in der Seitenleiste ankreuzen, wenn du sie trotzdem messen willst; das Neuauswerten
+Tabelle oder im Eigenschaftenbereich ankreuzen, wenn du sie trotzdem messen willst; das Neuauswerten
 behält deine Wahl.
 
 ## Verlauf eines Merkmals
 
-Der Reiter **Verlauf** in der Seitenleiste listet jede Änderung des ausgewählten Merkmals, die
+Der Abschnitt **Verlauf** des Eigenschaftenbereichs listet jede Änderung des ausgewählten Merkmals, die
 neueste zuerst, aus dem Änderungsprotokoll des Projekts. Jeder Eintrag zeigt wann, wer und die
 Quelle der Änderung:
 

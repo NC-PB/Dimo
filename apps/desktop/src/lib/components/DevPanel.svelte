@@ -4,7 +4,7 @@
   import { documentStore } from "$lib/stores/document.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
 
-  // Rendered only in development builds (see SidePanel). Not a feature.
+  // Rendered only in development builds (see PropertiesPane). Not a feature.
   const ms = (value: number) => value.toFixed(1);
 </script>
 

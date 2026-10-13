@@ -9,6 +9,7 @@ import type { Component } from "svelte";
 
 import ArrowLeft from "@lucide/svelte/icons/arrow-left";
 import BadgeInfo from "@lucide/svelte/icons/badge-info";
+import ChevronDown from "@lucide/svelte/icons/chevron-down";
 import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 import CircleDot from "@lucide/svelte/icons/circle-dot";
 import Copy from "@lucide/svelte/icons/copy";
@@ -53,6 +54,7 @@ import Save from "@lucide/svelte/icons/save";
 import SaveAll from "@lucide/svelte/icons/save-all";
 import ScanSearch from "@lucide/svelte/icons/scan-search";
 import Settings from "@lucide/svelte/icons/settings";
+import SlidersHorizontal from "@lucide/svelte/icons/sliders-horizontal";
 import SquareDashed from "@lucide/svelte/icons/square-dashed";
 import Stamp from "@lucide/svelte/icons/stamp";
 import Sun from "@lucide/svelte/icons/sun";
@@ -68,6 +70,7 @@ export const icons = {
   about: BadgeInfo,
   addParts: Plus,
   back: ChevronLeft,
+  close: X,
   closeProject: FileX,
   copy: Copy,
   projectBalloonStyle: CircleDot,
@@ -90,6 +93,7 @@ export const icons = {
   moveLeft: ArrowLeft,
   moveRight: ArrowRight,
   newProject: FilePlus,
+  numberingOptions: SlidersHorizontal,
   onlyFailed: CircleX,
   onlyMissing: CircleDashed,
   openAfter: ExternalLink,
@@ -116,6 +120,7 @@ export const icons = {
   themeDark: Moon,
   themeLight: Sun,
   undo: Undo2,
+  unfold: ChevronDown,
   updateLimits: RefreshCw,
   zoneGrid: Grid3x3,
   zoomIn: ZoomIn,

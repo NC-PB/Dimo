@@ -19,7 +19,7 @@ festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Registers **
 
 | Seite | Inhalt |
 |---|---|
-| [Eine Zeichnung ansehen](drawing-view.md) | Zoomen, Verschieben, Blätter, Seitenleiste |
+| [Eine Zeichnung ansehen](drawing-view.md) | Zoomen, Verschieben, Blätter, Eigenschaftenbereich |
 | [Eine Zeichnung ballonieren](ballooning.md) | Ballons setzen, auswählen, verschieben, gestalten und löschen |
 | [Merkmalstabelle](characteristics.md) | Werte, Auswahl, Bearbeiten, Reihenfolge ändern |
 | [Blätter: Drehung, Einheit und Maßstab](sheets.md) | Eigenschaften jedes Blatts |
@@ -102,7 +102,8 @@ Werte geprüft sind. Einzelheiten: [Toleranzen](tolerances.md).
 Die Ballons werden in der Reihenfolge des Setzens mit 1, 2, 3 nummeriert. Hast du dich vertan,
 drücke ⌘Z. Mit **V** wechselst du zurück zum Werkzeug **Auswählen**. Einzelheiten:
 [Eine Zeichnung ballonieren](ballooning.md). Klicke einen Ballon oder eine Zeile, um Regel,
-Erklärung und Verlauf eines Merkmals in der Seitenleiste zu sehen ([Toleranzen](tolerances.md)).
+Erklärung und Verlauf eines Merkmals im Eigenschaftenbereich rechts zu sehen
+([Toleranzen](tolerances.md)).
 
 ### 5. Die Werte in der Merkmalstabelle vervollständigen
 
@@ -125,10 +126,10 @@ Zeile zu sehen.
 Ziehe den Griff ⠿ einer Zeile, oder wähle Zeilen aus und drücke ⌥↑ oder ⌥↓. Alle Merkmale werden
 neu nummeriert, und die Ballons auf der Zeichnung folgen. Ein ⌘Z stellt alles wieder her.
 
-Um nach Zone, Ansicht oder Art zu nummerieren, nimm den Bereich **Nummerierung** in der
-Seitenleiste: Wähle eine Strategie, setze den Haken bei **Neue Nummern als Vorschau zeigen**, um das
-Ergebnis auf der Zeichnung und in der Tabelle zu sehen, und wähle **Nummerierung anwenden**.
-Zonenraster und Ansichten zeichnest du von Hand unter **Blatteigenschaften**. Einzelheiten:
+Um nach Zone, Ansicht oder Art zu nummerieren, nimm die Gruppe **Nummerierung** im Register
+Start: Wähle die Reihenfolge, wähle **Neue Nummern zeigen**, um das Ergebnis auf der Zeichnung und
+in der Tabelle zu sehen, und wähle **Neu nummerieren**. Zonenraster und Ansichten zeichnest du
+von Hand mit **Zonenraster** und **Ansicht zeichnen** im Register Zeichnung. Einzelheiten:
 [Nummerierungsstrategien, Zonen und Ansichten](numbering.md).
 
 ### 7. Die Ballons gestalten

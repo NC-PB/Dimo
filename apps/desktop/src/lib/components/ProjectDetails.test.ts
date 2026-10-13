@@ -162,6 +162,37 @@ describe("project and report details (T3.4)", () => {
     expect(stores.commands).toHaveLength(4);
   });
 
+  // T3.18, STATUS log 2026-10-13: the second command used to carry the first field's old value.
+  it("keeps both of two fast edits of different fields", async () => {
+    const stores = setup();
+    render(stores);
+    for (const [label, text] of [
+      ["Part number", "4711-B"],
+      ["Customer", "Muster AG"],
+      ["Report number", "IR-7"],
+      ["Approved by", "Ben"],
+    ] as const) {
+      const control = field(label);
+      control.value = text;
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    target
+      .querySelector<HTMLButtonElement>("button[aria-label='Set the report date to today']")
+      ?.click();
+    await vi.waitFor(() => {
+      expect(stores.commands).toHaveLength(5);
+    });
+    await settle();
+    const project = stores.projectStore.project;
+    expect(project?.info.part_number).toBe("4711-B");
+    expect(project?.info.customer).toBe("Muster AG");
+    expect(project?.report_info.report_number).toBe("IR-7");
+    expect(project?.report_info.approved_by).toBe("Ben");
+    expect(project?.report_info.report_date).not.toBe("");
+    expect(field("Part number").value).toBe("4711-B");
+    expect(field("Report number").value).toBe("IR-7");
+  });
+
   it("sends nothing when a value did not change", async () => {
     const stores = setup();
     render(stores);

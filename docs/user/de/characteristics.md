@@ -57,11 +57,13 @@ Grenzwerte nach. Entfernst du ein Abmaß, verschwinden auch die berechneten Gren
 Grenzwert, den du selbst tippst, behält Dimo, und er geht den Abmaßen vor. Alle Zahlen sind exakte
 Dezimalzahlen; nichts wird gerundet.
 
-Aus der Zeichnung gelesene Grenzwerte kommen mit ihrer Regel und einer Erklärung in der
-Seitenleiste. Grenzwerte, die du tippst, erhalten die Regel "Von Hand eingegeben" und werden beim
-Neuauswerten nie geändert. Das Bearbeiten der Zelle **Anforderung** speichert nur den Text; wähle
-das Merkmal aus und nimm **Ausgewählte neu auswerten** in der Seitenleiste, um ihn erneut zu
-lesen. Einzelheiten: [Toleranzen](tolerances.md).
+Aus der Zeichnung gelesene Grenzwerte kommen mit ihrer Regel und einer Erklärung im
+Eigenschaftenbereich rechts ([Eine Zeichnung ansehen](drawing-view.md)). Grenzwerte, die du
+tippst, erhalten die Regel "Von Hand eingegeben" und werden beim Neuauswerten nie geändert. Das
+Bearbeiten der Zelle **Anforderung** speichert nur den Text; wähle das Merkmal aus und nimm
+**Grenzen aktualisieren** (Register Start oder Eigenschaftenbereich), um ihn erneut zu lesen.
+Text, Art, Anzahl, Prüfmethode und Prüfmittel eines ausgewählten Merkmals änderst du auch im
+Eigenschaftenbereich. Einzelheiten: [Toleranzen](tolerances.md).
 
 ## Löschen
 

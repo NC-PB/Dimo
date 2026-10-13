@@ -18,7 +18,8 @@
   { "key": "Enter" },
   { "report": "placed" },
 
-  { "button": "Draw frame" },
+  { "show": "tab:drawing" },
+  { "button": "Zone grid" },
   {
     "drag": [
       [15, 15],
@@ -26,17 +27,19 @@
     ]
   },
   { "wait": 300 },
-  { "select": ["Strategy", "sheet_zone"] },
-  { "check": ["Preview new numbers", true] },
+  { "show": "home" },
+  { "select": ["Order", "sheet_zone"] },
+  { "button": "Preview numbers" },
   { "wait": 600 },
   { "report": "zone preview" },
   { "view": [120, 420, 220] },
   { "mark": "zone preview shown" },
   { "wait": 2500 },
-  { "button": "Apply numbering" },
+  { "button": "Renumber" },
   { "wait": 300 },
   { "report": "zones applied" },
 
+  { "show": "tab:drawing" },
   { "button": "Draw view" },
   {
     "drag": [
@@ -45,15 +48,15 @@
     ]
   },
   { "wait": 300 },
-  { "select": ["Strategy", "view_clockwise"] },
-  { "check": ["Preview new numbers", true] },
+  { "show": "home" },
+  { "select": ["Order", "view_clockwise"] },
+  { "button": "Preview numbers" },
   { "wait": 600 },
   { "report": "view preview" },
   { "view": [150, 470, 260] },
-  { "reveal": "Strategy" },
   { "mark": "view preview shown" },
   { "wait": 2500 },
-  { "button": "Apply numbering" },
+  { "button": "Renumber" },
   { "wait": 300 },
   { "report": "views applied" },
 

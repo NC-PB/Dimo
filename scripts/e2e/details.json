@@ -1,6 +1,8 @@
 [
   { "mark": "details flow start" },
   { "wait": 800 },
+  { "show": "file:info" },
+  { "wait": 300 },
   { "fill": ["Part number", "4711-B"] },
   { "fill": ["Customer", "Muster AG"] },
   { "fill": ["Revision", " C "] },

@@ -1,7 +1,7 @@
 # Eine Zeichnung ansehen
 
 Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalstabelle darunter
-([Merkmalstabelle](characteristics.md)) und eine Seitenleiste rechts.
+([Merkmalstabelle](characteristics.md)) und den Eigenschaftenbereich rechts.
 
 ## Das Fenster
 
@@ -12,7 +12,7 @@ Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalsta
   (Ballons setzen und bearbeiten, Nummerierung, Allgemeintoleranz), **Zeichnung** (Drehung,
   Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Prüfen** (in dieser
   Version ein Platzhalter), **Messen** ([Ergebnisse eingeben](measuring.md)), **Bericht**
-  ([Exporte](exports.md)) und **Ansicht** (Zoom, Tabelle und Seitenleiste zeigen oder verbergen,
+  ([Exporte](exports.md)) und **Ansicht** (Zoom, Tabelle und Eigenschaftenbereich zeigen oder verbergen,
   Darstellung). Jedes Register zeigt seine Befehle in einer Zeile unter den Registern. Halte den
   Zeiger über einen Befehl, um zu sehen, was er tut, sein Tastenkürzel und, wenn er grau ist,
   warum er gerade nicht geht. In einem schmalen Fenster rutschen die letzten Gruppen unter
@@ -61,20 +61,29 @@ Jedes Blatt hat eigene Drehung, Einheit und einen eigenen Maßstab ([Blätter](s
 eines Blatts dreht die Ansicht: Ballons und ihre Nummern bleiben aufrecht, und Exporte sind nicht
 betroffen.
 
-## Seitenleiste
+## Eigenschaftenbereich
 
-- **Blatteigenschaften**: Drehung, Einheit und Maßstab des angezeigten Blatts, sein Zonenraster
-  und seine Ansichten ([Blätter](sheets.md), [Nummerierungsstrategien, Zonen und
-  Ansichten](numbering.md)).
-- **Nummerierung**: Strategie, Vorschau und Anwenden, wiederholte Elemente und die Einstellung für
-  das Einfügen bei gesperrter Nummerierung ([Nummerierungsstrategien, Zonen und
-  Ansichten](numbering.md)).
-- **Auswahl**: die Werte des ausgewählten Merkmals oder die Liste der ausgewählten Merkmale. Die
-  Leiste zeigt sie nur an; Werte bearbeitest du in der Tabelle.
-- **Merkmalsdetails** für das ausgewählte Merkmal: der Reiter **Toleranz** mit Regel, Grenzmaßen
-  und Erklärung und dem Feld **Prüfen**, der Reiter **Verlauf** und **Ausgewählte neu auswerten**
-  ([Toleranzen](tolerances.md)).
-- Unten die Version von Dimo.
+Der Bereich rechts folgt der Auswahl. Sein Kopf sagt, was er zeigt; das × blendet ihn aus
+(**Ansicht > Eigenschaften** zeigt ihn wieder). Ein Klick auf die Überschrift eines Abschnitts
+klappt ihn zu oder auf; Dimo merkt sich, welche Abschnitte du zugeklappt hast.
+
+- **Nichts ausgewählt**: eine Übersicht des Projekts (Teil, Zeichnung, Allgemeintoleranz, Anzahl
+  Merkmale und Blätter) mit **Unter Datei > Info bearbeiten**, wo du diese Werte änderst
+  ([Projekt- und Berichtsdaten](project-details.md)), und ein Hinweis zum Start.
+- **Ein Merkmal**: **Anforderung** (Text, Art, Anzahl), **Toleranz** (Regel, Grenzmaße, der kürzere
+  Schenkel eines Winkels, die Erklärung und **Grenzen aktualisieren**), **Prüfung** (prüfen,
+  Ergebnisart, Prüfmethode, Prüfmittel) und **Verlauf** ([Toleranzen](tolerances.md)). Jede
+  Änderung ist ein Rückgängig-Schritt, wie eine Änderung in der Tabelle.
+- **Mehrere Merkmale**: die Liste, **Grenzen aktualisieren** für alle und **Ja** oder **Nein**, um
+  alle zu prüfen oder nicht.
+- **Zonenraster** und **Ansicht zeichnen** auf dem Reiter Zeichnung öffnen einen Abschnitt, in dem
+  du das Raster oder die Liste der Ansichten bearbeitest, bis du ihn mit seinem × schließt
+  ([Nummerierungsstrategien, Zonen und Ansichten](numbering.md)).
+- Solange **Neue Nummern zeigen** eingeschaltet ist, zählt ein Abschnitt die Nummern, die sich
+  ändern.
+
+Drehung, Einheit und Maßstab eines Blatts stehen auf dem Reiter Zeichnung ([Blätter](sheets.md)),
+die Reihenfolge der Nummerierung auf dem Reiter Start.
 
 ## Höhe der Tabelle
 

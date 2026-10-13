@@ -19,15 +19,19 @@
   } from "$lib/zone-grid";
 
   /**
-   * Zone grid and views of the shown sheet (T2.7, M2 decision 1, D-21): drawn by hand, used by
+   * Zone grid or views of the shown sheet (T2.7, M2 decision 1, D-21): drawn by hand, used by
    * the numbering strategies. Every change is one undoable command; Rust validates it. Default
    * grids, axis labels and the scheme of each axis come from Rust (`zone_grid_form`, T2.7a).
+   * Shown in a section of the properties pane while the Zone grid or Draw view command of the
+   * Drawing tab is on (T3.18).
    */
   interface Props {
     sheet: Sheet;
+    /** Which of the two to edit. */
+    part: "zones" | "views";
   }
 
-  let { sheet }: Props = $props();
+  let { sheet, part }: Props = $props();
 
   const grid = $derived(sheet.zone_grid);
 
@@ -191,151 +195,154 @@
   }
 
   const buttonClass =
-    "rounded border border-border px-2 py-1 text-sm text-text hover:bg-surface-raised aria-pressed:bg-accent-strong aria-pressed:text-accent-ink";
-  const fieldClass = "rounded border border-border bg-surface px-2 py-1 text-sm text-text";
+    "min-h-8 rounded-md border border-border-strong px-2.5 text-[13px] text-text hover:bg-hover aria-pressed:border-accent aria-pressed:bg-accent-soft";
+  const fieldClass =
+    "min-h-8 min-w-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-[13px] text-text";
 </script>
 
-<fieldset class="flex flex-col gap-1.5">
-  <legend class="mb-1 text-xs text-text-muted">{m.zones_title()}</legend>
-  {#if grid}
-    <div class="grid grid-cols-2 gap-1.5">
-      <label class="flex flex-col gap-0.5 text-xs text-text-muted">
-        {m.zones_columns()}
-        <input
-          type="number"
-          min="1"
-          max={MAX_DIVISIONS}
-          step="1"
-          class={fieldClass}
-          value={grid.column_labels.length}
-          onchange={(e) => {
-            onCount(e, "columns");
-          }}
-        />
-      </label>
-      <label class="flex flex-col gap-0.5 text-xs text-text-muted">
-        {m.zones_rows()}
-        <input
-          type="number"
-          min="1"
-          max={MAX_DIVISIONS}
-          step="1"
-          class={fieldClass}
-          value={grid.row_labels.length}
-          onchange={(e) => {
-            onCount(e, "rows");
-          }}
-        />
-      </label>
-    </div>
-    {#each ["columns", "rows"] as const as axis (axis)}
-      <label class="flex flex-col gap-0.5 text-xs text-text-muted">
-        {axis === "columns" ? m.zones_column_scheme() : m.zones_row_scheme()}
-        <select
-          class={fieldClass}
-          value={schemeValue(axis)}
-          onchange={(e) => {
-            onScheme(e, axis);
-          }}
-        >
-          {#each SCHEMES[axis] as option (option.value)}
-            <option value={option.value}>{option.label()}</option>
-          {/each}
-          {#if schemeValue(axis) === CUSTOM}
-            <option value={CUSTOM} disabled>{m.zones_scheme_custom()}</option>
-          {/if}
-        </select>
-      </label>
-      <label class="flex flex-col gap-0.5 text-xs text-text-muted">
-        {axis === "columns" ? m.zones_column_labels() : m.zones_row_labels()}
-        <input
-          type="text"
-          class={fieldClass}
-          value={labelsText(labelsOf(grid, axis))}
-          onchange={(e) => {
-            onLabels(e, axis);
-          }}
-        />
-      </label>
-    {/each}
-    <p class="text-xs text-text-muted">{m.zones_labels_hint()}</p>
-    <div class="flex flex-wrap gap-1.5">
-      <button
-        type="button"
-        class={buttonClass}
-        aria-pressed={sheetRegions.tool === "zone_frame"}
-        onclick={() => {
-          sheetRegions.toggle("zone_frame");
-        }}>{m.zones_draw_frame()}</button
-      >
-      <button
-        type="button"
-        class={buttonClass}
-        onclick={() => {
-          setGrid(null);
-        }}>{m.zones_remove()}</button
-      >
-    </div>
-  {:else}
-    <p class="text-xs text-text-muted">{m.zones_none()}</p>
-    <div class="flex flex-wrap gap-1.5">
-      <button type="button" class={buttonClass} onclick={() => void addGrid()}
-        >{m.zones_add()}</button
-      >
-      <button
-        type="button"
-        class={buttonClass}
-        aria-pressed={sheetRegions.tool === "zone_frame"}
-        onclick={() => {
-          sheetRegions.toggle("zone_frame");
-        }}>{m.zones_draw_frame()}</button
-      >
-    </div>
-  {/if}
-</fieldset>
-
-<fieldset class="flex flex-col gap-1.5">
-  <legend class="mb-1 text-xs text-text-muted">{m.views_title()}</legend>
-  {#if sheet.views.length === 0}
-    <p class="text-xs text-text-muted">{m.views_none()}</p>
-  {:else}
-    <ol class="flex flex-col gap-1">
-      {#each sheet.views as view, index (index)}
-        <li class="flex items-center gap-1.5">
+{#if part === "zones"}
+  <fieldset class="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+    <legend class="sr-only">{m.zones_title()}</legend>
+    {#if grid}
+      <div class="grid grid-cols-2 gap-1.5">
+        <label class="flex flex-col gap-0.5 text-xs text-text-muted">
+          {m.zones_columns()}
           <input
-            type="text"
-            class="{fieldClass} min-w-0 flex-1"
-            aria-label={m.views_label({ number: String(index + 1) })}
-            placeholder={m.views_unnamed({ number: String(index + 1) })}
-            value={view.label}
+            type="number"
+            min="1"
+            max={MAX_DIVISIONS}
+            step="1"
+            class={fieldClass}
+            value={grid.column_labels.length}
             onchange={(e) => {
-              renameView(index, e.currentTarget.value);
+              onCount(e, "columns");
             }}
           />
-          <button
-            type="button"
-            class="rounded border border-border px-2 py-1 text-sm text-text hover:bg-surface-raised"
-            aria-label={m.views_remove({ number: String(index + 1) })}
-            title={m.views_remove({ number: String(index + 1) })}
-            onclick={() => {
-              removeView(index);
-            }}>×</button
+        </label>
+        <label class="flex flex-col gap-0.5 text-xs text-text-muted">
+          {m.zones_rows()}
+          <input
+            type="number"
+            min="1"
+            max={MAX_DIVISIONS}
+            step="1"
+            class={fieldClass}
+            value={grid.row_labels.length}
+            onchange={(e) => {
+              onCount(e, "rows");
+            }}
+          />
+        </label>
+      </div>
+      {#each ["columns", "rows"] as const as axis (axis)}
+        <label class="flex flex-col gap-0.5 text-xs text-text-muted">
+          {axis === "columns" ? m.zones_column_scheme() : m.zones_row_scheme()}
+          <select
+            class={fieldClass}
+            value={schemeValue(axis)}
+            onchange={(e) => {
+              onScheme(e, axis);
+            }}
           >
-        </li>
+            {#each SCHEMES[axis] as option (option.value)}
+              <option value={option.value}>{option.label()}</option>
+            {/each}
+            {#if schemeValue(axis) === CUSTOM}
+              <option value={CUSTOM} disabled>{m.zones_scheme_custom()}</option>
+            {/if}
+          </select>
+        </label>
+        <label class="flex flex-col gap-0.5 text-xs text-text-muted">
+          {axis === "columns" ? m.zones_column_labels() : m.zones_row_labels()}
+          <input
+            type="text"
+            class={fieldClass}
+            value={labelsText(labelsOf(grid, axis))}
+            onchange={(e) => {
+              onLabels(e, axis);
+            }}
+          />
+        </label>
       {/each}
-    </ol>
-  {/if}
-  <div>
-    <button
-      type="button"
-      class={buttonClass}
-      aria-pressed={sheetRegions.tool === "view"}
-      onclick={() => {
-        sheetRegions.toggle("view");
-      }}>{m.views_draw()}</button
-    >
-  </div>
-  {#if sheetRegions.tool !== null}
-    <p class="text-xs text-text-muted" role="status">{m.regions_drawing_hint()}</p>
-  {/if}
-</fieldset>
+      <p class="text-xs text-text-muted">{m.zones_labels_hint()}</p>
+      <div class="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          class={buttonClass}
+          aria-pressed={sheetRegions.tool === "zone_frame"}
+          onclick={() => {
+            sheetRegions.toggle("zone_frame");
+          }}>{m.zones_draw_frame()}</button
+        >
+        <button
+          type="button"
+          class={buttonClass}
+          onclick={() => {
+            setGrid(null);
+          }}>{m.zones_remove()}</button
+        >
+      </div>
+    {:else}
+      <p class="text-xs text-text-muted">{m.zones_none()}</p>
+      <div class="flex flex-wrap gap-1.5">
+        <button type="button" class={buttonClass} onclick={() => void addGrid()}
+          >{m.zones_add()}</button
+        >
+        <button
+          type="button"
+          class={buttonClass}
+          aria-pressed={sheetRegions.tool === "zone_frame"}
+          onclick={() => {
+            sheetRegions.toggle("zone_frame");
+          }}>{m.zones_draw_frame()}</button
+        >
+      </div>
+    {/if}
+  </fieldset>
+{:else}
+  <fieldset class="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+    <legend class="sr-only">{m.views_title()}</legend>
+    {#if sheet.views.length === 0}
+      <p class="text-xs text-text-muted">{m.views_none()}</p>
+    {:else}
+      <ol class="flex flex-col gap-1">
+        {#each sheet.views as view, index (index)}
+          <li class="flex items-center gap-1.5">
+            <input
+              type="text"
+              class="{fieldClass} min-w-0 flex-1"
+              aria-label={m.views_label({ number: String(index + 1) })}
+              placeholder={m.views_unnamed({ number: String(index + 1) })}
+              value={view.label}
+              onchange={(e) => {
+                renameView(index, e.currentTarget.value);
+              }}
+            />
+            <button
+              type="button"
+              class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border-strong text-text hover:bg-hover"
+              aria-label={m.views_remove({ number: String(index + 1) })}
+              title={m.views_remove({ number: String(index + 1) })}
+              onclick={() => {
+                removeView(index);
+              }}>×</button
+            >
+          </li>
+        {/each}
+      </ol>
+    {/if}
+    <div>
+      <button
+        type="button"
+        class={buttonClass}
+        aria-pressed={sheetRegions.tool === "view"}
+        onclick={() => {
+          sheetRegions.toggle("view");
+        }}>{m.views_draw()}</button
+      >
+    </div>
+    {#if sheetRegions.tool !== null}
+      <p class="text-xs text-text-muted" role="status">{m.regions_drawing_hint()}</p>
+    {/if}
+  </fieldset>
+{/if}

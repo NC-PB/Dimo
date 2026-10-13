@@ -4,7 +4,7 @@
    * saved with the project. Part, the general tolerance and a summary of the other tolerance
    * rules with the way to the Drawing tab, the drawing (file, revision, fingerprint), progress
    * counts and the report header.
-   * Edits go through the same undoable commands as the side panel (`update_project_info`,
+   * Edits go through undoable commands (`update_project_info`,
    * `update_report_info`, `update_revision_label`); counts come from Rust (`measurement_state`).
    */
   import type { ProjectInfo, ReportInfo, ReportKind, TableClass } from "$lib/ipc/bindings";
@@ -319,6 +319,18 @@
                 }}>{m.report_date_today()}</button
               >
             </span>
+            <!-- Remarks print in the report header; File > Info is their home since the side
+                 panel lost the project details (T3.18). -->
+            <label for="{uid}-remarks" class="self-start pt-1 text-text-muted"
+              >{m.field_remarks()}</label
+            >
+            <textarea
+              id="{uid}-remarks"
+              class={fieldClass}
+              rows="3"
+              value={project.report_info.remarks}
+              onchange={(e) => void editReportInfo(projectStore, e.currentTarget, "remarks")}
+            ></textarea>
           </div>
         </section>
 

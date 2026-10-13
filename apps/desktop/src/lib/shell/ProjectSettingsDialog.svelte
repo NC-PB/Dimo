@@ -1,13 +1,16 @@
 <script lang="ts">
   /**
-   * Project settings of the Drawing tab that need more room than a ribbon field (M3 decision
-   * 21, T3.16): decimal place rules with the rounding after unit conversion, company tables
-   * with the drawing rule, and the balloon style of the project. One small dialog, opened by
-   * the ribbon button of each; the ribbon stays one row and the drawing stays visible behind.
+   * Project settings of the Home and Drawing tabs that need more room than a ribbon field (M3
+   * decision 21, T3.16, T3.18): decimal place rules with the rounding after unit conversion,
+   * company tables with the drawing rule, the balloon style of the project, the numbering
+   * options and a custom scale of the sheet on screen. One small dialog, opened by the ribbon
+   * button or field of each; the ribbon stays one row and the drawing stays visible behind.
    * Every change is an undoable Rust command and applies at once, so the dialog has only Close.
    */
   import { Dialog } from "bits-ui";
+  import NumberingOptions from "$lib/components/NumberingOptions.svelte";
   import ProjectBalloonStyle from "$lib/components/ProjectBalloonStyle.svelte";
+  import SheetScaleForm from "$lib/components/SheetScaleForm.svelte";
   import ToleranceSettings from "$lib/components/ToleranceSettings.svelte";
   import { m } from "$lib/i18n";
   import { projectStore } from "$lib/stores/project.svelte";
@@ -21,6 +24,10 @@
         return m.cmd_company_tables();
       case "balloon_style":
         return m.cmd_project_balloon_style();
+      case "numbering":
+        return m.numbering_dialog_title();
+      case "sheet_scale":
+        return m.scale_dialog_title();
     }
   }
 
@@ -56,6 +63,10 @@
         </Dialog.Description>
         {#if dialog === "balloon_style"}
           <ProjectBalloonStyle />
+        {:else if dialog === "numbering"}
+          <NumberingOptions />
+        {:else if dialog === "sheet_scale"}
+          <SheetScaleForm />
         {:else}
           <ToleranceSettings section={dialog} />
         {/if}

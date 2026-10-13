@@ -16,6 +16,7 @@ import { characteristic, emptyProject, loaded } from "./stores/fixtures";
 import { projectStore } from "./stores/project.svelte";
 import { selection } from "./stores/selection.svelte";
 import { setupStore } from "./stores/setup.svelte";
+import { sheetRegions } from "./stores/sheet-regions.svelte";
 import { view } from "./stores/view.svelte";
 
 let session = 100;
@@ -25,6 +26,8 @@ afterEach(() => {
   selection.clear();
   balloonTools.setTool("select");
   view.setTab("home");
+  view.paneTool = null;
+  sheetRegions.cancel();
   overwriteGetLocale(() => "en");
 });
 
@@ -159,5 +162,52 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
     view.setTab("report");
     expect(runCommand("more_exports")).toBe(true);
     expect([view.tab, view.filePane]).toEqual(["file", "export"]);
+  });
+
+  it("opens the zone grid and views sections of the pane and draws with them (T3.18)", () => {
+    openProject();
+    view.setTab("measure");
+    view.showSidePanel = false;
+    expect(runCommand("zone_grid")).toBe(true);
+    expect(view.current).toBe("drawing");
+    expect(view.showSidePanel).toBe(true);
+    expect(view.paneTool).toBe("zones");
+    expect(sheetRegions.tool).toBe("zone_frame");
+    expect(command("zone_grid").pressed?.()).toBe(true);
+    // The section stays after the frame is drawn (the tool stops by itself).
+    sheetRegions.cancel();
+    expect(command("zone_grid").pressed?.()).toBe(true);
+    runCommand("draw_view");
+    expect(view.paneTool).toBe("views");
+    expect(sheetRegions.tool).toBe("view");
+    runCommand("draw_view");
+    expect(view.paneTool).toBeNull();
+    expect(sheetRegions.tool).toBeNull();
+  });
+
+  it("opens the zone grid section without drawing when the sheet has a grid (T3.18)", () => {
+    const project = emptyProject();
+    const sheet = project.revisions[0]?.sheets[0];
+    if (sheet) {
+      sheet.zone_grid = {
+        frame: { origin: { x: 10, y: 10 }, size: { width: 800, height: 500 } },
+        column_labels: ["1", "2"],
+        row_labels: ["A", "B"],
+      };
+    }
+    projectStore.load(loaded(++session, project));
+    runCommand("zone_grid");
+    expect(view.paneTool).toBe("zones");
+    expect(sheetRegions.tool).toBeNull();
+  });
+
+  it("opens File > Info for project info and a dialog for numbering options (T3.18)", () => {
+    openProject();
+    runCommand("project_info");
+    expect(view.tab).toBe("file");
+    expect(view.filePane).toBe("info");
+    runCommand("numbering_options");
+    expect(view.projectDialog).toBe("numbering");
+    view.projectDialog = null;
   });
 });

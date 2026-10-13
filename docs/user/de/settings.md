@@ -19,7 +19,7 @@ Register) bringt dich dahin, wo du warst.
 Jede Einstellung hat einen Ort. Einstellungen eines Projekts werden in der Projektdatei
 gespeichert und reisen mit ihr: die Allgemeintoleranz (Register Start und Zeichnung), die übrigen
 Toleranzregeln und der Ballonstil (Register Zeichnung) sowie die Teil-, Zeichnungs- und
-Berichtsangaben (Datei > Info und die Seitenleiste). Deine persönlichen Einstellungen stehen unter
+Berichtsangaben (Datei > Info). Deine persönlichen Einstellungen stehen unter
 **Optionen** und werden nie im Projekt gespeichert.
 
 ## Info

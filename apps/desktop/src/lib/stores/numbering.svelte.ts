@@ -26,6 +26,7 @@ export interface NumberingProject {
   readonly project: Project | null;
   readonly revision: number;
   execute(command: Command): Promise<Patch | undefined>;
+  executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined>;
 }
 
 /** Strategies in the order the picker lists them (FR-BAL-04). */
@@ -154,17 +155,18 @@ export class NumberingStore {
 
   /** Changes multi-instance numbering or the locked insert policy (D-22, D-23). */
   async setSettings(change: Partial<Omit<NumberingSettings, "strategy">>): Promise<void> {
-    const settings = this.settings;
-    if (settings === null) {
+    if (this.settings === null) {
       return;
     }
-    const next = { ...settings, ...change };
-    if (
-      next.multi_instance !== settings.multi_instance ||
-      next.insert_when_locked !== settings.insert_when_locked
-    ) {
-      await this.#project.execute({ type: "set_numbering_settings", settings: next });
-    }
+    // Built when the command runs, from the settings after every earlier edit (T3.18).
+    await this.#project.executeWith((project) => {
+      const latest = project.settings.numbering;
+      const next = { ...latest, ...change };
+      return next.multi_instance === latest.multi_instance &&
+        next.insert_when_locked === latest.insert_when_locked
+        ? null
+        : { type: "set_numbering_settings", settings: next };
+    });
   }
 }
 

@@ -1,7 +1,7 @@
 # Looking at a drawing
 
 The drawing is where you work. It shows the sheet in the middle, the characteristic table under it
-([Characteristic table](characteristics.md)) and a side panel on the right.
+([Characteristic table](characteristics.md)) and the properties pane on the right.
 
 ## The window
 
@@ -11,7 +11,7 @@ The drawing is where you work. It shows the sheet in the middle, the characteris
   numbering, general tolerance), **Drawing** (rotation, unit, scale, zone grid, views,
   tolerances, project info), **Review** (a placeholder in this version), **Measure**
   ([Entering results](measuring.md)), **Report** ([Exports](exports.md)) and **View** (zoom,
-  show or hide the table and the side panel, theme). Each tab shows its commands in one row
+  show or hide the table and the properties pane, theme). Each tab shows its commands in one row
   under the tabs. Hold the pointer over a command to see what it does, its shortcut and, when it
   is grey, why it cannot be used now. In a narrow window the last groups move into **More**.
 - **Status bar** at the bottom: the sheets, the active tool, the number of characteristics and
@@ -55,18 +55,27 @@ balloon is on another sheet switches to that sheet and shows the balloon.
 Every sheet has its own rotation, unit and scale ([Sheets](sheets.md)). Rotating a sheet turns the
 view: balloons and their numbers stay upright and exports are not affected.
 
-## Side panel
+## Properties pane
 
-- **Sheet properties**: rotation, unit and scale of the sheet on screen, its zone grid and its
-  views ([Sheets](sheets.md), [Numbering strategies, zones and views](numbering.md)).
-- **Numbering**: strategy, preview and apply, repeated features and the insert setting for locked
-  numbering ([Numbering strategies, zones and views](numbering.md)).
-- **Selection**: the values of the selected characteristic, or the list of selected
-  characteristics. The panel only shows them; edit values in the table.
-- **Characteristic details**, for the selected characteristic: the tab **Tolerance** with rule,
-  limits and explanation and the **Inspect** box, the tab **History**, and **Re-interpret
-  selected** ([Tolerances](tolerances.md)).
-- The version of Dimo at the bottom.
+The pane on the right follows the selection. Its header says what it shows; the × hides the pane
+(**View > Properties** shows it again). Click the heading of a section to fold or unfold it; Dimo
+remembers which sections you folded.
+
+- **Nothing selected**: a summary of the project (part, drawing, general tolerance, number of
+  characteristics and sheets) with **Edit in File > Info**, where these values are changed
+  ([Project and report details](project-details.md)), and a hint how to start.
+- **One characteristic**: **Requirement** (text, kind, quantity), **Tolerance** (rule, limits, the
+  shorter leg of an angle, the explanation and **Update limits**), **Inspection** (inspect, result
+  type, method, gauge) and **History** ([Tolerances](tolerances.md)). Each change is one undo
+  step, like an edit in the table.
+- **Several characteristics**: the list, **Update limits** for all of them, and **Yes** or **No**
+  to inspect all of them.
+- **Zone grid** and **Draw view** on the Drawing tab open a section to edit the grid or the list of
+  views until you close it with its × ([Numbering strategies, zones and views](numbering.md)).
+- While **Preview numbers** is on, a section counts the numbers that change.
+
+Rotation, unit and scale of a sheet are on the Drawing tab ([Sheets](sheets.md)), the numbering
+order on the Home tab.
 
 ## Table height
 
