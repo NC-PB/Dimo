@@ -1,6 +1,6 @@
 # ADR 0007: Office-style application shell
 
-Status: proposed
+Status: accepted (owner, 2026-10-13)
 
 ## Context
 D-50 fixed the main window as five views (Drawing, Review, Measure, Export, Settings) switched by

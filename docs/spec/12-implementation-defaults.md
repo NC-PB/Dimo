@@ -58,6 +58,6 @@ Decisions that close the remaining gaps, so implementation can proceed without a
 
 | ID | Topic | Decision |
 |---|---|---|
-| D-50 | Navigation | Single main window, no router library, office-style frame with tabs File, Home, Drawing, Review, Measure, Report, View, switched by a view state store ([ADR 0007](../adr/0007-office-style-shell.md), proposed; until accepted the earlier list Drawing, Review, Measure, Export, Settings applies). |
+| D-50 | Navigation | Single main window, no router library, office-style frame with tabs File, Home, Drawing, Review, Measure, Report, View, switched by a view state store ([ADR 0007](../adr/0007-office-style-shell.md)). |
 | D-51 | Theme | Light and dark theme following the operating system, switchable in settings. |
 | D-52 | Shortcuts | Shortcut map defined in one file, shown in a cheat sheet overlay (`?`). |
