@@ -310,7 +310,7 @@ describe("measurement grid (T3.5)", () => {
     editor().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await vi.waitFor(() => {
       expect(target.querySelector('[data-testid="grid-notice"]')?.textContent).toContain(
-        "Characteristic 1, sample 1: Not a number",
+        "Characteristic 1, part 1: Not a number",
       );
     });
     expect(editor().value).toBe("a");
@@ -545,7 +545,7 @@ describe("Measure bar (T3.19)", () => {
     key(grid, { key: "ArrowDown" });
     key(grid, { key: "ArrowDown" });
     expect(shown("measure-bar-cell")).toBe("No. 3 · Part 1");
-    expect(shown("measure-bar-verdict")).toBe("not OK, above the upper limit");
+    expect(shown("measure-bar-verdict")).toBe("fail, above the upper limit");
     key(grid, { key: "ArrowRight" });
     expect(bar().value).toBe("");
     expect(shown("measure-bar-verdict")).toBe("no value yet");

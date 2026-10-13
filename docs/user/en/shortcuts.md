@@ -91,7 +91,7 @@ These act while the table has the focus. They replace the drawing keys of the sa
 
 ## Measurement grid
 
-Active while the measurement grid of the Measure view has the focus. Typing a character starts editing the active cell with it. `O`, `+`, `N` and `X` set OK or not OK on a go/no go characteristic and go to the next characteristic; on a value cell they are typed like any other character.
+Active while the measurement grid of the Measure tab has the focus. Typing a character starts editing the active cell with it. `O`, `+`, `N` and `X` set OK or not OK when the result type is OK / not OK and go to the next characteristic; on a value cell they are typed like any other character.
 
 <!-- shortcuts:measure -->
 | Action | macOS | Windows and Linux |
@@ -102,17 +102,17 @@ Active while the measurement grid of the Measure view has the focus. Typing a ch
 | Grid: cell right | `→` | `→` |
 | Grid: confirm and go to the next characteristic | `↵` | `↵` |
 | Grid: confirm and go to the previous characteristic | `⇧↵` | `Shift+↵` |
-| Grid: confirm and go to the next sample | `⇥` | `⇥` |
-| Grid: confirm and go to the previous sample | `⇧⇥` | `Shift+⇥` |
-| Grid: first sample | `Home` | `Home` |
-| Grid: last sample | `End` | `End` |
+| Grid: confirm and go to the next part | `⇥` | `⇥` |
+| Grid: confirm and go to the previous part | `⇧⇥` | `Shift+⇥` |
+| Grid: first part | `Home` | `Home` |
+| Grid: last part | `End` | `End` |
 | Grid: first characteristic | `⌘↑` or `⌘Home` | `Ctrl+↑` or `Ctrl+Home` |
 | Grid: last characteristic | `⌘↓` or `⌘End` | `Ctrl+↓` or `Ctrl+End` |
 | Grid: edit the value | `F2` | `F2` |
 | Grid: clear the result | `Del` or `⌫` | `Del` or `⌫` |
 | Grid: cancel typing | `Esc` | `Esc` |
-| Grid: OK (go/no go characteristic) | `O` or `+` | `O` or `+` |
-| Grid: not OK (go/no go characteristic) | `N` or `X` | `N` or `X` |
+| Grid: OK (result type OK / not OK) | `O` or `+` | `O` or `+` |
+| Grid: not OK (result type OK / not OK) | `N` or `X` | `N` or `X` |
 | Grid: switch between OK and not OK | `Space` | `Space` |
 | Grid: paste a block of values | `⌘V` | `Ctrl+V` |
 <!-- /shortcuts -->

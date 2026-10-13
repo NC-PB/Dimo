@@ -198,7 +198,7 @@ describe("properties pane follows the selection (T3.18)", () => {
     target.querySelector<HTMLButtonElement>("[data-action='update_limits']")?.click();
     await settle();
     expect(stores.reinterpreted).toEqual([["c1", "c2", "c3"]]);
-    expect(target.querySelector("[role='status']")?.textContent).toContain("Re-interpreted: 3");
+    expect(target.querySelector("[role='status']")?.textContent).toContain("Limits updated: 3");
 
     // Inspect yes sends one command for the ones that are not inspected yet.
     target.querySelector<HTMLButtonElement>("[data-inspect='yes']")?.click();
