@@ -16,7 +16,8 @@ you drag. Zooming and sheets are in [Looking at a drawing](drawing-view.md).
 
 ## Place balloons
 
-1. Press **B** or choose **Place balloon** in the toolbar.
+1. Press **B** or choose **Place balloon** on the **Home** tab. It stays on until you press **Esc**,
+   right click the drawing, choose **Stop (Esc)** in the bar on the drawing or choose **Select**.
 2. Click the feature you want to inspect. The balloon appears up and to the right of it, with
    the next free number, and its leader points to where you clicked. Near the sheet edge it goes
    to the other side.
@@ -122,7 +123,7 @@ Selected balloons get a thick orange ring and a small square handle at the end o
 
 ## Change the style
 
-Select balloons and press **S** or choose **Style** in the toolbar. Each choice applies at once to
+Select balloons and press **S** or choose **Balloon style** on the Home tab. Each choice applies at once to
 all selected balloons:
 
 - **Shape**: circle, flag or rectangle.
@@ -137,7 +138,7 @@ numbers stay upright.
 
 ## Delete balloons
 
-Select balloons and press **Delete** or **Backspace**, or choose **Delete** in the toolbar. The
+Select balloons and press **Delete** or **Backspace**, or choose **Delete** on the Home tab. The
 characteristics of the balloons are deleted with them. While numbering is not locked the other
 balloons are numbered again from 1 without gaps.
 

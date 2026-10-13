@@ -129,10 +129,12 @@ describe("balloon tools (T1.6)", () => {
     expect(tools.escape()).toBe(true);
     expect(tools.styleOpen).toBe(false);
     expect(selection.size).toBe(2);
-    expect(tools.escape()).toBe(true);
-    expect(selection.isEmpty).toBe(true);
+    // Placing stops first (M3 decision 19), the selection goes next.
     expect(tools.escape()).toBe(true);
     expect(tools.tool).toBe("select");
+    expect(selection.size).toBe(2);
+    expect(tools.escape()).toBe(true);
+    expect(selection.isEmpty).toBe(true);
     expect(tools.escape()).toBe(false);
   });
 

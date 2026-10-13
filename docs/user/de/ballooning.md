@@ -17,7 +17,9 @@ Leertaste beim Ziehen. Zoomen und Blätter stehen unter [Eine Zeichnung ansehen]
 
 ## Ballons setzen
 
-1. Drücke **B** oder wähle **Ballon setzen** in der Werkzeugleiste.
+1. Drücke **B** oder wähle **Ballon setzen** im Register **Start**. Es bleibt an, bis du **Esc**
+   drückst, mit rechts auf die Zeichnung klickst, **Beenden (Esc)** in der Leiste auf der Zeichnung
+   oder **Auswählen** wählst.
 2. Klicke auf das Merkmal, das geprüft werden soll. Der Ballon erscheint rechts oberhalb davon
    mit der nächsten freien Nummer, seine Bezugslinie zeigt auf die Klickstelle. Am Blattrand
    weicht er auf die andere Seite aus.
@@ -130,7 +132,7 @@ Ende ihrer Bezugslinie.
 
 ## Stil ändern
 
-Wähle Ballons aus und drücke **S** oder wähle **Stil** in der Werkzeugleiste. Jede Wahl gilt
+Wähle Ballons aus und drücke **S** oder wähle **Ballonstil** im Register Start. Jede Wahl gilt
 sofort für alle ausgewählten Ballons:
 
 - **Form**: Kreis, Fahne oder Rechteck.
@@ -145,8 +147,8 @@ gedrehten Blatt bleiben die Nummern aufrecht.
 
 ## Ballons löschen
 
-Wähle Ballons aus und drücke **Entfernen** oder **Rücktaste**, oder wähle **Löschen** in der
-Werkzeugleiste. Die Merkmale der Ballons werden mit gelöscht. Solange die Nummerierung nicht
+Wähle Ballons aus und drücke **Entfernen** oder **Rücktaste**, oder wähle **Löschen** im Register
+Start. Die Merkmale der Ballons werden mit gelöscht. Solange die Nummerierung nicht
 gesperrt ist, werden die übrigen Ballons wieder lückenlos ab 1 nummeriert.
 
 ## Wie der Status angezeigt wird

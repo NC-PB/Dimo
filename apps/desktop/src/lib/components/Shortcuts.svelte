@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Dialog } from "bits-ui";
+  import { commandForShortcut, runCommand } from "$lib/commands.svelte";
   import { m, shortcutLabel } from "$lib/i18n";
   import {
     SHORTCUTS,
@@ -9,58 +10,28 @@
     type ShortcutAction,
   } from "$lib/shortcuts";
   import { documentStore } from "$lib/stores/document.svelte";
-  import { projectStore } from "$lib/stores/project.svelte";
-  import { selection } from "$lib/stores/selection.svelte";
   import { unsavedPrompt } from "$lib/stores/prompt.svelte";
-  import { rotateShownSheet } from "$lib/sheet-properties";
   import { view } from "$lib/stores/view.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   import { balloonTools } from "$lib/stores/balloon-tools.svelte";
   import { balloonGestures } from "$lib/viewport/gestures.svelte";
 
-  interface Props {
-    /** Whether the cheat sheet is open. */
-    open?: boolean;
-  }
-
-  let { open = $bindable(false) }: Props = $props();
+  /**
+   * The window's keyboard shortcuts and the cheat sheet (D-52). Shortcuts that belong to a
+   * command of the registry run that command, so key, ribbon button and tooltip do the same
+   * thing and share one disabled state (T3.15). The rest (panning, nudging, Escape, tabs) are
+   * handled here.
+   */
 
   /** Runs a shortcut. Returns false if it did nothing, so the key keeps its usual meaning. */
   function run(action: ShortcutAction): boolean {
+    const id = commandForShortcut(action);
+    if (id !== undefined) {
+      // A Cmd/Ctrl key of a disabled command still belongs to Dimo, never to the webview.
+      const withMod = SHORTCUTS.find((s) => s.action === action)?.keys.every((k) => k.mod);
+      return runCommand(id) || withMod === true;
+    }
     switch (action) {
-      case "new_project":
-        void projectStore.newProject();
-        break;
-      case "open_project":
-        void projectStore.open();
-        break;
-      case "save_project":
-        void projectStore.save();
-        break;
-      case "save_project_as":
-        void projectStore.saveAs();
-        break;
-      case "undo":
-        void projectStore.undo();
-        break;
-      case "redo":
-        void projectStore.redo();
-        break;
-      case "zoom_in":
-        viewport.zoomIn();
-        break;
-      case "zoom_out":
-        viewport.zoomOut();
-        break;
-      case "fit":
-        viewport.fit();
-        break;
-      case "rotate_left":
-        void rotateShownSheet(-1);
-        break;
-      case "rotate_right":
-        void rotateShownSheet(1);
-        break;
       // Arrow keys move the view over the drawing, so the drawing moves the other way.
       case "pan_left":
         viewport.panStep(1, 0);
@@ -88,30 +59,16 @@
         return balloonTools.nudge(0, -1, viewport.view);
       case "nudge_down":
         return balloonTools.nudge(0, 1, viewport.view);
-      case "select_tool":
-        balloonTools.setTool("select");
-        break;
-      case "place_tool":
-        balloonTools.setTool("place");
-        break;
-      case "edit_value":
-        return balloonTools.editPrimary();
       case "select_all":
         balloonTools.selectAll();
         break;
-      case "delete_selection":
-        void balloonTools.deleteSelection();
-        break;
-      case "restyle":
-        balloonTools.styleOpen = !selection.isEmpty;
-        break;
       case "cancel":
         return balloonGestures.cancel() || balloonTools.escape();
-      case "show_shortcuts":
-        open = !open;
-        break;
       case "show_drawing":
         view.set("drawing");
+        break;
+      case "show_review":
+        view.set("review");
         break;
       case "show_measure":
         view.set("measure");
@@ -119,9 +76,8 @@
       case "show_export":
         view.set("export");
         break;
-      case "show_settings":
-        view.set("settings");
-        break;
+      default:
+        return false;
     }
     return true;
   }
@@ -162,7 +118,7 @@
     if (balloonTools.pendingDelete !== null) {
       return; // The question about deleting results has focus.
     }
-    if (open && shortcut.action !== "show_shortcuts") {
+    if (view.shortcutsOpen && shortcut.action !== "show_shortcuts") {
       return; // The dialog has focus; Escape closes it.
     }
     if (view.current !== "drawing" && shortcut.anyView !== true) {
@@ -188,7 +144,7 @@
 
 <svelte:window onkeydown={onKeyDown} />
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={view.shortcutsOpen}>
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/40" />
     <Dialog.Content

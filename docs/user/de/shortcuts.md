@@ -25,8 +25,9 @@ Diese wirken in jeder Ansicht.
 | Rückgängig | `⌘Z` | `Ctrl+Z` |
 | Wiederholen | `⇧⌘Z` oder `⌘Y` | `Ctrl+Shift+Z` oder `Ctrl+Y` |
 | Zeichnung anzeigen | `⌘1` | `Ctrl+1` |
+| Prüfen anzeigen | `⌘2` | `Ctrl+2` |
 | Messwerte anzeigen | `⌘3` | `Ctrl+3` |
-| Export anzeigen | `⌘E` | `Ctrl+E` |
+| Bericht anzeigen | `⌘E` | `Ctrl+E` |
 | Einstellungen anzeigen | `⌘,` | `Ctrl+,` |
 | Tastenkürzel anzeigen | `?` | `?` |
 <!-- /shortcuts -->

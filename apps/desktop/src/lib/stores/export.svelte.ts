@@ -96,6 +96,8 @@ export class ExportStore {
   issued = $state(false);
   /** Warnings shown before an issued report export, until confirmed or dismissed. */
   pending = $state<PendingWarnings | null>(null);
+  /** The report the Report ribbon acts on (T3.15). View state only. */
+  document = $state<ReportKind>("inspection_report");
   readonly #api: ExportApi;
 
   constructor(api: ExportApi = tauriApi) {
@@ -187,13 +189,13 @@ export class ExportStore {
    * Exports report `kind` in its remembered format. Exported as issued, Rust's warnings are
    * shown first (`pending`) when there are any.
    */
-  async startReport(kind: ReportKind): Promise<void> {
+  async startReport(kind: ReportKind, issued: boolean = this.issued): Promise<void> {
     const format = this.reportFormat(kind);
     if (this.busy(format)) {
       return;
     }
     this.pending = null;
-    if (this.issued) {
+    if (issued) {
       this.startError[format] = undefined;
       const result = await this.#api.reportExportWarnings(kind);
       if (result.status === "error") {
@@ -206,7 +208,7 @@ export class ExportStore {
         return;
       }
     }
-    await this.start(format);
+    await this.start(format, issued);
   }
 
   /** The user confirmed the warnings: export anyway. */

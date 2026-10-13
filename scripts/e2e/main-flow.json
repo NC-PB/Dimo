@@ -56,7 +56,7 @@
   { "check": ["Inch", true] },
   { "report": "sheet set" },
 
-  { "button": "Save as" },
+  { "key": "s", "mod": true, "shift": true },
   { "wait": 800 },
   { "report": "saved as" },
 

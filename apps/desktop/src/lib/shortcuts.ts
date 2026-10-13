@@ -1,6 +1,8 @@
 /**
- * The keyboard shortcut map (D-52, NFR-UX-01). Every shortcut of the app is defined here and
- * listed in the cheat sheet (`?`). Labels come from `shortcutLabel` in `i18n.ts`.
+ * The keyboard shortcut map (D-52, NFR-UX-01). Every key combination of the app is defined here
+ * and listed in the cheat sheet (`?`). Labels come from `shortcutLabel` in `i18n.ts`. Commands of
+ * the registry (`commands.svelte.ts`) name the action they run, so their tooltips show these
+ * keys and the window runs the command for them (T3.15); keys are never repeated there.
  */
 
 export type ShortcutAction =
@@ -34,6 +36,7 @@ export type ShortcutAction =
   | "cancel"
   | "show_shortcuts"
   | "show_drawing"
+  | "show_review"
   | "show_measure"
   | "show_export"
   | "show_settings"
@@ -128,8 +131,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
     textEditing: true,
     anyView: true,
   },
-  // Views (D-50).
+  // Tabs (ADR 0007): drawing (Home), review, measure, report, settings (File).
   { action: "show_drawing", keys: [{ key: "1", mod: true }], anyView: true },
+  { action: "show_review", keys: [{ key: "2", mod: true }], anyView: true },
   { action: "show_measure", keys: [{ key: "3", mod: true }], anyView: true },
   { action: "show_export", keys: [{ key: "e", mod: true }], anyView: true },
   { action: "show_settings", keys: [{ key: ",", mod: true }], anyView: true },

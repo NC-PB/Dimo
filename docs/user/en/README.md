@@ -43,10 +43,10 @@ on Windows and Linux use Ctrl instead of ⌘ and Alt instead of ⌥.
 
 Start Dimo and choose **New project** (⌘N). Pick the PDF of the drawing. Dimo copies the drawing
 into the project, so the project does not depend on the original file afterwards, and shows the
-first sheet fitted into the window. A drawing with several sheets (pages) shows a sheet selector
-in the toolbar.
+first sheet fitted into the window. A drawing with several sheets (pages) shows one tab per sheet
+in the status bar at the bottom.
 
-The project has no file yet. The toolbar says "Untitled"; you save it in step 9, but Dimo already
+The project has no file yet. The title bar says "Untitled"; you save it in step 9, but Dimo already
 keeps a recoverable copy of everything you do ([Projects](projects.md)).
 
 If the sheet is sideways, set its rotation, unit and scale in **Sheet properties** on the right
@@ -132,8 +132,8 @@ project with unsaved changes, Dimo asks first. Details: [Projects](projects.md).
 
 ### 10. Enter the results
 
-Open the **Measure** view (⌘3). Type how many parts you measure under **Number** and choose
-**Add samples**. Click the first cell of a part, type the value, press **Enter**, and carry on down
+Open the **Measure** tab (⌘3). Type how many parts you measure under **Number** and choose
+**Add parts**. Click the first cell of a part, type the value, press **Enter**, and carry on down
 the column: Dimo stores the value, moves to the next characteristic and marks the result with ✓
 (pass), ✗ (fail) or ○ (value without limits). For threads and notes press **O** for OK or **N**
 for not OK. A block copied from a spreadsheet pastes with ⌘V. Limits are inclusive, and Dimo
@@ -142,7 +142,7 @@ decides pass or fail for you. Details: [Entering results](measuring.md).
 ### 11. Export
 
 First fill in the part, drawing revision and report fields in **Project and report**
-([Project and report details](project-details.md)). Then open the **Export** view (⌘E).
+([Project and report details](project-details.md)). Then open the **Report** tab (⌘E).
 
 - **Check sheet** (PDF or Excel): the characteristics with empty result columns, to print before
   you measure.

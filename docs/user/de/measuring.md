@@ -1,6 +1,6 @@
 # Ergebnisse eingeben
 
-In der Ansicht **Messen** (⌘3) gibst du ein, was du an den Teilen gemessen hast. Die Zeilen sind
+Im Register **Messen** (⌘3) gibst du ein, was du an den Teilen gemessen hast. Die Zeilen sind
 die zu prüfenden Merkmale, jede Spalte ist ein Teil. Dimo vergleicht jeden Wert mit den
 Grenzmaßen und markiert ihn als i.O. oder n.i.O. Teile, Ergebnisse und Bewertungen werden im
 Projekt gespeichert und stehen im [Prüfbericht](exports.md).
@@ -8,7 +8,8 @@ Projekt gespeichert und stehen im [Prüfbericht](exports.md).
 ## Teile
 
 Ein Teil ist ein Stück, das du misst. Ein neues Projekt hat keine Teile. Gib unter **Anzahl** ein,
-wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Teile hinzufügen**. Ein Projekt kann
+wie viele Teile du misst (1 bis 100 auf einmal), und wähle **Teile hinzufügen** im Register
+Messen. Ein Projekt kann
 bis zu 500 Teile enthalten. Die Seriennummern zählen von der höchsten reinen Zahl weiter (`1`, `2`,
 `3`); das Datum ist leer, als Prüfer steht dein Benutzername aus den Einstellungen.
 
@@ -19,7 +20,9 @@ Projekt eindeutig sein (Groß- und Kleinschreibung zählt als Unterschied). Seri
 beliebiger Text sein, zum Beispiel `A-17`. **Nach links** und **Nach rechts** ändern die
 Reihenfolge der Spalten, die auch die Reihenfolge in den Berichten ist. **Teil löschen** löscht
 die Spalte; hat das Teil Ergebnisse, fragt Dimo vorher, weil sie mit gelöscht werden. Jede
-Änderung machst du mit ⌘Z rückgängig.
+Änderung machst du mit ⌘Z rückgängig. Das Register hat auch **Werte einfügen** und **Zelle
+leeren** für die aktive Zelle, **Ergebnis dieser Zeile** für die aktive Zeile, und **Nur fehlende
+Werte** und **Nur n.i.O.**, um weniger Zeilen zu zeigen; die Zeile, in der du bist, bleibt sichtbar.
 
 ## Die Tabelle
 

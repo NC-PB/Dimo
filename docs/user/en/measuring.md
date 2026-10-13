@@ -1,6 +1,6 @@
 # Entering results
 
-The **Measure** view (⌘3) is where you enter what you measured on the parts. Rows are the
+The **Measure** tab (⌘3) is where you enter what you measured on the parts. Rows are the
 characteristics to inspect, one column per part (sample). Dimo compares every value with the
 limits and marks it pass or fail. Samples, results and the verdicts are saved in the project and
 end up in the [inspection report](exports.md).
@@ -8,7 +8,7 @@ end up in the [inspection report](exports.md).
 ## Samples
 
 A sample is one part that you measure. A new project has no samples. Type how many parts you
-measure in **Number** (1 to 100 at a time) and choose **Add samples**. A project can hold up to
+measure in **Number** (1 to 100 at a time) and choose **Add parts** on the Measure tab. A project can hold up to
 500 samples. The serials continue from the highest plain number (`1`, `2`, `3`); the date is empty
 and the inspector is your user name from the settings.
 
@@ -16,9 +16,11 @@ Click the header or a cell of a sample column to make it the active sample. The 
 right shows its serial, date, inspector, gauges and comment; change them there. A serial is
 trimmed, must not be empty and must be unique in the project (upper and lower case count as
 different). Serials may be any text, for example `A-17`. **Move left** and **Move right** change
-the column order, which is also the order in the reports. **Delete sample** deletes the column;
+the column order, which is also the order in the reports. **Delete part** deletes the column;
 when the sample has results, Dimo asks first, because they are deleted with it. Every change is
-undone with ⌘Z.
+undone with ⌘Z. The tab also has **Paste values** and **Clear cell** for the active cell,
+**Result of this row** for the active row, and **Only missing values** and **Only not OK** to
+show fewer rows; the row you are in stays shown.
 
 ## The grid
 

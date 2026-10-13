@@ -2,8 +2,10 @@
 
 ## Exporting from the app
 
-Open the **Export** view (the **Export** button in the top bar, or ⌘E on macOS, Ctrl+E elsewhere).
-It needs an open project. Each export asks where to save the file and then runs in the
+Open the **Report** tab (⌘E on macOS, Ctrl+E elsewhere). Its commands choose the check sheet or
+the inspection report, the format, the language and **Open after export**; **Save copy** exports
+the chosen document, **Issue report** exports it as issued. Below them every export has a card.
+The tab needs an open project. Each export asks where to save the file and then runs in the
 background; you can keep working meanwhile. The file contains the project as it was when you
 clicked the button. A progress bar and then the saved file name appear below the export, or the
 reason why it failed. While a report export runs, **Cancel export** stops it; no file is

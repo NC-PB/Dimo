@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { commandErrorMessage, m } from "$lib/i18n";
+  import { commandErrorMessage, m, strategyHint, strategyLabel } from "$lib/i18n";
   import type { InsertPolicy, MultiInstance, NumberingStrategy } from "$lib/ipc/bindings";
   import {
     INSERT_POLICIES,
@@ -34,36 +34,6 @@
     void numberingStore.previewing;
     void numberingStore.refresh();
   });
-
-  function strategyLabel(strategy: NumberingStrategy): string {
-    switch (strategy) {
-      case "sheet_zone":
-        return m.numbering_strategy_sheet_zone();
-      case "view":
-        return m.numbering_strategy_view();
-      case "view_clockwise":
-        return m.numbering_strategy_view_clockwise();
-      case "kind":
-        return m.numbering_strategy_kind();
-      case "manual":
-        return m.numbering_strategy_manual();
-    }
-  }
-
-  function strategyHint(strategy: NumberingStrategy): string {
-    switch (strategy) {
-      case "sheet_zone":
-        return m.numbering_hint_sheet_zone();
-      case "view":
-        return m.numbering_hint_view();
-      case "view_clockwise":
-        return m.numbering_hint_view_clockwise();
-      case "kind":
-        return m.numbering_hint_kind();
-      case "manual":
-        return m.numbering_hint_manual();
-    }
-  }
 
   function multiLabel(value: MultiInstance): string {
     return value === "sub_number" ? m.numbering_multi_sub_number() : m.numbering_multi_quantity();

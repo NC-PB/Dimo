@@ -6,18 +6,18 @@ opens when the original PDF is moved or deleted.
 
 ## Create, open, save
 
-| Action | Toolbar | macOS | Windows and Linux |
+| Action | Where | macOS | Windows and Linux |
 |---|---|---|---|
-| New project from a PDF drawing | New project | ⌘N | Ctrl+N |
-| Open a project | Open project | ⌘O | Ctrl+O |
-| Save | Save | ⌘S | Ctrl+S |
-| Save under a new name | Save as | ⇧⌘S | Ctrl+Shift+S |
-| Undo | ↶ | ⌘Z | Ctrl+Z |
-| Redo | ↷ | ⇧⌘Z | Ctrl+Shift+Z or Ctrl+Y |
+| New project from a PDF drawing | File > New project | ⌘N | Ctrl+N |
+| Open a project | File > Open project | ⌘O | Ctrl+O |
+| Save | Save in the title bar, or File | ⌘S | Ctrl+S |
+| Save under a new name | File > Save as… | ⇧⌘S | Ctrl+Shift+S |
+| Undo | Undo in the title bar | ⌘Z | Ctrl+Z |
+| Redo | Redo in the title bar | ⇧⌘Z | Ctrl+Shift+Z or Ctrl+Y |
 
 **New project** and **Open project** ask for a file with the operating system's file dialog. A
 project is made from a PDF drawing; other file types are not offered. A new project has no file
-until you save it; the toolbar shows "Untitled". The first save asks for a file name and adds
+until you save it; the title bar shows "Untitled". The first save asks for a file name and adds
 `.dimo` if you leave it out. Undo has no limit while the project is open; the history starts fresh
 when you open a project again.
 
@@ -40,9 +40,9 @@ lost; update Dimo to open it.
 ## Autosave and recovery
 
 Every change is written to an autosave journal right away, and at the latest every 30 seconds.
-The toolbar shows the state: "Saved", "Not saved yet" (a new project without changes),
-"Unsaved changes, autosaved", or a warning if the journal could not be written. Next to the file
-name, an asterisk marks changes that are not in the project file yet.
+The title bar shows the state next to the project name: "saved", "not saved yet" (a new project
+without changes), "not saved", "not saved, autosaved", or "Autosave failed" with the reason and a
+warning sign if the journal could not be written.
 
 - A saved project keeps its journal next to the file: `part.dimo.journal`. Saving merges it into
   the project file and deletes it.

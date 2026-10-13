@@ -7,18 +7,18 @@ wurde.
 
 ## Anlegen, öffnen, speichern
 
-| Aktion | Werkzeugleiste | macOS | Windows und Linux |
+| Aktion | Wo | macOS | Windows und Linux |
 |---|---|---|---|
-| Neues Projekt aus einer PDF-Zeichnung | Neues Projekt | ⌘N | Ctrl+N |
-| Projekt öffnen | Projekt öffnen | ⌘O | Ctrl+O |
-| Speichern | Speichern | ⌘S | Ctrl+S |
-| Unter neuem Namen speichern | Speichern unter | ⇧⌘S | Ctrl+Shift+S |
-| Rückgängig | ↶ | ⌘Z | Ctrl+Z |
-| Wiederholen | ↷ | ⇧⌘Z | Ctrl+Shift+Z oder Ctrl+Y |
+| Neues Projekt aus einer PDF-Zeichnung | Datei > Neues Projekt | ⌘N | Ctrl+N |
+| Projekt öffnen | Datei > Projekt öffnen | ⌘O | Ctrl+O |
+| Speichern | Speichern in der Titelleiste, oder Datei | ⌘S | Ctrl+S |
+| Unter neuem Namen speichern | Datei > Speichern unter… | ⇧⌘S | Ctrl+Shift+S |
+| Rückgängig | Rückgängig in der Titelleiste | ⌘Z | Ctrl+Z |
+| Wiederholen | Wiederholen in der Titelleiste | ⇧⌘Z | Ctrl+Shift+Z oder Ctrl+Y |
 
 **Neues Projekt** und **Projekt öffnen** fragen mit dem Dateidialog des Betriebssystems nach einer
 Datei. Ein Projekt entsteht aus einer PDF-Zeichnung; andere Dateitypen werden nicht angeboten. Ein
-neues Projekt hat bis zum ersten Speichern keine Datei; die Werkzeugleiste zeigt "Unbenannt".
+neues Projekt hat bis zum ersten Speichern keine Datei; die Titelleiste zeigt "Unbenannt".
 Beim ersten Speichern fragt Dimo nach einem Dateinamen und hängt `.dimo` an, wenn du es weglässt.
 Rückgängig ist unbegrenzt, solange das Projekt offen ist; nach erneutem Öffnen beginnt der Verlauf
 neu.
@@ -44,10 +44,10 @@ aktualisiere Dimo, um es zu öffnen.
 ## Automatische Sicherung und Wiederherstellung
 
 Jede Änderung wird sofort, spätestens aber alle 30 Sekunden, in ein Sicherungsjournal
-geschrieben. Die Werkzeugleiste zeigt den Zustand: "Gespeichert", "Noch nicht gespeichert" (ein neues Projekt
-ohne Änderungen), "Ungespeicherte Änderungen, automatisch gesichert" oder eine Warnung, wenn das
-Journal nicht geschrieben werden konnte. Neben dem Dateinamen markiert ein Sternchen Änderungen,
-die noch nicht in der Projektdatei stehen.
+geschrieben. Die Titelleiste zeigt den Zustand neben dem Projektnamen: "gespeichert", "noch nicht
+gespeichert" (ein neues Projekt ohne Änderungen), "nicht gespeichert", "nicht gespeichert,
+automatisch gesichert" oder "Automatische Sicherung fehlgeschlagen" mit dem Grund und einem
+Warnzeichen, wenn das Journal nicht geschrieben werden konnte.
 
 - Ein gespeichertes Projekt hat sein Journal neben der Datei: `part.dimo.journal`. Beim Speichern
   wird es in die Projektdatei übernommen und gelöscht.

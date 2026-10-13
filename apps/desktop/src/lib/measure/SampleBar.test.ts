@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Command, Sample } from "$lib/ipc/bindings";
 import { emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { PartsStore } from "./parts.svelte";
 import SampleBar from "./SampleBar.svelte";
 
 function sample(n: number): Sample {
@@ -65,10 +66,11 @@ async function render(activeSample: string | null) {
   ];
   const project = new ProjectStore(api);
   project.load(loaded(1, data));
-  component = mount(SampleBar, { target, props: { project, activeSample } });
+  const parts = new PartsStore(project, () => activeSample);
+  component = mount(SampleBar, { target, props: { parts } });
   flushSync();
   await tick();
-  return { commands };
+  return { commands, parts };
 }
 
 function button(text: string): HTMLButtonElement {
@@ -79,38 +81,35 @@ function button(text: string): HTMLButtonElement {
   return found;
 }
 
-describe("sample bar (T3.5)", () => {
-  it("adds the chosen number of samples", async () => {
-    const { commands } = await render(null);
-    const input = target.querySelector<HTMLInputElement>("input[type=number]");
-    if (!input) {
-      throw new Error("no input");
-    }
-    input.value = "3";
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    button("Add samples").click();
-    await vi.waitFor(() => {
-      expect(commands).toEqual([{ type: "add_samples", count: 3 }]);
-    });
+describe("parts of the Measure tab (T3.5, T3.15)", () => {
+  it("shows nothing while there is nothing to say", async () => {
+    await render("s2");
+    expect(target.textContent.trim()).toBe("");
   });
 
-  it("moves the active sample left and right", async () => {
-    const { commands } = await render("s2");
-    button("Move left").click();
-    button("Move right").click();
-    await vi.waitFor(() => {
-      expect(commands).toEqual([
-        { type: "move_samples", ids: ["s2"], before: "s1" },
-        { type: "move_samples", ids: ["s2"], before: null },
-      ]);
-    });
+  it("adds the chosen number of parts", async () => {
+    const { commands, parts } = await render(null);
+    parts.count = 3;
+    await parts.add();
+    expect(commands).toEqual([{ type: "add_samples", count: 3 }]);
   });
 
-  it("asks before deleting a sample with results", async () => {
-    const { commands } = await render("s2");
-    button("Delete sample").click();
+  it("moves the active part left and right", async () => {
+    const { commands, parts } = await render("s2");
+    await parts.moveBy(-1);
+    await parts.moveBy(1);
+    expect(commands).toEqual([
+      { type: "move_samples", ids: ["s2"], before: "s1" },
+      { type: "move_samples", ids: ["s2"], before: null },
+    ]);
+  });
+
+  it("asks before deleting a part with results", async () => {
+    const { commands, parts } = await render("s2");
+    await parts.remove();
     flushSync();
-    expect(target.textContent).toContain("Delete sample 2 with its 1 results?");
+    expect(target.textContent).toContain("2");
+    expect(target.querySelector("[role=alert]")).not.toBeNull();
     expect(commands).toEqual([]);
     button("Delete with results").click();
     await vi.waitFor(() => {
@@ -118,11 +117,19 @@ describe("sample bar (T3.5)", () => {
     });
   });
 
-  it("deletes a sample without results at once", async () => {
-    const { commands } = await render("s3");
-    button("Delete sample").click();
-    await vi.waitFor(() => {
-      expect(commands).toEqual([{ type: "delete_samples", ids: ["s3"] }]);
-    });
+  it("keeps the part when the question is answered with Keep", async () => {
+    const { commands, parts } = await render("s2");
+    await parts.remove();
+    flushSync();
+    button("Keep").click();
+    flushSync();
+    expect(parts.confirming).toBeNull();
+    expect(commands).toEqual([]);
+  });
+
+  it("deletes a part without results at once", async () => {
+    const { commands, parts } = await render("s3");
+    await parts.remove();
+    expect(commands).toEqual([{ type: "delete_samples", ids: ["s3"] }]);
   });
 });

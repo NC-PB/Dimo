@@ -28,7 +28,8 @@
  *   waiting for a field (`\n` is Enter). In a text field each character is inserted as a real
  *   key would; on the drawing the key goes to its key handling (T2.7a, typing right after a
  *   placing click).
- * - `button`: clicks the button whose text is this label.
+ * - `button`: clicks the button whose text is this label (or, for icon buttons, whose
+ *   `aria-label` is).
  * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
  * - `cell`: `[row, sample]` clicks a cell of the measurement grid, both one based (row 1 is the
@@ -36,7 +37,8 @@
  * - `paste`: sends a paste event with this text to the focused element, as Cmd/Ctrl+V with that
  *   text on the clipboard would (T3.5).
  * - `view`: zoom percent and the sheet point in the viewport center.
- * - `show`: switches to a view (`drawing`, `export`, `settings`, ...).
+ * - `show`: switches to a work area (`drawing`, `measure`, `export`, `settings`, ...) or a
+ *   ribbon tab (`home`, `report`, `view`, ...).
  * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
  *   or the `<select>` whose `aria-label` starts with it.
  * - `reveal`: scrolls the field inside the label that starts with this text into view.
@@ -59,7 +61,7 @@ import { EXPORT_FORMATS, REPORT_FORMATS, exportStore } from "$lib/stores/export.
 import { numberingStore } from "$lib/stores/numbering.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
-import { view } from "$lib/stores/view.svelte";
+import { isView, view } from "$lib/stores/view.svelte";
 import { viewport } from "$lib/stores/viewport.svelte";
 import { ACTUAL_SIZE_SCALE, centerOn, sheetToScreen, type Point } from "$lib/viewport/view-math";
 
@@ -332,9 +334,11 @@ async function run(step: UiStep): Promise<void> {
     await typeKeys(step.keys);
     await sleep(STEP_PAUSE_MS);
   } else if ("button" in step) {
-    const button = [...document.querySelectorAll<HTMLElement>("button")].find(
-      (b) => b.textContent.trim() === step.button,
-    );
+    // Icon only buttons of the title bar are found by their accessible name (T3.15).
+    const buttons = [...document.querySelectorAll<HTMLElement>("button")];
+    const button =
+      buttons.find((b) => b.textContent.trim() === step.button) ??
+      buttons.find((b) => b.getAttribute("aria-label") === step.button);
     button?.click();
     await sleep(STEP_PAUSE_MS);
   } else if ("balloon" in step) {
@@ -402,7 +406,12 @@ async function run(step: UiStep): Promise<void> {
     );
     await sleep(STEP_PAUSE_MS);
   } else if ("show" in step) {
-    view.set(step.show);
+    // A work area (`drawing`, `export`, `settings`, ...) or else a tab (`home`, `report`, ...).
+    if (isView(step.show)) {
+      view.set(step.show);
+    } else {
+      view.setTab(step.show);
+    }
     await sleep(STEP_PAUSE_MS);
   } else if ("select" in step) {
     const field =

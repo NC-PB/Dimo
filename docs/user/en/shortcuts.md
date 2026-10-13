@@ -25,8 +25,9 @@ These work in every view.
 | Undo | `⌘Z` | `Ctrl+Z` |
 | Redo | `⇧⌘Z` or `⌘Y` | `Ctrl+Shift+Z` or `Ctrl+Y` |
 | Show the drawing | `⌘1` | `Ctrl+1` |
+| Show the review | `⌘2` | `Ctrl+2` |
 | Show the measurement grid | `⌘3` | `Ctrl+3` |
-| Show export | `⌘E` | `Ctrl+E` |
+| Show the report | `⌘E` | `Ctrl+E` |
 | Show settings | `⌘,` | `Ctrl+,` |
 | Show keyboard shortcuts | `?` | `?` |
 <!-- /shortcuts -->
