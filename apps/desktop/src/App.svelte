@@ -6,6 +6,7 @@
   import Shortcuts from "$lib/components/Shortcuts.svelte";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import Toolbar from "$lib/components/Toolbar.svelte";
+  import DeleteCharacteristicsDialog from "$lib/components/DeleteCharacteristicsDialog.svelte";
   import UnsavedChangesDialog from "$lib/components/UnsavedChangesDialog.svelte";
   import Viewport from "$lib/components/Viewport.svelte";
   import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
@@ -84,3 +85,4 @@
 </div>
 <Shortcuts bind:open={shortcutsOpen} />
 <UnsavedChangesDialog />
+<DeleteCharacteristicsDialog />

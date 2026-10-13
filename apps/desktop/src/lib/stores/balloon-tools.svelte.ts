@@ -101,6 +101,8 @@ export class BalloonToolsStore {
   editing = $state<CharId | null>(null);
   /** Whether the style picker of the selection is open. */
   styleOpen = $state(false);
+  /** Deletion of characteristics with results that waits for the user's answer. */
+  pendingDelete = $state<{ ids: CharId[]; results: number } | null>(null);
 
   readonly #project: ProjectStore;
   readonly #selection: SelectionStore;
@@ -358,12 +360,40 @@ export class BalloonToolsStore {
     return true;
   }
 
-  /** Deletes the selected characteristics with their balloons (FR-BAL-12). */
+  /**
+   * Deletes the selected characteristics with their balloons (FR-BAL-12). When any of them has
+   * results, the deletion waits in {@link pendingDelete} until {@link confirmDelete} (M3
+   * decision 16); the results go with the characteristics and undo brings them back.
+   */
   async deleteSelection(): Promise<void> {
     const ids = [...this.#selection.ids];
     if (ids.length === 0) {
       return;
     }
+    const results = this.#project.project?.results ?? [];
+    const count = results.filter((r) => this.#selection.ids.has(r.characteristic)).length;
+    if (count > 0) {
+      this.pendingDelete = { ids, results: count };
+      return;
+    }
+    await this.#delete(ids);
+  }
+
+  /** Carries out the deletion that waited for the answer to the question. */
+  async confirmDelete(): Promise<void> {
+    const pending = this.pendingDelete;
+    this.pendingDelete = null;
+    if (pending !== null) {
+      await this.#delete(pending.ids);
+    }
+  }
+
+  /** Drops the question; nothing is deleted. */
+  cancelDelete(): void {
+    this.pendingDelete = null;
+  }
+
+  async #delete(ids: CharId[]): Promise<void> {
     this.editing = null;
     await this.#project.execute({ type: "delete_characteristics", ids });
     this.#selection.retain((id) => this.#project.characteristicById.has(id));
