@@ -318,7 +318,7 @@ The user guide uses "du".
 ## 16. Exit criterion M3
 
 The timed procedure with a real drawing of your own (at least 25 inspected characteristics and
-three parts) is in `docs/perf/M3-exit.md` when T3.11 delivers it. Run it after this script.
+three parts) is in [docs/perf/M3-exit.md](../perf/M3-exit.md). Run it after this script.
 
 ## Result
 
