@@ -45,6 +45,8 @@ function setup(project: Project = emptyProject()) {
     saveProject: () => Promise.resolve({ status: "ok", data: true }),
     saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
     confirmClose: () => Promise.resolve({ status: "ok", data: null }),
+    closeProject: () => Promise.resolve({ status: "ok", data: null }),
+    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
     execute: (command) => {
       commands.push(command);
       if (refuse.error) {

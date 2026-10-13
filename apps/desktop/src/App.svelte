@@ -2,7 +2,6 @@
   import ExportView from "$lib/components/ExportView.svelte";
   import GeneralToleranceOffer from "$lib/components/GeneralToleranceOffer.svelte";
   import ProjectMessages from "$lib/components/ProjectMessages.svelte";
-  import SettingsView from "$lib/components/SettingsView.svelte";
   import Shortcuts from "$lib/components/Shortcuts.svelte";
   import SidePanel from "$lib/components/SidePanel.svelte";
   import DeleteCharacteristicsDialog from "$lib/components/DeleteCharacteristicsDialog.svelte";
@@ -12,6 +11,7 @@
   import { m } from "$lib/i18n";
   import MeasureView from "$lib/measure/MeasureView.svelte";
   import FilePage from "$lib/shell/FilePage.svelte";
+  import ProjectSettingsDialog from "$lib/shell/ProjectSettingsDialog.svelte";
   import StatusBar from "$lib/shell/StatusBar.svelte";
   import TabBar from "$lib/shell/TabBar.svelte";
   import TitleBar from "$lib/shell/TitleBar.svelte";
@@ -101,8 +101,6 @@
     <MeasureView />
   {:else if view.current === "export"}
     <ExportView />
-  {:else if view.current === "settings"}
-    <SettingsView />
   {:else if view.current === "file"}
     <FilePage />
   {:else if view.current === "review"}
@@ -115,3 +113,4 @@
 <Shortcuts />
 <UnsavedChangesDialog />
 <DeleteCharacteristicsDialog />
+<ProjectSettingsDialog />

@@ -39,8 +39,6 @@ export function viewLabel(view: View): string {
       return m.view_measure();
     case "export":
       return m.view_export();
-    case "settings":
-      return m.view_settings();
     case "file":
       return m.tab_file();
   }
@@ -157,8 +155,8 @@ export function shortcutLabel(action: ShortcutAction): string {
       return m.show_measure();
     case "show_export":
       return m.show_export();
-    case "show_settings":
-      return m.show_settings();
+    case "show_options":
+      return m.show_options();
     case "table_up":
       return m.table_up();
     case "table_down":

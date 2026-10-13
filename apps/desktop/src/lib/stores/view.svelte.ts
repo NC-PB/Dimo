@@ -4,17 +4,25 @@
  *
  * A tab picks the ribbon; the work area below follows it: Home and Drawing both show the
  * drawing, Report shows the export view, File a full page. The View tab keeps the work area that
- * was shown, so its zoom and pane commands act on it. The settings page is reached from File
- * until File > Options replaces it (T3.16).
+ * was shown, so its zoom and pane commands act on it. The File page has its own panes: Info,
+ * Open (with the recent projects), Options and About (T3.16).
  */
 export const TABS = ["file", "home", "drawing", "review", "measure", "report", "view"] as const;
 
 export type Tab = (typeof TABS)[number];
 
 /** Work areas below the ribbon. */
-export const VIEWS = ["drawing", "review", "measure", "export", "settings", "file"] as const;
+export const VIEWS = ["drawing", "review", "measure", "export", "file"] as const;
 
 export type View = (typeof VIEWS)[number];
+
+/** Panes of the File page (ADR 0007). */
+export const FILE_PANES = ["info", "open", "options", "about"] as const;
+
+export type FilePane = (typeof FILE_PANES)[number];
+
+/** Project settings dialogs of the Drawing tab (M3 decision 21, T3.16). */
+export type ProjectDialog = "decimal_rules" | "company_tables" | "balloon_style";
 
 export function isTab(value: string): value is Tab {
   return (TABS as readonly string[]).includes(value);
@@ -54,7 +62,6 @@ function tabOf(area: View): Tab {
       return "measure";
     case "export":
       return "report";
-    case "settings":
     case "file":
       return "file";
   }
@@ -69,6 +76,12 @@ export class ViewStore {
   showSidePanel = $state(true);
   /** Whether the keyboard shortcut cheat sheet (help) is open. */
   shortcutsOpen = $state(false);
+  /** The pane shown on the File page. */
+  filePane = $state<FilePane>("info");
+  /** The open project settings dialog of the Drawing tab, `null` when none is open. */
+  projectDialog = $state<ProjectDialog | null>(null);
+  /** The tab that was open before File, for "Back". */
+  #before: Tab = "home";
 
   /** The work area on screen. */
   get current(): View {
@@ -80,11 +93,14 @@ export class ViewStore {
     if (!isTab(value)) {
       return;
     }
+    if (value === "file" && this.tab !== "file") {
+      this.#before = this.tab;
+    }
     this.tab = value;
     const area = areaOf(value);
     if (area !== null) {
       this.#area = area;
-    } else if (this.#area === "file" || this.#area === "settings") {
+    } else if (this.#area === "file") {
       this.#area = "drawing"; // The View tab acts on the drawing, never on a page.
     }
   }
@@ -97,11 +113,25 @@ export class ViewStore {
     if (!isView(value)) {
       return;
     }
+    if (value === "file" && this.tab !== "file") {
+      this.#before = this.tab;
+    }
     this.#area = value;
     const keep = value === "drawing" && areaOf(this.tab) === "drawing";
-    if (!keep && !(this.tab === "view" && value !== "file" && value !== "settings")) {
+    if (!keep && !(this.tab === "view" && value !== "file")) {
       this.tab = tabOf(value);
     }
+  }
+
+  /** Opens the File page at `pane`. */
+  openFile(pane: FilePane): void {
+    this.filePane = pane;
+    this.setTab("file");
+  }
+
+  /** Leaves the File page for the tab that was open before it ("Back"). */
+  back(): void {
+    this.setTab(this.#before === "file" ? "home" : this.#before);
   }
 }
 

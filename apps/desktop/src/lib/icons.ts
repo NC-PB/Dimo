@@ -8,6 +8,14 @@ import type { LucideProps } from "@lucide/svelte";
 import type { Component } from "svelte";
 
 import ArrowLeft from "@lucide/svelte/icons/arrow-left";
+import BadgeInfo from "@lucide/svelte/icons/badge-info";
+import ChevronLeft from "@lucide/svelte/icons/chevron-left";
+import CircleDot from "@lucide/svelte/icons/circle-dot";
+import Copy from "@lucide/svelte/icons/copy";
+import FileText from "@lucide/svelte/icons/file-text";
+import FileX from "@lucide/svelte/icons/file-x";
+import Printer from "@lucide/svelte/icons/printer";
+import X from "@lucide/svelte/icons/x";
 import ArrowRight from "@lucide/svelte/icons/arrow-right";
 import CircleDashed from "@lucide/svelte/icons/circle-dashed";
 import CircleHelp from "@lucide/svelte/icons/circle-help";
@@ -53,7 +61,15 @@ import ZoomOut from "@lucide/svelte/icons/zoom-out";
 export type Icon = Component<LucideProps>;
 
 export const icons = {
+  about: BadgeInfo,
   addParts: Plus,
+  back: ChevronLeft,
+  closeProject: FileX,
+  copy: Copy,
+  projectBalloonStyle: CircleDot,
+  print: Printer,
+  recentFile: FileText,
+  remove: X,
   balloonStyle: Palette,
   checkSheet: ClipboardList,
   clearCell: Eraser,
@@ -85,7 +101,7 @@ export const icons = {
   saveAs: SaveAll,
   saveCopy: FileOutput,
   select: MousePointer2,
-  settings: Settings,
+  options: Settings,
   sidePanel: PanelRight,
   table: PanelBottom,
   themeDark: Moon,

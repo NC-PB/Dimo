@@ -37,7 +37,7 @@
  * - `paste`: sends a paste event with this text to the focused element, as Cmd/Ctrl+V with that
  *   text on the clipboard would (T3.5).
  * - `view`: zoom percent and the sheet point in the viewport center.
- * - `show`: switches to a work area (`drawing`, `measure`, `export`, `settings`, ...) or a
+ * - `show`: switches to a work area (`drawing`, `measure`, `export`, `file`, ...) or a
  *   ribbon tab (`home`, `report`, `view`, ...).
  * - `select`: `[label, value]` sets the `<select>` inside the label that starts with this text,
  *   or the `<select>` whose `aria-label` starts with it.
@@ -406,7 +406,7 @@ async function run(step: UiStep): Promise<void> {
     );
     await sleep(STEP_PAUSE_MS);
   } else if ("show" in step) {
-    // A work area (`drawing`, `export`, `settings`, ...) or else a tab (`home`, `report`, ...).
+    // A work area (`drawing`, `export`, `file`, ...) or else a tab (`home`, `report`, ...).
     if (isView(step.show)) {
       view.set(step.show);
     } else {

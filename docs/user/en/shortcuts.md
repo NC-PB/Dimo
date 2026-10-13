@@ -28,7 +28,7 @@ These work in every view.
 | Show the review | `⌘2` | `Ctrl+2` |
 | Show the measurement grid | `⌘3` | `Ctrl+3` |
 | Show the report | `⌘E` | `Ctrl+E` |
-| Show settings | `⌘,` | `Ctrl+,` |
+| Show options | `⌘,` | `Ctrl+,` |
 | Show keyboard shortcuts | `?` | `?` |
 <!-- /shortcuts -->
 

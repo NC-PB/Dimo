@@ -30,6 +30,8 @@ export interface ProjectCommands {
   saveProject(): Promise<Result<boolean>>;
   saveProjectAs(): Promise<Result<boolean>>;
   confirmClose(discard: boolean): Promise<Result<null>>;
+  closeProject(discard: boolean): Promise<Result<null>>;
+  openRecentProject(path: string, discard: boolean): Promise<Result<boolean>>;
   execute(command: Command): Promise<Result<ProjectPatched>>;
   undo(): Promise<Result<ProjectPatched>>;
   redo(): Promise<Result<ProjectPatched>>;
@@ -316,6 +318,29 @@ export class ProjectStore {
       const { proceed, discard } = await this.#settleUnsaved();
       if (proceed) {
         await this.#call(() => this.#api.openProject(discard));
+      }
+    });
+  }
+
+  /** Opens a project of the recent list (T3.16); Rust opens only paths on its list. */
+  async openRecent(path: string): Promise<void> {
+    await this.#busy(async () => {
+      const { proceed, discard } = await this.#settleUnsaved();
+      if (proceed) {
+        await this.#call(() => this.#api.openRecentProject(path, discard));
+      }
+    });
+  }
+
+  /** Closes the project and keeps the window open (File > Close project, T3.16). */
+  async close(): Promise<void> {
+    if (!this.isOpen) {
+      return;
+    }
+    await this.#busy(async () => {
+      const { proceed, discard } = await this.#settleUnsaved();
+      if (proceed) {
+        await this.#call(() => this.#api.closeProject(discard));
       }
     });
   }

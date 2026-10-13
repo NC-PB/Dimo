@@ -120,6 +120,14 @@ class FakeRust implements ProjectCommands {
     this.calls.push(`close(${String(discard)})`);
     return Promise.resolve({ status: "ok" as const, data: null });
   }
+  closeProject(discard: boolean) {
+    this.calls.push(`close_project(${String(discard)})`);
+    return Promise.resolve({ status: "ok" as const, data: null });
+  }
+  openRecentProject(path: string, discard: boolean) {
+    this.calls.push(`open_recent(${path},${String(discard)})`);
+    return Promise.resolve({ status: "ok" as const, data: true });
+  }
   execute(command: Command) {
     return this.next(command.type === "add_characteristic" ? "execute" : command.type);
   }
@@ -317,6 +325,24 @@ describe("project store (T1.5)", () => {
     await clean.store.newProject();
     expect(clean.ask).not.toHaveBeenCalled();
     expect(clean.rust.calls).toEqual(["new(false)"]);
+  });
+
+  it("opens a recent project and closes the project after asking (T3.16)", async () => {
+    const recent = await connected("discard");
+    recent.store.status = status({ modified: true });
+    await recent.store.openRecent("/work/part.dimo");
+    expect(recent.rust.calls).toEqual(["open_recent(/work/part.dimo,true)"]);
+
+    const close = await connected("save");
+    close.store.status = status({ modified: true });
+    await close.store.close();
+    expect(close.rust.calls).toEqual(["save", "close_project(false)"]);
+
+    const cancel = await connected("cancel");
+    cancel.store.status = status({ modified: true });
+    await cancel.store.close();
+    await cancel.store.openRecent("/work/part.dimo");
+    expect(cancel.rust.calls).toEqual([]);
   });
 
   it("answers a window close request after asking", async () => {
