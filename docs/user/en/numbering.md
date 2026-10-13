@@ -42,7 +42,7 @@ the sheet is shown on screen, so a rotated sheet is read the way you see it.
 | Sheet, zone, reading order | Sheet by sheet, zone by zone (rows of zones top to bottom, left to right), inside a zone in reading order. Without a zone grid the whole sheet is read in reading order. This is the default for new projects. A project made with an earlier version starts with **Manual**, so its order does not change. |
 | Per view, reading order | View by view in the order you drew them, reading order inside each view. Balloons outside all views come last on their sheet, in reading order. |
 | Per view, clockwise | View by view, clockwise around the middle of the view, starting at 12 o'clock. Balloons outside all views come last. |
-| By type | Grouped by kind (linear, diameter, radius, angle and so on), each kind in sheet and zone order. |
+| By kind | Grouped by kind (linear, diameter, radius, angle and so on), each kind in sheet and zone order. |
 | Manual (current order) | Keeps the order of the table. Change it by dragging rows. |
 
 **Reading order** means top to bottom, then left to right. Balloons whose leader ends are less

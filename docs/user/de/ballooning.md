@@ -17,7 +17,7 @@ Leertaste beim Ziehen. Zoomen und Blätter stehen unter [Eine Zeichnung ansehen]
 
 ## Ballons setzen
 
-1. Drücke **B** oder wähle **Ballon setzen** im Register **Start**. Es bleibt an, bis du **Esc**
+1. Drücke **B** oder wähle **Ballon setzen** im Reiter **Start**. Es bleibt an, bis du **Esc**
    drückst, mit rechts auf die Zeichnung klickst, **Beenden (Esc)** in der Leiste auf der Zeichnung
    oder **Auswählen** wählst.
 2. Klicke auf das Merkmal, das geprüft werden soll. Der Ballon erscheint rechts oberhalb davon
@@ -48,7 +48,7 @@ Tippst du einen neuen Wert in einen Ballon, der schon einen hat, liest Dimo ihn 
 Nennmaß, Abmaße, Grenzwerte, Passung und Regel, auch von Hand eingegebene Grenzwerte. Text, der
 nicht als Maß gelesen wird, ändert nur den Anforderungstext; die übrigen Werte bleiben, wie sie
 sind. Auch das Bearbeiten der Zelle **Anforderung** in der Tabelle speichert nur den Text; um ihn
-erneut zu lesen, wähle das Merkmal aus und nimm **Ausgewählte neu auswerten**
+erneut zu lesen, wähle das Merkmal aus und nimm **Grenzmaße aktualisieren**
 ([Toleranzen](tolerances.md)).
 
 ## Rahmenauswahl
@@ -132,7 +132,7 @@ Ende ihrer Bezugslinie.
 
 ## Stil ändern
 
-Wähle Ballons aus und drücke **S** oder wähle **Ballonstil** im Register Start. Jede Wahl gilt
+Wähle Ballons aus und drücke **S** oder wähle **Ballonstil** im Reiter Start. Jede Wahl gilt
 sofort für alle ausgewählten Ballons:
 
 - **Form**: Kreis, Fahne oder Rechteck.
@@ -147,7 +147,7 @@ gedrehten Blatt bleiben die Nummern aufrecht.
 
 ## Ballons löschen
 
-Wähle Ballons aus und drücke **Entfernen** oder **Rücktaste**, oder wähle **Löschen** im Register
+Wähle Ballons aus und drücke **Entfernen** oder **Rücktaste**, oder wähle **Löschen** im Reiter
 Start. Die Merkmale der Ballons werden mit gelöscht. Solange die Nummerierung nicht
 gesperrt ist, werden die übrigen Ballons wieder lückenlos ab 1 nummeriert.
 

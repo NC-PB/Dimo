@@ -11,9 +11,9 @@ Dimo tries these rules in this order and takes the first one that gives limits:
 1. **Explicit**: a tolerance written on the drawing, such as `±0.1`, `+0.2 -0.1`, two limits, `MIN`
    or `MAX`. A written tolerance always wins.
 2. **Fit table**: a fit such as `H7` without written deviations, expanded with the ISO 286 table.
-3. **Drawing rule**: a custom table of the project chosen as drawing rule.
+3. **Drawing rule**: a company table of the project chosen as drawing rule.
 4. **General tolerance**: the general tolerance standard and class of the project, by size range.
-5. **Decimal places rule**: a tolerance for the number of decimal places the size is written with.
+5. **Decimal rule**: a tolerance for the number of decimal places the size is written with.
 
 If no rule applies, the characteristic gets the rule **No tolerance defined** and no limits; check
 it and type its limits in the table. Limits you type or change yourself get the rule **Entered by
@@ -29,24 +29,24 @@ not written on the drawing. For an angle without a written tolerance, type the l
 shorter leg in the field **Shorter leg** on the proposal card or in the properties pane, section
 **Tolerance**. The field is in the unit of the sheet (mm or inch). Dimo then sets the limits of the
 angle, and the explanation names the leg, its range and the limits. Without a leg the angle gets
-no limits and a note. The leg is stored with the characteristic and its unit, so **Re-interpret
-selected** and a retyped requirement text keep using it, also after the sheet unit changes.
+no limits and a note. The leg is stored with the characteristic and its unit, so **Update
+limits** and a retyped requirement text keep using it, also after the sheet unit changes.
 Limits you entered by hand stay. Empty the field to remove the leg.
 
 ## Tolerance settings of the project
 
 The rules of this project are on the **Drawing** tab: the **General tolerance** field (also on
-the **Home** tab), **Decimal rules…** (decimal place rules and rounding after unit conversion) and
-**Company tables** (custom tables and the drawing rule) open a small window each.
+the **Home** tab), **Decimal rules…** (decimal rules and rounding after unit conversion) and
+**Company tables** (your own tables and the drawing rule) open a small window each.
 **File** > **Info** sums them up. They are stored in the project file, and every change is one
 undo step.
 
 - **General tolerance**: the table and class for dimensions without a tolerance, for example
-  ISO 2768-1 class m. The choice lists the general tables and the custom tables of the
+  ISO 2768-1 class m. The choice lists the general tables and the company tables of the
   project; fit tables are not offered here.
-- **Drawing rule (custom table)**: a custom table of the project that applies before the general
+- **Drawing rule (company table)**: a company table of the project that applies before the general
   tolerance.
-- **Decimal place rules**: one tolerance per number of decimal places, for example 2 places ±0.05.
+- **Decimal rules**: one tolerance per number of decimal places, for example 2 places ±0.05.
   Type the places and the tolerance and choose **Add rule**. Each number of places has one rule,
   and the tolerance is plus and minus the value you type. A rule applies to sizes written as
   decimals without a tolerance, by the number of decimal places as written (`12.50` has two). You
@@ -56,7 +56,7 @@ undo step.
   The defaults are 3 places for mm and 4 for inch. Limits are rounded inward, so they are never
   wider than the table, and the explanation says that a conversion took place. Whole numbers
   from 0 to 10 are accepted.
-- **Custom tables**: **Import table…** reads a table file of your own (TOML, in the format of the
+- **Company tables**: **Import table…** reads a table file of your own (TOML, in the format of the
   tables shipped with Dimo). Dimo checks the whole file before it is used. If it is refused, the
   reason is shown with the line of the file where Dimo can tell it. The file format is described
   in `data/tolerances/README.md` of the Dimo sources, next to the tables shipped with Dimo. An
@@ -79,20 +79,20 @@ change; other settings never show it.
 
 - **Update n** reads exactly these characteristics again with the new general tolerance, as one
   step of undo. **Undo** restores their previous limits.
-- **Not now** closes the notice and changes nothing. You can still use **Re-interpret selected**
+- **Not now** closes the notice and changes nothing. You can still use **Update limits**
   later.
 
 The update considers only characteristics whose rule is **No tolerance defined** or a general
-tolerance (of a shipped or a custom table), and characteristics whose text was never read and
+tolerance (of a shipped or a company table), and characteristics whose text was never read and
 now gets the general tolerance. Characteristics with limits entered by hand, a written
-tolerance, a fit, a drawing rule or a decimal place rule never change, nor do texts that are not
+tolerance, a fit, a drawing rule or a decimal rule never change, nor do texts that are not
 a dimension. A characteristic that stays without tolerance, for example a thread or a reference
 dimension, is not counted. The characteristics that are updated are read with all current
-settings, so a drawing rule or decimal place rule you set earlier can apply to them too. If you remove the general tolerance,
+settings, so a drawing rule or decimal rule you set earlier can apply to them too. If you remove the general tolerance,
 the notice offers to remove the previous general tolerance from the characteristics that still
 have it.
 
-## Re-interpret after a change
+## Update limits after a change
 
 To apply other new settings to existing characteristics, select them (in the table or on the drawing)
 and choose **Update limits** on the Home tab or in the properties pane. Dimo reads the requirement text of each
@@ -103,7 +103,7 @@ of it is one step of undo.
 - Characteristics whose text is empty or is not a dimension are left unchanged.
 - Kind, quantity and the **Inspect** box stay as you set them. A characteristic whose text was
   never read before gets them from the text.
-- If you changed the **Requirement** text in the table, re-interpreting reads the new text.
+- If you changed the **Requirement** text in the table, **Update limits** reads the new text.
 
 The line under the button says how many were read again, kept or not readable.
 
@@ -136,7 +136,7 @@ characteristics. The other notes of the table are stored with the characteristic
 ## Limits you enter yourself
 
 When you type a nominal value, a deviation or a limit in the table and the limits change because
-of it, the rule becomes **Entered by hand**. These limits are kept when you re-interpret, and
+of it, the rule becomes **Entered by hand**. These limits are kept when you update limits, and
 the explanation only says that they were entered by hand. If you delete every deviation and limit, the rule is
 removed and the characteristic can be read again.
 
@@ -144,7 +144,7 @@ removed and the characteristic can be read again.
 
 The tables shipped with Dimo are drafts until their values have been checked against the printed
 standard. Limits from a draft table work like any other but carry the **Draft** marker in the
-table, in the properties pane and on the box select card. A custom table you import can be a draft too.
+table, in the properties pane and on the box select card. A company table you import can be a draft too.
 The Drawing tab and **File** > **Info** show the marker next to a table that is a draft. Check limits from a draft table
 against your own standard before you rely on them. A table stops being a draft only when its
 file is marked as verified by the person who checked each value; Dimo never changes that itself.
@@ -153,7 +153,7 @@ file is marked as verified by the person who checked each value; Dimo never chan
 
 Reference dimensions (in parentheses or with `REF`) and basic dimensions (in a frame) get no
 limits and are not inspected: their **Inspect** box starts cleared. You can tick it in the table
-or in the properties pane if you want to measure them anyway; re-interpreting keeps your choice.
+or in the properties pane if you want to measure them anyway; **Update limits** keeps your choice.
 
 ## History of a characteristic
 
@@ -162,7 +162,7 @@ first, from the change log of the project. Each entry shows when, who, and the s
 change:
 
 - **By hand**: you changed this characteristic.
-- **By rule**: a rule changed it, for example renumbering after a delete or a re-interpretation.
+- **By rule**: a rule changed it, for example renumbering after a delete or **Update limits**.
 - **Recognition**: it came from an accepted box select card.
 
 The entry says which values changed, or that the characteristic was created or removed. Undo and

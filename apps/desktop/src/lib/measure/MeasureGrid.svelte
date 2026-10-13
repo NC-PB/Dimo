@@ -839,7 +839,10 @@
               aria-colindex={i + 1}
               style:width="{spec.size}px"
             >
-              <span class="truncate">{spec.label()}</span>
+              <!-- Long labels (German) wrap to two lines; the title shows the whole label. -->
+              <span class="line-clamp-2 leading-tight hyphens-auto" title={spec.label()}
+                >{spec.label()}</span
+              >
             </div>
           {/each}
         </div>

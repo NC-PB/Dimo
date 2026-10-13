@@ -59,7 +59,7 @@ Zonenrahmens gehört zur nächsten Zone.
 ## Vorschau und Anwenden
 
 1. Wähle die Strategie im Feld **Reihenfolge** auf dem Reiter **Start**. Ihr Tooltip erklärt sie.
-2. Wähle **Neue Nummern zeigen**. Jeder Ballon erhält seine neue
+2. Wähle **Nummern-Vorschau**. Jeder Ballon erhält seine neue
    Nummer in einem gestrichelten Kasten daneben, und die Tabelle zeigt sie als Pfeil und neue
    Nummer in der Spalte **Nr**. Nummern, die sich ändern, sind fett und farbig, Nummern, die
    bleiben, kursiv und grau. Der Eigenschaftenbereich zählt, wie viele Nummern sich ändern.

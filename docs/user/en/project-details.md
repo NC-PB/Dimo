@@ -1,8 +1,8 @@
 # Project and report details
 
-**File > Info** holds the data that identifies the part, the drawing and the inspection report;
-the side panel of the Measure view shows it too. With nothing selected, the properties pane of the
-drawing shows a summary with the way to File > Info. The data is stored in the project and printed in the header and the signature block
+**File > Info** is the one place where you change the data that identifies the part, the
+drawing and the inspection report. With nothing selected, the properties pane shows a summary
+with **Edit in File > Info**, and the Report tab links there when a header field is empty. The data is stored in the project and printed in the header and the signature block
 of the reports.
 
 Every field is saved when you leave it or press Enter. Each change is one step of undo
@@ -42,8 +42,8 @@ prints it on every report.
 
 "Inspected by" and "Approved by" print in the signature block of the inspection report. The date
 of "Inspected by" is the report date; "Approved by" gets no date, you write it by hand. This is
-separate from the inspector of each sample, which you set in the sample panel
-([Entering results](measuring.md)). If the report date is empty when you export a check sheet or an inspection report,
+separate from the inspector of each part, which you set in the properties pane of the Measure
+tab ([Entering results](measuring.md)). If the report date is empty when you export a check sheet or an inspection report,
 Dimo enters today's date first, as one change you can undo ([Exports](exports.md)).
 
 Empty fields stay empty on the report. A new project starts with the company name from **Options** and with the user name of **Options** (or of your system) as inspector. Dimo does not change an existing project when you open it.

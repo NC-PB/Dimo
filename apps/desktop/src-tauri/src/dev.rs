@@ -314,9 +314,34 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
                     message: format!("{path}: {e}"),
                 })?,
             ),
-            _ => None,
+            Some(_) => {
+                // A reload (language switch, or a file change seen by the dev server) ends the
+                // running script; say so, so the smoke test does not wait for it.
+                dev_log(
+                    "page loaded again, the UI script is played once and does not restart".into(),
+                );
+                None
+            }
+            None => None,
         },
     })
+}
+
+/// Debug builds with `DIMO_DEV_UI_SCRIPT`: the webview keeps running its timers while the
+/// window is hidden, minimized or covered. The web engine otherwise throttles or suspends a webview that
+/// is not on screen, and every step of the UI script waits on a timer, so a smoke run whose
+/// window was covered stalled before the script started (2026-10-13). Release builds and debug
+/// runs without a UI script keep the default policy. macOS 14 and later; other platforms ignore
+/// the setting.
+#[cfg(debug_assertions)]
+pub fn keep_scripted_window_running(context: &mut tauri::Context<tauri::Wry>) {
+    if var("DIMO_DEV_UI_SCRIPT").is_none() {
+        return;
+    }
+    for window in &mut context.config_mut().app.windows {
+        window.background_throttling =
+            Some(tauri::utils::config::BackgroundThrottlingPolicy::Disabled);
+    }
 }
 
 /// True if `path` is a project (file with the project extension or a folder), not a drawing.

@@ -8,28 +8,28 @@ Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalsta
 - **Titelleiste**: Speichern, Rückgängig und Wiederholen, der Name des Projekts mit "gespeichert"
   oder "nicht gespeichert", der Schalter hell oder dunkel und **Hilfe** (die Liste der
   Tastenkürzel).
-- **Register**: **Datei** (Projektinfo, neu, öffnen mit den zuletzt geöffneten Projekten, speichern, speichern unter, schließen, Optionen, über Dimo), **Start**
+- **Reiter**: **Datei** (Projektinfo, neu, öffnen mit den zuletzt geöffneten Projekten, speichern, speichern unter, schließen, Optionen, über Dimo), **Start**
   (Ballons setzen und bearbeiten, Nummerierung, Allgemeintoleranz), **Zeichnung** (Drehung,
-  Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Prüfen** (in dieser
+  Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Überprüfen** (in dieser
   Version ein Platzhalter), **Messen** ([Ergebnisse eingeben](measuring.md)), **Bericht**
   ([Exporte](exports.md)) und **Ansicht** (Zoom, Tabelle und Eigenschaftenbereich zeigen oder verbergen,
-  Darstellung). Jedes Register zeigt seine Befehle in einer Zeile unter den Registern. Halte den
+  Darstellung). Jeder Reiter zeigt seine Befehle in einer Zeile unter den Reitern. Halte den
   Zeiger über einen Befehl, um zu sehen, was er tut, sein Tastenkürzel und, wenn er grau ist,
   warum er gerade nicht geht. In einem schmalen Fenster rutschen die letzten Gruppen unter
   **Mehr**.
 - **Statusleiste** unten: die Blätter, das aktive Werkzeug, die Anzahl Merkmale und ausgewählte
-  (im Register Messen die Summen aller Teile), die Allgemeintoleranz, Einheit und Maßstab, und
+  (im Reiter Messen die Summen aller Teile), die Allgemeintoleranz, Einheit und Maßstab, und
   der Zoom.
 
-Start und Zeichnung zeigen beide die Zeichnung (⌘1). ⌘2 zeigt Prüfen, ⌘3 Messen, ⌘E Bericht.
+Start und Zeichnung zeigen beide die Zeichnung (⌘1). ⌘2 zeigt Überprüfen, ⌘3 Messen, ⌘E Bericht.
 
 ## Zoomen
 
 | Aktion | So geht es |
 |---|---|
 | Um den Zeiger vergrößern oder verkleinern | Mausrad, oder Spreizen und Zusammenziehen auf dem Trackpad |
-| Um die Mitte vergrößern oder verkleinern | **+** und **-**, die Schaltflächen im Register Ansicht oder der Zoom in der Statusleiste |
-| Das ganze Blatt ins Fenster einpassen | **0**, oder **Blatt einpassen** im Register Ansicht |
+| Um die Mitte vergrößern oder verkleinern | **+** und **-**, die Schaltflächen im Reiter Ansicht oder der Zoom in der Statusleiste |
+| Das ganze Blatt ins Fenster einpassen | **0**, oder **Blatt einpassen** im Reiter Ansicht |
 
 Die Statusleiste zeigt den Zoom in Prozent der gedruckten Größe: 100 % heißt, die Zeichnung ist
 auf dem Bildschirm so groß wie auf Papier. Ballons behalten ihre gedruckte Größe, sie wachsen und
@@ -71,15 +71,15 @@ klappt ihn zu oder auf; Dimo merkt sich, welche Abschnitte du zugeklappt hast.
   Merkmale und Blätter) mit **Unter Datei > Info bearbeiten**, wo du diese Werte änderst
   ([Projekt- und Berichtsdaten](project-details.md)), und ein Hinweis zum Start.
 - **Ein Merkmal**: **Anforderung** (Text, Art, Anzahl), **Toleranz** (Regel, Grenzmaße, der kürzere
-  Schenkel eines Winkels, die Erklärung und **Grenzen aktualisieren**), **Prüfung** (prüfen,
+  Schenkel eines Winkels, die Erklärung und **Grenzmaße aktualisieren**), **Prüfung** (prüfen,
   Ergebnisart, Prüfmethode, Prüfmittel) und **Verlauf** ([Toleranzen](tolerances.md)). Jede
   Änderung ist ein Rückgängig-Schritt, wie eine Änderung in der Tabelle.
-- **Mehrere Merkmale**: die Liste, **Grenzen aktualisieren** für alle und **Ja** oder **Nein**, um
+- **Mehrere Merkmale**: die Liste, **Grenzmaße aktualisieren** für alle und **Ja** oder **Nein**, um
   alle zu prüfen oder nicht.
 - **Zonenraster** und **Ansicht zeichnen** auf dem Reiter Zeichnung öffnen einen Abschnitt, in dem
   du das Raster oder die Liste der Ansichten bearbeitest, bis du ihn mit seinem × schließt
   ([Nummerierungsstrategien, Zonen und Ansichten](numbering.md)).
-- Solange **Neue Nummern zeigen** eingeschaltet ist, zählt ein Abschnitt die Nummern, die sich
+- Solange **Nummern-Vorschau** eingeschaltet ist, zählt ein Abschnitt die Nummern, die sich
   ändern.
 
 Drehung, Einheit und Maßstab eines Blatts stehen auf dem Reiter Zeichnung ([Blätter](sheets.md)),
@@ -94,4 +94,4 @@ Tastatur fokussierst du die Linie und drückst ↑ oder ↓. Dimo merkt sich die
 
 Dimo zeigt über der Zeichnung eine Meldung, zum Beispiel dass die Datei nicht geöffnet werden
 konnte. Als Zeichnung lassen sich in dieser Version nur PDF-Dateien verwenden. Sagt die Meldung,
-dass die PDF-Engine fehlt, ist die Installation unvollständig; installiere Dimo erneut.
+dass die PDF-Komponente fehlt, ist die Installation unvollständig; installiere Dimo erneut.

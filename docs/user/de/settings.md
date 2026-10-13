@@ -1,8 +1,8 @@
 # Datei-Seite, Optionen und Über Dimo
 
-Das Register **Datei** öffnet eine ganze Seite. Links stehen die Befehle für das Projekt und die
-Bereiche der Seite, rechts der Bereich, den du gewählt hast. **Zurück** (oder ein anderes
-Register) bringt dich dahin, wo du warst.
+Der Reiter **Datei** öffnet eine ganze Seite. Links stehen die Befehle für das Projekt und die
+Bereiche der Seite, rechts der Bereich, den du gewählt hast. **Zurück** (oder ein anderer
+Reiter) bringt dich dahin, wo du warst.
 
 | Eintrag | Was er tut |
 |---|---|
@@ -10,15 +10,15 @@ Register) bringt dich dahin, wo du warst.
 | **Neues Projekt** | Startet ein Projekt aus einer PDF-Zeichnung (⌘N) |
 | **Projekt öffnen** | Zeigt die zuletzt geöffneten Projekte und **Projekt öffnen** für jede andere Datei (⌘O) |
 | **Speichern**, **Speichern unter…** | Speichern das Projekt ([Projekte](projects.md)) |
-| **Exportieren** | Öffnet das Register **Bericht** ([Exporte](exports.md)) |
-| **Drucken** | Nicht in dieser Version: Speichere im Register Bericht eine Kopie und drucke sie aus deinem PDF-Programm |
+| **Exportieren** | Öffnet den Reiter **Bericht** ([Exporte](exports.md)) |
+| **Drucken** | Öffnet den im Reiter Bericht gewählten Bericht in deinem PDF-Programm; dort druckst du ihn ([Exporte](exports.md)) |
 | **Projekt schließen** | Schließt das Projekt, Dimo bleibt offen. Bei ungespeicherten Änderungen fragt Dimo zuerst |
 | **Über Dimo** | Version und Lizenzen, siehe unten |
 | **Optionen** | Deine persönlichen Einstellungen (⌘,), siehe unten |
 
 Jede Einstellung hat einen Ort. Einstellungen eines Projekts werden in der Projektdatei
-gespeichert und reisen mit ihr: die Allgemeintoleranz (Register Start und Zeichnung), die übrigen
-Toleranzregeln und der Ballonstil (Register Zeichnung) sowie die Teil-, Zeichnungs- und
+gespeichert und reisen mit ihr: die Allgemeintoleranz (Reiter Start und Zeichnung), die übrigen
+Toleranzregeln und der Ballonstil (Reiter Zeichnung) sowie die Teil-, Zeichnungs- und
 Berichtsangaben (Datei > Info). Deine persönlichen Einstellungen stehen unter
 **Optionen** und werden nie im Projekt gespeichert.
 
@@ -28,9 +28,9 @@ Berichtsangaben (Datei > Info). Deine persönlichen Einstellungen stehen unter
 Rückgängig-Schritt.
 
 - **Teil**: Teilenummer, Teilebezeichnung, Kunde und Auftragsnummer.
-- **Toleranzen**: das Feld **Allgemeintoleranz** (dasselbe wie in den Registern Start und
-  Zeichnung) sowie die Regeln nach Dezimalstellen und die Firmentabellen des Projekts. **Im
-  Register Zeichnung ändern** bringt dich dorthin, wo du die Regeln änderst.
+- **Toleranzen**: das Feld **Allgemeintoleranz** (dasselbe wie in den Reitern Start und
+  Zeichnung) sowie die Dezimalregeln und die Firmentabellen des Projekts. **Im
+  Reiter Zeichnung ändern** bringt dich dorthin, wo du die Regeln änderst.
 - **Zeichnung**: die Zeichnungsdatei mit der Anzahl Blätter, der Änderungsstand und der
   SHA-256-Fingerabdruck der Datei mit **Kopieren**.
 - **Fortschritt**: die Anzahl Merkmale und zu prüfender Merkmale, wie viele Teile für jedes
@@ -78,16 +78,16 @@ Einstellungsdatei im Konfigurationsordner von Dimo deines Benutzerkontos.
 
 Die Sprache der Berichte und Spaltenköpfe, das Dateiformat von Prüfblatt und Prüfbericht, die
 Anzahl leerer Ergebnisspalten, wie das PDF die Ballons trägt und ob Dimo eine Datei nach dem
-Export öffnet. Dimo merkt sich, was du zuletzt im Register Bericht gewählt hast; du kannst es
+Export öffnet. Dimo merkt sich, was du zuletzt im Reiter Bericht gewählt hast; du kannst es
 hier oder dort ändern ([Exporte](exports.md)).
 
-## Projekteinstellungen im Register Zeichnung
+## Projekteinstellungen im Reiter Zeichnung
 
-- **Allgemeintoleranz**: ein Feld in den Registern Start und Zeichnung und unter Datei > Info
+- **Allgemeintoleranz**: ein Feld in den Reitern Start und Zeichnung und unter Datei > Info
   ([Toleranzen](tolerances.md)).
-- **Dezimalregeln…**: ein kleines Fenster mit den Regeln nach Dezimalstellen und der Rundung nach
+- **Dezimalregeln…**: ein kleines Fenster mit den Dezimalregeln und der Rundung nach
   Einheitenumrechnung.
-- **Firmentabellen**: ein kleines Fenster mit den eigenen Tabellen des Projekts, **Tabelle
+- **Firmentabellen**: ein kleines Fenster mit den Firmentabellen des Projekts, **Tabelle
   importieren…** und der Zeichnungsregel.
 - **Ballonstil des Projekts**: ein kleines Fenster mit Form, Größe, Linienbreite, Randfarbe und
   Bezugslinie aller Ballons des Projekts ohne eigenen Stil. Einzelnen Ballons gibst du einen

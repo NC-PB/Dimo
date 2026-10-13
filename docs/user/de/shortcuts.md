@@ -6,7 +6,7 @@ Aktion mehrere Tasten, funktioniert jede davon.
 
 Einzelne Tasten wie **B**, **V**, **R** oder **0** wirken nur dann auf die Zeichnung, wenn die
 Zeichnung, nicht ein Textfeld oder die Merkmalstabelle, den Tastaturfokus hat, und nur solange die
-Ansicht Zeichnung gezeigt wird. Kombinationen mit ⌘ (Ctrl) wirken überall.
+Zeichnung gezeigt wird (Reiter Start oder Zeichnung). Kombinationen mit ⌘ (Ctrl) wirken überall.
 
 Die Tabellen unten werden von einem Test gegen die Kürzeldefinitionen der App geprüft und bleiben
 darum vollständig.
@@ -25,8 +25,8 @@ Diese wirken in jeder Ansicht.
 | Rückgängig | `⌘Z` | `Ctrl+Z` |
 | Wiederholen | `⇧⌘Z` oder `⌘Y` | `Ctrl+Shift+Z` oder `Ctrl+Y` |
 | Zeichnung anzeigen | `⌘1` | `Ctrl+1` |
-| Prüfen anzeigen | `⌘2` | `Ctrl+2` |
-| Messwerte anzeigen | `⌘3` | `Ctrl+3` |
+| Überprüfen anzeigen | `⌘2` | `Ctrl+2` |
+| Messwerttabelle anzeigen | `⌘3` | `Ctrl+3` |
 | Bericht anzeigen | `⌘E` | `Ctrl+E` |
 | Optionen anzeigen | `⌘,` | `Ctrl+,` |
 | Tastenkürzel anzeigen | `?` | `?` |
@@ -34,7 +34,7 @@ Diese wirken in jeder Ansicht.
 
 ## Zeichnung
 
-Diese wirken in der Ansicht Zeichnung auf die Zeichnung. Für die Pfeiltasten und die Eingabetaste
+Diese wirken auf die Zeichnung, solange sie gezeigt wird. Für die Pfeiltasten und die Eingabetaste
 muss die Zeichnung den Fokus haben.
 
 <!-- shortcuts:drawing -->
@@ -43,8 +43,8 @@ muss die Zeichnung den Fokus haben.
 | Vergrößern | `+` oder `=` | `+` oder `=` |
 | Verkleinern | `-` oder `_` | `-` oder `_` |
 | Blatt einpassen | `0` | `0` |
-| Nach rechts drehen | `R` | `R` |
-| Nach links drehen | `⇧R` | `Shift+R` |
+| Rechts drehen | `R` | `R` |
+| Links drehen | `⇧R` | `Shift+R` |
 | Nach links verschieben | `←` | `←` |
 | Nach rechts verschieben | `→` | `→` |
 | Nach oben verschieben | `↑` | `↑` |
@@ -92,7 +92,7 @@ Zeichnung.
 
 ## Messwerttabelle
 
-Gilt, solange die Messwerttabelle der Ansicht Messen den Fokus hat. Ein getipptes Zeichen beginnt die Eingabe in der aktiven Zelle. `O`, `+`, `N` und `X` setzen bei einem Gut/Schlecht-Merkmal i.O. oder n.i.O. und gehen zum nächsten Merkmal; in einer Messwertzelle werden sie wie jedes andere Zeichen getippt.
+Gilt, solange die Messwerttabelle im Reiter Messen den Fokus hat. Ein getipptes Zeichen beginnt die Eingabe in der aktiven Zelle. `O`, `+`, `N` und `X` setzen bei der Ergebnisart i.O. / n.i.O. das Ergebnis i.O. oder n.i.O. und gehen zum nächsten Merkmal; in einer Messwertzelle werden sie wie jedes andere Zeichen getippt.
 
 <!-- shortcuts:measure -->
 | Aktion | macOS | Windows und Linux |
@@ -112,10 +112,10 @@ Gilt, solange die Messwerttabelle der Ansicht Messen den Fokus hat. Ein getippte
 | Messwerte: Wert bearbeiten | `F2` | `F2` |
 | Messwerte: Ergebnis löschen | `Del` oder `⌫` | `Del` oder `⌫` |
 | Messwerte: Eingabe abbrechen | `Esc` | `Esc` |
-| Messwerte: i.O. (Gut/Schlecht-Merkmal) | `O` oder `+` | `O` oder `+` |
-| Messwerte: n.i.O. (Gut/Schlecht-Merkmal) | `N` oder `X` | `N` oder `X` |
+| Messwerte: i.O. (Ergebnisart i.O. / n.i.O.) | `O` oder `+` | `O` oder `+` |
+| Messwerte: n.i.O. (Ergebnisart i.O. / n.i.O.) | `N` oder `X` | `N` oder `X` |
 | Messwerte: zwischen i.O. und n.i.O. wechseln | `Space` | `Space` |
-| Messwerte: Wertebereich einfügen | `⌘V` | `Ctrl+V` |
+| Messwerte: Werteblock einfügen | `⌘V` | `Ctrl+V` |
 <!-- /shortcuts -->
 
 ## Karte der Rahmenauswahl und getippte Werte

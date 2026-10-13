@@ -13,9 +13,9 @@ Dimo prüft die Regeln in dieser Reihenfolge und nimmt die erste, die Grenzmaße
    oder `MAX`. Eine eingetragene Toleranz gilt immer.
 2. **Passungstabelle**: eine Passung wie `H7` ohne eingetragene Abmaße, aufgelöst mit der Tabelle
    nach ISO 286.
-3. **Zeichnungsregel**: eine eigene Tabelle des Projekts, die als Zeichnungsregel gewählt ist.
+3. **Zeichnungsregel**: eine Firmentabelle des Projekts, die als Zeichnungsregel gewählt ist.
 4. **Allgemeintoleranz**: Norm und Toleranzklasse des Projekts, nach Nennmaßbereich.
-5. **Dezimalstellenregel**: eine Toleranz je Anzahl der Dezimalstellen, mit denen das Maß
+5. **Dezimalregel**: eine Toleranz je Anzahl der Dezimalstellen, mit denen das Maß
    geschrieben ist.
 
 Greift keine Regel, erhält das Merkmal die Regel **Keine Toleranz festgelegt** und keine
@@ -41,18 +41,18 @@ Schenkel zu entfernen.
 
 ## Toleranzeinstellungen des Projekts
 
-Die Regeln dieses Projekts stehen im Register **Zeichnung**: das Feld **Allgemeintoleranz** (auch
-im Register **Start**), **Dezimalregeln…** (Regeln nach Dezimalstellen und Rundung nach
-Einheitenumrechnung) und **Firmentabellen** (eigene Tabellen und Zeichnungsregel) öffnen je ein
+Die Regeln dieses Projekts stehen im Reiter **Zeichnung**: das Feld **Allgemeintoleranz** (auch
+im Reiter **Start**), **Dezimalregeln…** (Dezimalregeln und Rundung nach
+Einheitenumrechnung) und **Firmentabellen** (deine eigenen Tabellen und die Zeichnungsregel) öffnen je ein
 kleines Fenster. **Datei** > **Info** fasst sie zusammen. Sie werden in der Projektdatei gespeichert, und
 jede Änderung ist ein Rückgängig-Schritt.
 
 - **Allgemeintoleranz**: Tabelle und Klasse für Maße ohne Toleranz, zum Beispiel ISO 2768-1
-  Klasse m. Die Auswahl listet die Allgemeintoleranztabellen und die eigenen Tabellen des
+  Klasse m. Die Auswahl listet die Allgemeintoleranztabellen und die Firmentabellen des
   Projekts; Passungstabellen stehen hier nicht zur Wahl.
-- **Zeichnungsregel (eigene Tabelle)**: eine eigene Tabelle des Projekts, die vor der
+- **Zeichnungsregel (Firmentabelle)**: eine Firmentabelle des Projekts, die vor der
   Allgemeintoleranz gilt.
-- **Regeln nach Dezimalstellen**: eine Toleranz je Anzahl Dezimalstellen, zum Beispiel 2 Stellen
+- **Dezimalregeln**: eine Toleranz je Anzahl Dezimalstellen, zum Beispiel 2 Stellen
   ±0,05. Gib Stellen und Toleranz ein und wähle **Regel hinzufügen**. Jede Anzahl Stellen hat eine
   Regel, und die Toleranz ist plus und minus der eingegebene Wert. Eine Regel gilt für Maße, die
   als Dezimalzahl ohne Toleranz geschrieben sind, nach der Zahl der geschriebenen Dezimalstellen
@@ -63,7 +63,7 @@ jede Änderung ist ein Rückgängig-Schritt.
   Allgemeintoleranz, deren Tabelle in mm ist. Vorgabe sind 3 Stellen für mm und 4 für Zoll. Die
   Grenzmaße werden nach innen gerundet, sind also nie weiter als die Tabelle, und die Erklärung
   sagt, dass umgerechnet wurde. Zulässig sind ganze Zahlen von 0 bis 10.
-- **Eigene Tabellen**: **Tabelle importieren…** liest eine eigene Tabellendatei (TOML, im Format
+- **Firmentabellen**: **Tabelle importieren…** liest eine eigene Tabellendatei (TOML, im Format
   der mitgelieferten Tabellen). Dimo prüft die ganze Datei, bevor sie verwendet wird. Wird sie
   abgelehnt, steht der Grund da, mit der Zeile der Datei, wo Dimo sie bestimmen kann. Das
   Dateiformat steht in `data/tolerances/README.md` der Dimo-Quellen, neben den mitgelieferten
@@ -87,11 +87,11 @@ Merkmal ändern würde; andere Einstellungen zeigen ihn nie.
 
 - **n aktualisieren** liest genau diese Merkmale mit der neuen Allgemeintoleranz neu, als ein
   Rückgängig-Schritt. **Rückgängig** stellt ihre bisherigen Grenzmaße wieder her.
-- **Jetzt nicht** schließt den Hinweis und ändert nichts. **Ausgewählte neu auswerten** kannst du
+- **Jetzt nicht** schließt den Hinweis und ändert nichts. **Grenzmaße aktualisieren** kannst du
   später trotzdem verwenden.
 
 Das Anpassen berücksichtigt nur Merkmale, deren Regel **Keine Toleranz festgelegt** oder eine
-Allgemeintoleranz ist (aus einer mitgelieferten oder einer eigenen Tabelle), und Merkmale, deren
+Allgemeintoleranz ist (aus einer mitgelieferten oder einer Firmentabelle), und Merkmale, deren
 Text noch nie gelesen wurde und die jetzt die Allgemeintoleranz erhalten. Merkmale mit von Hand
 eingegebenen Grenzmaßen, einer geschriebenen Toleranz, einer Passung, einer Zeichnungsregel oder
 einer Regel nach Dezimalstellen ändern sich nie, ebenso wenig Texte, die kein Maß sind. Ein
@@ -100,10 +100,10 @@ gezählt. Die angepassten Merkmale werden mit allen aktuellen Einstellungen gele
 gesetzte Zeichnungsregel oder Regel nach Dezimalstellen kann also auch für sie gelten. Entfernst du die Allgemeintoleranz, bietet der Hinweis an, die bisherige
 Allgemeintoleranz bei den Merkmalen zu entfernen, die sie noch haben.
 
-## Nach einer Änderung neu auswerten
+## Grenzmaße nach einer Änderung aktualisieren
 
 Um andere neue Einstellungen auf bestehende Merkmale anzuwenden, wähle sie aus (in der Tabelle oder in
-der Zeichnung) und wähle **Grenzen aktualisieren** im Register Start oder im Eigenschaftenbereich. Dimo liest die
+der Zeichnung) und wähle **Grenzmaße aktualisieren** im Reiter Start oder im Eigenschaftenbereich. Dimo liest die
 Anforderung jedes Merkmals mit den aktuellen Einstellungen neu und setzt Nennmaß, Einheit,
 Abmaße, Grenzmaße, Passung und Regel. Das Ganze ist ein Rückgängig-Schritt.
 
@@ -156,7 +156,7 @@ Die mitgelieferten Tabellen sind Entwürfe, bis ihre Werte mit der gedruckten No
 wurden. Grenzmaße aus einer Entwurfstabelle funktionieren wie alle anderen, tragen aber die
 Markierung **Entwurf** in der Tabelle, im Eigenschaftenbereich und auf der Karte der
 Rahmenauswahl.
-Auch eine importierte eigene Tabelle kann ein Entwurf sein. Das Register Zeichnung und
+Auch eine importierte Firmentabelle kann ein Entwurf sein. Der Reiter Zeichnung und
 **Datei** > **Info** zeigen die Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
 Entwurfstabelle mit deiner eigenen Norm, bevor du dich darauf verlässt. Eine Tabelle ist erst
 kein Entwurf mehr, wenn ihre Datei von der Person als geprüft gekennzeichnet ist, die jeden Wert

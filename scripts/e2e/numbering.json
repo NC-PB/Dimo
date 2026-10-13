@@ -16,6 +16,7 @@
   { "click": [218, 165] },
   { "type": "P5" },
   { "key": "Enter" },
+  { "until": "\"P5\"" },
   { "report": "placed" },
 
   { "show": "tab:drawing" },

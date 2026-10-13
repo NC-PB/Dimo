@@ -169,7 +169,7 @@ describe("File > Info (T3.16)", () => {
     expect(progress).toContain("Characteristics 2");
     expect(progress).toContain("To inspect 4");
     expect(progress).toContain("1 of 2");
-    expect(progress).toContain("Not OK (1)");
+    expect(progress).toContain("Fail (1)");
   });
 });
 

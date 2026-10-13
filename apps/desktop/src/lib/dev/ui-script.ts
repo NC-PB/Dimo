@@ -51,6 +51,9 @@
  *   that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons, selection, tool
  *   and limits).
+ * - `until`: waits until the text of a report contains this text, for example `"\"P5\""`
+ *   once the fifth typed value is stored, at most 10 s; then the step fails. Use it instead of
+ *   a fixed `wait` where the next step needs a change that Rust has applied.
  */
 
 import { commands, type ExportFormat } from "$lib/ipc/bindings";
@@ -100,6 +103,7 @@ export type UiStep =
   | { reveal: string }
   | { fill: [string, string] }
   | { wait: number }
+  | { until: string }
   | { mark: string }
   | { report: string };
 
@@ -119,6 +123,8 @@ const SCRIPT_POINTER_ID = 41;
 const FIELD_WAIT_MS = 3000;
 /** Longest wait for Rust to read a dragged box before the next step. */
 const BOX_WAIT_MS = 10000;
+/** Longest wait of an `until` step. */
+const UNTIL_WAIT_MS = 10000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -314,7 +320,20 @@ function report(label: string): string {
   const region = r
     ? ` region ${r.x.toFixed(1)},${r.y.toFixed(1)} ${r.width.toFixed(1)}x${r.height.toFixed(1)}`
     : "";
-  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}]`;
+  // Ribbon fit (T3.20 German length check): groups in the row, whether "More" is shown, and
+  // command labels that wrap to more than two lines.
+  const rowGroups = [...document.querySelectorAll<HTMLElement>("[role=group][data-group]")];
+  const groupsInRow = rowGroups.length;
+  const groupWidths = rowGroups.map((g) => `${g.dataset.group ?? "?"}:${String(g.offsetWidth)}`);
+  const more = document.querySelector("[data-ribbon-more]") !== null;
+  const tall = [...document.querySelectorAll<HTMLElement>("button.cmd > span")]
+    .filter((s) => {
+      const line = parseFloat(getComputedStyle(s).lineHeight);
+      return line > 0 && s.getBoundingClientRect().height > line * 2.5;
+    })
+    .map((s) => s.textContent.trim());
+  const ribbon = `ribbon ${String(groupsInRow)} groups more ${more ? "yes" : "no"} tall [${tall.join("; ")}] width ${String(window.innerWidth)} [${groupWidths.join(" ")}]`;
+  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}], ${ribbon}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -479,6 +498,15 @@ async function run(step: UiStep): Promise<void> {
     await sleep(STEP_PAUSE_MS);
   } else if ("wait" in step) {
     await sleep(step.wait);
+  } else if ("until" in step) {
+    // Polls the store state that `report` describes, so the step ends as soon as the change
+    // arrived, however loaded the machine is (smoke step 4 read too early, 2026-10-13).
+    for (let waited = 0; !report("until").includes(step.until); waited += 50) {
+      if (waited >= UNTIL_WAIT_MS) {
+        throw new Error(`"${step.until}" not reported within ${String(UNTIL_WAIT_MS)} ms`);
+      }
+      await sleep(50);
+    }
   } else if ("mark" in step) {
     await log(`mark ${step.mark}`);
   } else {

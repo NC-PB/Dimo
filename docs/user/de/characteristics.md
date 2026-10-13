@@ -12,7 +12,7 @@ nutze ↑ und ↓).
 | Art | Längenmaß, Durchmesser, Radius, Kugelradius, Winkel, Fase, Gewinde, Flachsenkung, Kegelsenkung, Tiefe, Oberflächenbeschaffenheit, geometrische Toleranz, Hinweis, Fahnenhinweis, Werkstoff oder Verfahren, Sonstiges. Ein von dir gesetzter Ballon beginnt mit Sonstiges, bis Dimo seinen Text liest |
 | Anforderung | Der Text wie auf der Zeichnung, per Rahmenauswahl gelesen oder in den Ballon getippt |
 | Nennmaß | Nennwert |
-| Oberes Abmaß, Unteres Abmaß | Abmaße mit Vorzeichen |
+| Ob. Abmaß, Unt. Abmaß | Abmaße mit Vorzeichen |
 | Obere Grenze, Untere Grenze | Grenzwerte. Dimo berechnet sie aus Nennmaß und Abmaßen; du kannst sie auch eintippen |
 | Einheit | mm, in, ° oder keine. Ein Nennmaß ohne Einheit erhält die Einheit des Blatts (Grad bei Winkeln) |
 | Passung | Passungsangabe wie `H7` |
@@ -61,13 +61,13 @@ Aus der Zeichnung gelesene Grenzwerte kommen mit ihrer Regel und einer Erklärun
 Eigenschaftenbereich rechts ([Eine Zeichnung ansehen](drawing-view.md)). Grenzwerte, die du
 tippst, erhalten die Regel "Von Hand eingegeben" und werden beim Neuauswerten nie geändert. Das
 Bearbeiten der Zelle **Anforderung** speichert nur den Text; wähle das Merkmal aus und nimm
-**Grenzen aktualisieren** (Register Start oder Eigenschaftenbereich), um ihn erneut zu lesen.
+**Grenzmaße aktualisieren** (Reiter Start oder Eigenschaftenbereich), um ihn erneut zu lesen.
 Text, Art, Anzahl, Prüfmethode und Prüfmittel eines ausgewählten Merkmals änderst du auch im
 Eigenschaftenbereich. Einzelheiten: [Toleranzen](tolerances.md).
 
 ## Löschen
 
-Die Tabelle hat keine Löschtaste. Wähle die Zeilen aus und verwende **Löschen** im Register
+Die Tabelle hat keine Löschtaste. Wähle die Zeilen aus und verwende **Löschen** im Reiter
 Start, oder wähle die Ballons auf der Zeichnung aus und drücke
 **Entfernen**. Die Ballons werden mit ihren Merkmalen gelöscht, und ⌘Z holt alles zurück. Eingegebene Ergebnisse
 eines Merkmals werden im selben Schritt mitgelöscht, ohne Rückfrage, und ⌘Z bringt sie zurück

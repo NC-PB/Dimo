@@ -46,7 +46,7 @@ report:
 - **Balloons in the PDF**: as part of the page (default), or as annotations that PDF viewers can
   show, hide or delete.
 - **Blank result columns** (Report tab, check sheet only): how many empty result columns a check
-  sheet gets when the project has no samples, 1 to 10 (default 3).
+  sheet gets when the project has no parts, 1 to 10 (default 3).
 - **Open the file after exporting**: when an export has finished and the file is written, Dimo
   opens it with the program your computer uses for that file type, for example your PDF viewer
   for a check sheet you want to print. Off by default. It applies to every export.
@@ -77,11 +77,11 @@ number, date and page. The values come from [Project and report details](project
 A header field that is empty prints neither its label nor a value.
 
 - **Check sheet**: empty result columns to print and fill in by hand, and a line for the
-  inspector. With samples in the project there is one column per sample with its serial; without
-  samples the number of blank result columns set in the options, with a note to write the serial
+  inspector. With parts in the project there is one column per part with its serial number;
+  without parts the number of blank result columns set in the options, with a note to write the serial
   of each part in the column head. The check sheet shows no verdicts.
-- **Inspection report**: a summary (overall verdict, number of characteristics and samples, and
-  counts of pass, fail, not evaluated and missing), a sample block with one line per sample (serial,
+- **Inspection report**: a summary (overall verdict, number of characteristics and parts, and
+  counts of pass, fail, not evaluated and missing), a parts block with one line per part (serial number,
   date, inspector, gauges, comment, its own counts and verdict), the table of results with the
   mark of every verdict and the verdict of every row, a legend of the marks, remarks, and the
   signature block. How verdicts are found is explained in [Entering results](measuring.md).
@@ -90,21 +90,21 @@ The signature block has two lines, **Inspected by** and **Approved by**, each wi
 an empty field for a handwritten signature. The names come from the report fields. The date of
 "Inspected by" is the report date; the date of "Approved by" stays empty to be written by hand.
 There are no digital signatures. If the overall verdict is open, the report says that not every
-result is entered and evaluated. The failing cells and the failing samples have a bold border.
+result is entered and evaluated. The failing cells and the failing parts have a bold border.
 
 Choose **PDF** or **Excel** under **Format** on the Report tab, once for each report. Both
 contain the same values.
 
 - **PDF**: A4 landscape, header on every page, table header repeated on every page. With more than
-  six samples the table is printed in blocks of six sample columns, each block on a new page, with
-  the characteristic columns repeated and a heading such as "Samples 7 to 12 of 12".
+  six parts the table is printed in blocks of six part columns, each block on a new page, with
+  the characteristic columns repeated and a heading such as "Parts 7 to 12 of 12".
 - **Excel**: one sheet named after the report. Values are number cells with the digits you typed;
   the mark (✓ ✗ ○) is part of the cell format, so the cell stays a number. Verdicts and OK / not OK
   results are text with the mark. Cells have a colored fill as well (green, red, yellow, grey for
   open). Columns A and B are frozen. The sheet is set up for A4 landscape with the header rows
-  repeated on every printed page; with more than six samples it prints at 60 percent with a page
-  break after every six sample columns, and the characteristic columns repeat. The inspection
-  report carries the counts of pass, fail, not evaluated and missing for every sample, as the PDF.
+  repeated on every printed page; with more than six parts it prints at 60 percent with a page
+  break after every six part columns, and the characteristic columns repeat. The inspection
+  report carries the counts of pass, fail, not evaluated and missing for every part, as the PDF.
 
 Words on the reports follow the report language of the export (English or German), not the
 language of the app. In German the verdicts read **i.O.** and **n.i.O.**, in English **Pass** and

@@ -28,9 +28,8 @@ Condition 1 is about the work, not about the operating system:
   phone) for limits, deviations or pass/fail, a second tool to number the drawing, a text editor
   for the report.
 - Allowed: the system print dialog and the PDF viewer of the operating system **only to print**
-  the check sheet. Dimo has no print command in this version, so the exported check sheet PDF is
-  opened in the viewer and printed. Write down how long that took (see the laps) and note it in
-  the friction table.
+  the check sheet. **Print** on the Report tab opens the check sheet PDF in that viewer, where you
+  print it. Write down how long that took (see the laps) and note it in the friction table.
 - Allowed: the measuring instruments, the paper check sheet and a pen, the Tabellenbuch for
   reading the drawing before the run. Reading the drawing is not timed (see Preparation).
 - Allowed outside the clock: everything you use to **check** the result afterwards (condition 3
@@ -63,9 +62,9 @@ count condition 1 as not met.
    (Windows: `vendor\pdfium\win-x64\bin\pdfium.dll`.) The agent dry run built it this way on an
    M2 MacBook Air in about 10 minutes and the app started. If it does not work, use `pnpm dev` and
    write "debug build" in the record; a debug build is slower, which works against Dimo.
-4. Settings (before the clock, they are set once per installation): your company name under
-   **Settings > Reports**, your user name, the app language. Leave the report language for the
-   Export view.
+4. Options (before the clock, they are set once per installation): in **File** > **Options**
+   (⌘,) your company name, your user name and the app language. Leave the report language for the
+   Report tab.
 5. Have the three parts, the measuring instruments, a printer with paper and a stopwatch with lap
    times **and pause** ready (a phone stopwatch pauses with Stop and continues with Start; if
    yours cannot pause, write down the clock time at every pause and resume instead).
@@ -81,15 +80,16 @@ export is written (condition 1). Take a lap at the end of each of the four laps 
 ### Lap 1: ballooning
 
 1. Create the project from the drawing PDF.
-2. Set the general tolerance of the title block: **Settings** (⌘,), section **Tolerances of the
-   project**.
+2. Answer **Set up this drawing** on the right: the general tolerance of the title block, unit
+   and scale, part number and customer, then **Start ballooning**. (Later: **General tolerance**
+   on the Home or Drawing tab.)
 3. Balloon every characteristic you marked. Use box select (B and drag around the callout, Enter
    accepts the proposal) where the drawing has text, or click and type the requirement. Enter the
-   shorter leg for angles in the proposal card or in the detail panel. Clear **Inspect** for
+   shorter leg for angles in the proposal card or in the properties pane. Clear **Inspect** for
    reference dimensions if Dimo did not.
 4. Check the table: every limit is filled where the drawing gives one; correct what is wrong in
    Dimo, not on paper.
-5. Fill **Project and report** in the side panel: part number, part name, customer, order
+5. Fill **File** > **Info**: part number, part name, customer, order
    reference if you have one, **Revision** (German UI: **Änderungsstand**) as printed in the title
    block, report number, inspected by and approved by. Leave **Report date** empty: the first report
    export enters today's date and every later export prints it.
@@ -99,11 +99,12 @@ export is written (condition 1). Take a lap at the end of each of the four laps 
 
 ### Lap 2: check sheet printed
 
-1. Open the **Measure** view (⌘3), type `3` under **Number** and choose **Add samples** (German
-   UI: parts, **Teile**). Change the serials if your parts carry their own.
-2. Open the **Export** view (⌘E), choose the report language, **Check sheet**, format **PDF**,
-   export into the run folder.
-3. Open the exported PDF in the system PDF viewer and print it.
+1. Open the **Measure** tab (⌘3), type `3` under **Number** and choose **Add parts** (German
+   UI: **Anzahl**, **Teile hinzufügen**). Change the serial numbers in the properties pane if your
+   parts carry their own.
+2. Open the **Report** tab (⌘E), choose **Check sheet**, format **PDF** and the report language,
+   and **Save copy** into the run folder.
+3. Choose **Print**: the check sheet opens in the system PDF viewer; print it from there.
 
 **Lap** when the printed sheet is in your hand. **Pause the clock.**
 
@@ -118,10 +119,10 @@ that time.
 
 ### Lap 3: result entry
 
-1. Open the **Measure** view (⌘3).
+1. Open the **Measure** tab (⌘3).
 2. For each part: click the first cell of its column, type each value and press **Enter**; for an
    OK / not OK characteristic press **O** (OK) or **N** (not OK). Set the date of the part in the
-   sample panel if you want it on the report.
+   properties pane if you want it on the report.
 3. Compare the marks in the grid with the check sheet: a ✗ on the screen that is not a failure on
    the part is a typing error; correct it with **F2**.
 4. Save (⌘S).
@@ -130,12 +131,12 @@ that time.
 
 ### Lap 4: report exported
 
-1. In the **Export** view choose **Inspection report**, format **PDF**, and export into the run
-   folder. Then format **Excel** and export again.
-2. If the report goes to a customer, tick **Export as issued** (German UI: **Als ausgegeben
-   exportieren**) before both exports and confirm the draft warning with **Export anyway**. The
-   draft warning is expected, because all tolerance tables are still drafts (D-43). Say in the
-   record whether you exported as issued.
+1. On the **Report** tab choose **Inspection report**, format **PDF**, and **Save copy** into the
+   run folder. Then format **Excel** and **Save copy** again.
+2. If the report goes to a customer, use **Issue report** (German UI: **Bericht ausgeben**)
+   instead of **Save copy** for both exports and confirm the draft warning with **Export anyway**.
+   The draft warning is expected, because all tolerance tables are still drafts (D-43). Say in
+   the record whether you issued the report.
 
 **Stop the clock** when the Excel file is written. The total of the four laps is the Dimo working
 time (condition 2).
@@ -146,7 +147,7 @@ Without changing anything in the project:
 
 1. Move the two report files into `first/` (Finder or terminal).
 2. Export the inspection report again as PDF and as Excel into the run folder, with the same
-   options as before (also **Export as issued** if you used it).
+   options as before (**Save copy**, or **Issue report** if you used it).
 3. Compare in the terminal:
 
    ```sh
@@ -180,7 +181,7 @@ Summary and parts:
 
 - [ ] Number of characteristics equals the inspected characteristics you marked; reference
       dimensions are not listed.
-- [ ] Number of samples (parts, **Teile**) is 3, with your serials.
+- [ ] Number of parts (**Teile**) is 3, with your serial numbers.
 - [ ] Counts of pass, fail, not evaluated and missing add up to characteristics times 3, and match
       your own count from the check sheet.
 - [ ] Verdict of each part: fail if any of its results fails, pass if all pass, open otherwise.
@@ -214,7 +215,7 @@ Times in minutes and seconds.
 | Lap | Time | Notes |
 |---|---|---|
 | 1 Ballooning (including project details, saved) | | |
-| 2 Check sheet printed (samples, export, print) | | |
+| 2 Check sheet printed (parts, export, print) | | |
 | 3 Result entry (saved) | | |
 | 4 Report exported (PDF and XLSX) | | |
 | **Dimo working time (sum)** | | |
@@ -274,7 +275,7 @@ If it is not met, the laps show where the time goes. Typical causes and where to
 
 - Lap 1 long: proposals that need correction (`docs/user/en/ballooning.md`, tolerances), angles
   without a shorter leg, project details typed late.
-- Lap 2 long: printing from outside Dimo, sample setup, export options.
+- Lap 2 long: printing, part setup, export options.
 - Lap 3 long: keyboard flow in the grid (`docs/user/en/measuring.md`), typing errors found late,
   result types to change.
 - Lap 4 long: options asked each time, warnings, file naming.
@@ -291,8 +292,8 @@ Put these in `docs/plan/STATUS.md`:
 2. In the Log, one line: `<date>: M3 exit criterion <met or not met>. <m:ss> working time on <n>
    characteristics, 3 parts (<s> per characteristic). Longest lap: <lap>. Errors: <count>.
    Re-export identical: <yes/no>. Friction: <top three>`.
-3. In the decision log, any decision that follows from the result (for example "print command in
-   the Export view").
+3. In the decision log, any decision that follows from the result (for example "a remembered
+   export folder").
 4. In `docs/plan/M3.md`, tick the acceptance criterion "Owner ran the exit criterion and recorded
    the result in STATUS.md". With a "met" verdict M3 is done and release 0.1 can be prepared; with
    "not met" write the follow up tasks first.

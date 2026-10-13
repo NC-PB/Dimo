@@ -12,12 +12,12 @@ Drehe ein Blatt in 90-Grad-Schritten, wenn eine Zeichnung quer gescannt oder exp
 
 | Aktion | Reiter Zeichnung | Taste |
 |---|---|---|
-| Nach rechts drehen (im Uhrzeigersinn) | Nach rechts drehen | R |
-| Nach links drehen (gegen den Uhrzeigersinn) | Nach links drehen | Shift+R |
+| Nach rechts drehen (im Uhrzeigersinn) | Rechts drehen | R |
+| Nach links drehen (gegen den Uhrzeigersinn) | Links drehen | Shift+R |
 
 Die Tasten R und Shift+R wirken, solange weder die Tabelle noch ein Textfeld den Fokus hat.
 
-Die Drehung ändert nur die Anzeige. Ballone und Bereiche bleiben an ihrer Stelle auf der
+Die Drehung ändert nur die Anzeige. Ballons und Bereiche bleiben an ihrer Stelle auf der
 Zeichnung, und Exporte sind nicht betroffen. Der Punkt in der Fenstermitte bleibt beim Drehen in
 der Mitte. Die Drehung wird mit dem Projekt gespeichert.
 

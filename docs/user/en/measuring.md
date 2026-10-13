@@ -1,27 +1,27 @@
 # Entering results
 
 The **Measure** tab (⌘3) is where you enter what you measured on the parts. Rows are the
-characteristics to inspect, one column per part (sample). Dimo compares every value with the
-limits and marks it pass or fail. Samples, results and the verdicts are saved in the project and
+characteristics to inspect, one column per part. Dimo compares every value with the
+limits and marks it pass or fail. Parts, results and the verdicts are saved in the project and
 end up in the [inspection report](exports.md).
 
-## Samples
+## Parts
 
-A sample is one part that you measure. A new project has no samples. Type how many parts you
+A part is one piece that you measure. A new project has no parts. Type how many parts you
 measure in **Number** (1 to 100 at a time) and choose **Add parts** on the Measure tab. A project can hold up to
-500 samples. The serials continue from the highest plain number (`1`, `2`, `3`); the date is empty
+500 parts. The serial numbers continue from the highest plain number (`1`, `2`, `3`); the date is empty
 and the inspector is your user name from **Options**.
 
-Click the header or a cell of a sample column to make it the active sample. The pane on the
-right shows its serial, date, inspector, gauges and comment; change them there. Below the fields
-it counts the results of that part: pass, not OK, not evaluated and missing. Project and report
-details are in **File > Info**. A serial is
+Click the header or a cell of a part's column to make it the active part. The pane on the
+right shows its serial number, date, inspector, gauges and comment; change them there. Below the fields
+it counts the results of that part: pass, fail, not evaluated and missing. Project and report
+details are in **File > Info**. A serial number is
 trimmed, must not be empty and must be unique in the project (upper and lower case count as
-different). Serials may be any text, for example `A-17`. **Move left** and **Move right** change
+different). Serial numbers may be any text, for example `A-17`. **Move left** and **Move right** change
 the column order, which is also the order in the reports. **Delete part** deletes the column;
-when the sample has results, Dimo asks first, because they are deleted with it. Every change is
+when the part has results, Dimo asks first, because they are deleted with it. Every change is
 undone with ⌘Z. The tab also has **Paste values** and **Clear cell** for the active cell,
-**Result of this row** for the active row, and **Only missing values** and **Only not OK** to
+**Result of this row** for the active row, and **Only missing values** and **Only failed** to
 show fewer rows; the row you are in stays shown.
 
 ## The grid
@@ -37,7 +37,7 @@ cell empty.
 |---|---|
 | Result type | **Auto** (a value if the characteristic has a limit, else OK / not OK), **Value** or **OK / not OK** |
 | Summary | How many results of the row pass, fail, are not evaluated or are missing |
-| Sample header | Serial of the part and the same counts for that part |
+| Part header | Serial number of the part and the same counts for that part |
 
 The line above the grid shows the overall verdict of all parts, and why Dimo did not accept the
 last entry. The status bar at the bottom shows the totals of all parts and the overall verdict.
@@ -47,7 +47,7 @@ last entry. The status bar at the bottom shows the totals of all parts and the o
 The bar above the grid works like the formula bar of a spreadsheet. It names the active cell
 (characteristic number and part), shows the requirement with its limits and the tolerance rule,
 and has a **Value** field with the value of the active cell. Next to it Dimo says the verdict in
-words, for example "pass, on the lower limit" or "not OK, above the upper limit".
+words, for example "pass, on the lower limit" or "fail, above the upper limit".
 
 You can type a value in the cell or in the **Value** field; both show the same text while you
 type. **Enter** in the field stores the value and moves to the next characteristic, as in the
@@ -72,7 +72,7 @@ The grid is made for measuring one part from top to bottom without the mouse.
 3. Press **Enter**. Dimo stores the value and moves to the next characteristic.
 
 **Shift+Enter** goes up instead, **Tab** and **Shift+Tab** confirm and go to the next or the
-previous part; past the last part Tab leaves the grid for the sample panel. The arrow keys move
+previous part; past the last part Tab leaves the grid for the properties pane. The arrow keys move
 without changing anything, **F2** edits the value in the cell, **Delete** clears it and
 **Escape** cancels what you are typing. When Dimo does not accept a value (for example letters in
 a value cell), the cell opens again and the line above the grid says why. Dimo always stores the
@@ -100,7 +100,7 @@ starts and press ⌘V. Rows of the block go down the characteristics, columns go
 The whole block is one step: ⌘Z removes it again. An empty cell in the block clears the result
 in that cell. If one value does not fit, nothing is pasted.
 If the block reaches past the last characteristic or the last part, Dimo says so and pastes
-nothing; add samples first.
+nothing; add parts first.
 
 ## Marks
 
@@ -139,7 +139,7 @@ stored, so it always follows the current limits.
 
 Dimo picks the result type by itself (**Auto**): a value for characteristics with limits,
 OK / not OK for threads, notes and other characteristics without limits. Change it in the
-**Result type** column of the grid or in the detail panel of the drawing view. The first result
+**Result type** column of the grid or in the section **Inspection** of the properties pane on the Drawing tab. The first result
 fixes the type: when you enter the first result of an **Auto** characteristic, Dimo sets the type
 to value or OK / not OK, so later changes of the limits do not turn a value characteristic into
 an OK / not OK one. Clearing results does not undo that.
@@ -166,4 +166,4 @@ the general tolerance or the rules of the project, or edit a characteristic in t
   report is not marked. Before the first issued report, nothing is marked. Dimo also warns about
   such changes before the next issued export ([Exports](exports.md)).
 - If you delete a characteristic, its results are deleted in the same step, without a question,
-  and ⌘Z brings both back. Deleting a sample asks first when it has results. Deleting characteristics that have results asks first too: Dimo says how many results go with them, and ⌘Z brings them back.
+  and ⌘Z brings both back. Deleting a part asks first when it has results. Deleting characteristics that have results asks first too: Dimo says how many results go with them, and ⌘Z brings them back.

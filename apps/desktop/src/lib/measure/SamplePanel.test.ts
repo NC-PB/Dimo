@@ -81,7 +81,7 @@ describe("part pane (T3.19)", () => {
     expect(root.querySelector("h2")?.textContent.trim()).toBe("Part S-002");
     const counts = root.querySelector("[data-testid=part-counts]")?.textContent ?? "";
     expect(counts.replace(/\s+/g, " ")).toContain("4 pass");
-    expect(counts.replace(/\s+/g, " ")).toContain("2 not OK");
+    expect(counts.replace(/\s+/g, " ")).toContain("2 fail");
     expect(counts.replace(/\s+/g, " ")).toContain("0 missing");
   });
 

@@ -93,7 +93,7 @@ describe("status bar (ADR 0007, T3.15)", () => {
     };
     flushSync();
     expect(target.querySelector("[data-testid=measure-totals]")?.textContent.trim()).toBe(
-      "All parts: 11 pass · 4 not OK · 2 missing",
+      "All parts: 11 pass · 4 fail · 2 missing",
     );
     const overall = target.querySelector("[data-testid=measure-overall]");
     expect(overall?.textContent.replace(/\s+/g, " ").trim()).toBe("Overall: fail");

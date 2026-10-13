@@ -2,7 +2,7 @@
 
 ## Aus der App exportieren
 
-Öffne das Register **Bericht** (⌘E auf macOS, Strg+E sonst) für Prüfblatt und Prüfbericht. Oben
+Öffne den Reiter **Bericht** (⌘E auf macOS, Strg+E sonst) für Prüfblatt und Prüfbericht. Oben
 wählst du das Dokument, Format, Sprache, die leeren Ergebnisspalten und **Nach dem Export
 öffnen**. **Kopie speichern** exportiert das gewählte Dokument, **Drucken** druckt es,
 **Bericht ausgeben** exportiert es als ausgegeben.
@@ -14,7 +14,7 @@ trotzdem das PDF; die Excel-Datei hat denselben Inhalt.
 
 Der Bereich rechts, **Bevor du den Bericht ausgibst**, zeigt, was du zuerst anschauen solltest:
 fehlende Werte (mit **Zum Messen**, das nur die Zeilen mit fehlenden Werten zeigt), Werte ohne
-Grenzen, Grenzen aus Entwurfstabellen, seit dem letzten ausgegebenen Bericht geänderte Grenzen
+Grenzmaße, Grenzmaße aus Entwurfstabellen, seit dem letzten ausgegebenen Bericht geänderte Grenzmaße
 und die Felder im Berichtskopf, die noch leer sind (mit einem Link zu **Datei > Info**). Firma
 und Prüfer gelten als ausgefüllt, wenn das Ausgeben sie aus den **Optionen** einträgt. Nichts in
 der Liste hindert dich am Ausgeben. Darunter stehen **Bericht ausgeben…** und **Kopie speichern
@@ -27,7 +27,7 @@ Druck eines Projekts ohne Berichtsdatum das heutige Datum als Berichtsdatum ein
 ([unten](#prüfblatt-und-prüfbericht)).
 
 Das PDF mit Ballons und die Merkmalsliste findest du unter **Datei > Exportieren** (auch
-**Zeichnung und Liste** im Register Bericht).
+**Zeichnung und Liste** im Reiter Bericht).
 
 Jeder Export braucht ein offenes Projekt, fragt, wo die Datei gespeichert wird, und läuft dann
 im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das Projekt so, wie es
@@ -48,7 +48,7 @@ Bericht gewählte Format:
   Sprache der Berichte, unabhängig von der Sprache der App.
 - **Ballons im PDF**: als Teil der Seite (Standard) oder als Anmerkungen, die PDF-Programme
   ein- und ausblenden oder löschen können.
-- **Leere Ergebnisspalten** (Register Bericht, nur Prüfblatt): wie viele leere Ergebnisspalten
+- **Leere Ergebnisspalten** (Reiter Bericht, nur Prüfblatt): wie viele leere Ergebnisspalten
   ein Prüfblatt erhält, wenn das
   Projekt keine Teile hat, 1 bis 10 (Standard 3).
 - **Datei nach dem Export öffnen**: Ist ein Export fertig und die Datei geschrieben, öffnet Dimo
@@ -58,7 +58,7 @@ Bericht gewählte Format:
   ihr Name noch auf die Endung des Exports lautet (`.pdf`, `.csv` oder `.xlsx`). Ist für den Typ
   kein Programm eingerichtet, wird die Datei trotzdem gespeichert und der Export zeigt einen
   Hinweis.
-- **Als ausgegeben exportieren** (Datei > Exportieren; im Register Bericht **Bericht
+- **Als ausgegeben exportieren** (Datei > Exportieren; im Reiter Bericht **Bericht
   ausgeben**): sperrt die Nummerierung. Für Zeichnungen und Berichte, die
   an einen Kunden gehen. Solange sie gesperrt ist, ändern sich Nummern nie, gelöschte Nummern
   werden nicht wieder vergeben, ein neues Merkmal erhält die höchste je vergebene Nummer plus
@@ -76,7 +76,7 @@ direkt nach dem Export. Was du nach dem Export änderst, liegt im Verlauf darüb
 
 Beide Berichte führen die zu prüfenden Merkmale in Nummernfolge auf: Merkmale ohne **Prüfen**
 (Referenz- und theoretisch genaue Maße) und abgelehnte fehlen. Jede Zeile zeigt Nummer,
-Anforderung, Nennmaß, Grenzen, Einheit, die Regel, aus der die Grenzen stammen, Prüfmethode und
+Anforderung, Nennmaß, Grenzmaße, Einheit, die Regel, aus der die Grenzmaße stammen, Prüfmethode und
 Prüfmittel. Der Kopf jeder Seite zeigt Firma, Teil, Kunde, Auftrag, Zeichnungsdatei,
 Änderungsstand, den Anfang des SHA-256 der Zeichnungsdatei (vollständig auf der ersten Seite),
 Berichtsnummer, Datum und Seite. Die Werte stammen aus
@@ -90,7 +90,7 @@ Ein leeres Kopffeld druckt weder seine Bezeichnung noch einen Wert.
   Bewertungen.
 - **Prüfbericht**: eine Übersicht (Gesamtergebnis, Anzahl der Merkmale und Teile sowie Anzahl
   i.O., n.i.O., nicht bewertet und fehlend), ein Teileblock mit einer Zeile je Teil
-  (Seriennummer, Datum, Prüfer, Prüfmittel, Bemerkung, seine eigenen Zahlen und seine Bewertung),
+  (Seriennummer, Datum, Prüfer, Prüfmittel, Kommentar, seine eigenen Zahlen und seine Bewertung),
   die Ergebnistabelle mit dem Zeichen jeder Bewertung und der Bewertung jeder Zeile, eine Legende
   der Zeichen, Bemerkungen und der Unterschriftenblock. Wie die Bewertungen entstehen, steht unter
   [Ergebnisse eingeben](measuring.md).
@@ -102,7 +102,7 @@ bleibt leer und wird von Hand eingetragen. Digitale Signaturen gibt es nicht. Is
 Gesamtergebnis offen, sagt der Bericht, dass nicht alle Ergebnisse erfasst und bewertet sind.
 Nicht bestandene Zellen und Teile haben einen fetten Rand.
 
-Wähle im Register Bericht unter **Format** für jeden Bericht **PDF** oder **Excel**. Beide
+Wähle im Reiter Bericht unter **Format** für jeden Bericht **PDF** oder **Excel**. Beide
 enthalten dieselben Werte.
 
 - **PDF**: A4 quer, Kopf auf jeder Seite, Tabellenkopf auf jeder Seite wiederholt. Bei mehr als
@@ -122,8 +122,8 @@ Die Wörter auf den Berichten richten sich nach der Berichtssprache des Exports 
 Deutsch), nicht nach der Sprache der App. Auf Deutsch heißen die Bewertungen **i.O.** und
 **n.i.O.**, auf Englisch **Pass** und **Fail**.
 
-Grenzen aus Toleranztabellen, die noch Entwürfe sind, sind in der Regelspalte mit einem Stern
-markiert, und der Bericht sagt in einer Fußnote, dass diese Grenzen aus einer Entwurfstabelle
+Grenzmaße aus Toleranztabellen, die noch Entwürfe sind, sind in der Regelspalte mit einem Stern
+markiert, und der Bericht sagt in einer Fußnote, dass diese Grenzmaße aus einer Entwurfstabelle
 stammen und noch nicht verifiziert sind.
 
 Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es beim Export eines
@@ -159,8 +159,8 @@ ebenfalls drucken.
 vermerkt“. Hast du das Projekt während des Exports geändert, wird die Datei geschrieben, aber
 nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann erneut.
 
-Vor einem Export als ausgegeben warnt Dimo, wenn Grenzen aus Entwurfstabellen stammen, wenn
-Ergebnisse fehlen oder nicht bewertet sind (Prüfbericht) oder wenn sich Grenzen oder
+Vor einem Export als ausgegeben warnt Dimo, wenn Grenzmaße aus Entwurfstabellen stammen, wenn
+Ergebnisse fehlen oder nicht bewertet sind (Prüfbericht) oder wenn sich Grenzmaße oder
 Ergebnisarten nach dem letzten ausgegebenen Bericht geändert haben
 ([Wenn sich Grenzmaße ändern](measuring.md#wenn-sich-grenzmaße-ändern)). Du kannst trotzdem
 exportieren oder zurückgehen. Die Warnungen verhindern den Export nie. Beide Berichte können
@@ -218,7 +218,7 @@ Ein nicht gesetzter Wert ist ein leeres Feld beziehungsweise eine leere Zelle.
 
 ### Zahlen sind exakt
 
-Nennmaße, Abmaße und Grenzen werden mit genau den im Projekt gespeicherten Ziffern geschrieben.
+Nennmaße, Abmaße und Grenzmaße werden mit genau den im Projekt gespeicherten Ziffern geschrieben.
 `90.0` bleibt `90.0` und `30.0203` bleibt `30.0203`. Das Dezimaltrennzeichen ist immer ein Punkt.
 
 - CSV: Text wie `-0.2`. Es wird nichts gerundet oder umgewandelt.
