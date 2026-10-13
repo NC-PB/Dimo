@@ -69,8 +69,9 @@
 #let verdict-text(verdict, size: 7pt) = [#mark(verdict, size: size) #h(0.2em) #L.verdicts.at(verdict)]
 
 // Small label above a value.
+// An empty value prints no label either; the cell keeps its place so the layout stays stable.
 #let field(label, value) = block(spacing: 0pt)[
-  #text(size: 5.5pt, fill: muted, label) \
+  #text(size: 5.5pt, fill: muted, if value == "" { "" } else { label }) \
   #text(size: 7.5pt, value)
 ]
 

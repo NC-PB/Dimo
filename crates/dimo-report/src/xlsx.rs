@@ -278,8 +278,9 @@ impl<'a> Builder<'a> {
             (labels.get("report_date")?, &h.report_date),
         ];
         for (label, value) in &pairs {
-            sheet.write_string_with_format(row, 1, *label, &bold)?;
+            // An empty value prints no label either; the row stays so the layout is stable.
             if !value.is_empty() {
+                sheet.write_string_with_format(row, 1, *label, &bold)?;
                 sheet.write_string(row, 2, *value)?;
             }
             row += 1;
@@ -551,6 +552,7 @@ impl<'a> Builder<'a> {
                 (MARK_PASS, "pass"),
                 (MARK_FAIL, "fail"),
                 (MARK_NOT_EVALUATED, "not_evaluated"),
+                (MARK_OPEN, "open"),
             ] {
                 let _ = write!(legend, "{mark} {}   ", labels.verdict(key)?);
             }
