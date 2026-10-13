@@ -5,8 +5,8 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Next: **MU Self-explanatory UI** ([plan](MU.md)), drafted 2026-10-13 after the owner's test: Office-style shell, brand colors of cnc-master.xyz, light and dark, two bugs (Place balloon toggle, general tolerance not applied to existing characteristics). Owner to review the plan; then the M3 exit run on the new UI
-- M3 Simple shop reports ([plan](M3.md)): all agent tasks done; owner exit run waits for MU. M2 implemented, owner exit open. M0 and M1 implemented, owner reviews open
+- Milestone: **M3 Simple shop reports** ([plan](M3.md)): T3.1 to T3.10 done; next **UI rework, waves 5 to 8 (T3.12 to T3.21)**, mockups approved by the owner 2026-10-13 (Office-style shell, cnc-master brand colors, light and dark, About page with licenses, two UI bugs). Then the shop floor user test (T3.21) and the owner's exit run (T3.11)
+- M2 implemented, owner exit open. M0 and M1 implemented, owner reviews open
 - Owner, blocking release 0.1: set `verified` in the tolerance tables after the Tabellenbuch check (D-43; owner reports the tables look fine, files still `draft`)
 - Release target: 0.1 after M3
 
@@ -76,6 +76,16 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.9 Follow-ups from waves 2 and 3 | done | XLSX counts per sample, `SetResultType auto` with results refused, identical custom table import reported as unchanged, all reject reasons except `internal` translated, ghost number component test. Still English in the German UI: OS, PDFium, file, project and export error details, custom table parser messages, autosave error (needs structured error kinds, later). Smoke flake seen once in step 5 under load; 3 of 3 passes on a quiet machine. Delete confirmation for characteristics with results (component tests only, not run in the app) and German wording merged |
 | T3.10 User guide and manual test | done | User guide en/de for every M3 feature, `docs/dev/manual-test-m3.md` (16 sections: real Cmd+V, four XLSX files in a spreadsheet program, German wording), smoke step 8 reads verdicts back from the exported PDF and XLSX. Owner: run the manual test |
 | T3.11 Exit check | review | `docs/perf/M3-exit.md` written; agent dry run on synth seed 7 (25 inspected, 3 parts, invented values): verdicts and report correct, all re-exports byte identical, no bug. Owner: run the procedure on a real drawing and record the result |
+| T3.12 ADR for the new shell | todo | Wave 5. Owner agreed to supersede the D-50 view list |
+| T3.13 UI bug fixes | todo | Wave 5: Place balloon toggle, general tolerance applied to existing characteristics |
+| T3.14 Theme tokens and brand | todo | Wave 5 |
+| T3.15 App shell, tabs and ribbon | todo | Wave 6 |
+| T3.16 File view, Options and About | todo | Wave 6 |
+| T3.17 Guidance | todo | Wave 6 |
+| T3.18 Properties pane | todo | Wave 7 |
+| T3.19 Measure and Report layout | todo | Wave 7 |
+| T3.20 Wording and German pass | todo | Wave 7 |
+| T3.21 Exit test with a shop floor user | todo | Wave 8 |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
@@ -94,7 +104,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
-| 2026-10-13 | UI milestone MU before the M3 exit run: tabs File, Home, Drawing, Review (placeholder), Measure, Report, View; Place balloon stays on until Esc; brand colors and fonts of the cnc-master site, light and dark | Owner test of M3: UI lacks a common thread, settings buried | owner |
+| 2026-10-13 | SIL OFL 1.1 fonts accepted as "similar" under rule 10, provided every copy shows the copyright notice and the full license text; an About page shows all license texts (M3 decision 29) | Space Grotesk license condition | owner |
+| 2026-10-13 | UI rework added to M3 as waves 5 to 8 (T3.12 to T3.21), before the owner's exit run; mockups approved: tabs File, Home, Drawing, Review (placeholder), Measure, Report, View; Place balloon stays on until Esc; brand colors and fonts of the cnc-master site, light and dark | Owner test of M3: UI lacks a common thread, settings buried | owner |
 | 2026-10-13 | Open after export: checkbox remembered per user (default off); Rust opens only the file the job just wrote, path made absolute, `open` / `xdg-open` / `cmd /C start "" "<path>"` (Windows path quoted by hand, `%`, `"` and line breaks refused, Windows path untested on hardware); refused when the extension differs from the export format; spawn failures shown as a notice. Report date: local calendar day stored at the first report export when empty (normal export: own undo step before rendering, kept even if the export fails or is cancelled; issued export: in the lock and record step); `chrono` `clock` feature enabled in dimo-desktop only. Empty header fields hide their label | Owner decisions 2026-10-13, FR-EXP-11 | T3.9c, agent |
 | 2026-10-13 | "Open after export" option and report date filled at the first report export when empty; empty header fields print no label; XLSX legend gains "open" | M3 dry run friction | owner |
 | 2026-10-13 | German wording: "Änderungsstand" for the drawing revision, "Teil"/"Teile" for samples, "Als ausgegeben exportieren" for export as issued ("Freigegeben von" stays for approval) | T3.10 mismatches | owner |
