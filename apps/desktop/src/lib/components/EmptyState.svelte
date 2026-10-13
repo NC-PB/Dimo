@@ -44,8 +44,11 @@
 
   const base =
     "inline-flex min-h-10 items-center rounded-lg px-4 text-sm aria-disabled:cursor-default aria-disabled:opacity-45";
-  const primary = `${base} bg-accent-strong font-semibold text-accent-ink hover:opacity-90`;
-  const secondary = `${base} border border-border-strong bg-surface text-text hover:bg-hover`;
+  // A command that is on (Place balloon while placing, a filter) looks like a pressed button.
+  const pressedClass =
+    "aria-pressed:border-2 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-text";
+  const primary = `${base} bg-accent-strong font-semibold text-accent-ink hover:opacity-90 ${pressedClass}`;
+  const secondary = `${base} border border-border-strong bg-surface text-text hover:bg-hover ${pressedClass}`;
 </script>
 
 <div
