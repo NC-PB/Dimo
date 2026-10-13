@@ -12,8 +12,9 @@ anderen, zum Beispiel `B3`. Dimo liest den Rahmen noch nicht selbst, darum legst
 einmal je Blatt fest: Wähle **Zonenraster** auf dem Reiter **Zeichnung**. Der
 Eigenschaftenbereich rechts zeigt den Abschnitt **Zonenraster**, bis du ihn mit seinem × schließt.
 
-1. Ziehe ein Rechteck entlang der Innenkante des Zeichnungsrahmens auf (**Zonenraster** startet
-   es; **Rahmen zeichnen** im Abschnitt zeichnet es neu). Esc bricht ab. (**Zonenraster hinzufügen** setzt stattdessen einen Rahmen 10 mm innerhalb
+1. Ziehe ein Rechteck entlang der Innenkante des Zeichnungsrahmens auf (auf einem Blatt ohne
+   Raster startet **Zonenraster** es; **Rahmen zeichnen** im Abschnitt zeichnet es neu). Esc
+   bricht ab. (**Zonenraster hinzufügen** setzt stattdessen einen Rahmen 10 mm innerhalb
    des Blattrands, den du später neu zeichnen kannst.) Ein Blatt ohne Raster erhält ein neues mit
    Standardbezeichnungen: Spalten 1 bis 8 und Zeilen A bis F bei einem Blatt im Querformat, Spalten
    1 bis 6 und Zeilen A bis H bei einem Blatt im Hochformat.

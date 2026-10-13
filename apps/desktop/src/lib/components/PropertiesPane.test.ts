@@ -11,6 +11,7 @@ import {
   type ProjectCommands,
 } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
+import { sheetRegions } from "$lib/stores/sheet-regions.svelte";
 import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
 import { ViewStore, view as appView } from "$lib/stores/view.svelte";
 import PropertiesPane from "./PropertiesPane.svelte";
@@ -215,9 +216,12 @@ describe("properties pane follows the selection (T3.18)", () => {
     await settle();
     expect(title()).toBe("Views");
     expect(sections()).toEqual(["tool.views"]);
+    sheetRegions.toggle("view");
     stores.selected.select(["c1"]);
     await settle();
     expect(stores.view.paneTool).toBeNull();
+    // The drawing tool of the closed section stops too, so no drag draws a hidden region.
+    expect(sheetRegions.tool).toBeNull();
     expect(title()).toBe("Characteristic 1");
     stores.selected.clear();
     await settle();

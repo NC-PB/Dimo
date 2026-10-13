@@ -44,14 +44,14 @@
   }
 
   const choiceClass =
-    "min-h-8 rounded-md border border-border-strong px-3 text-[13px] text-text hover:bg-hover aria-pressed:border-accent aria-pressed:bg-accent-soft";
+    "min-h-8 rounded-md border border-border-strong px-3 text-sm text-text hover:bg-hover aria-pressed:border-accent aria-pressed:bg-accent-soft";
   const allInspected = $derived(chosen.length > 0 && chosen.every((c) => c.inspect));
   const noneInspected = $derived(chosen.every((c) => !c.inspect));
 </script>
 
 <div class="flex flex-col" data-testid="selection-properties">
   <PaneSection id="selection.list" title={m.pane_section_selected()}>
-    <ul class="m-0 flex list-none flex-col gap-1 p-0 text-[13px]">
+    <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
       {#each chosen.slice(0, MAX_ROWS) as c (c.id)}
         <li class="flex gap-2">
           <span class="w-8 shrink-0 text-right font-mono text-text">{c.number}</span>
@@ -71,7 +71,7 @@
   <PaneSection id="selection.actions" title={m.pane_section_actions()}>
     <button
       type="button"
-      class="flex min-h-8 items-center gap-1.5 self-start rounded-md border border-border-strong px-2.5 text-[13px] text-text hover:bg-hover disabled:opacity-45"
+      class="flex min-h-8 items-center gap-1.5 self-start rounded-md border border-border-strong px-2.5 text-sm text-text hover:bg-hover disabled:opacity-45"
       title={m.cmd_update_limits_desc()}
       disabled={tolerance.busy}
       data-action="update_limits"
@@ -94,7 +94,7 @@
       <p class="m-0 text-xs text-danger" role="alert">{commandErrorMessage(tolerance.error)}</p>
     {/if}
     <div class="flex flex-col gap-1.5" role="group" aria-label={m.pane_inspect_selected()}>
-      <span class="text-[13px] text-text-muted">{m.pane_inspect_selected()}</span>
+      <span class="text-sm text-text-muted">{m.pane_inspect_selected()}</span>
       <div class="flex gap-2">
         <button
           type="button"

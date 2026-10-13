@@ -62,7 +62,9 @@
   $effect(() => {
     if (selected.size > 0) {
       untrack(() => {
-        view.paneTool = null;
+        if (view.paneTool !== null) {
+          closeTool(view.paneTool);
+        }
       });
     }
   });
@@ -121,9 +123,9 @@
       }}
       closeLabel={m.pane_close_section({ section: m.pane_numbering_preview() })}
     >
-      <p class="m-0 text-[13px] text-text-muted">{strategyHint(numbering.strategy)}</p>
+      <p class="m-0 text-sm text-text-muted">{strategyHint(numbering.strategy)}</p>
       {#if numbering.preview}
-        <p class="m-0 text-[13px]" aria-live="polite" data-testid="numbering-changes">
+        <p class="m-0 text-sm" aria-live="polite" data-testid="numbering-changes">
           {m.numbering_changes({ count: String(numbering.preview.changed) })}
         </p>
       {/if}

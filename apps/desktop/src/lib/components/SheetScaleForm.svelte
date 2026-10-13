@@ -38,7 +38,7 @@
 
   const fieldClass =
     "min-h-8 w-24 rounded-md border border-border-strong bg-surface px-2 py-1 text-right font-mono text-sm text-text";
-  const labelClass = "flex flex-col gap-1 text-[13px] text-text-muted";
+  const labelClass = "flex flex-col gap-1 text-sm text-text-muted";
 </script>
 
 {#if sheet}

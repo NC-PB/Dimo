@@ -29,7 +29,14 @@
     toleranceStore as appTolerance,
     type ToleranceStore,
   } from "$lib/stores/tolerance.svelte";
-  import { KINDS, fieldValue, rawText, type ColumnId } from "$lib/table/columns";
+  import {
+    COLUMNS,
+    KINDS,
+    displayText,
+    fieldValue,
+    rawText,
+    type ColumnId,
+  } from "$lib/table/columns";
   import { paneFolds } from "$lib/pane/folds.svelte";
   import ToleranceBadges from "./ToleranceBadges.svelte";
 
@@ -43,6 +50,7 @@
   let { project = appProject, selected = appSelection, tolerance = appTolerance }: Props = $props();
 
   const HISTORY = "characteristic.history";
+  const uid = $props.id();
 
   const c = $derived(
     selected.primary === null ? null : (project.characteristicById.get(selected.primary) ?? null),
@@ -188,13 +196,20 @@
   }
 
   const done = $derived(tolerance.lastReinterpretation);
+
+  /** Values shown read only above the limits, as Rust stores them (rule 5); edited in the table. */
+  const VALUE_FIELDS: readonly ColumnId[] = ["nominal", "upper_dev", "lower_dev", "fit"];
+
+  function columnLabel(id: ColumnId): string {
+    return COLUMNS.find((col) => col.id === id)?.label() ?? id;
+  }
   const UpdateIcon = icons.updateLimits;
 
   const gridClass =
     "grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)] items-center gap-x-2 gap-y-1.5";
-  const keyClass = "text-[13px] text-text-muted";
+  const keyClass = "text-sm text-text-muted";
   const fieldClass =
-    "min-h-8 w-full min-w-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-[13px] text-text";
+    "min-h-8 w-full min-w-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-text";
 </script>
 
 {#if c}
@@ -203,9 +218,9 @@
     <PaneSection id="characteristic.requirement" title={m.pane_section_requirement()}>
       {#key id}
         <div class={gridClass}>
-          <label class={keyClass} for="pane-requirement-text">{m.pane_text()}</label>
+          <label class={keyClass} for="{uid}-requirement-text">{m.pane_text()}</label>
           <input
-            id="pane-requirement-text"
+            id="{uid}-requirement-text"
             type="text"
             autocomplete="off"
             spellcheck="false"
@@ -214,9 +229,9 @@
             value={c.requirement_text}
             onchange={(e) => void edit(e.currentTarget, id, "requirement_text")}
           />
-          <label class={keyClass} for="pane-kind">{m.col_kind()}</label>
+          <label class={keyClass} for="{uid}-kind">{m.col_kind()}</label>
           <select
-            id="pane-kind"
+            id="{uid}-kind"
             class={fieldClass}
             data-field="kind"
             value={c.kind}
@@ -226,9 +241,9 @@
               <option value={kind}>{kindLabel(kind)}</option>
             {/each}
           </select>
-          <label class={keyClass} for="pane-quantity">{m.col_quantity()}</label>
+          <label class={keyClass} for="{uid}-quantity">{m.col_quantity()}</label>
           <input
-            id="pane-quantity"
+            id="{uid}-quantity"
             type="text"
             inputmode="numeric"
             autocomplete="off"
@@ -244,20 +259,26 @@
     <PaneSection id="characteristic.tolerance" title={m.pane_section_tolerance()}>
       <dl class={gridClass} data-testid="detail-tolerance">
         <dt class={keyClass}>{m.detail_rule()}</dt>
-        <dd class="m-0 flex flex-wrap items-center gap-1 text-[13px]" data-field="rule">
+        <dd class="m-0 flex flex-wrap items-center gap-1 text-sm" data-field="rule">
           <span>{c.derivation ? ruleLabel(c.derivation.rule) : ruleLabel(null)}</span>
           <ToleranceBadges derivation={c.derivation} />
         </dd>
+        {#each VALUE_FIELDS as field (field)}
+          {#if displayText(c, field) !== ""}
+            <dt class={keyClass}>{columnLabel(field)}</dt>
+            <dd class="m-0 font-mono text-sm" data-field={field}>{displayText(c, field)}</dd>
+          {/if}
+        {/each}
         {#if c.upper_limit !== null || c.lower_limit !== null}
           <dt class={keyClass}>{m.detail_limits()}</dt>
-          <dd class="m-0 font-mono text-[13px]" data-field="limits">
+          <dd class="m-0 font-mono text-sm" data-field="limits">
             {c.lower_limit ?? "–"} … {c.upper_limit ?? "–"}
             {c.unit === null ? "" : unitLabel(c.unit)}
           </dd>
         {/if}
       </dl>
       {#if c.kind === "angle"}
-        <label class="flex flex-wrap items-center gap-2 text-[13px]">
+        <label class="flex flex-wrap items-center gap-2 text-sm">
           <span class="text-text-muted">
             {m.shorter_leg_label({ unit: unitLabel(sheetUnit) })}
           </span>
@@ -266,7 +287,7 @@
             inputmode="decimal"
             autocomplete="off"
             spellcheck="false"
-            class="min-h-8 w-24 rounded-md border border-border-strong bg-surface px-2 py-1 text-right font-mono text-[13px] text-text"
+            class="min-h-8 w-24 rounded-md border border-border-strong bg-surface px-2 py-1 text-right font-mono text-sm text-text"
             data-field="shorter_leg"
             title={m.shorter_leg_hint()}
             aria-invalid={legRefused ? "true" : undefined}
@@ -302,7 +323,7 @@
       <div>
         <h4 class="m-0 mb-1 text-xs font-normal text-text-muted">{m.detail_explanation()}</h4>
         <p
-          class="m-0 rounded-lg bg-bg px-2.5 py-2 text-[13px] leading-normal whitespace-pre-line"
+          class="m-0 rounded-lg bg-bg px-2.5 py-2 text-sm leading-normal whitespace-pre-line"
           data-field="explanation"
           aria-live="polite"
         >
@@ -317,7 +338,7 @@
       </div>
       <button
         type="button"
-        class="flex min-h-8 items-center gap-1.5 self-start rounded-md border border-border-strong px-2.5 text-[13px] text-text hover:bg-hover disabled:opacity-45"
+        class="flex min-h-8 items-center gap-1.5 self-start rounded-md border border-border-strong px-2.5 text-sm text-text hover:bg-hover disabled:opacity-45"
         title={m.cmd_update_limits_desc()}
         disabled={tolerance.busy}
         data-action="update_limits"
@@ -343,20 +364,20 @@
     <PaneSection id="characteristic.inspection" title={m.pane_section_inspection()}>
       {#key id}
         <div class={gridClass}>
-          <span class={keyClass} id="pane-inspect-label">{m.pane_inspect()}</span>
-          <label class="flex min-h-8 items-center gap-1.5 text-[13px]">
+          <span class={keyClass} id="{uid}-inspect-label">{m.pane_inspect()}</span>
+          <label class="flex min-h-8 items-center gap-1.5 text-sm">
             <input
               type="checkbox"
               class="size-4"
               checked={c.inspect}
-              aria-describedby="pane-inspect-label"
+              aria-describedby="{uid}-inspect-label"
               onchange={(e) => void setInspect(e.currentTarget.checked)}
             />
             {m.detail_inspect()}
           </label>
-          <label class={keyClass} for="pane-result-type">{m.field_result_type()}</label>
+          <label class={keyClass} for="{uid}-result-type">{m.field_result_type()}</label>
           <select
-            id="pane-result-type"
+            id="{uid}-result-type"
             class={fieldClass}
             data-field="result_type"
             value={c.result_type}
@@ -366,9 +387,9 @@
               <option value={type}>{resultTypeLabel(type)}</option>
             {/each}
           </select>
-          <label class={keyClass} for="pane-method">{m.col_inspection_method()}</label>
+          <label class={keyClass} for="{uid}-method">{m.col_inspection_method()}</label>
           <input
-            id="pane-method"
+            id="{uid}-method"
             type="text"
             autocomplete="off"
             class={fieldClass}
@@ -376,9 +397,9 @@
             value={c.inspection.method}
             onchange={(e) => void edit(e.currentTarget, id, "inspection_method")}
           />
-          <label class={keyClass} for="pane-gauge">{m.col_gauge()}</label>
+          <label class={keyClass} for="{uid}-gauge">{m.col_gauge()}</label>
           <input
-            id="pane-gauge"
+            id="{uid}-gauge"
             type="text"
             autocomplete="off"
             class={fieldClass}
@@ -391,7 +412,7 @@
     </PaneSection>
 
     <PaneSection id={HISTORY} title={m.pane_section_history()}>
-      <div class="text-xs" data-testid="detail-history">
+      <div class="text-sm" data-testid="detail-history">
         {#if history.state === "loading"}
           <p class="m-0">{m.detail_loading()}</p>
         {:else if history.state === "error"}

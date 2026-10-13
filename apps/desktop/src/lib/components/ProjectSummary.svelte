@@ -55,12 +55,12 @@
   );
 
   const linkClass =
-    "min-h-8 self-start rounded-md px-1 text-[13px] font-medium text-accent-strong underline-offset-2 hover:underline";
+    "min-h-8 self-start rounded-md px-1 text-sm font-medium text-accent-strong underline-offset-2 hover:underline";
 </script>
 
 <div class="flex flex-col" data-testid="project-properties">
   <PaneSection id="project.summary" title={m.pane_section_project()}>
-    <dl class="m-0 grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)] gap-x-2 gap-y-1 text-[13px]">
+    <dl class="m-0 grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)] gap-x-2 gap-y-1 text-sm">
       {#each rows as row (row.field)}
         <dt class="text-text-muted">{row.key}</dt>
         <dd class="m-0 break-words" data-field={row.field}>

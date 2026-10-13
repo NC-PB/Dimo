@@ -158,6 +158,22 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
     expect(sheetRegions.tool).toBeNull();
   });
 
+  it("opens the zone grid section without drawing when the sheet has a grid (T3.18)", () => {
+    const project = emptyProject();
+    const sheet = project.revisions[0]?.sheets[0];
+    if (sheet) {
+      sheet.zone_grid = {
+        frame: { origin: { x: 10, y: 10 }, size: { width: 800, height: 500 } },
+        column_labels: ["1", "2"],
+        row_labels: ["A", "B"],
+      };
+    }
+    projectStore.load(loaded(++session, project));
+    runCommand("zone_grid");
+    expect(view.paneTool).toBe("zones");
+    expect(sheetRegions.tool).toBeNull();
+  });
+
   it("opens File > Info for project info and a dialog for numbering options (T3.18)", () => {
     openProject();
     runCommand("project_info");

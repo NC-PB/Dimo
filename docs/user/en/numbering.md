@@ -12,8 +12,8 @@ other, for example `B3`. Dimo does not read the frame by itself yet, so you set 
 sheet: choose **Zone grid** on the **Drawing** tab. The properties pane on the right shows the
 section **Zone grid** until you close it with its ×.
 
-1. Drag a rectangle along the inner edge of the drawing frame (**Zone grid** starts it; **Draw
-   frame** in the section draws it again). Esc cancels. (**Add zone grid** puts a frame 10 mm inside the sheet edge instead, which you can draw
+1. Drag a rectangle along the inner edge of the drawing frame (on a sheet without a grid
+   **Zone grid** starts it; **Draw frame** in the section draws it again). Esc cancels. (**Add zone grid** puts a frame 10 mm inside the sheet edge instead, which you can draw
    again later.) A sheet without a grid gets a new one with default labels: columns 1 to 8 and
    rows A to F on a landscape sheet, columns 1 to 6 and rows A to H on a portrait sheet.
 2. Set the number of **Columns** and **Rows**.

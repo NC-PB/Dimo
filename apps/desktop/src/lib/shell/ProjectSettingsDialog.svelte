@@ -25,7 +25,7 @@
       case "balloon_style":
         return m.cmd_project_balloon_style();
       case "numbering":
-        return m.cmd_numbering_options().replace(/…$/, "");
+        return m.numbering_dialog_title();
       case "sheet_scale":
         return m.scale_dialog_title();
     }

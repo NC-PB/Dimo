@@ -38,7 +38,7 @@
     }
   }
 
-  const labelClass = "flex flex-col gap-1 text-[13px] text-text-muted";
+  const labelClass = "flex flex-col gap-1 text-sm text-text-muted";
   const fieldClass =
     "min-h-8 rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-text";
 </script>
@@ -46,7 +46,7 @@
 {#if settings}
   <div class="flex flex-col gap-3 text-sm text-text" data-testid="numbering-options">
     {#if numberingStore.locked}
-      <p class="m-0 text-[13px] text-text-muted" role="note">{m.numbering_locked()}</p>
+      <p class="m-0 text-sm text-text-muted" role="note">{m.numbering_locked()}</p>
     {/if}
     <label class={labelClass}>
       {m.numbering_multi_instance()}

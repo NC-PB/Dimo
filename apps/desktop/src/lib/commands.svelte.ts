@@ -86,9 +86,11 @@ function reportBusy(kind: ReportKind): string | null {
 }
 
 /**
- * Opens the pane section of a ribbon command (zone grid, views; T3.18) and starts drawing its
- * rectangle; the same command again closes the section. The section stays after the rectangle
- * is drawn, so the grid or the view names can be edited.
+ * Opens the pane section of a ribbon command (zone grid, views; T3.18); the same command again
+ * closes the section. Drawing the rectangle starts at once only when the sheet has no grid (no
+ * views) yet, so opening the section to edit labels never replaces the frame by a stray drag;
+ * "Draw frame" and "Draw view" in the section start it otherwise. The section stays after the
+ * rectangle is drawn, so the grid or the view names can be edited.
  */
 function togglePaneTool(tool: PaneTool, region: RegionTool): void {
   if (view.paneTool === tool) {
@@ -104,8 +106,12 @@ function togglePaneTool(tool: PaneTool, region: RegionTool): void {
     setupStore.close(); // The setup pane takes the place of the properties pane.
   }
   view.paneTool = tool;
-  if (sheetRegions.tool !== region) {
+  const sheet = shownSheet();
+  const empty = tool === "zones" ? sheet?.zone_grid === null : sheet?.views.length === 0;
+  if (empty && sheetRegions.tool !== region) {
     sheetRegions.toggle(region);
+  } else if (!empty && sheetRegions.tool !== null) {
+    sheetRegions.cancel();
   }
 }
 
