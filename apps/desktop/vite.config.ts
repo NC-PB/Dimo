@@ -4,6 +4,11 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vitest/config";
 
 // Tauri expects a fixed port and must see Rust errors in the terminal.
+// DIMO_E2E=1 (scripts/e2e-smoke.sh): no file watching and no hot reload. A reload ends a running
+// UI script, which plays once per process, so a check or test run that recompiles the messages
+// in the same checkout used to stall the smoke test (T3.20).
+const e2e = process.env["DIMO_E2E"] === "1";
+
 export default defineConfig(({ mode }) => ({
   plugins: [
     paraglideVitePlugin({
@@ -25,7 +30,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 1420,
     strictPort: true,
-    watch: { ignored: ["**/src-tauri/**"] },
+    watch: e2e ? null : { ignored: ["**/src-tauri/**"] },
+    hmr: !e2e,
   },
   test: {
     include: ["src/**/*.test.ts"],

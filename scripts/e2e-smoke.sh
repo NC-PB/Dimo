@@ -109,7 +109,9 @@ cleanup() {
 trap cleanup EXIT
 
 step "start the frontend dev server"
-(cd apps/desktop && exec node_modules/.bin/vite) >"$WORK/vite.log" 2>&1 &
+# DIMO_E2E=1: no file watching and no hot reload (vite.config.ts), so a check run in the same
+# checkout cannot reload the page and end a running UI script.
+(cd apps/desktop && DIMO_E2E=1 exec node_modules/.bin/vite) >"$WORK/vite.log" 2>&1 &
 VITE_PID=$!
 for _ in $(seq 1 60); do
   curl -sf "http://localhost:$PORT/" >/dev/null 2>&1 && break
@@ -129,6 +131,11 @@ run_app() {
   APP_PID=$!
   local waited=0
   until grep -q "ui: script done" "$WORK/$name.log"; do
+    # A reloaded page does not play the script again (dev.rs), so waiting longer cannot help.
+    if grep -q "ui: page loaded again" "$WORK/$name.log"; then
+      fail "$name: the page reloaded while the UI script ran, see $WORK/$name.log"
+      break
+    fi
     if ! kill -0 "$APP_PID" 2>/dev/null; then
       local status=0
       wait "$APP_PID" 2>/dev/null || status=$?

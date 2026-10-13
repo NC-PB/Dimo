@@ -314,7 +314,15 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
                     message: format!("{path}: {e}"),
                 })?,
             ),
-            _ => None,
+            Some(_) => {
+                // A reload (language switch, or a file change seen by the dev server) ends the
+                // running script; say so, so the smoke test does not wait for it.
+                dev_log(
+                    "page loaded again, the UI script is played once and does not restart".into(),
+                );
+                None
+            }
+            None => None,
         },
     })
 }
