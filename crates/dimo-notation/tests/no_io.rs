@@ -57,7 +57,8 @@ fn library_sources_do_no_io() {
     let mut violations = Vec::new();
     for path in &files {
         let text = fs::read_to_string(path).unwrap();
-        // The unit test module at the end of a file may do anything.
+        // The unit test module at the end of a file may do anything. Sources are checked
+        // out with LF line ends (`.gitattributes`), so the marker matches on every OS.
         let library = text
             .split("#[cfg(test)]\nmod tests")
             .next()

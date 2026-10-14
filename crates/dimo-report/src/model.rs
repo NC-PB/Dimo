@@ -891,6 +891,19 @@ mod tests {
             DerivationRule::NoToleranceDefined,
             DerivationRule::Manual,
         ];
+        // A new variant is a compile error here and needs an entry in `rules`.
+        for rule in &rules {
+            match rule {
+                DerivationRule::Explicit
+                | DerivationRule::Fit { .. }
+                | DerivationRule::DrawingRule { .. }
+                | DerivationRule::General { .. }
+                | DerivationRule::DecimalRule { .. }
+                | DerivationRule::CustomTable { .. }
+                | DerivationRule::NoToleranceDefined
+                | DerivationRule::Manual => {}
+            }
+        }
         let codes: Vec<String> = rules
             .iter()
             .map(|rule| rule_code(rule).expect("report code").code())

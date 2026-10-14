@@ -257,7 +257,7 @@ fn exports_match_the_golden_files() {
         if update {
             std::fs::write(&path, &bytes).unwrap();
         }
-        let committed = std::fs::read(&path).unwrap_or_default();
+        let committed = std::fs::read(&path).expect("golden file in tests/golden");
         assert!(
             committed == bytes,
             "{name} differs from tests/golden/{name}. If the change is intended, regenerate with \

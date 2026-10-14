@@ -1,7 +1,8 @@
 //! Tile addressing: zoom levels, the tile grid of a sheet and tile routes.
 
-use dimo_core::{Rect, Size};
 use std::ops::Range;
+
+use dimo_core::{Rect, Size};
 
 use crate::hash::ContentHash;
 

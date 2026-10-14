@@ -22,6 +22,12 @@
 ## Rules
 
 - Every bug fix comes with a test that fails without the fix.
+- Test data builders grow with the model: extend the existing builder or fixture instead of
+  adding one per schema wave (no new `model_v<n>.rs` or `edit_v<n>` helpers).
+- Timing bounds never run in the default test run: name such a test `perf_*` and mark it
+  `#[ignore]`. Hand run release measurements that assert nothing (for example
+  `render_time_300_by_10` in `src-tauri/tests/report_export.rs`) stay ignored under their own
+  name.
 - Snapshot changes are reviewed, never blindly accepted.
 - Tests must not need the network. PDFium is loaded from `vendor/pdfium/`; tests that need it
   are skipped with a clear message if it is missing, and CI always provides it. With `CI=true` or
