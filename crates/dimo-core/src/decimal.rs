@@ -28,6 +28,25 @@ pub fn parse_decimal(text: &str) -> Option<Decimal> {
     Decimal::from_str(text).ok()
 }
 
+/// Most significant digits a decimal can have to be written as a spreadsheet number. Spreadsheet
+/// numbers are IEEE doubles, which hold every decimal of up to 15 significant digits exactly as
+/// typed.
+pub const MAX_SPREADSHEET_DIGITS: usize = 15;
+
+/// The decimal as a spreadsheet number cell value, if a double shows it exactly as typed (at
+/// most [`MAX_SPREADSHEET_DIGITS`] significant digits); `None` means: write the digits as text.
+///
+/// For XLSX exports only (characteristic list, reports). The double never flows back into a
+/// computation, the exact value stays the decimal (rule 5).
+pub fn spreadsheet_number(d: Decimal) -> Option<f64> {
+    let digits = d.mantissa().unsigned_abs().to_string().len();
+    if digits > MAX_SPREADSHEET_DIGITS {
+        return None;
+    }
+    // Parsing the printed digits gives the double nearest to the decimal.
+    d.to_string().parse().ok()
+}
+
 /// JSON schema of a decimal string.
 pub fn decimal_schema(_: &mut SchemaGenerator) -> Schema {
     json_schema!({
@@ -180,6 +199,34 @@ mod tests {
                 assert_eq!(value.to_string(), text);
             }
         }
+    }
+
+    #[test]
+    fn spreadsheet_numbers_up_to_15_digits() {
+        let d = |text: &str| parse_decimal(text).unwrap();
+        assert_eq!(spreadsheet_number(d("30.0203")), Some(30.0203));
+        assert_eq!(spreadsheet_number(d("-0.020")), Some(-0.02));
+        assert_eq!(spreadsheet_number(d("90.0")), Some(90.0));
+        assert_eq!(spreadsheet_number(d("0")), Some(0.0));
+        // 15 significant digits: still exact; the shortest round trip prints the same digits.
+        let fifteen = spreadsheet_number(d("12345.6789012345")).unwrap();
+        assert_eq!(fifteen.to_string(), "12345.6789012345");
+        assert_eq!(
+            spreadsheet_number(d("-999999999999999")),
+            Some(-999_999_999_999_999.0)
+        );
+        // Leading zeros of the fraction do not count, the mantissa does.
+        assert_eq!(spreadsheet_number(d("0.000123")), Some(0.000_123));
+    }
+
+    #[test]
+    fn spreadsheet_numbers_above_15_digits_stay_text() {
+        let d = |text: &str| parse_decimal(text).unwrap();
+        assert_eq!(spreadsheet_number(d("1234567890.123456")), None);
+        assert_eq!(spreadsheet_number(d("0.1234567890123456")), None);
+        assert_eq!(spreadsheet_number(d("-1000000000000000")), None);
+        // Trailing zeros are significant digits of the stored scale.
+        assert_eq!(spreadsheet_number(d("1.000000000000000")), None);
     }
 
     #[test]
