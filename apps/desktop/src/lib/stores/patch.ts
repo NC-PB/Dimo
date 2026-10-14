@@ -172,8 +172,17 @@ function applyChange(project: Project, change: Change): Project {
         ),
       };
     }
-    case "revision_changed":
-      return { ...project, revisions: replaceById(project.revisions, change.after) };
+    case "revision_changed": {
+      if (!project.revisions.some((r) => r.id === change.revision)) {
+        throw new PatchMismatch(`unknown revision ${change.revision}`);
+      }
+      return {
+        ...project,
+        revisions: project.revisions.map((r) =>
+          r.id === change.revision ? { ...r, source: change.after } : r,
+        ),
+      };
+    }
     case "issued_report_inserted":
       return {
         ...project,

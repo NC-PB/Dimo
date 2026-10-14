@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   Change,
-  DrawingRevision,
+  DrawingSource,
   ImageEdit,
   IssuedReport,
   MeasurementResult,
@@ -191,21 +191,21 @@ describe("applying patches of samples, results and report data (T3.1)", () => {
     ).toThrow(PatchMismatch);
   });
 
-  it("replaces a whole drawing revision (MF F1)", () => {
+  it("replaces the source of a drawing revision (MF F1)", () => {
     const project = emptyProject();
-    const before = project.revisions[0];
-    if (!before) throw new Error("fixture has a revision");
-    const after: DrawingRevision = {
-      ...before,
-      source: { type: "image", format: "png", edit: { ...noEdit, clean_up: true } },
+    const before: DrawingSource = { type: "pdf" };
+    const after: DrawingSource = {
+      type: "image",
+      format: "png",
+      pages: [{ ...noEdit, clean_up: true }],
     };
-    const next = applyChanges(project, [{ type: "revision_changed", before, after }]);
-    expect(next.revisions[0]).toEqual(after);
-    const undone = applyChanges(next, [{ type: "revision_changed", before: after, after: before }]);
-    expect(undone.revisions[0]).toEqual(before);
-    expect(() =>
-      applyChanges(project, [{ type: "revision_changed", before, after: { ...after, id: "x" } }]),
-    ).toThrow(PatchMismatch);
+    const change = { type: "revision_changed", revision: REVISION_ID, before, after } as const;
+    const next = applyChanges(project, [change]);
+    expect(next.revisions[0]?.source).toEqual(after);
+    expect(next.revisions[0]?.sheets).toEqual(project.revisions[0]?.sheets);
+    const undone = applyChanges(next, [{ ...change, before: after, after: before }]);
+    expect(undone).toEqual(project);
+    expect(() => applyChanges(project, [{ ...change, revision: "x" }])).toThrow(PatchMismatch);
   });
 });
 

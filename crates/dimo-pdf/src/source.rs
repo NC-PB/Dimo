@@ -59,6 +59,15 @@ pub trait RasterSource: Send + Sync + fmt::Debug {
     /// URLs and caches.
     fn content_hash(&self) -> &Sha256Hex;
 
+    /// Identity of the pixels this source draws. It names the source in tile URLs, in the
+    /// tile service and in both tile caches. The default is the content hash, right for a PDF.
+    /// A source whose pixels also depend on settings (an image with its edit settings, R.19)
+    /// must derive it from the hash and those settings, so changed settings never get old
+    /// tiles.
+    fn render_key(&self) -> Sha256Hex {
+        *self.content_hash()
+    }
+
     /// Number of sheets.
     fn sheet_count(&self) -> usize;
 
@@ -124,8 +133,9 @@ pub trait RasterOpener {
     fn open_pdf(&self, bytes: Vec<u8>) -> Result<Opened, PdfError>;
 
     /// Gives up a source this opener opened and that is not used after all, for example when
-    /// creating a project from it failed. Does nothing for sources it does not hold.
-    fn release(&self, hash: &Sha256Hex);
+    /// creating a project from it failed. `key` is its [`RasterSource::render_key`]. Does
+    /// nothing for sources it does not hold.
+    fn release(&self, key: &Sha256Hex);
 }
 
 /// Opens PDFs without registering them anywhere, for tools and tests without tiles.
@@ -137,7 +147,7 @@ impl RasterOpener for PdfEngine {
         })
     }
 
-    fn release(&self, _hash: &Sha256Hex) {}
+    fn release(&self, _key: &Sha256Hex) {}
 }
 
 #[cfg(test)]

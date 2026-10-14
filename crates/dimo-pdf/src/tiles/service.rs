@@ -1,6 +1,6 @@
 //! The tile service: source registry, worker pool and both caches.
 //!
-//! Sources are registered by content hash. A PDF opened through [`TileService::open_document`]
+//! Sources are registered by their render key (the content hash for PDFs). A PDF opened through [`TileService::open_document`]
 //! (or [`RasterOpener::open_pdf`]) is kept as its [`Document`] too, for text and recognition;
 //! any other [`RasterSource`] is registered with [`TileService::insert_source`]. Tiles are
 //! rendered through the [`RasterSource`] only (MF F1).
@@ -197,7 +197,7 @@ impl TileService {
                 return Err(other_kind(&hash, source.kind()));
             }
             None => {
-                let engine = self.shared.engine.as_ref().ok_or(PdfError::EngineStopped)?;
+                let engine = self.shared.engine.as_ref().ok_or(PdfError::NoPdfium)?;
                 let doc = Arc::new(engine.open(bytes)?);
                 let mut docs = write(&self.shared.docs);
                 let entry = docs.entry(hash).or_insert_with(|| Registered {
@@ -216,10 +216,11 @@ impl TileService {
         Ok((doc, newly_opened))
     }
 
-    /// Registers a source under its content hash and returns it, or the source already
-    /// registered under that hash.
+    /// Registers a source under its [`RasterSource::render_key`] and returns it, or the source
+    /// already registered under that key. A source with other settings has another key, so it
+    /// never gets the tiles of the old settings; close the old one when it is no longer shown.
     pub fn insert_source(&self, source: Arc<dyn RasterSource>) -> Arc<dyn RasterSource> {
-        let hash = *source.content_hash();
+        let hash = source.render_key();
         let registered = {
             let mut docs = write(&self.shared.docs);
             let entry = docs
@@ -250,7 +251,7 @@ impl TileService {
         read(&self.shared.docs).get(doc).and_then(|r| r.pdf.clone())
     }
 
-    /// The registered source with this content hash, of any kind.
+    /// The registered source with this render key, of any kind.
     pub fn source(&self, doc: &Sha256Hex) -> Option<Arc<dyn RasterSource>> {
         read(&self.shared.docs)
             .get(doc)
@@ -463,8 +464,8 @@ impl RasterOpener for TileService {
         })
     }
 
-    fn release(&self, hash: &Sha256Hex) {
-        self.close_document(hash);
+    fn release(&self, key: &Sha256Hex) {
+        self.close_document(key);
     }
 }
 

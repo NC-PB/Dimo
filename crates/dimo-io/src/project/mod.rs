@@ -240,28 +240,11 @@ impl ProjectFile {
                 .ok_or_else(|| ProjectError::MissingTable(table.table.id.clone()))?;
             entries.push((name, Cow::Borrowed(bytes.as_slice())));
         }
-        // One file per hash, named by the source of the revisions that use it (ADR 0010).
-        let mut drawings: BTreeMap<&Sha256Hex, String> = BTreeMap::new();
-        for revision in &self.project.revisions {
-            let name = revision.stored_name();
-            match drawings.get(&revision.sha256) {
-                Some(other) if *other != name => {
-                    return Err(ProjectError::InvalidDrawing(format!(
-                        "drawing {} is stored as {other} and {name}",
-                        revision.sha256
-                    )));
-                }
-                Some(_) => {}
-                None => {
-                    drawings.insert(&revision.sha256, name);
-                }
-            }
-        }
-        for (hash, name) in drawings {
+        for (hash, name) in drawing_names(&self.project)? {
             let bytes = self
                 .drawings
-                .get(hash)
-                .ok_or(ProjectError::MissingDrawing(*hash))?;
+                .get(&hash)
+                .ok_or(ProjectError::MissingDrawing(hash))?;
             entries.push((
                 format!("{DRAWINGS_DIR}/{name}"),
                 Cow::Borrowed(bytes.as_slice()),
@@ -325,6 +308,29 @@ impl ProjectFile {
     }
 }
 
+/// The stored file name of every drawing by hash: one file per hash, named by the source of
+/// the revisions that use it (ADR 0010). Revisions that share a hash must agree on the source
+/// kind, on load and on save.
+fn drawing_names(project: &Project) -> Result<BTreeMap<Sha256Hex, String>, ProjectError> {
+    let mut names: BTreeMap<Sha256Hex, String> = BTreeMap::new();
+    for revision in &project.revisions {
+        let name = revision.stored_name();
+        match names.get(&revision.sha256) {
+            Some(other) if *other != name => {
+                return Err(ProjectError::InvalidDrawing(format!(
+                    "drawing {} is stored as {other} and {name}",
+                    revision.sha256
+                )));
+            }
+            Some(_) => {}
+            None => {
+                names.insert(revision.sha256, name);
+            }
+        }
+    }
+    Ok(names)
+}
+
 /// Parses raw entries: manifest check, migration, types, drawing hashes.
 fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> {
     let manifest = manifest::parse(&raw.manifest.ok_or(ProjectError::MissingEntry(MANIFEST))?)?;
@@ -367,23 +373,19 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
         .collect::<Result<Vec<AuditEntry>, _>>()?;
 
     let mut drawings = BTreeMap::new();
-    for revision in &project.revisions {
-        let hash = &revision.sha256;
-        if drawings.contains_key(hash) {
-            continue;
-        }
+    for (hash, name) in drawing_names(&project)? {
         let bytes = raw
             .drawings
-            .remove(&revision.stored_name())
-            .ok_or(ProjectError::MissingDrawing(*hash))?;
+            .remove(&name)
+            .ok_or(ProjectError::MissingDrawing(hash))?;
         let actual = sha256(&bytes);
-        if actual != *hash {
+        if actual != hash {
             return Err(ProjectError::HashMismatch {
-                expected: *hash,
+                expected: hash,
                 actual,
             });
         }
-        drawings.insert(*hash, bytes);
+        drawings.insert(hash, bytes);
     }
 
     let mut tables = BTreeMap::new();

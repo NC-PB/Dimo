@@ -298,7 +298,8 @@ pub struct SheetInfo {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub struct DocumentInfo {
-    /// Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs.
+    /// Render key of the drawing source, 64 hex digits: the content hash (SHA-256, FR-DOC-07)
+    /// for a PDF. The `{doc}` part of tile URLs.
     pub doc: String,
     /// File name of the drawing without the directory.
     pub name: String,
@@ -310,7 +311,7 @@ impl DocumentInfo {
     /// Describes a drawing source registered in the tile service under the file name `name`.
     pub fn of(source: &dyn RasterSource, name: &str) -> Result<Self, CommandError> {
         Ok(Self {
-            doc: source.content_hash().to_hex(),
+            doc: source.render_key().to_hex(),
             name: name.to_owned(),
             sheets: source
                 .sheet_sizes()?

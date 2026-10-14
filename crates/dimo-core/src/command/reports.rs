@@ -48,6 +48,7 @@ pub(super) fn update_revision_label(
 pub(super) fn set_image_edit(
     tx: &mut Tx<'_>,
     revision: RevisionId,
+    page: u32,
     edit: &ImageEdit,
 ) -> Result<(), CommandError> {
     let current = tx
@@ -56,19 +57,24 @@ pub(super) fn set_image_edit(
         .iter()
         .find(|r| r.id == revision)
         .ok_or(CommandError::UnknownRevision(revision))?;
-    let DrawingSource::Image { format, .. } = &current.source else {
+    let DrawingSource::Image { format, pages } = &current.source else {
         return Err(CommandError::NotAnImage(revision));
     };
-    edit.validate().map_err(CommandError::InvalidImageEdit)?;
-    let mut after = Box::new(current.clone());
-    after.source = DrawingSource::Image {
-        format: *format,
-        edit: Box::new(edit.clone()),
+    let index = usize::try_from(page).unwrap_or(usize::MAX);
+    let Some(old) = pages.get(index) else {
+        return Err(CommandError::InvalidImageEdit("the image has no such page"));
     };
-    if after.source != current.source {
+    edit.validate().map_err(CommandError::InvalidImageEdit)?;
+    if old != edit {
+        let mut new_pages = pages.clone();
+        new_pages[index] = edit.clone();
         tx.push(Change::RevisionChanged {
-            before: Box::new(current.clone()),
-            after,
+            revision,
+            before: current.source.clone(),
+            after: DrawingSource::Image {
+                format: *format,
+                pages: new_pages,
+            },
         })?;
     }
     Ok(())

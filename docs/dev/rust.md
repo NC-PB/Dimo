@@ -83,7 +83,7 @@ others are hand kept and easy to miss.
    area module under `patch/`, `applyChange` in `apps/desktop/src/lib/stores/patch.ts`
    (exhaustive) with `patch.test.ts`, and the change type string lists in
    `crates/dimo-io/src/project/migrate.rs` if it embeds a characteristic, sheet, numbering or
-   settings state (`revision_changed` embeds whole revisions with their sheets).
+   settings state (`revision_changed` embeds drawing sources with their image edits).
 10. Frontend call: build the command where it is used, through `ProjectStore.execute` or
     `executeWith` (`apps/desktop/src/lib/stores/project.svelte.ts`).
 11. Tests: a case in `crates/dimo-core/tests/commands.rs` (or the area test file), the `Op`
@@ -111,8 +111,7 @@ A new field on `Characteristic`, `Project` or one of its parts (`ProjectInfo`,
 5. Migration: a `MIGRATIONS` entry and a `mod vN` in `crates/dimo-io/src/project/migrate.rs`
    with `project` and `audit_entry` functions. The audit migration must also patch the states
    inside stored changes (`characteristic_inserted`, `_removed`, `_changed`, and every other
-   change type that embeds the changed struct, e.g. `revision_changed` for revisions and
-   sheets). Unit tests at the end of the file. While a version is unreleased, its step is
+   change type that embeds the changed struct, e.g. `revision_changed` for drawing sources). Unit tests at the end of the file. While a version is unreleased, its step is
    extended instead of adding another (schema 4: `mod v3`, MF decision 1).
 6. Fixtures: never edit old ones under `crates/dimo-io/tests/fixtures/v*/`. Write the new one
    with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations`, add an `edit_vN` in

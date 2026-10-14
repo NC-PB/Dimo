@@ -6,8 +6,10 @@
 //!
 //! # Addressing
 //!
-//! - `doc` is the SHA-256 of the drawing (FR-DOC-07) as 64 hex digits. A URL therefore always
-//!   names the same pixels, and the disk cache can use the same key.
+//! - `doc` is the render key of the source as 64 hex digits ([`crate::RasterSource::render_key`]):
+//!   the SHA-256 of the drawing (FR-DOC-07) for a PDF, the drawing plus its edit settings for
+//!   an image. A URL therefore always names the same pixels, and the disk cache can use the
+//!   same key.
 //! - `zoom` is a power of two level: `2^zoom` pixels per sheet unit, level 0 is 72 dpi
 //!   ([`MIN_ZOOM`]`..=`[`MAX_ZOOM`]). The viewport scales between levels.
 //! - `x`, `y` are column and row in the [`TileGrid`] of that sheet and level. Edge tiles are

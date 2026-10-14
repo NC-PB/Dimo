@@ -84,8 +84,8 @@ pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
 };
 pub use source::{
-    DrawingSource, ImageEdit, ImageFormat, ImagePoint, ImageRect, Orientation, Paper, PaperSize,
-    SheetCorners,
+    DrawingSource, ImageEdit, ImageFormat, ImagePoint, Orientation, Paper, PaperSize, SheetCorners,
+    Trim,
 };
 pub use zones::{AxisScheme, LabelKind, ZoneAxis, ZoneGridEdit, ZoneGridForm, zone_grid_form};
 

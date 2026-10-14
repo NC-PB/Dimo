@@ -23,7 +23,8 @@ use crate::id::{CharId, RevisionId, SampleId};
 use crate::measurement::{MeasurementResult, ResultCell, Sample};
 use crate::project::{Numbering, Project, ProjectInfo, ProjectSettings};
 use crate::report::{IssuedReport, ReportInfo};
-use crate::sheet::{DrawingRevision, Sheet};
+use crate::sheet::Sheet;
+use crate::source::DrawingSource;
 
 /// One primitive change of a project.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -161,13 +162,15 @@ pub enum Change {
         /// Label after.
         after: String,
     },
-    /// A drawing revision changed as a whole, for example the image edit settings of its
-    /// source (MF F1). The ID stays the same.
+    /// The source of a drawing revision changed, for example the image edit settings of a
+    /// page (MF F1). Label and sheets have changes of their own.
     RevisionChanged {
-        /// State before.
-        before: Box<DrawingRevision>,
-        /// State after.
-        after: Box<DrawingRevision>,
+        /// The revision.
+        revision: RevisionId,
+        /// Source before.
+        before: DrawingSource,
+        /// Source after.
+        after: DrawingSource,
     },
     /// An issued report record was inserted at `index` of `Project::issued_reports`.
     IssuedReportInserted {
@@ -235,7 +238,7 @@ impl Change {
                 ResultChanged { cell },
                 ReportInfoChanged,
                 RevisionLabelChanged { revision },
-                RevisionChanged,
+                RevisionChanged { revision },
             ];
         }
     }
@@ -344,7 +347,11 @@ impl Project {
                 before,
                 after,
             } => self.change_revision_label(*revision, before, after),
-            C::RevisionChanged { before, after } => self.change_revision(before, after),
+            C::RevisionChanged {
+                revision,
+                before,
+                after,
+            } => self.change_revision_source(*revision, before, after),
             C::IssuedReportInserted { index, report } => {
                 self.insert_issued_report(position(*index), report)
             }

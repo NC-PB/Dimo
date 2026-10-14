@@ -1,18 +1,24 @@
 //! Where the sheets of a drawing revision come from (MF F1, ADR 0010).
 //!
 //! A revision is either a PDF, whose pages are the sheets, or a photo or scan (JPEG, PNG or
-//! TIFF, one sheet per page, R01 decision 7). An image is stored unchanged; how it is turned
-//! into a sheet is kept as non-destructive [`ImageEdit`] settings that can be changed later
-//! (R01 decisions 8 to 11). Image revisions are part of the data model from schema 4 on, but
+//! TIFF, one sheet per page, R01 decision 7). An image is stored unchanged; how each page is
+//! turned into a sheet is kept as non-destructive [`ImageEdit`] settings, one per page, that
+//! can be changed later (R01 decisions 8 to 11). Image revisions are part of the data model from schema 4 on, but
 //! they cannot be created yet (release 0.1, R.19 to R.21).
 //!
 //! # Image edit coordinates
 //!
 //! Edit settings are not sheet geometry (rule 4 applies to the sheet the edit produces). They
-//! are measured in pixels of the stored image, origin at its top left corner, x to the right,
-//! y downward, as exact decimals (rule 5), so a saved edit gives the same sheet on every
-//! machine. The edit is applied in this order: quarter turns, fine angle, four-corner
-//! correction, trim, paper format.
+//! are exact decimals (rule 5), so a saved edit gives the same sheet on every machine, in two
+//! frames that do not depend on any intermediate pixel size:
+//!
+//! - Corner points are pixels of the stored page, origin at its top left corner, x to the
+//!   right, y downward.
+//! - The trim is a fraction from 0 to 1 of the width and height of the page after rotation
+//!   and corner correction, as the sheet reads.
+//!
+//! The edit is applied in this order: quarter turns, fine angle, four-corner correction, trim,
+//! paper format.
 
 use rust_decimal::Decimal;
 use schemars::JsonSchema;
@@ -32,8 +38,9 @@ pub enum DrawingSource {
     Image {
         /// File format of the stored image.
         format: ImageFormat,
-        /// How the image becomes a sheet.
-        edit: Box<ImageEdit>,
+        /// How each page becomes a sheet, in page order: entry `i` belongs to the sheet with
+        /// index `i`.
+        pages: Vec<ImageEdit>,
     },
 }
 
@@ -47,11 +54,11 @@ impl DrawingSource {
         }
     }
 
-    /// The image edit settings, `None` for a PDF.
-    pub fn image_edit(&self) -> Option<&ImageEdit> {
+    /// The image edit settings of every page, `None` for a PDF.
+    pub fn image_pages(&self) -> Option<&[ImageEdit]> {
         match self {
             Self::Pdf => None,
-            Self::Image { edit, .. } => Some(edit),
+            Self::Image { pages, .. } => Some(pages),
         }
     }
 }
@@ -100,9 +107,9 @@ pub struct ImageEdit {
     /// Sheet corners in the stored image for perspective correction (R01 decision 8); `null`
     /// for none.
     pub corners: Option<SheetCorners>,
-    /// Part of the image to keep, in pixels of the image after rotation and corner correction;
-    /// `null` keeps all of it.
-    pub trim: Option<ImageRect>,
+    /// Part of the page to keep, as fractions of the page after rotation and corner correction
+    /// (see the module docs); `null` keeps all of it.
+    pub trim: Option<Trim>,
     /// Paper the trimmed image is mapped onto (R01 decision 9); `null` until the user picks it.
     pub paper: Option<Paper>,
     /// Grey scale, white background and raised contrast for display and the ballooned PDF
@@ -117,8 +124,9 @@ const MAX_FINE_ANGLE: Decimal = Decimal::from_parts(45, 0, 0, false, 0);
 const MAX_PAPER_MM: Decimal = Decimal::from_parts(10_000, 0, 0, false, 0);
 
 impl ImageEdit {
-    /// Checks the ranges: fine angle from -45 to 45 degrees, no negative pixel coordinates,
-    /// a trim and a custom paper size with a positive size, custom paper at most 10 m a side.
+    /// Checks the ranges: fine angle from -45 to 45 degrees, no negative corner coordinates,
+    /// a trim inside 0 to 1 with a positive size, custom paper more than 0 and at most 10 m a
+    /// side.
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.fine_angle.abs() > MAX_FINE_ANGLE {
             return Err("the fine angle is between -45 and 45 degrees");
@@ -131,7 +139,9 @@ impl ImageEdit {
         if let Some(trim) = &self.trim
             && !trim.is_valid()
         {
-            return Err("the trim needs a position of 0 or more and a positive size");
+            return Err(
+                "the trim edges are fractions from 0 to 1, left before right, top before bottom",
+            );
         }
         if let Some(Paper::Custom {
             width_mm,
@@ -198,39 +208,42 @@ impl SheetCorners {
     }
 }
 
-/// An axis parallel rectangle in image pixels.
+/// The part of a page to keep: its edges as fractions from 0 to 1 of the width (left, right)
+/// and height (top, bottom) of the page after rotation and corner correction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "snake_case")]
-pub struct ImageRect {
+pub struct Trim {
     /// Left edge.
     #[serde(with = "crate::decimal::serde_str")]
     #[schemars(schema_with = "decimal_schema")]
     #[cfg_attr(feature = "specta", specta(type = String))]
-    pub x: Decimal,
+    pub left: Decimal,
     /// Top edge.
     #[serde(with = "crate::decimal::serde_str")]
     #[schemars(schema_with = "decimal_schema")]
     #[cfg_attr(feature = "specta", specta(type = String))]
-    pub y: Decimal,
-    /// Width, more than 0.
+    pub top: Decimal,
+    /// Right edge, more than `left`.
     #[serde(with = "crate::decimal::serde_str")]
     #[schemars(schema_with = "decimal_schema")]
     #[cfg_attr(feature = "specta", specta(type = String))]
-    pub width: Decimal,
-    /// Height, more than 0.
+    pub right: Decimal,
+    /// Bottom edge, more than `top`.
     #[serde(with = "crate::decimal::serde_str")]
     #[schemars(schema_with = "decimal_schema")]
     #[cfg_attr(feature = "specta", specta(type = String))]
-    pub height: Decimal,
+    pub bottom: Decimal,
 }
 
-impl ImageRect {
+impl Trim {
     fn is_valid(&self) -> bool {
-        self.x >= Decimal::ZERO
-            && self.y >= Decimal::ZERO
-            && self.width > Decimal::ZERO
-            && self.height > Decimal::ZERO
+        let unit = |v: Decimal| v >= Decimal::ZERO && v <= Decimal::ONE;
+        [self.left, self.top, self.right, self.bottom]
+            .into_iter()
+            .all(unit)
+            && self.left < self.right
+            && self.top < self.bottom
     }
 }
 
@@ -311,34 +324,34 @@ mod tests {
         );
         let image = DrawingSource::Image {
             format: ImageFormat::Jpeg,
-            edit: Box::new(ImageEdit {
+            pages: vec![ImageEdit {
                 rotation: Rotation::Deg90,
                 fine_angle: dec("-1.25"),
                 corners: None,
-                trim: Some(ImageRect {
-                    x: dec("10"),
-                    y: dec("20"),
-                    width: dec("3000"),
-                    height: dec("2000.5"),
+                trim: Some(Trim {
+                    left: dec("0.05"),
+                    top: dec("0"),
+                    right: dec("0.95"),
+                    bottom: dec("1"),
                 }),
                 paper: Some(Paper::Standard {
                     size: PaperSize::A3,
                     orientation: Orientation::Landscape,
                 }),
                 clean_up: true,
-            }),
+            }],
         };
         let value = serde_json::to_value(&image).unwrap();
         assert_eq!(
             value,
             json!({
                 "type": "image", "format": "jpeg",
-                "edit": {
+                "pages": [{
                     "rotation": "deg90", "fine_angle": "-1.25", "corners": null,
-                    "trim": { "x": "10", "y": "20", "width": "3000", "height": "2000.5" },
+                    "trim": { "left": "0.05", "top": "0", "right": "0.95", "bottom": "1" },
                     "paper": { "format": "standard", "size": "a3", "orientation": "landscape" },
                     "clean_up": true
-                }
+                }]
             })
         );
         let back: DrawingSource = serde_json::from_value(value).unwrap();
@@ -389,17 +402,20 @@ mod tests {
         };
         assert!(corners("10").validate().is_ok());
         assert!(corners("-1").validate().is_err());
-        let trim = |w: &str| ImageEdit {
-            trim: Some(ImageRect {
-                x: dec("0"),
-                y: dec("0"),
-                width: dec(w),
-                height: dec("1"),
+        let trim = |left: &str, right: &str| ImageEdit {
+            trim: Some(Trim {
+                left: dec(left),
+                top: dec("0"),
+                right: dec(right),
+                bottom: dec("1"),
             }),
             ..ImageEdit::default()
         };
-        assert!(trim("1").validate().is_ok());
-        assert!(trim("0").validate().is_err());
+        assert!(trim("0", "1").validate().is_ok());
+        assert!(trim("0.5", "0.5").validate().is_err(), "no width");
+        assert!(trim("0.6", "0.5").validate().is_err(), "left after right");
+        assert!(trim("-0.1", "0.5").validate().is_err());
+        assert!(trim("0", "1.01").validate().is_err());
         let paper = |w: &str| ImageEdit {
             paper: Some(Paper::Custom {
                 width_mm: dec(w),

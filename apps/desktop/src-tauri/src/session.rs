@@ -517,7 +517,7 @@ impl AppSession {
             .unwrap_or_default();
         let open = OpenProject {
             drawing: DocumentInfo::of(created.source.as_ref(), &name)?,
-            hash: *created.source.content_hash(),
+            hash: created.source.render_key(),
             project: created.session,
             lock: created.lock,
             revision: 0,
@@ -589,7 +589,7 @@ impl AppSession {
             .unwrap_or_default();
         Ok(OpenProject {
             drawing: DocumentInfo::of(opened.source.as_ref(), &name)?,
-            hash: *opened.source.content_hash(),
+            hash: opened.source.render_key(),
             project,
             lock,
             revision: 0,

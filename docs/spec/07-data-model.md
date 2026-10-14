@@ -29,7 +29,7 @@ Revision label, imported file name, SHA-256 hash, source, import date, sheets. O
 The source says what kind of file the revision was imported from ([ADR 0010](../adr/0010-drawing-source-and-schema-4.md), schema 4):
 
 - `pdf`: the sheets are the pages of the PDF.
-- `image` with `format` (`jpeg`, `png`, `tiff`) and `edit`: a photo or scan, one sheet per page. The image is stored unchanged; `edit` holds how it becomes a sheet: quarter turns, fine angle in degrees (-45 to 45), sheet corners for perspective correction, trim rectangle, paper (a standard size with orientation, or a custom size in mm) and a clean up flag. Corner and trim values are pixels of the stored image. All numbers are exact decimals. Image revisions become creatable with release 0.1.
+- `image` with `format` (`jpeg`, `png`, `tiff`) and `pages`: a photo or scan, one sheet per page. The image is stored unchanged; each entry of `pages` (in sheet order) holds how that page becomes a sheet: quarter turns, fine angle in degrees (-45 to 45), sheet corners for perspective correction, trim, paper (a standard size with orientation, or a custom size in mm) and a clean up flag. Corner points are pixels of the stored page; the trim edges are fractions from 0 to 1 of the page after rotation and corner correction. All numbers are exact decimals. Image revisions become creatable with release 0.1.
 
 ### Sheet
 Index, size in sheet units, rotation, kind (`vector_text`, `vector_outlined`, `raster`), raster DPI if applicable, zone grid definition, detected views and title block region, unit and scale.

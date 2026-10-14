@@ -115,6 +115,7 @@ trait SymbolClassifier {   // GD&T and other symbols
     fn classify(&self, crop: &GrayImage) -> Result<Vec<(Symbol, f32)>>;
 }
 trait RasterSource {       // what tiles are drawn from: a PDF page or an image (ADR 0010)
+    fn render_key(&self) -> Sha256Hex;                             // names the pixels
     fn sheet_count(&self) -> usize;
     fn sheet_size(&self, sheet: usize) -> Result<Size>;            // sheet space
     fn render_region(&self, sheet: usize, region: Rect, zoom: f64) -> Result<RgbaImage>;
@@ -144,7 +145,7 @@ src/
 
 The viewport is the most demanding part:
 
-- **Tile layer:** `<img>` or canvas tiles requested through the custom URI protocol `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`. Tiles are rendered in Rust from the drawing's `RasterSource` (PDFium for PDFs, an image source for photos and scans) on a worker pool and cached in memory (LRU) and on disk, keyed by source kind and content hash.
+- **Tile layer:** `<img>` or canvas tiles requested through the custom URI protocol `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`. Tiles are rendered in Rust from the drawing's `RasterSource` (PDFium for PDFs, an image source for photos and scans) on a worker pool and cached in memory (LRU) and on disk, keyed by source kind and render key (the content hash for a PDF).
 - **Overlay:** one SVG in sheet space with a single transform for pan and zoom. Balloons, leaders, selection boxes and proposal ghosts are SVG elements. A few hundred to a few thousand elements are well within SVG limits. If profiling shows otherwise, the overlay switches to canvas without changing the data flow.
 
 ## IPC

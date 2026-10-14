@@ -247,13 +247,16 @@ pub enum Command {
         /// New label; empty if unknown.
         label: String,
     },
-    /// Replaces the image edit settings of an image drawing revision: rotation, fine angle,
-    /// corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1). Refused for a
-    /// PDF revision. Sheets and balloons do not change; the image editor (R.20) sends the
-    /// sheet and balloon changes that follow from an edit in the same batch.
+    /// Replaces the image edit settings of one page of an image drawing revision: rotation,
+    /// fine angle, corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1).
+    /// Refused for a PDF revision. Sheets and balloons do not change yet; the sheet size and
+    /// balloon positions that follow from an edit are derived in Rust when the image editor
+    /// comes (R.20, rule 2), never in the frontend.
     SetImageEdit {
         /// The revision.
         revision: RevisionId,
+        /// Zero based page, the index of its sheet.
+        page: u32,
         /// New settings.
         edit: Box<ImageEdit>,
     },
@@ -456,7 +459,11 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
         C::UpdateRevisionLabel { revision, label } => {
             reports::update_revision_label(tx, *revision, label)
         }
-        C::SetImageEdit { revision, edit } => reports::set_image_edit(tx, *revision, edit),
+        C::SetImageEdit {
+            revision,
+            page,
+            edit,
+        } => reports::set_image_edit(tx, *revision, *page, edit),
         C::RecordIssuedReport {
             kind,
             template,

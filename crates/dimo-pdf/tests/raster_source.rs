@@ -12,6 +12,7 @@ use dimo_pdf::{PdfError, RasterSource, RgbaImage, SourceKind};
 const RED: [u8; 3] = [200, 0, 0];
 const BLUE: [u8; 3] = [0, 0, 200];
 const GREEN: [u8; 3] = [0, 160, 0];
+const GREY: [u8; 3] = [128, 128, 128];
 const WHITE: [u8; 3] = [255, 255, 255];
 
 /// Two sheets in sheet space: 800 x 600 units, red left of x = 400 and blue right of it, and
@@ -20,12 +21,15 @@ const WHITE: [u8; 3] = [255, 255, 255];
 struct Synthetic {
     hash: Sha256Hex,
     sheets: Vec<Size>,
+    /// A setting that changes the pixels, like an image edit: sheet 1 is grey instead of green.
+    grey: bool,
 }
 
 impl Synthetic {
     fn new() -> Self {
         Self {
             hash: Sha256Hex::of(b"synthetic raster source"),
+            grey: false,
             sheets: vec![
                 Size {
                     width: 800.0,
@@ -39,9 +43,11 @@ impl Synthetic {
         }
     }
 
-    fn color(sheet: usize, size: Size, x: f64, y: f64) -> [u8; 3] {
+    fn color(&self, sheet: usize, size: Size, x: f64, y: f64) -> [u8; 3] {
         if x < 0.0 || y < 0.0 || x >= size.width || y >= size.height {
             WHITE
+        } else if sheet == 1 && self.grey {
+            GREY
         } else if sheet == 1 {
             GREEN
         } else if x < 400.0 {
@@ -59,6 +65,14 @@ impl RasterSource for Synthetic {
 
     fn content_hash(&self) -> &Sha256Hex {
         &self.hash
+    }
+
+    fn render_key(&self) -> Sha256Hex {
+        if self.grey {
+            Sha256Hex::of(format!("{} grey", self.hash).as_bytes())
+        } else {
+            self.hash
+        }
     }
 
     fn sheet_count(&self) -> usize {
@@ -89,7 +103,7 @@ impl RasterSource for Synthetic {
             for i in 0..width {
                 let x = region.origin.x + (f64::from(i) + 0.5) / zoom;
                 let y = region.origin.y + (f64::from(j) + 0.5) / zoom;
-                pixels.extend_from_slice(&Self::color(sheet, size, x, y));
+                pixels.extend_from_slice(&self.color(sheet, size, x, y));
                 pixels.push(255);
             }
         }
@@ -220,6 +234,28 @@ fn a_service_without_pdfium_refuses_pdfs() {
     assert!(service.engine().is_none());
     assert!(matches!(
         service.open_document(b"%PDF-1.7".to_vec()),
-        Err(PdfError::EngineStopped)
+        Err(PdfError::NoPdfium)
     ));
+}
+
+/// Two sources of the same file with different settings have different render keys, so the
+/// service and its caches keep their tiles apart (MF F1, image edits in R.19).
+#[test]
+fn changed_settings_get_their_own_tiles() {
+    let dir = tempfile::tempdir().unwrap();
+    let service = TileService::without_pdf(TileConfig {
+        disk_dir: Some(dir.path().to_owned()),
+        ..TileConfig::default()
+    });
+    let plain = service.insert_source(Arc::new(Synthetic::new()));
+    let grey = service.insert_source(Arc::new(Synthetic {
+        grey: true,
+        ..Synthetic::new()
+    }));
+    assert_eq!(plain.content_hash(), grey.content_hash());
+    assert_ne!(plain.render_key(), grey.render_key());
+    let green = decode(&service.get(key(plain.render_key(), 1, 0, 0, 0)).unwrap());
+    let grey = decode(&service.get(key(grey.render_key(), 1, 0, 0, 0)).unwrap());
+    assert_eq!(pixel(&green, 5, 5), GREEN);
+    assert_eq!(pixel(&grey, 5, 5), GREY);
 }

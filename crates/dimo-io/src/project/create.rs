@@ -99,7 +99,7 @@ pub enum CreateError {
     #[error("not a PDF or image drawing")]
     UnknownType,
     /// An image drawing; images become drawings with release 0.1 (R.19).
-    #[error("{0:?} images are not supported yet")]
+    #[error("{} images are not supported yet", .0.extension())]
     ImageNotSupported(ImageFormat),
     /// The reader could not open the file or read its sheets.
     #[error(transparent)]
@@ -152,35 +152,28 @@ pub fn create_from_drawing(
         None => return Err(CreateError::UnknownType),
     };
     let handle = opener.open_pdf(bytes.clone())?;
-    let hash = *handle.source.content_hash();
-    let drawing = sheets_of(handle.source.as_ref())
-        .map_err(CreateError::from)
-        .and_then(|sheets| {
-            Ok(import_drawing(
-                bytes,
-                file_name,
-                source_kind,
-                &hash,
-                &sheets,
-                env,
-            )?)
-        });
-    let drawing = match drawing {
-        Ok(drawing) => drawing,
+    let source = &handle.source;
+    let created = (|| {
+        let sheets = sheets_of(source.as_ref())?;
+        let hash = *source.content_hash();
+        let drawing = import_drawing(bytes, file_name, source_kind, &hash, &sheets, env)?;
+        Ok::<_, CreateError>(start_session(drawing, options, env)?)
+    })();
+    match created {
+        Ok((session, lock, autosave_error)) => Ok(CreatedProject {
+            session,
+            source: handle.source,
+            lock,
+            autosave_error,
+        }),
         Err(error) => {
+            // Every failure after opening gives a source this call opened back.
             if handle.newly_opened {
-                opener.release(&hash);
+                opener.release(&source.render_key());
             }
-            return Err(error);
+            Err(error)
         }
-    };
-    let (session, lock, autosave_error) = start_session(drawing, options, env)?;
-    Ok(CreatedProject {
-        session,
-        source: handle.source,
-        lock,
-        autosave_error,
-    })
+    }
 }
 
 /// What the reader finds on each sheet.

@@ -313,7 +313,7 @@ fn the_drawing_of_a_project_opens_through_its_source() {
     );
     file.project.revisions[0].source = DrawingSource::Image {
         format: ImageFormat::Png,
-        edit: Box::default(),
+        pages: vec![dimo_core::ImageEdit::default(); 2],
     };
     file.insert_drawing(common::DRAWING.to_vec());
     let session = ProjectSession::from_file(file, None);

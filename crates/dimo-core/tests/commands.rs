@@ -590,8 +590,8 @@ fn project_json_round_trips_and_matches_its_schema() {
     assert!(schemas.validate(&float, index).is_err());
     assert!(serde_json::from_value::<dimo_core::Project>(float).is_err());
 }
-/// MF F1: image edit settings change as one `revision_changed` step, only on image revisions
-/// and only within range; an unchanged edit records nothing.
+/// MF F1: image edit settings of one page change as one `revision_changed` step, only on image
+/// revisions, existing pages and within range; an unchanged edit records nothing.
 #[test]
 fn image_edit_is_refused_for_pdf_revisions_and_undoable_for_images() {
     use dimo_core::{DrawingSource, ImageEdit, ImageFormat};
@@ -604,46 +604,67 @@ fn image_edit_is_refused_for_pdf_revisions_and_undoable_for_images() {
         clean_up: true,
         ..ImageEdit::default()
     };
-    let set = |revision, edit: &ImageEdit| Command::SetImageEdit {
+    let set = |revision, page, edit: &ImageEdit| Command::SetImageEdit {
         revision,
+        page,
         edit: Box::new(edit.clone()),
     };
     assert_eq!(
-        doc.execute(set(pdf, &edit), &mut env),
+        doc.execute(set(pdf, 0, &edit), &mut env),
         Err(CommandError::NotAnImage(pdf))
     );
     let unknown = dimo_core::RevisionId::from_uuid(uuid::Uuid::nil());
     assert_eq!(
-        doc.execute(set(unknown, &edit), &mut env),
+        doc.execute(set(unknown, 0, &edit), &mut env),
         Err(CommandError::UnknownRevision(unknown))
     );
 
-    // An image revision, as release 0.1 will import it (R.19).
+    // A two page scan, as release 0.1 will import it (R.19).
     let mut project = doc.project().clone();
     project.revisions[0].source = DrawingSource::Image {
-        format: ImageFormat::Png,
-        edit: Box::default(),
+        format: ImageFormat::Tiff,
+        pages: vec![ImageEdit::default(); 2],
     };
     let mut doc = Document::new(project);
     let original = doc.project().clone();
     let image = original.revisions[0].id;
-    let patch = doc.execute(set(image, &edit), &mut env).unwrap();
-    let [Change::RevisionChanged { before, after }] = patch.changes.as_slice() else {
+    let patch = doc.execute(set(image, 1, &edit), &mut env).unwrap();
+    let [
+        Change::RevisionChanged {
+            revision,
+            before,
+            after,
+        },
+    ] = patch.changes.as_slice()
+    else {
         panic!("one revision change: {patch:?}");
     };
-    assert_eq!(**before, original.revisions[0]);
-    assert_eq!(after.source.image_edit(), Some(&edit));
-    assert_eq!(after.sheets, before.sheets, "sheets stay");
+    assert_eq!(*revision, image);
+    assert_eq!(*before, original.revisions[0].source);
+    let pages = after.image_pages().unwrap();
+    assert_eq!(pages[0], ImageEdit::default(), "page 0 stays");
+    assert_eq!(pages[1], edit);
+    assert_eq!(
+        doc.project().revisions[0].sheets,
+        original.revisions[0].sheets,
+        "sheets stay"
+    );
     assert!(
-        doc.execute(set(image, &edit), &mut env).unwrap().is_empty(),
+        doc.execute(set(image, 1, &edit), &mut env)
+            .unwrap()
+            .is_empty(),
         "same edit, no change"
     );
+    assert!(matches!(
+        doc.execute(set(image, 2, &edit), &mut env),
+        Err(CommandError::InvalidImageEdit(_))
+    ));
     let too_steep = ImageEdit {
         fine_angle: "46".parse().unwrap(),
         ..edit.clone()
     };
     assert!(matches!(
-        doc.execute(set(image, &too_steep), &mut env),
+        doc.execute(set(image, 0, &too_steep), &mut env),
         Err(CommandError::InvalidImageEdit(_))
     ));
     doc.undo(&mut env).unwrap();

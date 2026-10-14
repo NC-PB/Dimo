@@ -876,13 +876,16 @@
         {
           "description": "A photo or scan; sheets are its pages (one for JPEG and PNG).",
           "properties": {
-            "edit": {
-              "$ref": "#/$defs/ImageEdit",
-              "description": "How the image becomes a sheet."
-            },
             "format": {
               "$ref": "#/$defs/ImageFormat",
               "description": "File format of the stored image."
+            },
+            "pages": {
+              "description": "How each page becomes a sheet, in page order: entry `i` belongs to the sheet with\nindex `i`.",
+              "items": {
+                "$ref": "#/$defs/ImageEdit"
+              },
+              "type": "array"
             },
             "type": {
               "const": "image",
@@ -892,7 +895,7 @@
           "required": [
             "type",
             "format",
-            "edit"
+            "pages"
           ],
           "type": "object"
         }
@@ -939,13 +942,13 @@
         "trim": {
           "anyOf": [
             {
-              "$ref": "#/$defs/ImageRect"
+              "$ref": "#/$defs/Trim"
             },
             {
               "type": "null"
             }
           ],
-          "description": "Part of the image to keep, in pixels of the image after rotation and corner correction;\n`null` keeps all of it."
+          "description": "Part of the page to keep, as fractions of the page after rotation and corner correction\n(see the module docs); `null` keeps all of it."
         }
       },
       "required": [
@@ -992,38 +995,6 @@
       "required": [
         "x",
         "y"
-      ],
-      "type": "object"
-    },
-    "ImageRect": {
-      "description": "An axis parallel rectangle in image pixels.",
-      "properties": {
-        "height": {
-          "description": "Height, more than 0.",
-          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-          "type": "string"
-        },
-        "width": {
-          "description": "Width, more than 0.",
-          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-          "type": "string"
-        },
-        "x": {
-          "description": "Left edge.",
-          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-          "type": "string"
-        },
-        "y": {
-          "description": "Top edge.",
-          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
-          "type": "string"
-        }
-      },
-      "required": [
-        "x",
-        "y",
-        "width",
-        "height"
       ],
       "type": "object"
     },
@@ -2273,6 +2244,38 @@
         "decimal_rules",
         "unit_rounding",
         "custom_tables"
+      ],
+      "type": "object"
+    },
+    "Trim": {
+      "description": "The part of a page to keep: its edges as fractions from 0 to 1 of the width (left, right)\nand height (top, bottom) of the page after rotation and corner correction.",
+      "properties": {
+        "bottom": {
+          "description": "Bottom edge, more than `top`.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "left": {
+          "description": "Left edge.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "right": {
+          "description": "Right edge, more than `left`.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "top": {
+          "description": "Top edge.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "left",
+        "top",
+        "right",
+        "bottom"
       ],
       "type": "object"
     },

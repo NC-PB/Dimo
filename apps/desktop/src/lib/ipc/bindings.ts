@@ -504,14 +504,16 @@ before: string;
 /**  Label after. */
 after: string } | 
 /**
- *  A drawing revision changed as a whole, for example the image edit settings of its
- *  source (MF F1). The ID stays the same.
+ *  The source of a drawing revision changed, for example the image edit settings of a
+ *  page (MF F1). Label and sheets have changes of their own.
  */
 { type: "revision_changed"; 
-/**  State before. */
-before: DrawingRevision; 
-/**  State after. */
-after: DrawingRevision } | 
+/**  The revision. */
+revision: RevisionId; 
+/**  Source before. */
+before: DrawingSource; 
+/**  Source after. */
+after: DrawingSource } | 
 /**  An issued report record was inserted at `index` of `Project::issued_reports`. */
 { type: "issued_report_inserted"; 
 /**  Position in the list. */
@@ -919,14 +921,17 @@ revision: RevisionId;
 /**  New label; empty if unknown. */
 label: string } | 
 /**
- *  Replaces the image edit settings of an image drawing revision: rotation, fine angle,
- *  corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1). Refused for a
- *  PDF revision. Sheets and balloons do not change; the image editor (R.20) sends the
- *  sheet and balloon changes that follow from an edit in the same batch.
+ *  Replaces the image edit settings of one page of an image drawing revision: rotation,
+ *  fine angle, corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1).
+ *  Refused for a PDF revision. Sheets and balloons do not change yet; the sheet size and
+ *  balloon positions that follow from an edit are derived in Rust when the image editor
+ *  comes (R.20, rule 2), never in the frontend.
  */
 { type: "set_image_edit"; 
 /**  The revision. */
 revision: RevisionId; 
+/**  Zero based page, the index of its sheet. */
+page: number; 
 /**  New settings. */
 edit: ImageEdit } | 
 /**
@@ -1110,7 +1115,10 @@ export type DevView = {
 
 /**  The drawing of a project as the viewport needs it. */
 export type DocumentInfo = {
-	/**  Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs. */
+	/**
+	 *  Render key of the drawing source, 64 hex digits: the content hash (SHA-256, FR-DOC-07)
+	 *  for a PDF. The `{doc}` part of tile URLs.
+	 */
 	doc: string,
 	/**  File name of the drawing without the directory. */
 	name: string,
@@ -1147,8 +1155,11 @@ export type DrawingSource =
 { type: "image"; 
 /**  File format of the stored image. */
 format: ImageFormat; 
-/**  How the image becomes a sheet. */
-edit: ImageEdit };
+/**
+ *  How each page becomes a sheet, in page order: entry `i` belongs to the sheet with
+ *  index `i`.
+ */
+pages: ImageEdit[] };
 
 /**
  *  Name and version of an engine that took part in making a proposal (data model `Proposal`:
@@ -1329,10 +1340,10 @@ export type ImageEdit = {
 	 */
 	corners: SheetCorners | null,
 	/**
-	 *  Part of the image to keep, in pixels of the image after rotation and corner correction;
-	 *  `null` keeps all of it.
+	 *  Part of the page to keep, as fractions of the page after rotation and corner correction
+	 *  (see the module docs); `null` keeps all of it.
 	 */
-	trim: ImageRect | null,
+	trim: Trim | null,
 	/**  Paper the trimmed image is mapped onto (R01 decision 9); `null` until the user picks it. */
 	paper: Paper | null,
 	/**
@@ -1357,18 +1368,6 @@ export type ImagePoint = {
 	x: string,
 	/**  Pixels from the top edge. */
 	y: string,
-};
-
-/**  An axis parallel rectangle in image pixels. */
-export type ImageRect = {
-	/**  Left edge. */
-	x: string,
-	/**  Top edge. */
-	y: string,
-	/**  Width, more than 0. */
-	width: string,
-	/**  Height, more than 0. */
-	height: string,
 };
 
 /**
@@ -2656,6 +2655,21 @@ export type ToleranceTableInfo = {
 	draft: boolean,
 	/**  Classes to choose from (columns of its general parts); empty for fit tables. */
 	classes: string[],
+};
+
+/**
+ *  The part of a page to keep: its edges as fractions from 0 to 1 of the width (left, right)
+ *  and height (top, bottom) of the page after rotation and corner correction.
+ */
+export type Trim = {
+	/**  Left edge. */
+	left: string,
+	/**  Top edge. */
+	top: string,
+	/**  Right edge, more than `left`. */
+	right: string,
+	/**  Bottom edge, more than `top`. */
+	bottom: string,
 };
 
 /**  Values for text typed into the value field or the card (M2 decision 5). */
