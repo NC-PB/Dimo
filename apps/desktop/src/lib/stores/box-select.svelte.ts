@@ -247,9 +247,9 @@ export class BoxSelectStore {
     if (current?.requirement_text !== text || (this.legs[index] ?? "") !== leg) {
       return;
     }
-    // Only a refused argument is a leg Rust could not read; other failures leave the card as is.
+    // Only a refused shorter leg is shown at the leg; other failures leave the card as is.
     if (result?.status === "error") {
-      if (result.error.kind === "invalid_argument") {
+      if (result.error.kind === "invalid_argument" && result.error.reason === "shorter_leg") {
         this.legErrors = this.legErrors.map((e, i) => (i === index ? result.error : e));
       }
       return;
