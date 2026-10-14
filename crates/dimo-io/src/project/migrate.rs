@@ -116,6 +116,10 @@ mod v3 {
                 Ok(json!({ "field": key, "value": value }))
             })
             .collect::<std::result::Result<Vec<_>, String>>()?;
+        // Lossless: no key of the old record may be left over.
+        if let Some(key) = record.keys().next() {
+            return Err(format!("{what}: unexpected key {key}"));
+        }
         Ok(Value::Array(values))
     }
 
@@ -783,6 +787,8 @@ mod tests {
             json!({ "type": "update_project_info" }),
             json!({ "type": "update_report_info", "info": { "report_number": "" } }),
             json!({ "type": "update_sample", "sample": { "serial": "1" } }),
+            json!({ "type": "update_project_info", "info": { "part_number": "", "part_name": "",
+              "customer": "", "order_reference": "", "drawing_number": "" } }),
             json!({ "type": "update_sheet", "sheet": sheet, "scale": 2 }),
             json!({ "commands": [] }),
         ] {

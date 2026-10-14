@@ -107,7 +107,8 @@ A new field on `Characteristic`, `Project` or one of its parts (`ProjectInfo`,
 2. Editing: for characteristics a `FieldValue` arm and its case in `Characteristic::set_values`
    (exhaustive); for project parts an arm in the field enum and its `set` method next to the
    struct (exhaustive): `ProjectInfoField` and `ToleranceField` in `project.rs`,
-   `ReportInfoField` in `report.rs`, `SheetField` in `sheet.rs`, `SampleField` in
+   `ReportInfoField` in `report.rs` (and `ReportInfo::changes_to`), `SheetField` in `sheet.rs`,
+   `SampleField` in
    `measurement.rs`, plus the key list of the old whole record command in
    `crates/dimo-io/src/project/migrate.rs` (`mod v3`) if the field existed before schema 4.
    Numbering settings and the default balloon style are still replaced whole

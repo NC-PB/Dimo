@@ -68,41 +68,42 @@ impl ReportInfo {
     }
 
     /// The fields in which `other` differs from `self`, in declaration order: the values that
-    /// turn `self` into `other`.
+    /// turn `self` into `other`. Every field is named, so a new one cannot be forgotten.
     pub fn changes_to(&self, other: &Self) -> Vec<ReportInfoField> {
-        let mut out = Vec::new();
-        let mut push = |a: &String, b: &String, field: fn(String) -> ReportInfoField| {
-            if a != b {
-                out.push(field(b.clone()));
-            }
-        };
-        push(
-            &self.report_number,
-            &other.report_number,
-            ReportInfoField::ReportNumber,
-        );
-        push(
-            &self.report_date,
-            &other.report_date,
-            ReportInfoField::ReportDate,
-        );
-        push(
-            &self.company_name,
-            &other.company_name,
-            ReportInfoField::CompanyName,
-        );
-        push(
-            &self.inspected_by,
-            &other.inspected_by,
-            ReportInfoField::InspectedBy,
-        );
-        push(
-            &self.approved_by,
-            &other.approved_by,
-            ReportInfoField::ApprovedBy,
-        );
-        push(&self.remarks, &other.remarks, ReportInfoField::Remarks);
-        out
+        type Make = fn(String) -> ReportInfoField;
+        let Self {
+            report_number,
+            report_date,
+            company_name,
+            inspected_by,
+            approved_by,
+            remarks,
+        } = other;
+        let pairs: [(&String, &String, Make); 6] = [
+            (
+                &self.report_number,
+                report_number,
+                ReportInfoField::ReportNumber,
+            ),
+            (&self.report_date, report_date, ReportInfoField::ReportDate),
+            (
+                &self.company_name,
+                company_name,
+                ReportInfoField::CompanyName,
+            ),
+            (
+                &self.inspected_by,
+                inspected_by,
+                ReportInfoField::InspectedBy,
+            ),
+            (&self.approved_by, approved_by, ReportInfoField::ApprovedBy),
+            (&self.remarks, remarks, ReportInfoField::Remarks),
+        ];
+        pairs
+            .into_iter()
+            .filter(|(a, b, _)| a != b)
+            .map(|(_, b, field)| field(b.clone()))
+            .collect()
     }
 }
 
