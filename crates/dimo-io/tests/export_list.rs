@@ -221,19 +221,49 @@ fn xlsx_german_sheet_name() {
     assert!(strings.contains("Nennmaß"));
 }
 
+/// Committed exports of [`project`], one per exporter and language: file name, XLSX (else
+/// CSV), language.
+const GOLDEN: &[(&str, bool, Language)] = &[
+    ("list_en.csv", false, Language::English),
+    ("list_de.csv", false, Language::German),
+    ("list_en.xlsx", true, Language::English),
+    ("list_de.xlsx", true, Language::German),
+];
+
+fn golden_path(name: &str) -> std::path::PathBuf {
+    // Resolved at run time so a shared target directory never points to a stale checkout.
+    let manifest = std::env::var("CARGO_MANIFEST_DIR")
+        .unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_owned());
+    std::path::PathBuf::from(manifest)
+        .join("tests/golden")
+        .join(name)
+}
+
+/// FR-EXP-11, rule 11: the exports equal files written at an earlier time on another run, so
+/// they depend on neither the clock nor the process. Byte for byte, also the ZIP container of
+/// the XLSX files. Regenerate after an intended change with
+/// `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` and review the diff.
 #[test]
-fn exports_are_byte_identical() {
-    for exporter in [
-        &CsvListExporter as &dyn Exporter,
-        &XlsxListExporter as &dyn Exporter,
-    ] {
-        for language in [Language::English, Language::German] {
-            let a = export(exporter, &project(), language);
-            // Let the wall clock move on, a clock dependent writer would differ.
-            std::thread::sleep(std::time::Duration::from_millis(2100));
-            let b = export(exporter, &project(), language);
-            assert_eq!(a, b, "{} {language:?}", exporter.file_extension());
+fn exports_match_the_golden_files() {
+    let update = std::env::var_os("DIMO_UPDATE_GOLDEN").is_some();
+    for &(name, xlsx, language) in GOLDEN {
+        let exporter: &dyn Exporter = if xlsx {
+            &XlsxListExporter
+        } else {
+            &CsvListExporter
+        };
+        let bytes = export(exporter, &project(), language);
+        assert_eq!(bytes, export(exporter, &project(), language), "{name}");
+        let path = golden_path(name);
+        if update {
+            std::fs::write(&path, &bytes).unwrap();
         }
+        let committed = std::fs::read(&path).unwrap_or_default();
+        assert!(
+            committed == bytes,
+            "{name} differs from tests/golden/{name}. If the change is intended, regenerate with \
+             DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list"
+        );
     }
 }
 
