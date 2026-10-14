@@ -1,7 +1,8 @@
 <script lang="ts">
   import { disabledReason, runCommand } from "$lib/commands.svelte";
   import JobStatus from "$lib/components/JobStatus.svelte";
-  import { commandErrorMessage, m } from "$lib/i18n";
+  import ErrorDetails from "$lib/components/ErrorDetails.svelte";
+  import { commandErrorMessage, errorDetail, m } from "$lib/i18n";
   import type { ReportField } from "$lib/ipc/bindings";
   import { measureUi } from "$lib/measure/measure-ui.svelte";
   import Pane from "$lib/pane/Pane.svelte";
@@ -196,9 +197,10 @@
       {/each}
     </ul>
     {#if store.checksError}
-      <p class="px-4 py-3 text-sm text-danger" role="alert">
-        {commandErrorMessage(store.checksError)}
-      </p>
+      <div class="px-4 py-3 text-sm text-danger" role="alert">
+        <p class="m-0">{commandErrorMessage(store.checksError)}</p>
+        <ErrorDetails detail={errorDetail(store.checksError)} />
+      </div>
     {/if}
 
     <div class="mt-auto flex flex-col gap-2 border-t border-border p-4">
@@ -280,6 +282,7 @@
           <span aria-hidden="true">⚠</span>
           {m.report_print_failed({ message: commandErrorMessage(store.print.error) })}
         </p>
+        <ErrorDetails detail={errorDetail(store.print.error)} />
       {/if}
       <p class="text-xs text-text-muted">{m.report_issue_hint()}</p>
     </div>

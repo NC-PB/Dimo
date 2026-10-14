@@ -95,3 +95,7 @@ Tastatur fokussierst du die Linie und drückst ↑ oder ↓. Dimo merkt sich die
 Dimo zeigt über der Zeichnung eine Meldung, zum Beispiel dass die Datei nicht geöffnet werden
 konnte. Als Zeichnung lassen sich in dieser Version nur PDF-Dateien verwenden. Sagt die Meldung,
 dass die PDF-Komponente fehlt, ist die Installation unvollständig; installiere Dimo erneut.
+
+Fehlermeldungen erscheinen in der Sprache der App. Unter einer Meldung öffnet **Details** den
+technischen Text (Dateipfad, Systemfehler), den du einer Fehlermeldung an die Entwickler beilegen
+kannst.

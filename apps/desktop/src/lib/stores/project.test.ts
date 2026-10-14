@@ -398,7 +398,7 @@ describe("project store (T1.5)", () => {
     rust.execute = () =>
       Promise.resolve({ status: "error" as const, error: message as unknown as CommandError });
     expect(await store.execute(ADD)).toBeUndefined();
-    expect(store.error).toEqual({ kind: "invalid_argument", message });
+    expect(store.error).toEqual({ kind: "invalid_argument", reason: "unreadable", message });
   });
 
   it("keeps the error of a refused command", async () => {

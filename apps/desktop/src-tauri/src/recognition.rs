@@ -33,7 +33,7 @@ use specta::Type;
 use tauri::{AppHandle, Manager};
 
 use crate::export::next_job_id;
-use crate::ipc::{CommandError, tile_service};
+use crate::ipc::{ArgumentReason, CommandError, InternalReason, tile_service};
 use crate::project::with_session;
 use crate::session::RecognitionTarget;
 use crate::tiles::TileState;
@@ -164,9 +164,10 @@ fn check_region(region: &OrientedBox) -> Result<(), CommandError> {
     if finite && region.size.width > 0.0 && region.size.height > 0.0 {
         Ok(())
     } else {
-        Err(CommandError::InvalidArgument {
-            message: "the region needs a finite position and a size above zero".to_owned(),
-        })
+        Err(CommandError::argument(
+            ArgumentReason::Region,
+            "the region needs a finite position and a size above zero",
+        ))
     }
 }
 
@@ -181,11 +182,12 @@ pub fn propose(
     language: Language,
 ) -> Result<Vec<ProposalView>, CommandError> {
     check_region(&region)?;
-    let doc = tiles
-        .document(&target.drawing)
-        .ok_or_else(|| CommandError::InvalidDocument {
-            message: "the drawing of the project is not open".to_owned(),
-        })?;
+    let doc = tiles.document(&target.drawing).ok_or_else(|| {
+        CommandError::internal(
+            InternalReason::Bug,
+            "the drawing of the project is not open",
+        )
+    })?;
     let started = std::time::Instant::now();
     let text = doc.region_text(target.page, region)?;
     let interpreter = interpreter(target);
@@ -233,11 +235,12 @@ pub fn parse_shorter_leg(text: Option<&str>, unit: Unit) -> Result<Option<Length
     let Some(text) = text.map(str::trim).filter(|t| !t.is_empty()) else {
         return Ok(None);
     };
-    Length::parse(text, unit)
-        .map(Some)
-        .ok_or_else(|| CommandError::InvalidArgument {
-            message: format!("the shorter leg {text:?} is not a positive number"),
-        })
+    Length::parse(text, unit).map(Some).ok_or_else(|| {
+        CommandError::argument(
+            ArgumentReason::ShorterLeg,
+            format_args!("the shorter leg {text:?} is not a positive number"),
+        )
+    })
 }
 
 /// The shorter leg sent with a callout text (T2.9a).
@@ -311,13 +314,7 @@ pub async fn propose_from_region(
 ) -> Result<Vec<ProposalView>, CommandError> {
     let tiles = tile_service(&app.state::<TileState>())?;
     let target = with_session(app, move |_, session| session.recognition_target(sheet)).await?;
-    tauri::async_runtime::spawn_blocking(move || {
-        propose(&tiles, &target, sheet, region, placement, language)
-    })
-    .await
-    .map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })?
+    crate::ipc::blocking(move || propose(&tiles, &target, sheet, region, placement, language)).await
 }
 
 /// Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained

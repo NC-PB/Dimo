@@ -6,7 +6,15 @@
    * 15) and the export defaults (D-32, D-33, M3 decision 12). Project settings live on the
    * Drawing tab and in File > Info.
    */
-  import { LOCALE_NAMES, commandErrorMessage, locales, m, themeLabel } from "$lib/i18n";
+  import ErrorDetails from "$lib/components/ErrorDetails.svelte";
+  import {
+    LOCALE_NAMES,
+    commandErrorMessage,
+    errorDetail,
+    locales,
+    m,
+    themeLabel,
+  } from "$lib/i18n";
   import type {
     ExportPreferences,
     PdfBalloons,
@@ -78,6 +86,7 @@
       <span aria-hidden="true">⚠</span>
       {commandErrorMessage(settingsStore.error)}
     </p>
+    <ErrorDetails detail={errorDetail(settingsStore.error)} />
   {/if}
 
   <section class={boxClass} aria-labelledby="options-appearance">

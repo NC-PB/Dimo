@@ -1,6 +1,6 @@
 <script lang="ts">
   import EmptyState from "$lib/components/EmptyState.svelte";
-  import { commandErrorMessage, m } from "$lib/i18n";
+  import { commandErrorMessage, errorDetail, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
   import Pane from "$lib/pane/Pane.svelte";
   import { exportStore } from "$lib/stores/export.svelte";
@@ -101,7 +101,10 @@
           <span>{m.report_preview_xlsx()}</span>
         {/if}
         {#if store.previewError}
-          <span class="text-danger" role="alert"
+          <span
+            class="text-danger"
+            role="alert"
+            title={errorDetail(store.previewError) ?? undefined}
             >{m.report_preview_failed({ message: commandErrorMessage(store.previewError) })}</span
           >
         {/if}

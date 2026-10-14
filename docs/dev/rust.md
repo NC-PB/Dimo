@@ -17,6 +17,7 @@
 
 - Errors: `thiserror` enums in library crates, `anyhow` only in binaries (`dimo-cli`, `src-tauri`).
   No `unwrap()` or `expect()` outside tests, except for invariants with a comment explaining why.
+- Errors that reach the UI: see "Checklist: adding an error the user can see".
 - Logging: `tracing`, never `println!` in library code.
 - Numbers: `rust_decimal::Decimal` for all tolerance values. Geometry in `f64` sheet units.
 - IDs: newtype wrappers around `uuid::Uuid` (`CharId`, `BalloonId`, `SheetId`). Never pass raw `Uuid`.
@@ -60,13 +61,13 @@ others are hand kept and easy to miss.
    `patch::Change`s through `Tx::push`; record a change only if the state differs. Use the
    shared helpers (`known_chars` in `mod.rs`, `change_settings` in `settings.rs`,
    `renumber_if_unlocked` in `numbering.rs`).
-4. New refusal: a `CommandError` variant in `command/mod.rs`, its `RejectReason` and mapping in
-   `apps/desktop/src-tauri/src/ipc.rs` (`impl From<&dimo_core::CommandError> for RejectReason`,
-   exhaustive) with the mapping test in the same file.
-5. Frontend text for a new reason: `rejectReasonText` in `apps/desktop/src/lib/i18n.ts`
-   (exhaustive), `refusal_<reason>` keys in `apps/desktop/messages/en.json` and `de.json`, the
-   `RejectReason` list in `apps/desktop/src/lib/i18n.test.ts`, and `refusalDetail` in
-   `apps/desktop/src/lib/table/refusal.ts` if it needs details.
+4. New refusal: a `CommandError` variant in `command/mod.rs`, its `RejectReason` and the arm in
+   `CommandError::reject_reason` in `command/reject.rs` (exhaustive), with a case in the test
+   there.
+5. Frontend text for a new reason: the `REJECT` table in `apps/desktop/src/lib/errors.ts`
+   (exhaustive) and `refusal_<reason>` keys in `apps/desktop/messages/en.json` and `de.json`;
+   `errors.test.ts` fails until both languages have it. `refusalDetail` in
+   `apps/desktop/src/lib/table/refusal.ts` only if it needs details.
 6. Shell: nothing for a new variant. All commands go through the one Tauri command `execute`
    (`apps/desktop/src-tauri/src/project.rs`, `session.rs`). Only a new Tauri command needs the
    function, a line in `apps/desktop/src-tauri/commands.txt` and its entry in `lib.rs`
@@ -134,3 +135,33 @@ A new field on `Characteristic`, `Project` or one of its parts (`ProjectInfo`,
     `col_*` and `field_*` keys in `apps/desktop/messages/en.json` and `de.json`.
 12. Truth files only if the field is ground truth: `TruthCharacteristic` in
     `crates/dimo-core/src/truth.rs` and `docs/schema/truth.schema.json`.
+
+## Checklist: adding an error the user can see
+
+Rust decides which error happened; the frontend only translates (MF F3, rule 2). Every error the
+UI shows carries a machine readable `kind` and, where a kind has several causes, a `reason`. The
+English `message` is diagnostic text for the collapsed "Details" line and bug reports, never the
+main text.
+
+1. Pick the kind in `apps/desktop/src-tauri/src/error.rs` (`CommandError`): `io`,
+   `invalid_document`, `invalid_argument`, `project`, `export`, `rejected`, `recent`,
+   `task_failed`, `internal`, or one of the kinds without a reason. Add a reason variant to the
+   matching enum (`IoReason`, `DocumentReason`, `ExportReason`, ...) if none fits. Refused
+   document commands use `rejected` with a `RejectReason` (see "adding a command").
+2. Map crate errors in `error.rs` only: the `From` impls (`ProjectError`, `CreateError`,
+   `PdfError`, `ReportError`, `ExportError`, `dimo_core::CommandError`) and the helpers
+   (`CommandError::io`, `export_io`, `export_pdf`, `argument`, `internal`, `task_failed`). Do
+   not build `message`-only errors at the call site. Operating system errors get their reason
+   from `IoReason::of` (not found, permission denied, file locked by another program, disk
+   full). Blocking work runs through `ipc::blocking`, which turns a failed join into
+   `task_failed`.
+3. Errors outside `CommandError`: the failed autosave state (`AutosaveReason`) and a refused
+   table import (`TableImportReason`) carry their own reason the same way.
+4. Add a case to the tests in `error.rs`.
+5. Regenerate the bindings (`cargo test -p dimo-desktop --test bindings`, twice).
+6. Frontend: one entry in the matching table of `apps/desktop/src/lib/errors.ts` (TypeScript
+   refuses to compile without it) and the message key in `apps/desktop/messages/en.json` and
+   `de.json`, worded per the glossary in `docs/dev/translations.md`. `errors.test.ts` reads
+   every kind and reason from `bindings.ts` and fails if one lacks a text in either language
+   or if the German text equals the English one. Show errors with `commandErrorMessage` and the
+   diagnostic text with `ErrorDetails.svelte` (`errorDetail`).

@@ -31,7 +31,7 @@ use crate::export::{
     ExportFormat, ExportRequest, ExportStart, ReportWarnings, open_with_system, open_written_file,
     render, report_warnings, take_snapshot, write_file,
 };
-use crate::ipc::{CommandError, DocumentInfo, tile_service};
+use crate::ipc::{CommandError, DocumentInfo, IoReason, tile_service};
 use crate::project::{emit_patched, with_session};
 use crate::session::{AppSession, ExportSnapshot};
 use crate::settings::PdfBalloons;
@@ -119,7 +119,7 @@ pub async fn report_preview(
     .await?;
     let tiles = tile_service(&app.state::<TileState>())?;
     let render_app = app.clone();
-    tauri::async_runtime::spawn_blocking(move || {
+    crate::ipc::blocking(move || {
         let bytes = preview_bytes(&snapshot, view)?;
         let doc = tiles.open_document(bytes)?;
         let name = view.save_copy().format.file_name(&stem);
@@ -130,9 +130,6 @@ pub async fn report_preview(
         Ok(info)
     })
     .await
-    .map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })?
 }
 
 /// A report header field the Report tab asks for before issuing (T3.19).
@@ -242,6 +239,7 @@ fn print_dir(app: &AppHandle) -> Result<PathBuf, CommandError> {
     crate::dev::dev_folder("cache", app.path().app_cache_dir().ok())
         .map(|cache| cache.join("print"))
         .ok_or_else(|| CommandError::Io {
+            reason: IoReason::NotFound,
             message: "no cache folder for printing".to_owned(),
         })
 }
@@ -277,9 +275,7 @@ pub fn write_print_file(
     save_copy_name: &str,
     bytes: &[u8],
 ) -> Result<PathBuf, CommandError> {
-    std::fs::create_dir_all(dir).map_err(|e| CommandError::Io {
-        message: format!("{}: {e}", dir.display()),
-    })?;
+    std::fs::create_dir_all(dir).map_err(|e| CommandError::io(dir, &e))?;
     let path = dir.join(print_file_name(save_copy_name, bytes));
     if !path.is_file() {
         write_file(&path, bytes)?;
@@ -300,7 +296,7 @@ pub async fn print_report(app: AppHandle, view: ReportView) -> Result<String, Co
         emit_patched(&app, patched);
     }
     let format = view.save_copy().format;
-    tauri::async_runtime::spawn_blocking(move || {
+    crate::ipc::blocking(move || {
         let bytes = render(&start.snapshot, &view.save_copy(), None)?;
         let path = write_print_file(&dir, &name, &bytes)?;
         if crate::dev::dev_export_dir().is_none() {
@@ -312,9 +308,6 @@ pub async fn print_report(app: AppHandle, view: ReportView) -> Result<String, Co
             .unwrap_or_default())
     })
     .await
-    .map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })?
 }
 
 #[cfg(test)]

@@ -21,6 +21,7 @@ import {
   type ReportKind,
   type ReportWarnings,
 } from "$lib/ipc/bindings";
+import { asCommandError } from "$lib/errors";
 import { settingsStore } from "./settings.svelte";
 
 /** Result shape of the generated command functions. */
@@ -179,7 +180,7 @@ export class ExportStore {
         this.latest[format] = result.data;
       }
     } catch (e) {
-      this.startError[format] = { kind: "io", message: String(e) };
+      this.startError[format] = asCommandError(e);
     } finally {
       this.asking[format] = false;
     }

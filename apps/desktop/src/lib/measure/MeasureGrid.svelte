@@ -284,7 +284,7 @@
     }
     const error = project.error;
     project.dismissError();
-    return error ?? { kind: "invalid_argument", message: "" };
+    return error ?? { kind: "internal", reason: "bug", message: "" };
   }
 
   /** Why a value for one cell was refused, naming the cell. */

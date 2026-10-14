@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { commandErrorMessage, m, noticeLines } from "$lib/i18n";
+  import { commandErrorMessage, errorDetail, m, noticeLines } from "$lib/i18n";
+  import ErrorDetails from "./ErrorDetails.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
 
   const buttonClass = "shrink-0 rounded px-2 py-0.5 text-xs hover:bg-surface-raised";
@@ -34,7 +35,10 @@
     role="alert"
   >
     <span aria-hidden="true">⚠</span>
-    <p class="flex-1">{commandErrorMessage(projectStore.error)}</p>
+    <div class="flex-1">
+      <p class="m-0" data-testid="project-error">{commandErrorMessage(projectStore.error)}</p>
+      <ErrorDetails detail={errorDetail(projectStore.error)} />
+    </div>
     <button
       type="button"
       class="{buttonClass} text-text"

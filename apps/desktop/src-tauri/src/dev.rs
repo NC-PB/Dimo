@@ -53,7 +53,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};
 
-use crate::ipc::{CommandError, tile_service};
+use crate::ipc::{ArgumentReason, CommandError, IoReason, tile_service};
 use crate::project::{SessionState, emit};
 use crate::session::{AppSession, ProjectLoaded};
 use crate::tiles::TileState;
@@ -276,7 +276,7 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
             let tiles = tile_service(&app.state::<TileState>())?;
             let script = var("DIMO_DEV_SCRIPT");
             let handle = app.clone();
-            tauri::async_runtime::spawn_blocking(move || {
+            crate::ipc::blocking(move || {
                 let state = handle.state::<SessionState>();
                 let mut session = state.lock();
                 dev_open(
@@ -287,10 +287,7 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
                     script.as_deref(),
                 )
             })
-            .await
-            .map_err(|e| CommandError::Io {
-                message: e.to_string(),
-            })??;
+            .await?;
             Some(app.state::<SessionState>().lock().state())
         }
         _ => None,
@@ -311,6 +308,7 @@ pub async fn dev_startup(app: AppHandle) -> Result<DevStartup, CommandError> {
         ui_script: match var("DIMO_DEV_UI_SCRIPT") {
             Some(path) if !DEV_UI_SCRIPT_DONE.swap(true, Ordering::SeqCst) => Some(
                 std::fs::read_to_string(&path).map_err(|e| CommandError::Io {
+                    reason: IoReason::of(&e),
                     message: format!("{path}: {e}"),
                 })?,
             ),
@@ -380,6 +378,7 @@ fn dev_open(
         return Ok(());
     };
     let text = std::fs::read_to_string(script).map_err(|e| CommandError::Io {
+        reason: IoReason::of(&e),
         message: format!("{script}: {e}"),
     })?;
     let text = session
@@ -387,6 +386,7 @@ fn dev_open(
         .map_or(text.clone(), |p| substitute_sheets(&text, p));
     let steps: Vec<DevStep> =
         serde_json::from_str(&text).map_err(|e| CommandError::InvalidArgument {
+            reason: ArgumentReason::Request,
             message: format!("{script}: {e}"),
         })?;
     for (index, step) in steps.into_iter().enumerate() {

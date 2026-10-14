@@ -38,7 +38,7 @@ use specta::Type;
 use tauri_specta::Event;
 
 use crate::env::DesktopEnvironment;
-use crate::ipc::{CommandError, DocumentInfo};
+use crate::ipc::{AutosaveReason, CommandError, DocumentInfo, ProjectReason, RejectReason};
 
 /// Autosave state of the open project (NFR-REL-01).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -51,7 +51,9 @@ pub enum Autosave {
     /// Unsaved changes that are not in a journal: the last write failed, or there is no
     /// place for a journal. The timer retries.
     Failed {
-        /// Why, for the user and for bug reports.
+        /// Why, for the frontend to translate.
+        reason: AutosaveReason,
+        /// Diagnostic text for the "Details" line and bug reports.
         message: String,
     },
 }
@@ -201,15 +203,16 @@ struct OpenProject {
     hash: Sha256Hex,
     revision: u32,
     /// Error of the last journal write, cleared by the next successful one.
-    journal_error: Option<String>,
+    journal_error: Option<(AutosaveReason, String)>,
     /// Autosave state last sent to the frontend.
     reported: Autosave,
 }
 
 impl OpenProject {
     fn autosave(&self) -> Autosave {
-        if let Some(message) = &self.journal_error {
+        if let Some((reason, message)) = &self.journal_error {
             return Autosave::Failed {
+                reason: *reason,
                 message: message.clone(),
             };
         }
@@ -220,6 +223,7 @@ impl OpenProject {
             Autosave::Journaled
         } else {
             Autosave::Failed {
+                reason: AutosaveReason::NoFolder,
                 message: "no autosave folder available".to_owned(),
             }
         }
@@ -257,7 +261,7 @@ impl OpenProject {
             Ok(_) => None,
             Err(error) => {
                 tracing::warn!("autosave journal write failed: {error}");
-                Some(error.to_string())
+                Some((AutosaveReason::of(&error), error.to_string()))
             }
         };
     }
@@ -399,6 +403,7 @@ impl AppSession {
                 open.project
                     .current_drawing()
                     .ok_or_else(|| CommandError::Project {
+                        reason: ProjectReason::MissingDrawing,
                         message: "the drawing of the current revision is missing".to_owned(),
                     })?
                     .to_vec(),
@@ -521,7 +526,9 @@ impl AppSession {
             project: created.session,
             lock: created.lock,
             revision: 0,
-            journal_error: created.autosave_error.map(|e| e.to_string()),
+            journal_error: created
+                .autosave_error
+                .map(|e| (AutosaveReason::of(&e), e.to_string())),
             reported: Autosave::Clean,
         };
         Ok(self.replace(tiles, open, discard, None))
@@ -665,8 +672,8 @@ impl AppSession {
         // Dropping `old` releases its lock.
     }
 
-    /// Saves to the project file. Fails with [`CommandError::Project`] if it has none: use
-    /// [`AppSession::save_as`].
+    /// Saves to the project file. Fails with [`CommandError::Project`] (`no_file`) if it has
+    /// none: use [`AppSession::save_as`].
     pub fn save(&mut self) -> Result<ProjectStatusChanged, CommandError> {
         let open = self.open.as_mut().ok_or(CommandError::NoProject)?;
         open.project.save()?;
@@ -706,7 +713,7 @@ impl AppSession {
         // M2 decision 4: a custom table must be stored before the settings list it.
         if let Some(id) = open.project.missing_table(&command) {
             return Err(CommandError::Rejected {
-                reason: crate::ipc::RejectReason::InvalidProjectSetting,
+                reason: RejectReason::InvalidProjectSetting,
                 message: format!("custom tolerance table {id} is not stored in the project"),
             });
         }
@@ -781,7 +788,8 @@ impl AppSession {
         let found = project
             .current_revision()
             .and_then(|r| r.sheets.iter().find(|s| s.id == sheet))
-            .ok_or_else(|| CommandError::InvalidArgument {
+            .ok_or_else(|| CommandError::Rejected {
+                reason: RejectReason::UnknownSheet,
                 message: format!("sheet {sheet} is not a sheet of the current drawing"),
             })?;
         Ok(RecognitionTarget {

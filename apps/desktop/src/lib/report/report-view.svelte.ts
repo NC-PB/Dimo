@@ -13,6 +13,7 @@ import {
   type ReportKind,
   type ReportView,
 } from "$lib/ipc/bindings";
+import { asCommandError } from "$lib/errors";
 import { exportStore } from "$lib/stores/export.svelte";
 import { settingsStore } from "$lib/stores/settings.svelte";
 
@@ -100,7 +101,7 @@ export class ReportViewStore {
       ]);
     } catch (e) {
       // Outside Tauri (a plain browser) the calls throw instead of answering.
-      const error: CommandError = { kind: "io", message: String(e) };
+      const error: CommandError = asCommandError(e);
       preview = { status: "error", error };
       checks = { status: "error", error };
     }
@@ -146,7 +147,7 @@ export class ReportViewStore {
           ? { state: "done", fileName: result.data }
           : { state: "failed", error: result.error };
     } catch (e) {
-      this.print = { state: "failed", error: { kind: "io", message: String(e) } };
+      this.print = { state: "failed", error: asCommandError(e) };
     }
   }
 }

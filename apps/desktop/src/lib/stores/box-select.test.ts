@@ -104,7 +104,11 @@ class FakeRecognition implements RecognitionCommands {
     if (this.refuse === "invalid_argument") {
       return Promise.resolve({
         status: "error",
-        error: { kind: "invalid_argument", message: "not a positive number" },
+        error: {
+          kind: "invalid_argument",
+          reason: "shorter_leg",
+          message: "not a positive number",
+        },
       });
     }
     if (this.refuse === "no_project") {

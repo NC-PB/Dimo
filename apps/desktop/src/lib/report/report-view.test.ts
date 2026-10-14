@@ -80,10 +80,17 @@ describe("report view store (T3.19)", () => {
     rust.answers[0]?.({ status: "ok", data: doc("a") });
     await ok;
     const failed = store.refresh(VIEW);
-    rust.answers[1]?.({ status: "error", error: { kind: "export", message: "typst" } });
+    rust.answers[1]?.({
+      status: "error",
+      error: { kind: "export", reason: "report_failed", message: "typst" },
+    });
     await failed;
     expect(store.preview?.doc).toBe("a");
-    expect(store.previewError).toEqual({ kind: "export", message: "typst" });
+    expect(store.previewError).toEqual({
+      kind: "export",
+      reason: "report_failed",
+      message: "typst",
+    });
     store.clear();
     expect([store.preview, store.checks, store.previewError]).toEqual([null, null, null]);
   });
@@ -94,11 +101,14 @@ describe("report view store (T3.19)", () => {
     await store.printReport(VIEW);
     expect(store.print).toEqual({ state: "done", fileName: "part_inspection-report.pdf" });
     rust.api.printReport = () =>
-      Promise.resolve({ status: "error", error: { kind: "export", message: "no viewer" } });
+      Promise.resolve({
+        status: "error",
+        error: { kind: "export", reason: "open_failed", message: "no viewer" },
+      });
     await store.printReport(VIEW);
     expect(store.print).toEqual({
       state: "failed",
-      error: { kind: "export", message: "no viewer" },
+      error: { kind: "export", reason: "open_failed", message: "no viewer" },
     });
   });
 });

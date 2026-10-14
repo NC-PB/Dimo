@@ -5,22 +5,28 @@ import type {
   CharacteristicField,
   CharacteristicKind,
   Classification,
-  CommandError,
   DerivationHint,
   DerivationRule,
   InterpreterNote,
   NumberingStrategy,
   OpenNotice,
-  RejectReason,
   Theme,
   Unit,
 } from "./ipc/bindings";
+import { autosaveFailedText } from "./errors";
 import { m } from "./paraglide/messages.js";
 import { getLocale, locales, setLocale, type Locale } from "./paraglide/runtime.js";
 import type { ShortcutAction } from "./shortcuts";
 import type { Tab, View } from "./stores/view.svelte";
 
 export { getLocale, locales, m, setLocale, type Locale };
+export {
+  autosaveFailedText,
+  commandErrorMessage,
+  errorDetail,
+  rejectReasonText,
+  tableImportText,
+} from "./errors";
 
 /**
  * Display names of the UI languages. Deliberately not translated: each language is named in
@@ -410,94 +416,6 @@ export function unitLabel(unit: Unit | null): string {
   }
 }
 
-/**
- * Translated text for the reasons of a refused command that need one, `null` for the others
- * (the caller then shows Rust's English message).
- */
-export function rejectReasonText(reason: RejectReason): string | null {
-  switch (reason) {
-    case "numbering_locked":
-      return m.refusal_numbering_locked();
-    case "zero_quantity":
-      return m.refusal_zero_quantity();
-    case "invalid_move_target":
-      return m.refusal_invalid_move_target();
-    case "unknown_characteristic":
-      return m.refusal_unknown_characteristic();
-    case "unknown_sample":
-      return m.refusal_unknown_sample();
-    case "unknown_revision":
-      return m.refusal_unknown_revision();
-    case "not_an_image":
-      return m.refusal_not_an_image();
-    case "invalid_image_edit":
-      return m.refusal_invalid_image_edit();
-    case "empty_serial":
-      return m.refusal_empty_serial();
-    case "duplicate_serial":
-      return m.refusal_duplicate_serial();
-    case "too_many_samples":
-      return m.refusal_too_many_samples();
-    case "invalid_sample_count":
-      return m.refusal_invalid_sample_count();
-    case "invalid_date":
-      return m.refusal_invalid_date();
-    case "invalid_result":
-      return m.refusal_invalid_result();
-    case "result_type_conflict":
-      return m.refusal_result_type_conflict();
-    case "unknown_balloon":
-      return m.refusal_unknown_balloon();
-    case "unknown_sheet":
-      return m.refusal_unknown_sheet();
-    case "invalid_geometry":
-      return m.refusal_invalid_geometry();
-    case "invalid_style":
-      return m.refusal_invalid_style();
-    case "invalid_sheet_setting":
-      return m.refusal_invalid_sheet_setting();
-    case "invalid_project_setting":
-      return m.refusal_invalid_project_setting();
-    case "nothing_to_undo":
-      return m.refusal_nothing_to_undo();
-    case "nothing_to_redo":
-      return m.refusal_nothing_to_redo();
-    case "internal":
-      return null;
-  }
-}
-
-/** Translated message for a failed command. */
-export function commandErrorMessage(error: CommandError): string {
-  switch (error.kind) {
-    case "pdfium_unavailable":
-      return m.pdfium_missing();
-    case "io":
-      return m.error_io({ message: error.message });
-    case "invalid_document":
-      return m.open_error({ message: error.message });
-    case "invalid_argument":
-      return m.error_rejected({ message: error.message });
-    case "rejected":
-      return m.error_rejected({ message: rejectReasonText(error.reason) ?? error.message });
-    case "no_project":
-      return m.error_no_project();
-    case "unsaved_changes":
-      return m.error_unsaved_changes();
-    case "in_use":
-      return error.user === null ? m.error_in_use() : m.error_in_use_by({ user: error.user });
-    case "newer_version":
-      return m.error_newer_version({
-        found: String(error.found),
-        supported: String(error.supported),
-      });
-    case "project":
-      return m.error_project({ message: error.message });
-    case "export":
-      return m.error_export({ message: error.message });
-  }
-}
-
 /** Translated autosave state (NFR-REL-01). */
 export function autosaveLabel(autosave: Autosave, hasFile: boolean): string {
   switch (autosave.state) {
@@ -506,7 +424,7 @@ export function autosaveLabel(autosave: Autosave, hasFile: boolean): string {
     case "journaled":
       return m.autosave_journaled();
     case "failed":
-      return m.autosave_failed({ message: autosave.message });
+      return autosaveFailedText(autosave.reason);
   }
 }
 

@@ -7,7 +7,8 @@
    * and Drawing tabs. Rust lists the tables and classes, checks every value and every imported
    * file; each change is one undoable `set_tolerance_settings` command.
    */
-  import { m } from "$lib/i18n";
+  import { m, tableImportText } from "$lib/i18n";
+  import ErrorDetails from "./ErrorDetails.svelte";
   import type { DecimalPlaceRule, TableClass, ToleranceTableInfo } from "$lib/ipc/bindings";
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
   import {
@@ -191,12 +192,13 @@
         <p class="text-xs text-danger" role="alert" data-testid="import-refusal">
           <span aria-hidden="true">⚠</span>
           {refusal.line === null
-            ? m.tolerance_import_refused({ message: refusal.message })
+            ? m.tolerance_import_refused({ message: tableImportText(refusal.reason) })
             : m.tolerance_import_refused_line({
                 line: String(refusal.line),
-                message: refusal.message,
+                message: tableImportText(refusal.reason),
               })}
         </p>
+        <ErrorDetails detail={refusal.message} />
       {:else if tolerance.imported}
         <p class="text-xs" role="status" data-testid="import-status">
           ✓

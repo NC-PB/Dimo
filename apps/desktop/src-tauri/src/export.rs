@@ -42,7 +42,7 @@ use specta::Type;
 use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_specta::Event;
 
-use crate::ipc::{CommandError, JobId, JobProgress, tile_service};
+use crate::ipc::{CommandError, ExportReason, InternalReason, JobId, JobProgress, tile_service};
 use crate::project::{SessionState, emit, emit_patched, with_session};
 use crate::session::{AppSession, ExportSnapshot, ProjectPatched};
 use crate::settings::PdfBalloons;
@@ -254,12 +254,6 @@ pub(crate) fn next_job_id() -> JobId {
     JobId(NEXT_JOB.fetch_add(1, Ordering::SeqCst))
 }
 
-fn export_error(message: impl std::fmt::Display) -> CommandError {
-    CommandError::Export {
-        message: message.to_string(),
-    }
-}
-
 /// Why a job stopped before it wrote its file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JobStop {
@@ -285,7 +279,8 @@ enum Prepared {
 
 /// The bundled report template set.
 pub fn report_template() -> Result<TemplateSet, CommandError> {
-    TemplateSet::bundled(REPORT_TEMPLATE).map_err(export_error)
+    TemplateSet::bundled(REPORT_TEMPLATE)
+        .map_err(|e| CommandError::internal(InternalReason::ReportTemplate, e))
 }
 
 /// Report options of `request` for `snapshot`: the date falls back to the project's last
@@ -307,8 +302,7 @@ fn prepare(snapshot: &ExportSnapshot, request: ExportRequest) -> Result<Prepared
     let Some((kind, _)) = request.format.report() else {
         return Ok(Prepared::Direct);
     };
-    let model = ReportModel::build(&snapshot.project, &report_options(snapshot, request, kind))
-        .map_err(export_error)?;
+    let model = ReportModel::build(&snapshot.project, &report_options(snapshot, request, kind))?;
     Ok(Prepared::Report(Box::new(model), report_template()?))
 }
 
@@ -324,45 +318,45 @@ fn render_prepared(
             Some((_, ReportFormat::Xlsx)) => dimo_report::render_xlsx(template, model),
             _ => dimo_report::render_report(template, model),
         }
-        .map_err(export_error);
+        .map_err(CommandError::from);
     }
     let options = ExportOptions {
         language: request.language,
     };
     let mut bytes = Vec::new();
     match request.format {
-        ExportFormat::Csv => CsvListExporter
-            .export(&snapshot.project, &options, &mut bytes)
-            .map_err(export_error)?,
-        ExportFormat::Xlsx => XlsxListExporter
-            .export(&snapshot.project, &options, &mut bytes)
-            .map_err(export_error)?,
+        ExportFormat::Csv => CsvListExporter.export(&snapshot.project, &options, &mut bytes)?,
+        ExportFormat::Xlsx => XlsxListExporter.export(&snapshot.project, &options, &mut bytes)?,
         ExportFormat::BalloonedPdf => {
-            let engine = engine.ok_or_else(|| CommandError::PdfiumUnavailable {
-                message: "no PDF engine".to_owned(),
+            let engine = engine
+                .ok_or_else(|| CommandError::export(ExportReason::NoPdfEngine, "no PDF engine"))?;
+            let drawing = snapshot.drawing.clone().ok_or_else(|| {
+                CommandError::internal(InternalReason::Bug, "the snapshot has no drawing")
             })?;
-            let drawing = snapshot
-                .drawing
-                .clone()
-                .ok_or_else(|| export_error("the drawing is missing"))?;
             let output = match request.pdf_balloons {
                 PdfBalloons::PageContent => BalloonOutput::PageContent,
                 PdfBalloons::Annotations => BalloonOutput::Annotations {
                     date: PdfDate::from_timestamp(&snapshot.modified).ok_or_else(|| {
-                        export_error(format!("invalid project time {}", snapshot.modified))
+                        CommandError::internal(
+                            InternalReason::Bug,
+                            format_args!("invalid project time {}", snapshot.modified),
+                        )
                     })?,
                 },
             };
             let overlay = project_overlay(&snapshot.project, output);
             bytes = engine
                 .write_ballooned(drawing, overlay)
-                .map_err(export_error)?;
+                .map_err(|e| CommandError::export_pdf(&e))?;
         }
         ExportFormat::CheckSheetPdf
         | ExportFormat::CheckSheetXlsx
         | ExportFormat::InspectionReportPdf
         | ExportFormat::InspectionReportXlsx => {
-            return Err(export_error("the report model was not built"));
+            return Err(CommandError::internal(
+                InternalReason::Bug,
+                "the report model was not built",
+            ));
         }
     }
     Ok(bytes)
@@ -411,9 +405,12 @@ pub fn run_steps(
 
 /// Writes `bytes` to `path` through a temporary file in the same directory.
 pub fn write_file(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
-    let name = path
-        .file_name()
-        .ok_or_else(|| export_error(format!("{} is not a file name", path.display())))?;
+    let name = path.file_name().ok_or_else(|| {
+        CommandError::export(
+            ExportReason::InvalidFileName,
+            format_args!("{} is not a file name", path.display()),
+        )
+    })?;
     let mut temporary_name = std::ffi::OsString::from(".");
     temporary_name.push(name);
     temporary_name.push(".part");
@@ -421,7 +418,7 @@ pub fn write_file(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
     let result = std::fs::write(&temporary, bytes).and_then(|()| std::fs::rename(&temporary, path));
     if let Err(error) = result {
         let _ = std::fs::remove_file(&temporary);
-        return Err(export_error(format!("{}: {error}", path.display())));
+        return Err(CommandError::export_io(path, &error));
     }
     Ok(())
 }
@@ -438,13 +435,21 @@ pub(crate) fn open_written_file(
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case(format.extension()));
     if !matches {
-        return Err(export_error(format!(
-            "not opened: {} is not a .{} file",
-            path.display(),
-            format.extension()
-        )));
+        return Err(CommandError::export(
+            ExportReason::WrongExtension,
+            format_args!(
+                "not opened: {} is not a .{} file",
+                path.display(),
+                format.extension()
+            ),
+        ));
     }
-    opener(path).map_err(|e| export_error(format!("cannot open {}: {e}", path.display())))
+    opener(path).map_err(|e| {
+        CommandError::export(
+            ExportReason::OpenFailed,
+            format_args!("cannot open {}: {e}", path.display()),
+        )
+    })
 }
 
 /// The process that opens `path` with the default application of the operating system. The path
@@ -517,8 +522,7 @@ pub fn report_warnings(
     kind: ReportKind,
     limits_changed: bool,
 ) -> Result<ReportWarnings, CommandError> {
-    let model = ReportModel::build(project, &ReportOptions::new(kind, Language::En))
-        .map_err(export_error)?;
+    let model = ReportModel::build(project, &ReportOptions::new(kind, Language::En))?;
     Ok(ReportWarnings {
         draft_limits: model.flags.draft_limits,
         open_results: model.flags.open_results,
@@ -647,10 +651,11 @@ pub async fn export_project(
     let suggested = format.file_name(&stem);
     let engine = match format {
         ExportFormat::BalloonedPdf => {
-            let tiles = tile_service(&app.state::<TileState>())?;
-            let engine = tiles.engine().cloned();
-            Some(engine.ok_or_else(|| CommandError::PdfiumUnavailable {
-                message: "the tile service runs without PDFium".to_owned(),
+            let engine = tile_service(&app.state::<TileState>())
+                .ok()
+                .and_then(|tiles| tiles.engine().cloned());
+            Some(engine.ok_or_else(|| {
+                CommandError::export(ExportReason::NoPdfEngine, "PDFium is not loaded")
             })?)
         }
         _ => None,
@@ -702,9 +707,7 @@ pub async fn export_project(
         });
     if let Err(e) = spawned {
         app.state::<JobRegistry>().finish(id);
-        return Err(CommandError::Io {
-            message: e.to_string(),
-        });
+        return Err(CommandError::task_failed(e));
     }
     Ok(Some(id))
 }
@@ -777,7 +780,7 @@ impl Job<'_> {
     fn record(&self, info: ReportInfo, output_sha256: Sha256Hex) -> IssuedRecord {
         let Some((kind, format)) = self.request.format.report() else {
             return IssuedRecord::Refused {
-                error: export_error("not a report"),
+                error: CommandError::internal(InternalReason::Bug, "not a report"),
             };
         };
         let template = match report_template() {
@@ -835,7 +838,13 @@ mod tests {
                 panic!("{name} must not be opened")
             });
             assert!(
-                matches!(refused, Err(CommandError::Export { .. })),
+                matches!(
+                    refused,
+                    Err(CommandError::Export {
+                        reason: ExportReason::WrongExtension,
+                        ..
+                    })
+                ),
                 "{name}"
             );
         }
@@ -843,7 +852,7 @@ mod tests {
             Err(std::io::Error::other("no application"))
         });
         assert!(
-            matches!(&failed, Err(CommandError::Export { message }) if message.contains("no application")),
+            matches!(&failed, Err(CommandError::Export { reason: ExportReason::OpenFailed, message }) if message.contains("no application")),
             "{failed:?}"
         );
     }
@@ -947,7 +956,10 @@ mod tests {
         let missing = dir.path().join("missing").join("list.csv");
         assert!(matches!(
             write_file(&missing, b"x"),
-            Err(CommandError::Export { .. })
+            Err(CommandError::Export {
+                reason: ExportReason::WriteFailed,
+                ..
+            })
         ));
         assert!(!missing.exists());
     }

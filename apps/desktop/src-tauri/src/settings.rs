@@ -228,9 +228,9 @@ impl SettingsState {
         let settings = settings.normalized();
         *self.current.lock().unwrap_or_else(PoisonError::into_inner) = settings.clone();
         if let Some(path) = &self.path {
-            settings.save(path).map_err(|e| CommandError::Io {
-                message: format!("{}: {e}", path.display()),
-            })?;
+            settings
+                .save(path)
+                .map_err(|e| CommandError::io(path, &e))?;
         }
         Ok(settings)
     }
@@ -284,16 +284,13 @@ pub async fn set_app_settings(
     app: AppHandle,
     settings: AppSettings,
 ) -> Result<SettingsView, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || {
+    crate::ipc::blocking(move || {
         let state = app.state::<SettingsState>();
         let stored = state.set(settings);
         apply(&app, &state.get());
         stored.map(|_| state.view())
     })
     .await
-    .map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })?
 }
 
 #[cfg(test)]
