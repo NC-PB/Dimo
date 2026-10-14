@@ -72,7 +72,7 @@ A sample is a measured part (serial number, date, inspector, gauge list). A resu
 Output of recognition before acceptance. Same shape as characteristic fields plus job ID and engine versions.
 
 ### AuditEntry
-Timestamp, user name (local OS user or configured name), command, before and after. Used for history and traceability.
+Timestamp, user name (local OS user or configured name), command, before and after. Used for history and traceability. Edits of characteristics, part data, report data, sheets, samples and single tolerance settings name only the fields they change; the before and after states are whole records. Commands of older schema versions are migrated with the project.
 
 ### IssuedReport
 Template ID and version, drawing revision hash, export time, output file hash. Locks numbering when the first report is issued (configurable).

@@ -84,8 +84,13 @@ others are hand kept and easy to miss.
    (exhaustive) with `patch.test.ts`, and the change type string lists in
    `crates/dimo-io/src/project/migrate.rs` if it embeds a characteristic, sheet, numbering or
    settings state (`revision_changed` embeds drawing sources with their image edits).
-10. Frontend call: build the command where it is used, through `ProjectStore.execute` or
-    `executeWith` (`apps/desktop/src/lib/stores/project.svelte.ts`).
+10. Frontend call: build the command where it is used and send it with `ProjectStore.execute`
+    (`apps/desktop/src/lib/stores/project.svelte.ts`). An edit command carries only the changed
+    fields (a field value list like `UpdateFields`, `UpdateProjectInfo`, `UpdateSheet`), and Rust
+    applies them to the state when the command runs, so fast edits of different fields never
+    overwrite each other (MF F4). `executeWith` builds a command from the latest state in the
+    edit queue; it remains only for the whole record commands `SetNumberingSettings` and
+    `SetDefaultBalloonStyle`.
 11. Tests: a case in `crates/dimo-core/tests/commands.rs` (or the area test file), the `Op`
     mirror and `command()` in `crates/dimo-core/tests/undo_redo.rs` (apply then undo returns
     the original state), and the scripted history in `crates/dimo-io/tests/common/mod.rs` so
@@ -100,8 +105,13 @@ A new field on `Characteristic`, `Project` or one of its parts (`ProjectInfo`,
    (and its constructor, `Characteristic::manual`, `Project::new`). Every key is written; use
    `null` for absent values, no `serde(default)`.
 2. Editing: for characteristics a `FieldValue` arm and its case in `Characteristic::set_values`
-   (exhaustive); for project parts the existing replace command (`UpdateProjectInfo`,
-   `SetToleranceSettings`, ...) carries it. If recognition fills it: `Proposal` in
+   (exhaustive); for project parts an arm in the field enum and its `set` method next to the
+   struct (exhaustive): `ProjectInfoField` and `ToleranceField` in `project.rs`,
+   `ReportInfoField` in `report.rs`, `SheetField` in `sheet.rs`, `SampleField` in
+   `measurement.rs`, plus the key list of the old whole record command in
+   `crates/dimo-io/src/project/migrate.rs` (`mod v3`) if the field existed before schema 4.
+   Numbering settings and the default balloon style are still replaced whole
+   (`SetNumberingSettings`, `SetDefaultBalloonStyle`). If recognition fills it: `Proposal` in
    `crates/dimo-core/src/proposal.rs` and `accept_one` in `command/characteristics.rs`.
 3. History: `CharacteristicField` and `changed_fields` in `crates/dimo-core/src/history.rs`
    (hand kept, a missing field silently drops out of the history), and `fieldLabel` in
