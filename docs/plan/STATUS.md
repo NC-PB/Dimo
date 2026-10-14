@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Next: **MF Foundation** ([plan](MF.md)): F1 to F9 from the code review of 2026-10-14, separate from everything else, no code until the owner says so
+- Current: **MF Foundation** ([plan](MF.md)), started 2026-10-14 by the owner: wave 1 (F5 command split, F6 command table, F9 cleanups) running
 - Then release 0.1 ([plan](R01.md), decisions answered, ADR 0008 accepted) together with the open M3 items: T3.21 shop floor user test and T3.11 owner exit run (owner), T3.22 one title bar, T3.23 license list
 - Roadmap after 0.1 merged to three milestones M4 to M6 ([ADR 0009](../adr/0009-roadmap-consolidation.md), proposed)
 - M3 built incl. UI rework; M2 implemented, owner exit open; M0 and M1 implemented, owner reviews open
