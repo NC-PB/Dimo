@@ -5,7 +5,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- Current: **MF Foundation** ([plan](MF.md)), started 2026-10-14 by the owner: wave 1: F5 and F6 merged, F9 running
+- Current: **MF Foundation** ([plan](MF.md)), started 2026-10-14 by the owner: wave 1 (F5, F6, F9) merged; wave 2 (F1 drawing source, then F4 and F3) next
 - Then release 0.1 ([plan](R01.md), decisions answered, ADR 0008 accepted) together with the open M3 items: T3.21 shop floor user test and T3.11 owner exit run (owner), T3.22 one title bar, T3.23 license list
 - Roadmap after 0.1 merged to three milestones M4 to M6 ([ADR 0009](../adr/0009-roadmap-consolidation.md), proposed)
 - M3 built incl. UI rework; M2 implemented, owner exit open; M0 and M1 implemented, owner reviews open
@@ -107,6 +107,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-14 | F9: one `dimo_core::Language` (also replaces the shell's ReportLanguage and ExplainLanguage; report data schema keeps `LanguageCode` through a schema-only type); `spreadsheet_number` helper; `DerivationRule::id()` from serde (`rule_code` returns an Option, exhaustive test); dimo-pdf on core `Rect`/`Size`; timing bounds are ignored `perf_*` tests run by `scripts/perf-tests.sh` and an informative CI job (continue-on-error); golden files replace the export sleeps (`export_list` 8.5 s to 0.05 s); dimo-vision dependency removed; `no_io` tests for dimo-notation and dimo-tolerance (load.rs allowed). Test helper consolidation deferred (rule in docs/dev/testing.md) | MF wave 1 | F9, agent |
 | 2026-10-14 | F5: `command/` and `patch/` modules by area (largest dimo-core file 474 lines), `inverse_of!` macro keeps compile time completeness, checklists in docs/dev/rust.md. F6: one table `apps/desktop/src-tauri/commands.txt`, build.rs generates the permission set `allow-app-commands`, test compares the table with the registered commands; `collect_commands!` stays hand written but checked | MF wave 1 | F5, F6, agents |
 | 2026-10-14 | Code review (Rust core, shell, frontend, read only): solid base (dependency direction, command and undo engine, decimals, determinism, lints, command registry, tokens, i18n); gaps where the next work pushes: drawings hard wired to PDF, domain orchestration in the shell (issued export, report date rule three times), errors flattened to English strings, four update command styles, three hand kept command lists, no logging, shortcut gating per dialog, viewport not reusable. Owner: fix F1 to F9 first as milestone MF ([plan](MF.md)); "before M4" items collected there | Owner question on design principles | owner, coordinator |
 | 2026-10-14 | Roadmap after 0.1 merged: M4 Automatic recognition (old M4 plus PDF text parts of old M6), M5 Scans and machine learning (old M5 plus symbol classifier), M6 Interchange, advanced reports and revisions (old M7 to M9); MF before 0.1; requirement tags remapped ([ADR 0009](../adr/0009-roadmap-consolidation.md), proposed, **Owner: accept**) | Owner request to speed up | owner |

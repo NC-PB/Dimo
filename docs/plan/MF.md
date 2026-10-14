@@ -72,8 +72,8 @@ Acceptance:
 - Stop the wave-shaped test helpers: no `model_v4.rs` or `edit_v4`; extend one builder.
 
 Acceptance:
-- [ ] Full test run about 8 s faster; no timing assertion in the default test run
-- [ ] Export snapshots unchanged
+- [x] Full test run about 8 s faster; no timing assertion in the default test run
+- [x] Export snapshots unchanged
 
 ---
 
