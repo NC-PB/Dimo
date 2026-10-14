@@ -39,7 +39,7 @@ fn engine() -> Option<PdfEngine> {
 /// Text runs grouped into lines: runs whose vertical centers are within 2 units form a line.
 fn lines(runs: &[TextRun]) -> Vec<String> {
     let mut runs: Vec<&TextRun> = runs.iter().filter(|r| !r.text.trim().is_empty()).collect();
-    let center = |r: &TextRun| r.bbox.y + r.bbox.height / 2.0;
+    let center = |r: &TextRun| r.bbox.origin.y + r.bbox.size.height / 2.0;
     runs.sort_by(|a, b| center(a).total_cmp(&center(b)));
     let mut groups: Vec<Vec<&TextRun>> = Vec::new();
     for run in runs {
@@ -51,7 +51,7 @@ fn lines(runs: &[TextRun]) -> Vec<String> {
     groups
         .into_iter()
         .map(|mut group| {
-            group.sort_by(|a, b| a.bbox.x.total_cmp(&b.bbox.x));
+            group.sort_by(|a, b| a.bbox.origin.x.total_cmp(&b.bbox.origin.x));
             group
                 .iter()
                 .map(|r| r.text.trim())

@@ -36,7 +36,7 @@ fn main() -> ExitCode {
             let b = run.bbox;
             println!(
                 "{:8.1} {:8.1} {:6.1} {:6.1}  {:<12} {}",
-                b.x, b.y, b.width, b.height, run.font_name, run.text
+                b.origin.x, b.origin.y, b.size.width, b.size.height, run.font_name, run.text
             );
         }
         Ok::<_, String>(())

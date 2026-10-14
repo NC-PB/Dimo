@@ -108,8 +108,8 @@ fn ballooned_pdf_has_the_numbers_and_is_deterministic() {
     for (x, number) in [(150.0, "1"), (270.0, "2"), (390.0, "3")] {
         assert!(
             runs.iter().any(|r| r.text == number
-                && (r.bbox.x + r.bbox.width / 2.0 - x).abs() < 3.0
-                && (r.bbox.y + r.bbox.height / 2.0 - 120.0).abs() < 3.0),
+                && (r.bbox.origin.x + r.bbox.size.width / 2.0 - x).abs() < 3.0
+                && (r.bbox.origin.y + r.bbox.size.height / 2.0 - 120.0).abs() < 3.0),
             "balloon {number} not found at its position"
         );
     }

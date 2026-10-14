@@ -31,13 +31,13 @@
 //! which the unmapped share measures. Findings on how PDFium decodes Type0 fonts with
 //! `Identity-H` and a missing or invalid `/ToUnicode` are in `corpus/notes/test_drawing_1.md`.
 
+use dimo_core::Rect;
 use dimo_core::sheet::SheetKind;
 use pdfium_render::prelude::{
     PdfPage, PdfPageObject, PdfPageObjectCommon, PdfPageObjectsCommon, PdfPageTextChar,
 };
 
 use crate::PdfError;
-use crate::geometry::SheetRect;
 use crate::page_space::PageToSheet;
 use crate::text::{page_to_sheet, strip_subset_tag, text_error};
 
@@ -119,13 +119,13 @@ pub(crate) fn is_unmapped(value: u32) -> bool {
 
 /// Analyzes the loaded page of `sheet`. Runs on the render thread.
 pub(crate) fn analyze_sheet(page: &PdfPage<'_>, sheet: usize) -> Result<SheetAnalysis, PdfError> {
-    let sheet_rect = SheetRect::new(
+    let sheet_rect = Rect::new(
         0.0,
         0.0,
         f64::from(page.width().value),
         f64::from(page.height().value),
     );
-    let sheet_area = sheet_rect.width * sheet_rect.height;
+    let sheet_area = sheet_rect.size.width * sheet_rect.size.height;
     let mut walk = Walk::new(page_to_sheet(page)?, sheet_rect);
     for object in page.objects().iter() {
         walk.visit(&object, false, 0);
@@ -187,7 +187,7 @@ fn counts_as_char(ch: &PdfPageTextChar<'_>) -> bool {
 
 struct Walk {
     to_sheet: PageToSheet,
-    sheet: SheetRect,
+    sheet: Rect,
     text_objects: usize,
     invisible_text_objects: usize,
     path_objects: usize,
@@ -197,7 +197,7 @@ struct Walk {
 }
 
 impl Walk {
-    fn new(to_sheet: PageToSheet, sheet: SheetRect) -> Self {
+    fn new(to_sheet: PageToSheet, sheet: Rect) -> Self {
         Self {
             to_sheet,
             sheet,
@@ -261,8 +261,10 @@ impl Walk {
                 f64::from(quad.top().value),
             );
             let s = self.sheet;
-            let w = (r.x + r.width).min(s.x + s.width) - r.x.max(s.x);
-            let h = (r.y + r.height).min(s.y + s.height) - r.y.max(s.y);
+            let w = (r.origin.x + r.size.width).min(s.origin.x + s.size.width)
+                - r.origin.x.max(s.origin.x);
+            let h = (r.origin.y + r.size.height).min(s.origin.y + s.size.height)
+                - r.origin.y.max(s.origin.y);
             w.max(0.0) * h.max(0.0)
         })
     }

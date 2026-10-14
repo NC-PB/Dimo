@@ -7,7 +7,7 @@
 //! so that geometry from text extraction lines up with rendered tiles. The `sheet_space_*` and
 //! `text_runs_follow_*` tests check both against each other.
 
-use crate::geometry::SheetRect;
+use dimo_core::Rect;
 
 /// Maps page space points to sheet space for one page.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -48,10 +48,10 @@ impl PageToSheet {
 
     /// Maps an axis aligned page space rectangle (left, bottom, right, top) to the axis aligned
     /// sheet space rectangle covering it.
-    pub(crate) fn rect(&self, left: f64, bottom: f64, right: f64, top: f64) -> SheetRect {
+    pub(crate) fn rect(&self, left: f64, bottom: f64, right: f64, top: f64) -> Rect {
         let (x0, y0) = self.point(left, bottom);
         let (x1, y1) = self.point(right, top);
-        SheetRect::new(x0.min(x1), y0.min(y1), (x1 - x0).abs(), (y1 - y0).abs())
+        Rect::new(x0.min(x1), y0.min(y1), (x1 - x0).abs(), (y1 - y0).abs())
     }
 
     /// The inverse of [`Self::point`] as a PDF matrix `[a b c d e f]`: sheet point `(x, y)`
@@ -127,7 +127,7 @@ mod tests {
     fn rect_is_normalized() {
         let t = PageToSheet::new(BBOX, 1);
         let r = t.rect(110.0, 60.0, 130.0, 70.0);
-        assert_eq!(r, SheetRect::new(10.0, 10.0, 10.0, 20.0));
+        assert_eq!(r, Rect::new(10.0, 10.0, 10.0, 20.0));
     }
 
     #[test]

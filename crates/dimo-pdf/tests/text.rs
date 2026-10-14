@@ -9,9 +9,10 @@
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
+use dimo_core::Rect;
 use dimo_core::sheet::SheetKind;
 use dimo_core::truth::TruthFile;
-use dimo_pdf::{FontInfo, PdfEngine, PdfError, SheetRect, TextRun};
+use dimo_pdf::{FontInfo, PdfEngine, PdfError, TextRun};
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 
@@ -46,20 +47,26 @@ fn engine() -> Option<PdfEngine> {
     }
 }
 
-fn center(r: &SheetRect) -> (f64, f64) {
-    (r.x + r.width / 2.0, r.y + r.height / 2.0)
+fn center(r: &Rect) -> (f64, f64) {
+    (
+        r.origin.x + r.size.width / 2.0,
+        r.origin.y + r.size.height / 2.0,
+    )
 }
 
-fn contains_point(r: &SheetRect, (x, y): (f64, f64)) -> bool {
-    x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height
+fn contains_point(r: &Rect, (x, y): (f64, f64)) -> bool {
+    x >= r.origin.x
+        && x <= r.origin.x + r.size.width
+        && y >= r.origin.y
+        && y <= r.origin.y + r.size.height
 }
 
 /// Whether `inner` lies within `outer` grown by `margin` on every side.
-fn within(inner: &SheetRect, outer: &SheetRect, margin: f64) -> bool {
-    inner.x >= outer.x - margin
-        && inner.y >= outer.y - margin
-        && inner.x + inner.width <= outer.x + outer.width + margin
-        && inner.y + inner.height <= outer.y + outer.height + margin
+fn within(inner: &Rect, outer: &Rect, margin: f64) -> bool {
+    inner.origin.x >= outer.origin.x - margin
+        && inner.origin.y >= outer.origin.y - margin
+        && inner.origin.x + inner.size.width <= outer.origin.x + outer.size.width + margin
+        && inner.origin.y + inner.size.height <= outer.origin.y + outer.size.height + margin
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -110,7 +117,7 @@ fn test_drawing_1_callouts_match_truth_regions() {
             "{}: rotated truth region",
             c.id
         );
-        let region = SheetRect::new(
+        let region = Rect::new(
             r.center.x - r.size.width / 2.0,
             r.center.y - r.size.height / 2.0,
             r.size.width,
@@ -125,8 +132,8 @@ fn test_drawing_1_callouts_match_truth_regions() {
         #[allow(clippy::cast_possible_truncation)]
         inside.sort_by_key(|run| {
             (
-                (run.bbox.x / 4.0).round() as i64,
-                (run.bbox.y * 100.0).round() as i64,
+                (run.bbox.origin.x / 4.0).round() as i64,
+                (run.bbox.origin.y * 100.0).round() as i64,
             )
         });
         let joined: Vec<&str> = inside.iter().map(|run| run.text.as_str()).collect();
@@ -263,9 +270,9 @@ const HELVETICA: &str = "/Resources << /Font << /F1 5 0 R >> >>";
 const HELVETICA_FONT: &str = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
 
 /// Bounding box of dark pixels of a full sheet render at zoom 1, in sheet units.
-fn ink_box(doc: &dimo_pdf::Document) -> SheetRect {
+fn ink_box(doc: &dimo_pdf::Document) -> Rect {
     let size = doc.sheet_size(0).unwrap();
-    let img = doc.render_region(0, SheetRect::full(size), 1.0).unwrap();
+    let img = doc.render_region(0, Rect::full(size), 1.0).unwrap();
     let (mut x0, mut y0, mut x1, mut y1) = (u32::MAX, u32::MAX, 0, 0);
     for y in 0..img.height() {
         for x in 0..img.width() {
@@ -278,7 +285,7 @@ fn ink_box(doc: &dimo_pdf::Document) -> SheetRect {
         }
     }
     assert!(x0 < x1, "no ink on the sheet");
-    SheetRect::new(
+    Rect::new(
         f64::from(x0),
         f64::from(y0),
         f64::from(x1 - x0),

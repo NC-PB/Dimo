@@ -27,10 +27,10 @@
 //! spaces do not count. For rotated text the box is axis aligned on the sheet, use
 //! [`TextRun::rotation`] to recover the reading direction.
 
+use dimo_core::Rect;
 use pdfium_render::prelude::{PdfDocument, PdfPage, PdfPageIndex, PdfPageTextChar, PdfiumError};
 
 use crate::PdfError;
-use crate::geometry::SheetRect;
 use crate::page_space::{PageToSheet, normalize_degrees};
 
 /// Characters belong to the same run only if their baseline offset is at most this many em.
@@ -53,7 +53,7 @@ pub struct TextRun {
     /// The characters as extracted, whitespace normalized (see the module docs).
     pub text: String,
     /// Axis aligned box around the characters in sheet space.
-    pub bbox: SheetRect,
+    pub bbox: Rect,
     /// Reading direction in degrees, counterclockwise as seen on the sheet, in `[0, 360)`.
     /// 0 reads left to right, 90 reads bottom to top.
     pub rotation: f64,
@@ -69,7 +69,7 @@ pub struct TextRun {
 pub(crate) struct Glyph {
     pub ch: char,
     /// Loose box in sheet space.
-    pub bbox: SheetRect,
+    pub bbox: Rect,
     /// Baseline origin in sheet space.
     pub origin: (f64, f64),
     /// Degrees counterclockwise on the sheet.
@@ -217,7 +217,7 @@ pub(crate) fn merge_runs_indexed(glyphs: &[Glyph]) -> Vec<(TextRun, std::ops::Ra
 
 struct RunBuilder {
     text: String,
-    bbox: Option<SheetRect>,
+    bbox: Option<Rect>,
     rotation: f64,
     font_name: String,
     font_size: f64,
@@ -310,21 +310,21 @@ pub(crate) fn across(dir: (f64, f64), p: (f64, f64)) -> f64 {
     -p.0 * dir.1 + p.1 * dir.0
 }
 
-pub(crate) fn corners(r: SheetRect) -> [(f64, f64); 4] {
+pub(crate) fn corners(r: Rect) -> [(f64, f64); 4] {
     [
-        (r.x, r.y),
-        (r.x + r.width, r.y),
-        (r.x, r.y + r.height),
-        (r.x + r.width, r.y + r.height),
+        (r.origin.x, r.origin.y),
+        (r.origin.x + r.size.width, r.origin.y),
+        (r.origin.x, r.origin.y + r.size.height),
+        (r.origin.x + r.size.width, r.origin.y + r.size.height),
     ]
 }
 
-pub(crate) fn union(a: SheetRect, b: SheetRect) -> SheetRect {
-    let x0 = a.x.min(b.x);
-    let y0 = a.y.min(b.y);
-    let x1 = (a.x + a.width).max(b.x + b.width);
-    let y1 = (a.y + a.height).max(b.y + b.height);
-    SheetRect::new(x0, y0, x1 - x0, y1 - y0)
+pub(crate) fn union(a: Rect, b: Rect) -> Rect {
+    let x0 = a.origin.x.min(b.origin.x);
+    let y0 = a.origin.y.min(b.origin.y);
+    let x1 = (a.origin.x + a.size.width).max(b.origin.x + b.size.width);
+    let y1 = (a.origin.y + a.size.height).max(b.origin.y + b.size.height);
+    Rect::new(x0, y0, x1 - x0, y1 - y0)
 }
 
 #[cfg(test)]
@@ -344,7 +344,7 @@ mod tests {
                 let gx = x + ADVANCE * i as f64;
                 Glyph {
                     ch,
-                    bbox: SheetRect::new(gx, y - 8.0, ADVANCE, 10.0),
+                    bbox: Rect::new(gx, y - 8.0, ADVANCE, 10.0),
                     origin: (gx, y),
                     rotation: 0.0,
                     font_name: "Sans".to_owned(),
@@ -362,7 +362,7 @@ mod tests {
     fn one_line_is_one_run() {
         let runs = merge_runs(&line("Ø30 H7", 100.0, 50.0));
         assert_eq!(texts(&runs), ["Ø30 H7"]);
-        assert_eq!(runs[0].bbox, SheetRect::new(100.0, 42.0, 36.0, 10.0));
+        assert_eq!(runs[0].bbox, Rect::new(100.0, 42.0, 36.0, 10.0));
         assert_eq!(runs[0].rotation, 0.0);
         assert_eq!(runs[0].font_name, "Sans");
     }
@@ -382,7 +382,7 @@ mod tests {
         let runs = merge_runs(&glyphs);
         assert_eq!(texts(&runs), ["Ø30 H7", "+0.0203", "-0"]);
         // The trailing space does not widen the box.
-        assert_eq!(runs[0].bbox.width, 36.0);
+        assert_eq!(runs[0].bbox.size.width, 36.0);
     }
 
     #[test]
@@ -447,7 +447,7 @@ mod tests {
                 let gy = 200.0 - ADVANCE * i as f64;
                 Glyph {
                     ch,
-                    bbox: SheetRect::new(92.0, gy - ADVANCE, 10.0, ADVANCE),
+                    bbox: Rect::new(92.0, gy - ADVANCE, 10.0, ADVANCE),
                     origin: (100.0, gy),
                     rotation: 90.0,
                     font_name: "Sans".to_owned(),
@@ -457,7 +457,7 @@ mod tests {
             .collect();
         let runs = merge_runs(&glyphs);
         assert_eq!(texts(&runs), ["R15"]);
-        assert_eq!(runs[0].bbox, SheetRect::new(92.0, 182.0, 10.0, 18.0));
+        assert_eq!(runs[0].bbox, Rect::new(92.0, 182.0, 10.0, 18.0));
         assert_eq!(runs[0].rotation, 90.0);
     }
 

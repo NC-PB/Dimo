@@ -12,7 +12,8 @@
 
 use std::path::PathBuf;
 
-use dimo_pdf::{ContentHash, PdfEngine, PdfError, RgbaImage, SheetRect};
+use dimo_core::Rect;
+use dimo_pdf::{ContentHash, PdfEngine, PdfError, RgbaImage};
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 const TEST_DRAWING_1_SHA256: &str =
@@ -145,7 +146,7 @@ fn fingerprint(img: &RgbaImage, cell: u32) -> String {
 fn test_drawing_1_overview_snapshot() {
     let Some(engine) = engine() else { return };
     let doc = engine.open(corpus_drawing(TEST_DRAWING_1)).unwrap();
-    let full = SheetRect::full(doc.sheet_size(0).unwrap());
+    let full = Rect::full(doc.sheet_size(0).unwrap());
     let img = doc.render_region(0, full, 0.25).unwrap();
     assert_eq!((img.width(), img.height()), (396, 306));
     // Rendering is deterministic within one build.
@@ -161,12 +162,12 @@ fn region_matches_crop_of_full_render() {
     let doc = engine.open(corpus_drawing(TEST_DRAWING_1)).unwrap();
     let zoom = 1.5;
     let full = doc
-        .render_region(0, SheetRect::full(doc.sheet_size(0).unwrap()), zoom)
+        .render_region(0, Rect::full(doc.sheet_size(0).unwrap()), zoom)
         .unwrap();
     assert_eq!((full.width(), full.height()), (2376, 1836));
     // Tile at whole pixel offset (600, 450) px = (400, 300) sheet units.
     let (px, py, tw, th) = (600u32, 450u32, 256u32, 256u32);
-    let region = SheetRect::new(
+    let region = Rect::new(
         f64::from(px) / zoom,
         f64::from(py) / zoom,
         f64::from(tw) / zoom,
@@ -203,13 +204,13 @@ fn region_crops_match_full_render_everywhere() {
     let doc = engine.open(corpus_drawing(TEST_DRAWING_1)).unwrap();
     let zoom = 2.0;
     let size = doc.sheet_size(0).unwrap();
-    let full = doc.render_region(0, SheetRect::full(size), zoom).unwrap();
+    let full = doc.render_region(0, Rect::full(size), zoom).unwrap();
     let step = 256u32;
     let mut worst = 0u8;
     for py in (0..full.height()).step_by(step as usize) {
         for px in (0..full.width()).step_by(step as usize) {
             let (w, h) = (step.min(full.width() - px), step.min(full.height() - py));
-            let region = SheetRect::new(
+            let region = Rect::new(
                 f64::from(px) / zoom,
                 f64::from(py) / zoom,
                 f64::from(w) / zoom,
@@ -235,7 +236,7 @@ fn region_crops_match_full_render_everywhere() {
 fn engine_is_usable_from_many_threads() {
     let Some(engine) = engine() else { return };
     let doc = engine.open(corpus_drawing(TEST_DRAWING_1)).unwrap();
-    let region = SheetRect::new(100.0, 100.0, 200.0, 150.0);
+    let region = Rect::new(100.0, 100.0, 200.0, 150.0);
     let expected = doc.render_region(0, region, 2.0).unwrap();
     std::thread::scope(|s| {
         let handles: Vec<_> = (0..4)
@@ -255,7 +256,7 @@ fn errors_are_reported() {
         Err(PdfError::Open(_))
     ));
     let doc = engine.open(corpus_drawing(TEST_DRAWING_1)).unwrap();
-    let r = SheetRect::new(0.0, 0.0, 10.0, 10.0);
+    let r = Rect::new(0.0, 0.0, 10.0, 10.0);
     assert!(matches!(
         doc.render_region(1, r, 1.0),
         Err(PdfError::SheetOutOfRange { .. })
@@ -265,7 +266,7 @@ fn errors_are_reported() {
         Err(PdfError::InvalidRender(_))
     ));
     assert!(matches!(
-        doc.render_region(0, SheetRect::new(0.0, 0.0, 2000.0, 10.0), 10.0),
+        doc.render_region(0, Rect::new(0.0, 0.0, 2000.0, 10.0), 10.0),
         Err(PdfError::InvalidRender(_))
     ));
 }
@@ -358,7 +359,7 @@ fn sheet_space_on_fractional_page_size() {
     // In sheet space the rectangle is x 400..450, y 702.9..742.9.
     // Region origin (390, 690.4) at zoom 4 puts its edges on whole pixels: x 40..240, y 50..210.
     let img = doc
-        .render_region(0, SheetRect::new(390.0, 690.4, 70.0, 70.0), 4.0)
+        .render_region(0, Rect::new(390.0, 690.4, 70.0, 70.0), 4.0)
         .unwrap();
     assert_eq!((img.width(), img.height()), (280, 280));
     assert_black_rect(&img, 40, 50, 240, 210);
@@ -376,7 +377,7 @@ fn sheet_space_follows_crop_box() {
     let size = doc.sheet_size(0).unwrap();
     assert_eq!((size.width, size.height), (400.0, 700.0));
     // PDF x 150..200, y 650..700 is sheet x 50..100, y 50..100.
-    let img = doc.render_region(0, SheetRect::full(size), 1.0).unwrap();
+    let img = doc.render_region(0, Rect::full(size), 1.0).unwrap();
     assert_black_rect(&img, 50, 50, 100, 100);
 }
 
@@ -393,7 +394,7 @@ fn sheet_space_follows_page_rotation() {
     let doc = engine.open(pdf).unwrap();
     let size = doc.sheet_size(0).unwrap();
     assert_eq!((size.width, size.height), (800.0, 600.0));
-    let img = doc.render_region(0, SheetRect::full(size), 1.0).unwrap();
+    let img = doc.render_region(0, Rect::full(size), 1.0).unwrap();
     // 50 wide x 30 high on the page becomes 30 wide x 50 high on the sheet.
     assert_black_rect(&img, 0, 0, 30, 50);
 }

@@ -460,9 +460,10 @@ mod tests {
     use super::*;
     use crate::interpret::CalloutOnly;
     use dimo_core::Environment as _;
+    use dimo_core::Rect;
     use dimo_core::characteristic::CharacteristicKind;
     use dimo_core::derivation::DerivationRule;
-    use dimo_pdf::{SheetRect, TextRun};
+    use dimo_pdf::TextRun;
     use rust_decimal::Decimal;
 
     /// A run of `text` with a frame centered at `(x, y)`, `size` high, 0.6 em per character.
@@ -472,7 +473,7 @@ mod tests {
         RegionRun {
             run: TextRun {
                 text: text.to_owned(),
-                bbox: SheetRect::new(x - width / 2.0, y - size / 2.0, width, size),
+                bbox: Rect::new(x - width / 2.0, y - size / 2.0, width, size),
                 rotation: angle.rem_euclid(360.0),
                 font_name: "Sans".to_owned(),
                 font_size: size,
