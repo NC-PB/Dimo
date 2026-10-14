@@ -1106,13 +1106,29 @@ export type DrawingRevision = {
 	label: string,
 	/**  File name at import, without directories. */
 	file_name: string,
-	/**  SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`. */
+	/**
+	 *  SHA-256 of the imported file, which is stored unchanged as
+	 *  `drawings/<sha256>.<extension>` ([`DrawingRevision::stored_name`]).
+	 */
 	sha256: Sha256Hex,
+	/**  What kind of file it is and, for images, how it becomes a sheet (MF F1, ADR 0010). */
+	source: DrawingSource,
 	/**  When the file was imported. */
 	imported_at: Timestamp,
 	/**  Sheets in page order. */
 	sheets: Sheet[],
 };
+
+/**  The kind of file a drawing revision was imported from. */
+export type DrawingSource = 
+/**  A PDF; sheets are its pages. */
+{ type: "pdf" } | 
+/**  A photo or scan; sheets are its pages (one for JPEG and PNG). */
+{ type: "image"; 
+/**  File format of the stored image. */
+format: ImageFormat; 
+/**  How the image becomes a sheet. */
+edit: ImageEdit };
 
 /**
  *  Name and version of an engine that took part in making a proposal (data model `Proposal`:
@@ -1275,6 +1291,64 @@ export type HistoryEntry = {
 	after: Characteristic | null,
 	/**  Fields that changed; empty when the characteristic was created or removed. */
 	fields: CharacteristicField[],
+};
+
+/**
+ *  Non-destructive settings that turn a stored image into a sheet (R01 decisions 8 to 11).
+ *  See the module docs for coordinates and order. [`ImageEdit::default`] leaves the image as
+ *  it is.
+ */
+export type ImageEdit = {
+	/**  Clockwise quarter turns. */
+	rotation: Rotation,
+	/**  Further clockwise rotation in degrees, from -45 to 45, applied after the quarter turns. */
+	fine_angle: string,
+	/**
+	 *  Sheet corners in the stored image for perspective correction (R01 decision 8); `null`
+	 *  for none.
+	 */
+	corners: SheetCorners | null,
+	/**
+	 *  Part of the image to keep, in pixels of the image after rotation and corner correction;
+	 *  `null` keeps all of it.
+	 */
+	trim: ImageRect | null,
+	/**  Paper the trimmed image is mapped onto (R01 decision 9); `null` until the user picks it. */
+	paper: Paper | null,
+	/**
+	 *  Grey scale, white background and raised contrast for display and the ballooned PDF
+	 *  (R01 decision 11). The stored image stays as it is.
+	 */
+	clean_up: boolean,
+};
+
+/**  Image file formats a drawing can be imported from (R01 decision 7). HEIC is not supported. */
+export type ImageFormat = 
+/**  JPEG, one sheet. */
+"jpeg" | 
+/**  PNG, one sheet. */
+"png" | 
+/**  TIFF, one sheet per page. */
+"tiff";
+
+/**  A point in pixels of the stored image (see the module docs). */
+export type ImagePoint = {
+	/**  Pixels from the left edge. */
+	x: string,
+	/**  Pixels from the top edge. */
+	y: string,
+};
+
+/**  An axis parallel rectangle in image pixels. */
+export type ImageRect = {
+	/**  Left edge. */
+	x: string,
+	/**  Top edge. */
+	y: string,
+	/**  Width, more than 0. */
+	width: string,
+	/**  Height, more than 0. */
+	height: string,
 };
 
 /**
@@ -1614,6 +1688,13 @@ export type OpenNotice = {
  */
 export type OptionalDecimal = string | null;
 
+/**  Paper orientation. */
+export type Orientation = 
+/**  Taller than wide. */
+"portrait" | 
+/**  Wider than tall. */
+"landscape";
+
 /**  Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`). */
 export type OrientedBox = {
 	/**  Center of the box. */
@@ -1646,6 +1727,38 @@ export type OverallVerdict =
 "fail" | 
 /**  No cell fails, but some are missing or not evaluated, or there are no cells. */
 "open";
+
+/**  The paper a photographed sheet is mapped onto (R01 decision 9). */
+export type Paper = 
+/**  A standard paper size. */
+{ format: "standard"; 
+/**  The size. */
+size: PaperSize; 
+/**  Portrait or landscape. */
+orientation: Orientation } | 
+/**  Width and height in mm as the sheet reads. */
+{ format: "custom"; 
+/**  Width in mm. */
+width_mm: string; 
+/**  Height in mm. */
+height_mm: string };
+
+/**  Standard paper sizes (R01 decision 9). */
+export type PaperSize = 
+/**  ISO 216 A4, 210 x 297 mm. */
+"a4" | 
+/**  ISO 216 A3, 297 x 420 mm. */
+"a3" | 
+/**  ISO 216 A2, 420 x 594 mm. */
+"a2" | 
+/**  ISO 216 A1, 594 x 841 mm. */
+"a1" | 
+/**  ISO 216 A0, 841 x 1189 mm. */
+"a0" | 
+/**  US Letter, 8.5 x 11 in. */
+"letter" | 
+/**  US Tabloid, 11 x 17 in. */
+"tabloid";
 
 /**  Something the parser assumed that the user should check (spec 08 stage 6). */
 export type ParseHint = 
@@ -2246,6 +2359,21 @@ export type Sheet = {
 	zone_grid: ZoneGrid | null,
 	/**  Views drawn by hand, in the order the user drew them (M2 decision 1). */
 	views: SheetView[],
+};
+
+/**
+ *  The four sheet corners in the stored image, named as the sheet reads after the quarter
+ *  turns (R01 decision 8).
+ */
+export type SheetCorners = {
+	/**  Top left corner of the sheet. */
+	top_left: ImagePoint,
+	/**  Top right corner of the sheet. */
+	top_right: ImagePoint,
+	/**  Bottom right corner of the sheet. */
+	bottom_right: ImagePoint,
+	/**  Bottom left corner of the sheet. */
+	bottom_left: ImagePoint,
 };
 
 /**

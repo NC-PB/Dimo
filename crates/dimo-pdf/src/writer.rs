@@ -31,11 +31,11 @@ use pdfium_render::prelude::{
 
 use crate::PdfError;
 use crate::font::{BALLOON_FONT, TrueTypeFont};
-use dimo_core::Sha256Hex;
 use crate::overlay::{
     Balloon, BalloonOutput, BalloonOverlay, PathSegment, PdfDate, Rgb, SheetPoint, Stroke,
 };
 use crate::text::page_to_sheet;
+use dimo_core::Sha256Hex;
 
 #[allow(clippy::needless_pass_by_value)] // used as a map_err callback
 fn write_error(e: PdfiumError) -> PdfError {

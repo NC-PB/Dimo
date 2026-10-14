@@ -564,6 +564,7 @@ mod tests {
                 label: String::new(),
                 file_name: "a.pdf".into(),
                 sha256: Sha256Hex::parse(&"0".repeat(64)).unwrap(),
+                source: dimo_core::DrawingSource::Pdf,
                 imported_at: Timestamp::parse("2026-01-01T00:00:00Z").unwrap(),
                 sheets: sheets.clone(),
             },

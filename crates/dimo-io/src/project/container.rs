@@ -14,7 +14,7 @@ use std::fs;
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
 
-use dimo_core::{Sha256Hex, Timestamp};
+use dimo_core::{DrawingSource, ImageFormat, Sha256Hex, Timestamp};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, DateTime, System, ZipArchive, ZipWriter};
 
@@ -73,7 +73,8 @@ pub(crate) struct RawEntries {
     pub manifest: Option<Vec<u8>>,
     pub project: Option<Vec<u8>>,
     pub audit: Option<Vec<u8>>,
-    pub drawings: BTreeMap<Sha256Hex, Vec<u8>>,
+    /// Drawing files by their name in the `drawings` folder, `<sha256>.<extension>`.
+    pub drawings: BTreeMap<String, Vec<u8>>,
     /// Custom tolerance tables by table id (M2 decision 4).
     pub tables: BTreeMap<String, Vec<u8>>,
 }
@@ -83,7 +84,8 @@ enum Kind {
     Manifest,
     Project,
     Audit,
-    Drawing(Sha256Hex),
+    /// A drawing file `<sha256>.<extension>` with a known extension (MF F1).
+    Drawing(String),
     Table(String),
     Other,
 }
@@ -96,9 +98,8 @@ fn classify(name: &str) -> Kind {
         _ => name
             .strip_prefix(DRAWINGS_DIR)
             .and_then(|rest| rest.strip_prefix('/'))
-            .and_then(|file| file.strip_suffix(".pdf"))
-            .and_then(|hex| Sha256Hex::parse(hex).ok())
-            .map(Kind::Drawing)
+            .filter(|file| is_drawing_name(file))
+            .map(|file| Kind::Drawing(file.to_owned()))
             .or_else(|| {
                 name.strip_prefix(TOLERANCES_DIR)
                     .and_then(|rest| rest.strip_prefix('/'))
@@ -108,6 +109,16 @@ fn classify(name: &str) -> Kind {
             })
             .unwrap_or(Kind::Other),
     }
+}
+
+/// True for `<sha256>.<extension>` with the extension of a drawing source: `pdf`, or `jpg`,
+/// `png` or `tiff` for images (ADR 0010).
+fn is_drawing_name(file: &str) -> bool {
+    file.split_once('.').is_some_and(|(hex, extension)| {
+        Sha256Hex::parse(hex).is_ok()
+            && (extension == DrawingSource::Pdf.extension()
+                || ImageFormat::ALL.iter().any(|f| f.extension() == extension))
+    })
 }
 
 /// A relative path of plain components: no root, drive, backslash, `.` or `..` (zip slip).
@@ -129,8 +140,8 @@ impl RawEntries {
             Kind::Manifest => &mut self.manifest,
             Kind::Project => &mut self.project,
             Kind::Audit => &mut self.audit,
-            Kind::Drawing(hash) => {
-                return match self.drawings.insert(hash, data) {
+            Kind::Drawing(file) => {
+                return match self.drawings.insert(file, data) {
                     None => Ok(()),
                     Some(_) => Err(duplicate()),
                 };
@@ -429,6 +440,24 @@ mod tests {
             "a\0b",
         ] {
             assert!(!is_safe_name(name), "{name}");
+        }
+    }
+
+    #[test]
+    fn drawing_names_need_a_hash_and_a_source_extension() {
+        let hash = "a".repeat(64);
+        for extension in ["pdf", "jpg", "png", "tiff"] {
+            let name = format!("drawings/{hash}.{extension}");
+            assert!(matches!(classify(&name), Kind::Drawing(f) if name.ends_with(&f)));
+        }
+        for name in [
+            format!("drawings/{hash}.gif"),
+            format!("drawings/{hash}"),
+            format!("drawings/{}.pdf", "A".repeat(64)),
+            "drawings/abc.pdf".to_owned(),
+            format!("drawings/{hash}.pdf.tmp"),
+        ] {
+            assert!(matches!(classify(&name), Kind::Other), "{name}");
         }
     }
 

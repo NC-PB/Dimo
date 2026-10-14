@@ -310,6 +310,7 @@ mod tests {
             label: "A".into(),
             file_name: "part.pdf".into(),
             sha256: Sha256Hex::parse(&"0".repeat(64)).unwrap(),
+            source: dimo_core::DrawingSource::Pdf,
             imported_at: Timestamp::parse("2026-01-01T00:00:00Z").unwrap(),
             sheets: vec![Sheet::new(
                 sheet,

@@ -12,14 +12,15 @@
 //!                          kind: pdf.analyze_sheet(i)?.kind })
 //!     .collect();
 //! let hash = Sha256Hex::parse(&pdf.content_hash().to_hex())?;
-//! let drawing = import_drawing(bytes, "part.pdf", &hash, &sheets, &mut env)?;
+//! let drawing = import_drawing(bytes, "part.pdf", DrawingSource::Pdf, &hash, &sheets, &mut env)?;
 //! ```
 //!
 //! The hash check ties the sheet data to the stored bytes: if the bytes handed in differ from
 //! the bytes that were analyzed, the import fails instead of storing a mismatched pair.
 
 use dimo_core::{
-    DrawingRevision, Environment, RevisionId, Sha256Hex, Sheet, SheetId, SheetKind, Size,
+    DrawingRevision, DrawingSource, Environment, RevisionId, Sha256Hex, Sheet, SheetId, SheetKind,
+    Size,
 };
 
 use super::error::ProjectError;
@@ -35,7 +36,7 @@ pub struct SheetInfo {
 }
 
 /// A drawing ready to become part of a project: the revision and the file bytes stored as
-/// `drawings/<sha256>.pdf`.
+/// `drawings/<sha256>.<extension>` ([`DrawingRevision::stored_name`]).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ImportedDrawing {
     /// Revision with new IDs, file name, hash, import time and sheets with default view
@@ -47,12 +48,14 @@ pub struct ImportedDrawing {
 
 /// Turns a drawing file into a revision.
 ///
-/// `analyzed_hash` is the SHA-256 the PDF reader computed for the bytes it analyzed;
+/// `source` says what kind of file it is (MF F1). `analyzed_hash` is the SHA-256 the reader
+/// computed for the bytes it analyzed;
 /// `file_name` may be a full path, only the last component is kept. IDs and the import time
 /// come from `env`. The revision label starts empty.
 pub fn import_drawing(
     bytes: Vec<u8>,
     file_name: &str,
+    source: DrawingSource,
     analyzed_hash: &Sha256Hex,
     sheets: &[SheetInfo],
     env: &mut dyn Environment,
@@ -110,6 +113,7 @@ pub fn import_drawing(
             label: String::new(),
             file_name: name,
             sha256: actual,
+            source,
             imported_at: env.now(),
             sheets: sheet_list,
         },
@@ -136,8 +140,15 @@ mod tests {
         let bytes = b"%PDF-1.7 test".to_vec();
         let hash = sha256(&bytes);
         let mut env = FixedEnvironment::new();
-        let drawing =
-            import_drawing(bytes.clone(), "/tmp/x/part.pdf", &hash, &[A4, A4], &mut env).unwrap();
+        let drawing = import_drawing(
+            bytes.clone(),
+            "/tmp/x/part.pdf",
+            DrawingSource::Pdf,
+            &hash,
+            &[A4, A4],
+            &mut env,
+        )
+        .unwrap();
         assert_eq!(drawing.bytes, bytes);
         assert_eq!(drawing.revision.sha256, hash);
         assert_eq!(drawing.revision.file_name, "part.pdf");
@@ -153,7 +164,14 @@ mod tests {
     fn import_refuses_bytes_that_were_not_analyzed() {
         let mut env = FixedEnvironment::new();
         let other = sha256(b"other");
-        let error = import_drawing(b"%PDF".to_vec(), "a.pdf", &other, &[A4], &mut env);
+        let error = import_drawing(
+            b"%PDF".to_vec(),
+            "a.pdf",
+            DrawingSource::Pdf,
+            &other,
+            &[A4],
+            &mut env,
+        );
         assert!(matches!(error, Err(ProjectError::HashMismatch { .. })));
     }
 
@@ -162,7 +180,14 @@ mod tests {
         let mut env = FixedEnvironment::new();
         let bytes = b"%PDF".to_vec();
         let hash = sha256(&bytes);
-        let error = import_drawing(bytes.clone(), "a.pdf", &hash, &[], &mut env);
+        let error = import_drawing(
+            bytes.clone(),
+            "a.pdf",
+            DrawingSource::Pdf,
+            &hash,
+            &[],
+            &mut env,
+        );
         assert!(matches!(error, Err(ProjectError::InvalidDrawing(_))));
         let flat = SheetInfo {
             size: Size {
@@ -171,7 +196,14 @@ mod tests {
             },
             ..A4
         };
-        let error = import_drawing(bytes, "a.pdf", &hash, &[A4, flat], &mut env);
+        let error = import_drawing(
+            bytes,
+            "a.pdf",
+            DrawingSource::Pdf,
+            &hash,
+            &[A4, flat],
+            &mut env,
+        );
         assert!(matches!(error, Err(ProjectError::InvalidDrawing(m)) if m.contains("sheet 2")));
     }
 
@@ -180,8 +212,15 @@ mod tests {
         let mut env = FixedEnvironment::new();
         let bytes = b"%PDF".to_vec();
         let hash = sha256(&bytes);
-        let drawing =
-            import_drawing(bytes, r"C:\drawings\part 7.pdf", &hash, &[A4], &mut env).unwrap();
+        let drawing = import_drawing(
+            bytes,
+            r"C:\drawings\part 7.pdf",
+            DrawingSource::Pdf,
+            &hash,
+            &[A4],
+            &mut env,
+        )
+        .unwrap();
         assert_eq!(drawing.revision.file_name, "part 7.pdf");
     }
 }

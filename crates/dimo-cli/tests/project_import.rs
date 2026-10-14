@@ -71,6 +71,7 @@ fn test_drawing_1_imports_saves_and_reopens() {
     let drawing = import_drawing(
         bytes.clone(),
         "test_drawing_1.pdf",
+        dimo_core::DrawingSource::Pdf,
         &hash,
         &sheets,
         &mut env,
@@ -101,6 +102,7 @@ fn bytes_other_than_the_analyzed_ones_are_refused() {
     let error = import_drawing(
         changed,
         "x.pdf",
+        dimo_core::DrawingSource::Pdf,
         &hash,
         &sheets,
         &mut FixedEnvironment::new(),

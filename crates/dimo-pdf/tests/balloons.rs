@@ -9,11 +9,11 @@
 use std::path::PathBuf;
 
 use dimo_core::Rect;
-use dimo_core::truth::TruthFile;
 use dimo_core::Sha256Hex;
+use dimo_core::truth::TruthFile;
 use dimo_pdf::{
-    Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, PdfEngine,
-    PdfError, Rgb, RgbaImage, SheetBalloons, SheetPoint, Stroke, TextRun,
+    Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, PdfEngine, PdfError,
+    Rgb, RgbaImage, SheetBalloons, SheetPoint, Stroke, TextRun,
 };
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";

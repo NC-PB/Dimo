@@ -21,8 +21,8 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
 
-use dimo_core::{CharId, Project, ReportFormat, ReportInfo, ReportKind, measurement_state};
 use dimo_core::Sha256Hex;
+use dimo_core::{CharId, Project, ReportFormat, ReportInfo, ReportKind, measurement_state};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};

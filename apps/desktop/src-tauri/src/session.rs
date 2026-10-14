@@ -524,6 +524,7 @@ impl AppSession {
             Ok::<_, CommandError>(import_drawing(
                 bytes,
                 &name,
+                dimo_core::DrawingSource::Pdf,
                 &analyzed,
                 &sheets,
                 &mut self.env,

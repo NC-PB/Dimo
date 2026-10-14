@@ -10,10 +10,10 @@ use std::path::PathBuf;
 use std::sync::mpsc;
 
 use dimo_core::Rect;
+use dimo_core::Sha256Hex;
 use dimo_pdf::tiles::{
     TILE_SIZE, Tile, TileConfig, TileError, TileGrid, TileKey, TileRange, TileService, zoom_scale,
 };
-use dimo_core::Sha256Hex;
 use dimo_pdf::{PdfEngine, PdfError};
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";

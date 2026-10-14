@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 
 use dimo_core::Language;
+use dimo_core::Sha256Hex;
 use dimo_core::{Command, FieldValue, Point, ReportKind, ResultEntry};
 use dimo_desktop::export::{render, run_steps, take_snapshot};
 use dimo_desktop::report::{
@@ -20,7 +21,6 @@ use dimo_desktop::report::{
 };
 use dimo_desktop::session::AppSession;
 use dimo_pdf::tiles::{TileConfig, TileKey, TileService};
-use dimo_core::Sha256Hex;
 use dimo_pdf::{PdfEngine, PdfError};
 use rust_decimal::Decimal;
 

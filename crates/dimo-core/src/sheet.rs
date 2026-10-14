@@ -10,6 +10,7 @@ use crate::env::Timestamp;
 use crate::geometry::{Rect, Size};
 pub use crate::hash::{Sha256Error, Sha256Hex};
 use crate::id::{RevisionId, SheetId};
+use crate::source::DrawingSource;
 
 /// How the text of a sheet is stored, which decides the recognition path (FR-DOC-03).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
@@ -226,12 +227,23 @@ pub struct DrawingRevision {
     pub label: String,
     /// File name at import, without directories.
     pub file_name: String,
-    /// SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`.
+    /// SHA-256 of the imported file, which is stored unchanged as
+    /// `drawings/<sha256>.<extension>` ([`DrawingRevision::stored_name`]).
     pub sha256: Sha256Hex,
+    /// What kind of file it is and, for images, how it becomes a sheet (MF F1, ADR 0010).
+    pub source: DrawingSource,
     /// When the file was imported.
     pub imported_at: Timestamp,
     /// Sheets in page order.
     pub sheets: Vec<Sheet>,
+}
+
+impl DrawingRevision {
+    /// File name of the stored drawing inside the `drawings` folder of the project:
+    /// `<sha256>.<extension>`, the extension from the source (`pdf`, `jpg`, `png`, `tiff`).
+    pub fn stored_name(&self) -> String {
+        format!("{}.{}", self.sha256, self.source.extension())
+    }
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@ expression: manifest
 ---
 {
   "format": "dimo-project",
-  "schema_version": 3,
+  "schema_version": 4,
   "app_version": "<app version>",
   "created": "2026-03-01T08:00:00Z",
   "modified": "2026-03-02T08:00:00Z"

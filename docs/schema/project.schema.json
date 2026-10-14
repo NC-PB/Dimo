@@ -832,7 +832,7 @@
         },
         "sha256": {
           "$ref": "#/$defs/Sha256Hex",
-          "description": "SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`."
+          "description": "SHA-256 of the imported file, which is stored unchanged as\n`drawings/<sha256>.<extension>` ([`DrawingRevision::stored_name`])."
         },
         "sheets": {
           "description": "Sheets in page order.",
@@ -840,6 +840,10 @@
             "$ref": "#/$defs/Sheet"
           },
           "type": "array"
+        },
+        "source": {
+          "$ref": "#/$defs/DrawingSource",
+          "description": "What kind of file it is and, for images, how it becomes a sheet (MF F1, ADR 0010)."
         }
       },
       "required": [
@@ -847,8 +851,179 @@
         "label",
         "file_name",
         "sha256",
+        "source",
         "imported_at",
         "sheets"
+      ],
+      "type": "object"
+    },
+    "DrawingSource": {
+      "description": "The kind of file a drawing revision was imported from.",
+      "oneOf": [
+        {
+          "description": "A PDF; sheets are its pages.",
+          "properties": {
+            "type": {
+              "const": "pdf",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "A photo or scan; sheets are its pages (one for JPEG and PNG).",
+          "properties": {
+            "edit": {
+              "$ref": "#/$defs/ImageEdit",
+              "description": "How the image becomes a sheet."
+            },
+            "format": {
+              "$ref": "#/$defs/ImageFormat",
+              "description": "File format of the stored image."
+            },
+            "type": {
+              "const": "image",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "format",
+            "edit"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ImageEdit": {
+      "description": "Non-destructive settings that turn a stored image into a sheet (R01 decisions 8 to 11).\nSee the module docs for coordinates and order. [`ImageEdit::default`] leaves the image as\nit is.",
+      "properties": {
+        "clean_up": {
+          "description": "Grey scale, white background and raised contrast for display and the ballooned PDF\n(R01 decision 11). The stored image stays as it is.",
+          "type": "boolean"
+        },
+        "corners": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SheetCorners"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Sheet corners in the stored image for perspective correction (R01 decision 8); `null`\nfor none."
+        },
+        "fine_angle": {
+          "description": "Further clockwise rotation in degrees, from -45 to 45, applied after the quarter turns.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "paper": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Paper"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Paper the trimmed image is mapped onto (R01 decision 9); `null` until the user picks it."
+        },
+        "rotation": {
+          "$ref": "#/$defs/Rotation",
+          "description": "Clockwise quarter turns."
+        },
+        "trim": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageRect"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Part of the image to keep, in pixels of the image after rotation and corner correction;\n`null` keeps all of it."
+        }
+      },
+      "required": [
+        "rotation",
+        "fine_angle",
+        "clean_up"
+      ],
+      "type": "object"
+    },
+    "ImageFormat": {
+      "description": "Image file formats a drawing can be imported from (R01 decision 7). HEIC is not supported.",
+      "oneOf": [
+        {
+          "const": "jpeg",
+          "description": "JPEG, one sheet.",
+          "type": "string"
+        },
+        {
+          "const": "png",
+          "description": "PNG, one sheet.",
+          "type": "string"
+        },
+        {
+          "const": "tiff",
+          "description": "TIFF, one sheet per page.",
+          "type": "string"
+        }
+      ]
+    },
+    "ImagePoint": {
+      "description": "A point in pixels of the stored image (see the module docs).",
+      "properties": {
+        "x": {
+          "description": "Pixels from the left edge.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "y": {
+          "description": "Pixels from the top edge.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "type": "object"
+    },
+    "ImageRect": {
+      "description": "An axis parallel rectangle in image pixels.",
+      "properties": {
+        "height": {
+          "description": "Height, more than 0.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "width": {
+          "description": "Width, more than 0.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "x": {
+          "description": "Left edge.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        },
+        "y": {
+          "description": "Top edge.",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
       ],
       "type": "object"
     },
@@ -1133,6 +1308,21 @@
         }
       ]
     },
+    "Orientation": {
+      "description": "Paper orientation.",
+      "oneOf": [
+        {
+          "const": "portrait",
+          "description": "Taller than wide.",
+          "type": "string"
+        },
+        {
+          "const": "landscape",
+          "description": "Wider than tall.",
+          "type": "string"
+        }
+      ]
+    },
     "OrientedBox": {
       "additionalProperties": false,
       "description": "Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`).",
@@ -1179,6 +1369,99 @@
         {
           "const": "carried_over",
           "description": "Carried over from an earlier drawing revision (M6).",
+          "type": "string"
+        }
+      ]
+    },
+    "Paper": {
+      "description": "The paper a photographed sheet is mapped onto (R01 decision 9).",
+      "oneOf": [
+        {
+          "description": "A standard paper size.",
+          "properties": {
+            "format": {
+              "const": "standard",
+              "type": "string"
+            },
+            "orientation": {
+              "$ref": "#/$defs/Orientation",
+              "description": "Portrait or landscape."
+            },
+            "size": {
+              "$ref": "#/$defs/PaperSize",
+              "description": "The size."
+            }
+          },
+          "required": [
+            "format",
+            "size",
+            "orientation"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Width and height in mm as the sheet reads.",
+          "properties": {
+            "format": {
+              "const": "custom",
+              "type": "string"
+            },
+            "height_mm": {
+              "description": "Height in mm.",
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+              "type": "string"
+            },
+            "width_mm": {
+              "description": "Width in mm.",
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "format",
+            "width_mm",
+            "height_mm"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "PaperSize": {
+      "description": "Standard paper sizes (R01 decision 9).",
+      "oneOf": [
+        {
+          "const": "a4",
+          "description": "ISO 216 A4, 210 x 297 mm.",
+          "type": "string"
+        },
+        {
+          "const": "a3",
+          "description": "ISO 216 A3, 297 x 420 mm.",
+          "type": "string"
+        },
+        {
+          "const": "a2",
+          "description": "ISO 216 A2, 420 x 594 mm.",
+          "type": "string"
+        },
+        {
+          "const": "a1",
+          "description": "ISO 216 A1, 594 x 841 mm.",
+          "type": "string"
+        },
+        {
+          "const": "a0",
+          "description": "ISO 216 A0, 841 x 1189 mm.",
+          "type": "string"
+        },
+        {
+          "const": "letter",
+          "description": "US Letter, 8.5 x 11 in.",
+          "type": "string"
+        },
+        {
+          "const": "tabloid",
+          "description": "US Tabloid, 11 x 17 in.",
           "type": "string"
         }
       ]
@@ -1608,6 +1891,34 @@
         "unit",
         "scale",
         "views"
+      ],
+      "type": "object"
+    },
+    "SheetCorners": {
+      "description": "The four sheet corners in the stored image, named as the sheet reads after the quarter\nturns (R01 decision 8).",
+      "properties": {
+        "bottom_left": {
+          "$ref": "#/$defs/ImagePoint",
+          "description": "Bottom left corner of the sheet."
+        },
+        "bottom_right": {
+          "$ref": "#/$defs/ImagePoint",
+          "description": "Bottom right corner of the sheet."
+        },
+        "top_left": {
+          "$ref": "#/$defs/ImagePoint",
+          "description": "Top left corner of the sheet."
+        },
+        "top_right": {
+          "$ref": "#/$defs/ImagePoint",
+          "description": "Top right corner of the sheet."
+        }
+      },
+      "required": [
+        "top_left",
+        "top_right",
+        "bottom_right",
+        "bottom_left"
       ],
       "type": "object"
     },

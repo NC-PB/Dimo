@@ -15,6 +15,9 @@ expression: migrated
       "label": "",
       "file_name": "part-100.pdf",
       "sha256": "afeeeee7d0ae4766925fdc4e895b12d25a34a0f6f1b8a3d9ced882ebab4004f6",
+      "source": {
+        "type": "pdf"
+      },
       "imported_at": "2026-03-01T08:00:00Z",
       "sheets": [
         {

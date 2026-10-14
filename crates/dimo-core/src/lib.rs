@@ -36,6 +36,7 @@ pub mod project;
 pub mod proposal;
 pub mod report;
 pub mod sheet;
+pub mod source;
 pub mod truth;
 pub mod zones;
 
@@ -81,6 +82,10 @@ pub use proposal::{BalloonPlacement, EngineVersion, ParseHint, ParseIssue, Propo
 pub use report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
 pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
+};
+pub use source::{
+    DrawingSource, ImageEdit, ImageFormat, ImagePoint, ImageRect, Orientation, Paper, PaperSize,
+    SheetCorners,
 };
 pub use zones::{AxisScheme, LabelKind, ZoneAxis, ZoneGridEdit, ZoneGridForm, zone_grid_form};
 

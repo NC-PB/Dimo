@@ -13,7 +13,6 @@ use pdfium_render::prelude::{
 };
 
 use crate::PdfError;
-use dimo_core::Sha256Hex;
 use crate::library::resolve_library_path;
 use crate::overlay::BalloonOverlay;
 use crate::page_cache::{PAGES_PER_DOCUMENT, PageCache};
@@ -22,6 +21,7 @@ use crate::region::{RegionText, region_text};
 use crate::sheet_kind::{SheetAnalysis, analyze_sheet};
 use crate::text::{TextRun, load_page, text_error, text_runs};
 use crate::writer::write_ballooned;
+use dimo_core::Sha256Hex;
 
 /// Largest width or height of one rendered image in pixels. A0 at 300 dpi is about
 /// 9933 x 14043 pixels, so this leaves headroom while bounding memory (1 GiB RGBA at most).
