@@ -24,7 +24,12 @@ erDiagram
 Part number, part name, customer, order or purchase reference, current drawing revision, numbering lock state, settings, profile reference.
 
 ### DrawingRevision
-Revision label, imported file name, SHA-256 hash, import date, sheets. Old revisions stay in the project for comparison and traceability.
+Revision label, imported file name, SHA-256 hash, source, import date, sheets. Old revisions stay in the project for comparison and traceability.
+
+The source says what kind of file the revision was imported from ([ADR 0010](../adr/0010-drawing-source-and-schema-4.md), schema 4):
+
+- `pdf`: the sheets are the pages of the PDF.
+- `image` with `format` (`jpeg`, `png`, `tiff`) and `edit`: a photo or scan, one sheet per page. The image is stored unchanged; `edit` holds how it becomes a sheet: quarter turns, fine angle in degrees (-45 to 45), sheet corners for perspective correction, trim rectangle, paper (a standard size with orientation, or a custom size in mm) and a clean up flag. Corner and trim values are pixels of the stored image. All numbers are exact decimals. Image revisions become creatable with release 0.1.
 
 ### Sheet
 Index, size in sheet units, rotation, kind (`vector_text`, `vector_outlined`, `raster`), raster DPI if applicable, zone grid definition, detected views and title block region, unit and scale.
@@ -84,7 +89,8 @@ project.dimo
   project.json           project, characteristics, balloons, samples, results, settings
   audit.jsonl            append only audit log
   drawings/
-    <sha256>.pdf         original files, byte identical to import
+    <sha256>.<ext>       original files, byte identical to import; extension from the
+                         revision source: pdf, jpg, png or tiff
   profile.toml           snapshot of the profile used (customer settings)
   templates/             snapshots of templates used for issued reports (optional)
 ```
