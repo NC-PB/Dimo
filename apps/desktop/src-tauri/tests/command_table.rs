@@ -2,6 +2,11 @@
 //! (F6, NFR-SEC-01). A command missing from the table gets no permission and fails at run time;
 //! a table entry without a command is a dead permission. Both fail here instead.
 
+#![allow(
+    clippy::expect_used,
+    reason = "test helpers, a failure is a test failure"
+)]
+
 use std::collections::BTreeSet;
 
 /// Names listed in `commands.txt`, without comments and blank lines.
