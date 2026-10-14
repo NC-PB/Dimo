@@ -2,7 +2,7 @@
   /**
    * General tolerance on the Home and Drawing tabs (M3 decision 21, T3.15): one select with
    * every class of every general table, bound to the project's tolerance settings. A change is
-   * the undoable `set_tolerance_settings` command, and offers the update of
+   * the undoable `update_tolerance_settings` command, and offers the update of
    * existing characteristics (decision 22, shown above the drawing). Rust lists the tables.
    */
   import { m } from "$lib/i18n";
@@ -42,7 +42,7 @@
     const picked = event.currentTarget.value;
     const choice = picked === NONE ? null : options.find((o) => o.value === picked)?.choice;
     if (choice !== undefined) {
-      void toleranceStore.setSettings({ general: choice });
+      void toleranceStore.setSettings([{ field: "general", value: choice }]);
     }
   }
 </script>

@@ -5,7 +5,8 @@
  * sets the shorter leg of an angle (T2.9a, `set_shorter_leg`). After the general tolerance
  * changed, Rust lists the characteristics it would update and updates them on request (T3.13,
  * M3 decision 22). This store only asks and sends commands; settings change with the undoable
- * `set_tolerance_settings` command.
+ * `update_tolerance_settings`, `add_decimal_rule` and `remove_decimal_rule` commands, each
+ * carrying only what changed (MF F4).
  */
 
 import {
@@ -14,6 +15,7 @@ import {
   type Characteristic,
   type Command,
   type CommandError,
+  type DecimalPlaceRule,
   type Language,
   type HistoryEntry,
   type LegOutcome,
@@ -25,6 +27,7 @@ import {
   type SheetId,
   type TableClass,
   type TableImport,
+  type ToleranceField,
   type ToleranceSettings,
   type ToleranceTableInfo,
 } from "$lib/ipc/bindings";
@@ -62,7 +65,6 @@ export interface ToleranceProject {
   /** Revision of the open project; every applied patch raises it. */
   readonly revision: number;
   execute(command: Command): Promise<Patch | undefined>;
-  executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined>;
   applyPatched(event: ProjectPatched): void;
 }
 
@@ -158,29 +160,61 @@ export class ToleranceStore {
   }
 
   /**
-   * Sets tolerance settings as one undo step. Limits of characteristics do not change. If the
-   * general tolerance changed, asks Rust which characteristics it would update and offers that
-   * (M3 decision 22); other edits withdraw an open offer.
+   * Sets single tolerance settings as one undo step (`update_tolerance_settings`); the command
+   * carries only these fields, so a fast second edit keeps the first one (T3.18, MF F4). Limits
+   * of characteristics do not change. If the general tolerance changed, asks Rust which
+   * characteristics it would update and offers that (M3 decision 22); other edits withdraw an
+   * open offer.
    */
-  async setSettings(change: Partial<ToleranceSettings>): Promise<boolean> {
+  async setSettings(values: ToleranceField[]): Promise<boolean> {
+    let general: TableClass | null | undefined;
+    for (const v of values) {
+      if (v.field === "general") {
+        general = v.value;
+      }
+    }
+    return this.#send({ type: "update_tolerance_settings", values }, general);
+  }
+
+  /** Adds a decimal place rule (`add_decimal_rule`); Rust refuses a second rule for its places. */
+  addDecimalRule(rule: DecimalPlaceRule): Promise<boolean> {
+    return this.#send({ type: "add_decimal_rule", rule });
+  }
+
+  /** Removes the decimal place rule for `places` (`remove_decimal_rule`). */
+  removeDecimalRule(places: number): Promise<boolean> {
+    return this.#send({ type: "remove_decimal_rule", places });
+  }
+
+  /** Changes the tolerance of the rule for `rule.places`: remove and add as one undo step. */
+  replaceDecimalRule(rule: DecimalPlaceRule): Promise<boolean> {
+    return this.#send({
+      type: "batch",
+      commands: [
+        { type: "remove_decimal_rule", places: rule.places },
+        { type: "add_decimal_rule", rule },
+      ],
+    });
+  }
+
+  /**
+   * Sends a tolerance settings command. `general` is the general tolerance it sets, `undefined`
+   * if it does not set one; a changed general tolerance leads to the offer of decision 22.
+   */
+  async #send(command: Command, general?: TableClass | null): Promise<boolean> {
     const settings = this.settings;
     if (settings === null) {
       return false;
     }
-    const generalChanged =
-      "general" in change && !sameChoice(change.general ?? null, settings.general);
+    const generalChanged = general !== undefined && !sameChoice(general, settings.general);
     this.#offer = null;
     this.generalUpdated = null;
-    // Built when the command runs, so a fast second edit keeps the first one (T3.18).
-    const patch = await this.#project.executeWith((project) => ({
-      type: "set_tolerance_settings",
-      settings: { ...project.settings.tolerance, ...change },
-    }));
+    const patch = await this.#project.execute(command);
     if (patch === undefined) {
       return false;
     }
     if (generalChanged) {
-      await this.#offerGeneralUpdate((change.general ?? null) === null);
+      await this.#offerGeneralUpdate(general === null);
     }
     return true;
   }

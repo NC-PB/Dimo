@@ -1,7 +1,9 @@
 /**
  * Helpers of the project and report details panel (T3.4). The values live in the project and
  * change only through Rust commands; Rust validates every value. The side panel and File > Info
- * (T3.16) share the edit helpers below.
+ * (T3.16) share the edit helpers below. Each command carries only the changed field, and Rust
+ * applies it to the project as it is when the command runs, so two fast edits of two fields
+ * both survive (MF F4).
  */
 
 import type { Command, Project, ProjectInfo, ReportInfo, RevisionId } from "$lib/ipc/bindings";
@@ -18,7 +20,6 @@ export function localDate(date: Date): string {
 interface DetailsStore {
   readonly project: Project | null;
   execute(command: Command): Promise<unknown>;
-  executeWith(build: (project: Project) => Command | null): Promise<unknown>;
 }
 
 /**
@@ -38,11 +39,7 @@ async function send(
   input.value = read() ?? "";
 }
 
-/**
- * Sends a changed part field with `update_project_info` (one undo step). The whole info is
- * built when the command runs, from the project after every earlier edit, so a fast second
- * edit of another field never sends this field's old value (T3.18).
- */
+/** Sends a changed part field with `update_project_info` (one undo step). */
 export function editProjectInfo(
   store: DetailsStore,
   input: HTMLInputElement,
@@ -52,16 +49,11 @@ export function editProjectInfo(
   return send(
     input,
     () => store.project?.info[field],
-    () =>
-      store.executeWith((project) =>
-        project.info[field] === value
-          ? null
-          : { type: "update_project_info", info: { ...project.info, [field]: value } },
-      ),
+    () => store.execute({ type: "update_project_info", values: [{ field, value }] }),
   );
 }
 
-/** Sends a changed report header field with `update_report_info`, built like the part info. */
+/** Sends a changed report header field with `update_report_info` (one undo step). */
 export function editReportInfo(
   store: DetailsStore,
   input: HTMLInputElement | HTMLTextAreaElement,
@@ -71,19 +63,8 @@ export function editReportInfo(
   return send(
     input,
     () => store.project?.report_info[field],
-    () => store.executeWith((project) => reportInfoCommand(project, field, value)),
+    () => store.execute({ type: "update_report_info", values: [{ field, value }] }),
   );
-}
-
-/** `update_report_info` with one field changed, or `null` when it already has that value. */
-function reportInfoCommand(
-  project: Project,
-  field: keyof ReportInfo,
-  value: string,
-): Command | null {
-  return project.report_info[field] === value
-    ? null
-    : { type: "update_report_info", info: { ...project.report_info, [field]: value } };
 }
 
 /**
@@ -105,6 +86,6 @@ export function editRevisionLabel(
 
 /** Sets the report date to today (local calendar day). */
 export function setReportDateToday(store: DetailsStore): void {
-  const today = localDate(new Date());
-  void store.executeWith((project) => reportInfoCommand(project, "report_date", today));
+  const value = localDate(new Date());
+  void store.execute({ type: "update_report_info", values: [{ field: "report_date", value }] });
 }

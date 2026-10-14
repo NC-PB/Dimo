@@ -4,7 +4,7 @@
  * holds the choices of the properties panel. Rust validates every value.
  */
 
-import type { Command, Patch, Rotation, Scale, Sheet, Unit } from "$lib/ipc/bindings";
+import type { Command, Patch, Rotation, Scale, Sheet, SheetField, Unit } from "$lib/ipc/bindings";
 import { documentStore } from "$lib/stores/document.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { rotatedBy, storedRotation, viewRotation } from "$lib/viewport/view-math";
@@ -62,15 +62,20 @@ export interface SheetChange {
   scale?: Scale;
 }
 
-/** The `update_sheet` command for `change`. */
+/** The `update_sheet` command for `change`: only the given values, the scale as its two parts. */
 export function updateSheetCommand(sheet: Sheet, change: SheetChange): Command {
-  return {
-    type: "update_sheet",
-    sheet: sheet.id,
-    rotation: change.rotation ?? null,
-    unit: change.unit ?? null,
-    scale: change.scale ?? null,
-  };
+  const values: SheetField[] = [];
+  if (change.rotation !== undefined) {
+    values.push({ field: "rotation", value: change.rotation });
+  }
+  if (change.unit !== undefined) {
+    values.push({ field: "unit", value: change.unit });
+  }
+  if (change.scale !== undefined) {
+    values.push({ field: "scale_drawing", value: change.scale.drawing });
+    values.push({ field: "scale_actual", value: change.scale.actual });
+  }
+  return { type: "update_sheet", sheet: sheet.id, values };
 }
 
 /** The sheet of the project that is on screen, or `undefined`. */
@@ -87,21 +92,19 @@ export function updateShownSheet(change: SheetChange): Promise<Patch | undefined
 }
 
 /**
- * Sets one part of the scale of the shown sheet. The scale is built when the command runs, from
- * the sheet after every earlier edit, so typing both parts fast keeps both (T3.18).
+ * Sets one part of the scale of the shown sheet. The command carries only that part and Rust
+ * applies it to the sheet as it is then, so typing both parts fast keeps both (T3.18, MF F4).
  */
 export function setShownScalePart(part: keyof Scale, value: number): Promise<Patch | undefined> {
-  const id = shownSheet()?.id;
-  if (id === undefined) {
+  const sheet = shownSheet();
+  if (sheet === undefined) {
     return Promise.resolve(undefined);
   }
-  return projectStore.executeWith((project) => {
-    const sheet = project.revisions
-      .find((r) => r.id === project.current_revision)
-      ?.sheets.find((s) => s.id === id);
-    return sheet === undefined || sheet.scale[part] === value
-      ? null
-      : updateSheetCommand(sheet, { scale: { ...sheet.scale, [part]: value } });
+  const field = part === "drawing" ? "scale_drawing" : "scale_actual";
+  return projectStore.execute({
+    type: "update_sheet",
+    sheet: sheet.id,
+    values: [{ field, value }],
   });
 }
 

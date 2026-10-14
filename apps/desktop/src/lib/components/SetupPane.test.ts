@@ -170,24 +170,28 @@ describe("setup pane (M3 decision 23, T3.17)", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     flushSync();
 
-    expect(s.sent.map((c) => c.type)).toEqual(["set_tolerance_settings", "batch"]);
-    const settings = s.sent[0];
-    expect(settings?.type === "set_tolerance_settings" && settings.settings.general).toEqual({
-      table: { id: "iso-2768-1", version: 1 },
-      class: "m",
+    expect(s.sent.map((c) => c.type)).toEqual(["update_tolerance_settings", "batch"]);
+    expect(s.sent[0]).toEqual({
+      type: "update_tolerance_settings",
+      values: [
+        { field: "general", value: { table: { id: "iso-2768-1", version: 1 }, class: "m" } },
+      ],
     });
     const batch = s.sent[1];
     expect(batch?.type === "batch" && batch.commands).toEqual([
       {
         type: "update_sheet",
         sheet: emptyProject().revisions[0]?.sheets[0]?.id,
-        rotation: null,
-        unit: "in",
-        scale: { drawing: 2, actual: 1 },
+        values: [
+          { field: "unit", value: "in" },
+          { field: "scale_drawing", value: 2 },
+          { field: "scale_actual", value: 1 },
+        ],
       },
       {
         type: "update_project_info",
-        info: { ...emptyProject().info, part_number: "BR-2041", customer: "Muster AG" },
+        // The part number was already BR-2041: only the customer is sent (MF F4).
+        values: [{ field: "customer", value: "Muster AG" }],
       },
     ]);
     // The general tolerance changed, so the offer of decision 22 was asked for as usual.
