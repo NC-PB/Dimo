@@ -41,7 +41,7 @@ Decisions that close the remaining gaps, so implementation can proceed without a
 | ID | Topic | Decision |
 |---|---|---|
 | D-30 | 0.1 reports | Dimo's own neutral layouts: **check sheet** (characteristic list with empty result columns, for printing) and **inspection report** (results, pass/fail, sample info, signature fields). Both as PDF (Typst) and XLSX. |
-| D-31 | Report forms (Q-05) | First article and initial sample outputs (M7) use **Dimo's own layouts** that carry the same information in a compatible structure. No reproduction of form graphics or text from published standards. Users who need their customer's exact form import it as an XLSX template with placeholders. |
+| D-31 | Report forms (Q-05) | First article and initial sample outputs (M6, formerly M7) use **Dimo's own layouts** that carry the same information in a compatible structure. No reproduction of form graphics or text from published standards. Users who need their customer's exact form import it as an XLSX template with placeholders. |
 | D-32 | Report language | English and German report templates, chosen per export independent of the UI language. |
 | D-33 | Ballooned PDF | Balloons are written as vector content into a copy of the original PDF. The original file is never modified. Optional: balloons as PDF annotations instead (setting). |
 

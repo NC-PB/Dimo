@@ -8,7 +8,7 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 | ID | Requirement | Prio | MS |
 |---|---|---|---|
 | FR-DOC-01 | Open PDF drawings with any number of sheets and any sheet size up to A0 and beyond | M | M0 |
-| FR-DOC-02 | Open TIFF, PNG and JPEG scans, multi-page TIFF included | M | M5 |
+| FR-DOC-02 | Open TIFF, PNG and JPEG scans, multi-page TIFF included | M | 0.1 (manual), M5 (OCR) |
 | FR-DOC-03 | Classify each sheet: vector with text layer, vector with outlined text, raster | M | M4 |
 | FR-DOC-04 | Smooth pan and zoom with tiled rendering | M | M0 |
 | FR-DOC-05 | Rotate sheets, set scale and units per sheet | M | M1 |
@@ -39,11 +39,11 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 |---|---|---|---|
 | FR-CHR-01 | Types: linear, diameter, radius, spherical, angle, chamfer, thread, counterbore/countersink, depth, surface texture, geometric tolerance, note, flag note, material/process requirement, other | M | M1 |
 | FR-CHR-02 | Fields: nominal, upper and lower deviation, upper and lower limit, unit, quantity, classification (critical, major, minor, key), inspection method, gauge, sampling, comment | M | M1 |
-| FR-CHR-03 | Composite characteristics: dimension with attached frame, multi-segment frames | M | M6 |
-| FR-CHR-04 | Variable dimensions resolved from a table on the drawing | S | M6 |
-| FR-CHR-05 | Notes as characteristics, split per requirement inside a note | M | M6 |
-| FR-CHR-06 | Flag notes linked to all features carrying the flag, across sheets | M | M6 |
-| FR-CHR-07 | Title block and general notes captured as characteristics when required | M | M6 |
+| FR-CHR-03 | Composite characteristics: dimension with attached frame, multi-segment frames | M | M4 |
+| FR-CHR-04 | Variable dimensions resolved from a table on the drawing | S | M4 |
+| FR-CHR-05 | Notes as characteristics, split per requirement inside a note | M | M4 |
+| FR-CHR-06 | Flag notes linked to all features carrying the flag, across sheets | M | M4 |
+| FR-CHR-07 | Title block and general notes captured as characteristics when required | M | M4 |
 | FR-CHR-08 | Reference and basic dimensions recognized and excluded from inspection by default, overridable | M | M2 |
 | FR-CHR-09 | Each characteristic links to its source region (sheet, bounding box, rotation) | M | M1 |
 | FR-CHR-10 | Change history per characteristic (who, when, what, source: manual, rule, recognition) | S | M2 |
@@ -57,13 +57,13 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 | FR-REC-03 | Auto detect characteristics on a sheet, view or region | M | M4 |
 | FR-REC-04 | OCR for outlined vector text and raster scans, including rotated text | M | M5 |
 | FR-REC-05 | Image preprocessing for scans: deskew, denoise, binarize | M | M5 |
-| FR-REC-06 | Recognize feature control frames: symbol, tolerance, diameter zone, modifiers, datum references | M | M6 |
-| FR-REC-07 | Recognize geometric tolerance, surface texture, welding and datum symbols | S | M6 |
+| FR-REC-06 | Recognize feature control frames: symbol, tolerance, diameter zone, modifiers, datum references | M | M4 |
+| FR-REC-07 | Recognize geometric tolerance, surface texture, welding and datum symbols | S | M5 |
 | FR-REC-08 | Recognize decimal comma and decimal point, metric and inch | M | M2 |
 | FR-REC-09 | Group tokens into one callout (prefix, nominal, tolerance stack, fit, suffix like `THRU`) | M | M4 |
 | FR-REC-10 | Confidence per field and per characteristic | M | M4 |
 | FR-REC-11 | Pluggable recognition engines behind one interface | M | M5 |
-| FR-REC-12 | User defined symbol sets and token dictionaries | S | M6 |
+| FR-REC-12 | User defined symbol sets and token dictionaries | S | M4 |
 | FR-REC-13 | Optional local vision language model assist for notes, opt in, never required | C | after 1.0 |
 
 ## FR-TOL Tolerance engine
@@ -72,9 +72,9 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 |---|---|---|---|
 | FR-TOL-01 | Precedence: explicit tolerance > fit designation > drawing specific rule > general tolerance standard > decimal place rule | M | M2 |
 | FR-TOL-02 | General tolerances for linear, angular, radius and chamfer dimensions by size range and class | M | M2 |
-| FR-TOL-03 | General geometric tolerance classes | S | M6 |
+| FR-TOL-03 | General geometric tolerance classes | S | M4 |
 | FR-TOL-04 | ISO fit designations for holes and shafts expanded to limits | M | M2 |
-| FR-TOL-05 | Welded construction and thermal cutting general tolerances | S | M6 |
+| FR-TOL-05 | Welded construction and thermal cutting general tolerances | S | M4 |
 | FR-TOL-06 | Decimal place rules (e.g. `X.X ±0.1`, `X.XX ±0.05`) from the title block | M | M2 |
 | FR-TOL-07 | Custom tolerance tables defined by the user as data files | M | M2 |
 | FR-TOL-08 | Every derived limit stores its rule and shows a human readable explanation | M | M2 |
@@ -99,8 +99,8 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 | FR-MEA-01 | Multiple serial numbers or samples per project | M | M3 |
 | FR-MEA-02 | Manual result entry in a grid with keyboard navigation | M | M3 |
 | FR-MEA-03 | Pass/fail evaluation against limits, color coding | M | M3 |
-| FR-MEA-04 | Import results from CSV and spreadsheet with saved column mapping profiles | M | M7 |
-| FR-MEA-05 | Import from QIF results | S | M9 |
+| FR-MEA-04 | Import results from CSV and spreadsheet with saved column mapping profiles | M | M6 |
+| FR-MEA-05 | Import from QIF results | S | M6 |
 | FR-MEA-06 | Attribute results (go/no go, visual OK) and variable results | M | M3 |
 
 ## FR-EXP Export and reporting
@@ -108,32 +108,32 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 | ID | Requirement | Prio | MS |
 |---|---|---|---|
 | FR-EXP-01 | Ballooned PDF, original vector content preserved, balloons as vector overlay | M | M1 |
-| FR-EXP-02 | First article report forms 1 to 3 structure | M | M7 |
-| FR-EXP-03 | Initial sample report structure (European automotive) | M | M7 |
+| FR-EXP-02 | First article report forms 1 to 3 structure | M | M6 |
+| FR-EXP-03 | Initial sample report structure (European automotive) | M | M6 |
 | FR-EXP-04 | Generic inspection report and check sheet | M | M3 |
-| FR-EXP-05 | Spreadsheet templates with documented placeholders | M | M7 |
+| FR-EXP-05 | Spreadsheet templates with documented placeholders | M | M6 |
 | FR-EXP-06 | Text based report templates rendered to PDF | M | M3 |
-| FR-EXP-07 | Template preview with live data | S | M7 |
-| FR-EXP-08 | Template packs importable and exportable as files | S | M7 |
+| FR-EXP-07 | Template preview with live data | S | M6 |
+| FR-EXP-08 | Template packs importable and exportable as files | S | M6 |
 | FR-EXP-09 | CSV characteristic list for CMM programming | M | M1 |
-| FR-EXP-10 | QIF plans and results export | S | M9 |
+| FR-EXP-10 | QIF plans and results export | S | M6 |
 | FR-EXP-11 | Deterministic output: same project and version produce identical files | M | M1 |
 
 ## FR-RVC Revisions
 
 | ID | Requirement | Prio | MS |
 |---|---|---|---|
-| FR-RVC-01 | Import a new drawing revision into an existing project | M | M8 |
-| FR-RVC-02 | Visual comparison: overlay and changed region highlighting | M | M8 |
-| FR-RVC-03 | Carry over unchanged characteristics with numbers, flag changed and removed ones, propose new ones | M | M8 |
+| FR-RVC-01 | Import a new drawing revision into an existing project | M | M6 |
+| FR-RVC-02 | Visual comparison: overlay and changed region highlighting | M | M6 |
+| FR-RVC-03 | Carry over unchanged characteristics with numbers, flag changed and removed ones, propose new ones | M | M6 |
 | FR-RVC-04 | Reports record the drawing revision and file hash they refer to | M | M3 |
 
 ## FR-AUT Automation and integration
 
 | ID | Requirement | Prio | MS |
 |---|---|---|---|
-| FR-AUT-01 | Command line tool: detect, export, apply template, headless | M | M9 |
-| FR-AUT-02 | JSON output of characteristic lists for other systems | M | M9 |
+| FR-AUT-01 | Command line tool: detect, export, apply template, headless | M | M6 |
+| FR-AUT-02 | JSON output of characteristic lists for other systems | M | M6 |
 | FR-AUT-03 | Watch folder mode for batch processing | C | after 1.0 |
 | FR-AUT-04 | Plugin interface for custom exporters and parsers (sandboxed) | C | after 1.0 |
 
@@ -141,7 +141,7 @@ Milestone references point to [09 Roadmap](09-roadmap.md). Pain point references
 
 | ID | Requirement | Prio | MS |
 |---|---|---|---|
-| FR-SET-01 | Customer profiles: numbering strategy, balloon style, templates, tolerance defaults, classification rules | M | M7 |
-| FR-SET-02 | Profiles exportable as files to share within a company | M | M7 |
+| FR-SET-01 | Customer profiles: numbering strategy, balloon style, templates, tolerance defaults, classification rules | M | M6 |
+| FR-SET-02 | Profiles exportable as files to share within a company | M | M6 |
 | FR-SET-03 | Organization policy file to disable online features | M | M5 |
 | FR-SET-04 | UI languages English and German, extensible | M | M1 |
