@@ -8,7 +8,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 - Milestone: **M3 Simple shop reports** ([plan](M3.md)): T3.1 to T3.10 done; UI rework T3.12 to T3.20 done; next **T3.21 shop floor user test**, then the owner's exit run (T3.11), mockups approved by the owner 2026-10-13 (Office-style shell, cnc-master brand colors, light and dark, About page with licenses, two UI bugs). Then the shop floor user test (T3.21) and the owner's exit run (T3.11)
 - M2 implemented, owner exit open. M0 and M1 implemented, owner reviews open
 - Owner, blocking release 0.1: set `verified` in the tolerance tables after the Tabellenbuch check (D-43; owner reports the tables look fine, files still `draft`)
-- Release target: 0.1 after M3. Plan drafted in [R01.md](R01.md) (2026-10-14, no code until the owner says so; decisions 1 to 6 open)
+- Release target: 0.1 after M3. Plan in [R01.md](R01.md) (2026-10-14, decisions answered, ADR 0008 to accept; no code until the owner says so)
 
 ## Tasks M0
 
@@ -106,6 +106,7 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-14 | Release 0.1 decisions: update check as a button with a link only ([ADR 0008](../adr/0008-update-check-link-only.md), proposed, **Owner: accept**); all three platforms; owner draws a new demo drawing; no sponsor link in 0.1; GitHub Releases only; version 0.1.0, name Dimo. Images in 0.1 (FR-DOC-02 manual work moved from M5): JPEG, PNG, TIFF only, HEIC never; four-corner correction; resize means paper format (max 300 dpi); non-destructive edits; optional clean-up | Owner answers to R01 decisions 1 to 11 | owner |
 | 2026-10-13 | Ribbon labels stay 13 px, status bar 12 px (tables and panes 14 px); merge the two title bars before 0.1 (T3.22); generate the third party license list before 0.1 (T3.23) | Owner answers | owner |
 | 2026-10-13 | Glossary binding for UI and guide: Teil/part (never sample in the UI; data model keeps `sample`), Reiter (not Register), Überprüfen for Review, Firmentabelle/company table, Dezimalregel, Grenzmaße, pass/fail as verdict vs OK/not OK as entered result, "Grenzmaße aktualisieren"/"Update limits"; English report label "Parts"; German short labels Links/Rechts drehen, Ob./Unt. Abmaß, Nummern-Vorschau. Smoke stall cause: Vite reloaded the page when Paraglide messages recompiled during the run (check.sh, pnpm test); fixed by `DIMO_E2E=1` (no file watching), fail fast on reload, background throttling off only in scripted debug runs. Glossary confirmed by the owner 2026-10-13 | T3.20 | T3.20, agent |
 | 2026-10-13 | Follow-ups: German Drawing tab ribbon has about 12 px spare at 1280 px; timing test `measurement_state_takes_under_20_ms_for_300_by_10` fails under heavy load (fastest 25 ms at load 33) | T3.20 | T3.20, agent |
