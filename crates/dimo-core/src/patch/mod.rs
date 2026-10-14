@@ -10,7 +10,9 @@
 //!
 //! Indexes are positions in the project lists at the moment the change is applied.
 
-use std::collections::HashMap;
+mod characteristics;
+mod measurement;
+mod revisions;
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -175,93 +177,57 @@ pub enum Change {
     },
 }
 
+/// Builds [`Change::inverse`]: insert and remove variants swap into each other with the same
+/// fields; before and after variants swap `before` and `after` and keep the other fields. Every
+/// variant must be listed, the match stays exhaustive.
+macro_rules! inverse_of {
+    (
+        $value:expr;
+        insert_remove: [$($insert:ident <=> $remove:ident { $($field:ident),+ }),+ $(,)?];
+        before_after: [$($changed:ident $({ $($keep:ident),+ })?),+ $(,)?];
+    ) => {
+        match $value {
+            $(
+                Change::$insert { $($field),+ } => Change::$remove { $($field),+ },
+                Change::$remove { $($field),+ } => Change::$insert { $($field),+ },
+            )+
+            $(
+                Change::$changed { $($($keep,)+)? before, after } => Change::$changed {
+                    $($($keep,)+)?
+                    before: after,
+                    after: before,
+                },
+            )+
+        }
+    };
+}
+
 impl Change {
     /// The change that undoes this one.
     #[must_use]
     pub fn inverse(&self) -> Self {
-        match self.clone() {
-            Self::CharacteristicInserted {
-                index,
-                characteristic,
-            } => Self::CharacteristicRemoved {
-                index,
-                characteristic,
-            },
-            Self::CharacteristicRemoved {
-                index,
-                characteristic,
-            } => Self::CharacteristicInserted {
-                index,
-                characteristic,
-            },
-            Self::CharacteristicChanged { before, after } => Self::CharacteristicChanged {
-                before: after,
-                after: before,
-            },
-            Self::BalloonInserted { index, balloon } => Self::BalloonRemoved { index, balloon },
-            Self::BalloonRemoved { index, balloon } => Self::BalloonInserted { index, balloon },
-            Self::BalloonChanged { before, after } => Self::BalloonChanged {
-                before: after,
-                after: before,
-            },
-            Self::OrderChanged { before, after } => Self::OrderChanged {
-                before: after,
-                after: before,
-            },
-            Self::SheetChanged { before, after } => Self::SheetChanged {
-                before: after,
-                after: before,
-            },
-            Self::NumberingChanged { before, after } => Self::NumberingChanged {
-                before: after,
-                after: before,
-            },
-            Self::SettingsChanged { before, after } => Self::SettingsChanged {
-                before: after,
-                after: before,
-            },
-            Self::InfoChanged { before, after } => Self::InfoChanged {
-                before: after,
-                after: before,
-            },
-            Self::SampleInserted { index, sample } => Self::SampleRemoved { index, sample },
-            Self::SampleRemoved { index, sample } => Self::SampleInserted { index, sample },
-            Self::SampleChanged { before, after } => Self::SampleChanged {
-                before: after,
-                after: before,
-            },
-            Self::SampleOrderChanged { before, after } => Self::SampleOrderChanged {
-                before: after,
-                after: before,
-            },
-            Self::ResultChanged {
-                cell,
-                before,
-                after,
-            } => Self::ResultChanged {
-                cell,
-                before: after,
-                after: before,
-            },
-            Self::ReportInfoChanged { before, after } => Self::ReportInfoChanged {
-                before: after,
-                after: before,
-            },
-            Self::RevisionLabelChanged {
-                revision,
-                before,
-                after,
-            } => Self::RevisionLabelChanged {
-                revision,
-                before: after,
-                after: before,
-            },
-            Self::IssuedReportInserted { index, report } => {
-                Self::IssuedReportRemoved { index, report }
-            }
-            Self::IssuedReportRemoved { index, report } => {
-                Self::IssuedReportInserted { index, report }
-            }
+        inverse_of! {
+            self.clone();
+            insert_remove: [
+                CharacteristicInserted <=> CharacteristicRemoved { index, characteristic },
+                BalloonInserted <=> BalloonRemoved { index, balloon },
+                SampleInserted <=> SampleRemoved { index, sample },
+                IssuedReportInserted <=> IssuedReportRemoved { index, report },
+            ];
+            before_after: [
+                CharacteristicChanged,
+                BalloonChanged,
+                OrderChanged,
+                SheetChanged,
+                NumberingChanged,
+                SettingsChanged,
+                InfoChanged,
+                SampleChanged,
+                SampleOrderChanged,
+                ResultChanged { cell },
+                ReportInfoChanged,
+                RevisionLabelChanged { revision },
+            ];
         }
     }
 }
@@ -317,312 +283,76 @@ impl Project {
     /// be unique, balloons must refer to existing characteristics and sheets, results to
     /// existing samples and characteristics, and serials must be unique.
     /// On error the project is unchanged.
-    #[allow(clippy::too_many_lines, reason = "one arm per change, exhaustive")]
     pub fn apply_change(&mut self, change: &Change) -> Result<(), ChangeError> {
+        use Change as C;
         match change {
-            Change::CharacteristicInserted {
+            C::CharacteristicInserted {
                 index,
                 characteristic,
-            } => {
-                let index = position(*index);
-                ensure(
-                    index <= self.characteristics.len(),
-                    "insert index out of range",
-                )?;
-                ensure(
-                    self.characteristic(characteristic.id).is_none(),
-                    "characteristic ID exists",
-                )?;
-                self.characteristics
-                    .insert(index, (**characteristic).clone());
-            }
-            Change::CharacteristicRemoved {
+            } => self.insert_characteristic(position(*index), characteristic),
+            C::CharacteristicRemoved {
                 index,
                 characteristic,
-            } => {
-                let index = position(*index);
-                ensure(
-                    self.characteristics.get(index) == Some(characteristic),
-                    "removed characteristic differs",
-                )?;
-                ensure(
-                    self.balloons_of(characteristic.id).next().is_none(),
-                    "characteristic still has balloons",
-                )?;
-                ensure(
-                    self.results_of(characteristic.id).next().is_none(),
-                    "characteristic still has results",
-                )?;
-                self.characteristics.remove(index);
+            } => self.remove_characteristic(position(*index), characteristic),
+            C::CharacteristicChanged { before, after } => self.change_characteristic(before, after),
+            C::BalloonInserted { index, balloon } => self.insert_balloon(position(*index), balloon),
+            C::BalloonRemoved { index, balloon } => self.remove_balloon(position(*index), balloon),
+            C::BalloonChanged { before, after } => self.change_balloon(before, after),
+            C::OrderChanged { before, after } => self.reorder(before, after),
+            C::SheetChanged { before, after } => self.change_sheet(before, after),
+            C::NumberingChanged { before, after } => replace(
+                &mut self.numbering,
+                before,
+                after,
+                "numbering differs from before",
+            ),
+            C::SettingsChanged { before, after } => replace(
+                &mut self.settings,
+                before,
+                after,
+                "settings differ from before",
+            ),
+            C::InfoChanged { before, after } => {
+                replace(&mut self.info, before, after, "info differs from before")
             }
-            Change::CharacteristicChanged { before, after } => {
-                ensure(before.id == after.id, "characteristic ID changed")?;
-                let slot = self
-                    .characteristics
-                    .iter_mut()
-                    .find(|c| c.id == before.id)
-                    .ok_or(ChangeError("unknown characteristic"))?;
-                ensure(*slot == **before, "characteristic differs from before")?;
-                *slot = (**after).clone();
-            }
-            Change::BalloonInserted { index, balloon } => {
-                let index = position(*index);
-                ensure(index <= self.balloons.len(), "insert index out of range")?;
-                ensure(self.balloon(balloon.id).is_none(), "balloon ID exists")?;
-                self.check_balloon_refs(balloon)?;
-                self.balloons.insert(index, (**balloon).clone());
-            }
-            Change::BalloonRemoved { index, balloon } => {
-                let index = position(*index);
-                ensure(
-                    self.balloons.get(index) == Some(balloon),
-                    "removed balloon differs",
-                )?;
-                self.balloons.remove(index);
-            }
-            Change::BalloonChanged { before, after } => {
-                ensure(before.id == after.id, "balloon ID changed")?;
-                self.check_balloon_refs(after)?;
-                let slot = self
-                    .balloons
-                    .iter_mut()
-                    .find(|b| b.id == before.id)
-                    .ok_or(ChangeError("unknown balloon"))?;
-                ensure(*slot == **before, "balloon differs from before")?;
-                *slot = (**after).clone();
-            }
-            Change::OrderChanged { before, after } => self.reorder(before, after)?,
-            Change::SheetChanged { before, after } => {
-                ensure(before.id == after.id, "sheet ID changed")?;
-                let slot = self
-                    .revisions
-                    .iter_mut()
-                    .flat_map(|r| &mut r.sheets)
-                    .find(|s| s.id == before.id)
-                    .ok_or(ChangeError("unknown sheet"))?;
-                ensure(*slot == **before, "sheet differs from before")?;
-                *slot = (**after).clone();
-            }
-            Change::NumberingChanged { before, after } => {
-                ensure(self.numbering == *before, "numbering differs from before")?;
-                self.numbering = after.clone();
-            }
-            Change::SettingsChanged { before, after } => {
-                ensure(self.settings == **before, "settings differ from before")?;
-                self.settings = (**after).clone();
-            }
-            Change::InfoChanged { before, after } => {
-                ensure(self.info == *before, "info differs from before")?;
-                self.info = after.clone();
-            }
-            change @ (Change::SampleInserted { .. }
-            | Change::SampleRemoved { .. }
-            | Change::SampleChanged { .. }
-            | Change::SampleOrderChanged { .. }
-            | Change::ResultChanged { .. }
-            | Change::ReportInfoChanged { .. }
-            | Change::RevisionLabelChanged { .. }
-            | Change::IssuedReportInserted { .. }
-            | Change::IssuedReportRemoved { .. }) => self.apply_measurement_change(change)?,
-        }
-        Ok(())
-    }
-
-    /// [`Project::apply_change`] for samples, results and report data (data model version 3).
-    fn apply_measurement_change(&mut self, change: &Change) -> Result<(), ChangeError> {
-        match change {
-            Change::SampleInserted { index, sample } => {
-                let index = position(*index);
-                ensure(index <= self.samples.len(), "insert index out of range")?;
-                ensure(self.sample(sample.id).is_none(), "sample ID exists")?;
-                self.check_serial(sample)?;
-                self.samples.insert(index, sample.clone());
-            }
-            Change::SampleRemoved { index, sample } => {
-                let index = position(*index);
-                ensure(
-                    self.samples.get(index) == Some(sample),
-                    "removed sample differs",
-                )?;
-                ensure(
-                    !self.results.iter().any(|r| r.sample == sample.id),
-                    "sample still has results",
-                )?;
-                self.samples.remove(index);
-            }
-            Change::SampleChanged { before, after } => {
-                ensure(before.id == after.id, "sample ID changed")?;
-                self.check_serial(after)?;
-                let slot = self
-                    .samples
-                    .iter_mut()
-                    .find(|s| s.id == before.id)
-                    .ok_or(ChangeError("unknown sample"))?;
-                ensure(*slot == *before, "sample differs from before")?;
-                *slot = after.clone();
-            }
-            Change::SampleOrderChanged { before, after } => {
-                let current: Vec<SampleId> = self.samples.iter().map(|s| s.id).collect();
-                ensure(current == *before, "sample order differs from before")?;
-                ensure(is_permutation(before, after), "new order is no permutation")?;
-                let mut old = std::mem::take(&mut self.samples);
-                for id in after {
-                    // Present: `after` is a permutation of the current IDs.
-                    if let Some(i) = old.iter().position(|s| s.id == *id) {
-                        self.samples.push(old.swap_remove(i));
-                    }
-                }
-                self.sort_results();
-            }
-            Change::ResultChanged {
+            C::SampleInserted { index, sample } => self.insert_sample(position(*index), sample),
+            C::SampleRemoved { index, sample } => self.remove_sample(position(*index), sample),
+            C::SampleChanged { before, after } => self.change_sample(before, after),
+            C::SampleOrderChanged { before, after } => self.reorder_samples(before, after),
+            C::ResultChanged {
                 cell,
                 before,
                 after,
-            } => self.change_result(*cell, before.as_ref(), after.as_ref())?,
-            Change::ReportInfoChanged { before, after } => {
-                ensure(
-                    self.report_info == *before,
-                    "report info differs from before",
-                )?;
-                self.report_info = after.clone();
-            }
-            Change::RevisionLabelChanged {
+            } => self.change_result(*cell, before.as_ref(), after.as_ref()),
+            C::ReportInfoChanged { before, after } => replace(
+                &mut self.report_info,
+                before,
+                after,
+                "report info differs from before",
+            ),
+            C::RevisionLabelChanged {
                 revision,
                 before,
                 after,
-            } => {
-                let slot = self
-                    .revisions
-                    .iter_mut()
-                    .find(|r| r.id == *revision)
-                    .ok_or(ChangeError("unknown revision"))?;
-                ensure(slot.label == *before, "revision label differs from before")?;
-                slot.label.clone_from(after);
+            } => self.change_revision_label(*revision, before, after),
+            C::IssuedReportInserted { index, report } => {
+                self.insert_issued_report(position(*index), report)
             }
-            Change::IssuedReportInserted { index, report } => {
-                let index = position(*index);
-                ensure(
-                    index <= self.issued_reports.len(),
-                    "insert index out of range",
-                )?;
-                self.issued_reports.insert(index, report.clone());
-            }
-            Change::IssuedReportRemoved { index, report } => {
-                let index = position(*index);
-                ensure(
-                    self.issued_reports.get(index) == Some(report),
-                    "removed issued report differs",
-                )?;
-                self.issued_reports.remove(index);
-            }
-            _ => return Err(ChangeError("not a sample, result or report change")),
-        }
-        Ok(())
-    }
-
-    fn reorder(&mut self, before: &[CharId], after: &[CharId]) -> Result<(), ChangeError> {
-        let current: Vec<CharId> = self.characteristics.iter().map(|c| c.id).collect();
-        ensure(current == before, "order differs from before")?;
-        ensure(is_permutation(before, after), "new order is no permutation")?;
-        let mut old = std::mem::take(&mut self.characteristics);
-        for id in after {
-            // Present: `after` is a permutation of the current IDs.
-            if let Some(i) = old.iter().position(|c| c.id == *id) {
-                self.characteristics.push(old.swap_remove(i));
+            C::IssuedReportRemoved { index, report } => {
+                self.remove_issued_report(position(*index), report)
             }
         }
-        self.sort_results();
-        Ok(())
     }
+}
 
-    /// Serials are trimmed, not empty and unique (M3 decision 6).
-    fn check_serial(&self, sample: &Sample) -> Result<(), ChangeError> {
-        ensure(
-            !sample.serial.is_empty() && sample.serial.trim() == sample.serial,
-            "serial is empty or not trimmed",
-        )?;
-        ensure(
-            !self
-                .samples
-                .iter()
-                .any(|s| s.id != sample.id && s.serial == sample.serial),
-            "serial exists",
-        )
-    }
-
-    /// Position of every sample and characteristic, the sort key of results.
-    fn result_order(&self) -> (HashMap<SampleId, usize>, HashMap<CharId, usize>) {
-        let samples = self.samples.iter().enumerate().map(|(i, s)| (s.id, i));
-        let chars = self
-            .characteristics
-            .iter()
-            .enumerate()
-            .map(|(i, c)| (c.id, i));
-        (samples.collect(), chars.collect())
-    }
-
-    /// Restores the order of results after the sample or placement order changed.
-    fn sort_results(&mut self) {
-        if self.results.is_empty() {
-            return;
-        }
-        let (samples, chars) = self.result_order();
-        self.results.sort_by_key(|r| {
-            (
-                samples.get(&r.sample).copied().unwrap_or(usize::MAX),
-                chars.get(&r.characteristic).copied().unwrap_or(usize::MAX),
-            )
-        });
-    }
-
-    fn change_result(
-        &mut self,
-        cell: ResultCell,
-        before: Option<&MeasurementResult>,
-        after: Option<&MeasurementResult>,
-    ) -> Result<(), ChangeError> {
-        ensure(
-            before.is_some() || after.is_some(),
-            "result change without state",
-        )?;
-        ensure(
-            before.into_iter().chain(after).all(|r| r.cell() == cell),
-            "result belongs to another cell",
-        )?;
-        let (samples, chars) = self.result_order();
-        let key = |c: ResultCell| {
-            (
-                samples.get(&c.sample).copied().unwrap_or(usize::MAX),
-                chars.get(&c.characteristic).copied().unwrap_or(usize::MAX),
-            )
-        };
-        let target = key(cell);
-        ensure(
-            target.0 != usize::MAX && target.1 != usize::MAX,
-            "result of an unknown sample or characteristic",
-        )?;
-        let at = self.results.partition_point(|r| key(r.cell()) < target);
-        let current = self.results.get(at).filter(|r| r.cell() == cell);
-        ensure(current == before, "result differs from before")?;
-        match (current.is_some(), after) {
-            (true, Some(after)) => self.results[at] = after.clone(),
-            (true, None) => {
-                self.results.remove(at);
-            }
-            (false, Some(after)) => self.results.insert(at, after.clone()),
-            (false, None) => {}
-        }
-        Ok(())
-    }
-
-    fn check_balloon_refs(&self, balloon: &Balloon) -> Result<(), ChangeError> {
-        ensure(
-            self.characteristic(balloon.characteristic).is_some(),
-            "balloon of an unknown characteristic",
-        )?;
-        ensure(
-            self.sheet(balloon.sheet).is_some(),
-            "balloon on an unknown sheet",
-        )
-    }
+/// Replaces a whole value after checking that it equals `before`.
+fn replace<T: PartialEq + Clone>(
+    slot: &mut T,
+    before: &T,
+    after: &T,
+    message: &'static str,
+) -> Result<(), ChangeError> {
+    ensure(*slot == *before, message)?;
+    slot.clone_from(after);
+    Ok(())
 }
