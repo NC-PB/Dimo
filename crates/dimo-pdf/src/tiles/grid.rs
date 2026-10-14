@@ -6,6 +6,8 @@ use dimo_core::{Rect, Size};
 
 use dimo_core::Sha256Hex;
 
+use crate::source::SourceKind;
+
 use super::TileError;
 
 /// Width and height of a full tile in pixels. Tiles in the last column or row are cut at the
@@ -37,6 +39,16 @@ pub struct TileKey {
     pub x: u32,
     /// Row, zero at the top sheet edge.
     pub y: u32,
+}
+
+/// Key of a tile in the memory and disk caches: the tile and the kind of its source, so a PDF
+/// and an image with the same bytes never share tiles (MF F1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CacheKey {
+    /// Kind of the source the tile was rendered from.
+    pub kind: SourceKind,
+    /// The tile.
+    pub tile: TileKey,
 }
 
 impl TileKey {

@@ -88,7 +88,7 @@ fn ballooned_pdf_has_the_numbers_and_is_deterministic() {
     let Some(tiles) = service() else { return };
     let session = session(&tiles);
     let snapshot = session.export_snapshot(true).unwrap();
-    let engine = tiles.engine();
+    let engine = tiles.engine().unwrap();
     let pdf = render(
         &snapshot,
         &request(ExportFormat::BalloonedPdf),

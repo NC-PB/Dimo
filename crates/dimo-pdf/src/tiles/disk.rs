@@ -4,8 +4,8 @@
 //! `<user cache dir>/<app id>/tiles`):
 //!
 //! ```text
-//! <RENDER_VERSION>/<content hash>/last_used
-//! <RENDER_VERSION>/<content hash>/<sheet>/<zoom>/<x>_<y>.png
+//! <RENDER_VERSION>/<kind>-<content hash>/last_used
+//! <RENDER_VERSION>/<kind>-<content hash>/<sheet>/<zoom>/<x>_<y>.png
 //! ```
 //!
 //! Tiles are never stored in the project (07 Data model, ADR 0004). `RENDER_VERSION` changes
@@ -20,12 +20,14 @@ use std::time::SystemTime;
 
 use dimo_core::Sha256Hex;
 
-use super::TileKey;
+use super::CacheKey;
 use super::encode::PNG_SIGNATURE;
+use crate::source::SourceKind;
 
 /// Version of rendering plus encoding. Bump it when tile pixels or bytes change for the same
 /// input (PDFium release, render flags, encoder settings).
-pub(crate) const RENDER_VERSION: &str = "v1-pdfium7881-png";
+/// `v2`: document folders are named by source kind and hash (MF F1).
+pub(crate) const RENDER_VERSION: &str = "v2-pdfium7881-png";
 
 /// Name of the per document marker file whose mtime records the last use.
 const LAST_USED: &str = "last_used";
@@ -46,25 +48,26 @@ impl DiskCache {
         Ok(Self { root })
     }
 
-    fn doc_dir(&self, doc: &Sha256Hex) -> PathBuf {
-        self.root.join(doc.to_hex())
+    fn doc_dir(&self, kind: SourceKind, doc: &Sha256Hex) -> PathBuf {
+        self.root.join(format!("{kind}-{doc}"))
     }
 
-    fn tile_path(&self, key: &TileKey) -> PathBuf {
-        self.doc_dir(&key.doc)
-            .join(key.sheet.to_string())
-            .join(key.zoom.to_string())
-            .join(format!("{}_{}.png", key.x, key.y))
+    fn tile_path(&self, key: &CacheKey) -> PathBuf {
+        let tile = &key.tile;
+        self.doc_dir(key.kind, &tile.doc)
+            .join(tile.sheet.to_string())
+            .join(tile.zoom.to_string())
+            .join(format!("{}_{}.png", tile.x, tile.y))
     }
 
     /// The cached tile, or `None` when it is missing or not a PNG file.
-    pub(crate) fn read(&self, key: &TileKey) -> Option<Vec<u8>> {
+    pub(crate) fn read(&self, key: &CacheKey) -> Option<Vec<u8>> {
         let bytes = fs::read(self.tile_path(key)).ok()?;
         bytes.starts_with(&PNG_SIGNATURE).then_some(bytes)
     }
 
     /// Stores a tile atomically (temporary file, then rename).
-    pub(crate) fn write(&self, key: &TileKey, bytes: &[u8]) -> io::Result<()> {
+    pub(crate) fn write(&self, key: &CacheKey, bytes: &[u8]) -> io::Result<()> {
         let path = self.tile_path(key);
         let dir = path
             .parent()
@@ -72,8 +75,8 @@ impl DiskCache {
         fs::create_dir_all(dir)?;
         let tmp = dir.join(format!(
             ".{}_{}.{:?}.tmp",
-            key.x,
-            key.y,
+            key.tile.x,
+            key.tile.y,
             std::thread::current().id()
         ));
         fs::write(&tmp, bytes)?;
@@ -83,8 +86,8 @@ impl DiskCache {
     }
 
     /// Records that a document was used now, so pruning keeps it longer.
-    pub(crate) fn touch(&self, doc: &Sha256Hex) -> io::Result<()> {
-        let dir = self.doc_dir(doc);
+    pub(crate) fn touch(&self, kind: SourceKind, doc: &Sha256Hex) -> io::Result<()> {
+        let dir = self.doc_dir(kind, doc);
         fs::create_dir_all(&dir)?;
         let file = fs::File::create(dir.join(LAST_USED))?;
         file.set_modified(SystemTime::now())
@@ -155,13 +158,16 @@ mod tests {
 
     use super::*;
 
-    fn key(doc: &[u8], x: u32) -> TileKey {
-        TileKey {
-            doc: Sha256Hex::of(doc),
-            sheet: 1,
-            zoom: -1,
-            x,
-            y: 2,
+    fn key(doc: &[u8], x: u32) -> CacheKey {
+        CacheKey {
+            kind: SourceKind::Pdf,
+            tile: crate::tiles::TileKey {
+                doc: Sha256Hex::of(doc),
+                sheet: 1,
+                zoom: -1,
+                x,
+                y: 2,
+            },
         }
     }
 
@@ -182,9 +188,14 @@ mod tests {
         let expected = dir
             .path()
             .join(RENDER_VERSION)
-            .join(k.doc.to_hex())
+            .join(format!("pdf-{}", k.tile.doc))
             .join("1/-1/0_2.png");
         assert!(expected.is_file());
+        let image = CacheKey {
+            kind: SourceKind::Image,
+            ..k
+        };
+        assert!(cache.read(&image).is_none(), "the kind is part of the key");
     }
 
     #[test]
@@ -206,8 +217,10 @@ mod tests {
         let cache = DiskCache::open(dir.path()).unwrap();
         for (doc, age) in [(b"old", 300), (b"mid", 200), (b"new", 100)] {
             cache.write(&key(doc, 0), &png(1000)).unwrap();
-            cache.touch(&Sha256Hex::of(doc)).unwrap();
-            let marker = cache.doc_dir(&Sha256Hex::of(doc)).join(LAST_USED);
+            cache.touch(SourceKind::Pdf, &Sha256Hex::of(doc)).unwrap();
+            let marker = cache
+                .doc_dir(SourceKind::Pdf, &Sha256Hex::of(doc))
+                .join(LAST_USED);
             let file = fs::File::options().write(true).open(marker).unwrap();
             file.set_modified(SystemTime::now() - Duration::from_secs(age))
                 .unwrap();
@@ -226,7 +239,7 @@ mod tests {
         let cache = DiskCache::open(dir.path()).unwrap();
         let started = SystemTime::now() - Duration::from_secs(60);
         cache.write(&key(b"a", 0), &png(1000)).unwrap();
-        cache.touch(&Sha256Hex::of(b"a")).unwrap();
+        cache.touch(SourceKind::Pdf, &Sha256Hex::of(b"a")).unwrap();
         let left = cache.prune(0, started).unwrap();
         assert_eq!(left, 1000);
         assert!(cache.read(&key(b"a", 0)).is_some());

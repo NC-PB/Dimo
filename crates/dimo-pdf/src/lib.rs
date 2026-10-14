@@ -16,6 +16,9 @@
 //! T1.9: [`project_overlay`] maps the balloons of a project to these primitives with the
 //! balloon layout rule shared with the viewport (`dimo_core::BALLOON_METRICS`).
 //!
+//! MF F1: [`RasterSource`] is what the tile service draws from; [`Document`] implements it,
+//! image drawings will too. [`RasterOpener`] opens drawing files as sources (see [`source`]).
+//!
 //! T2.6: [`Document::region_text`] returns the characters, runs and basic dimension frames
 //! inside a region drawn by the user, also for rotated text (see [`region`]).
 //!
@@ -62,6 +65,7 @@ pub mod overlay;
 pub mod project_overlay;
 pub mod region;
 pub mod sheet_kind;
+pub mod source;
 pub mod text;
 pub mod tiles;
 
@@ -83,4 +87,5 @@ pub use project_overlay::project_overlay;
 pub use raster::RgbaImage;
 pub use region::{RegionRun, RegionText, TextChar};
 pub use sheet_kind::{FontInfo, MIN_TEXT_CHARS, RASTER_COVERAGE, SheetAnalysis};
+pub use source::{Opened, RasterOpener, RasterSource, SourceKind};
 pub use text::TextRun;

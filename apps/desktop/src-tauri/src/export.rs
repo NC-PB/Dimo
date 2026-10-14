@@ -647,7 +647,11 @@ pub async fn export_project(
     let suggested = format.file_name(&stem);
     let engine = match format {
         ExportFormat::BalloonedPdf => {
-            Some(tile_service(&app.state::<TileState>())?.engine().clone())
+            let tiles = tile_service(&app.state::<TileState>())?;
+            let engine = tiles.engine().cloned();
+            Some(engine.ok_or_else(|| CommandError::PdfiumUnavailable {
+                message: "the tile service runs without PDFium".to_owned(),
+            })?)
         }
         _ => None,
     };
