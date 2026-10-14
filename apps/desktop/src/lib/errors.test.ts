@@ -132,5 +132,9 @@ describe("error translations (MF F3)", () => {
     });
     const rust: CommandError = { kind: "unsaved_changes" };
     expect(asCommandError(rust)).toBe(rust);
+    // A text error passed on without conversion is still translated, never shown raw.
+    const passed = text as unknown as CommandError;
+    expect(commandErrorMessage(passed)).toBe("The value could not be read.");
+    expect(errorDetail(passed)).toBe(text);
   });
 });

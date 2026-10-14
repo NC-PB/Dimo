@@ -208,7 +208,7 @@ describe("refusals", () => {
         reason: "internal",
         message: "internal: x",
       }),
-    ).toBe("The change was not made because of an error inside Dimo.");
+    ).toBe("An error occurred inside Dimo.");
   });
 
   it("explains a locked move with the lock when it is known", () => {

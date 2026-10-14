@@ -159,8 +159,13 @@ export function tableImportText(reason: TableImportReason): string {
   return TABLE_IMPORT[reason]();
 }
 
-/** The one translation of an IPC error into the text the user reads. Never Rust's text. */
-export function commandErrorMessage(error: CommandError): string {
+/**
+ * The one translation of an IPC error into the text the user reads. Never Rust's text. Errors
+ * that arrive as plain text (Tauri argument errors passed on without conversion) are normalized
+ * first.
+ */
+export function commandErrorMessage(raw: CommandError): string {
+  const error = asCommandError(raw);
   switch (error.kind) {
     case "io":
       return IO[error.reason]();
@@ -195,7 +200,8 @@ export function commandErrorMessage(error: CommandError): string {
 }
 
 /** The diagnostic text of an error for the "Details" line, `null` if it has none. */
-export function errorDetail(error: CommandError): string | null {
+export function errorDetail(raw: CommandError): string | null {
+  const error = asCommandError(raw);
   return "message" in error && error.message !== "" ? error.message : null;
 }
 

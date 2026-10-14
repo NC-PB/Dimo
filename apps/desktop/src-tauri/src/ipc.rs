@@ -260,6 +260,18 @@ mod tests {
     }
 
     #[test]
+    fn a_panicking_blocking_task_is_task_failed() {
+        let ok = tauri::async_runtime::block_on(blocking(|| Ok(7)));
+        assert_eq!(ok, Ok(7));
+        let failed: Result<(), CommandError> =
+            tauri::async_runtime::block_on(blocking(|| panic!("boom")));
+        assert!(
+            matches!(failed, Err(CommandError::TaskFailed { .. })),
+            "{failed:?}"
+        );
+    }
+
+    #[test]
     fn tile_address_parses_the_content_hash() {
         let hash = Sha256Hex::of(b"x");
         let address = TileAddress {
