@@ -13,12 +13,19 @@ use std::path::{Path, PathBuf};
 
 use dimo_core::{Command, FixedEnvironment, LockReason, Project, ProjectInfo};
 use dimo_io::journal::{self, journal_path, stale_path};
-use dimo_io::project::{Layout, ProjectFile, ProjectSession};
+use dimo_io::project::{CreateOptions, Layout, ProjectFile, ProjectSession};
 
 /// A saved project with a drawing and no characteristics; returns its path.
 fn saved_project(dir: &Path, layout: Layout) -> (PathBuf, FixedEnvironment) {
     let mut env = common::env();
-    let mut session = ProjectSession::create(common::info(), common::drawing(&mut env));
+    let mut session = ProjectSession::create(
+        common::drawing(&mut env),
+        CreateOptions {
+            info: common::info(),
+            ..CreateOptions::default()
+        },
+    )
+    .unwrap();
     let path = dir.join("part.dimo");
     session.save_as(&path, layout).unwrap();
     (path, env)
@@ -291,7 +298,14 @@ fn closing_without_saving_discards_the_journal() {
 #[test]
 fn unsaved_projects_keep_entries_in_the_audit_log() {
     let mut env = common::env();
-    let mut session = ProjectSession::create(common::info(), common::drawing(&mut env));
+    let mut session = ProjectSession::create(
+        common::drawing(&mut env),
+        CreateOptions {
+            info: common::info(),
+            ..CreateOptions::default()
+        },
+    )
+    .unwrap();
     rename(&mut session, &mut env, "draft");
     assert_eq!(session.flush_journal().unwrap(), 1);
     assert!(session.journal_path().is_none());
@@ -305,7 +319,14 @@ fn unsaved_projects_keep_entries_in_the_audit_log() {
 #[test]
 fn modified_follows_the_audit_log_not_the_clock() {
     let mut env = common::env();
-    let mut session = ProjectSession::create(common::info(), common::drawing(&mut env));
+    let mut session = ProjectSession::create(
+        common::drawing(&mut env),
+        CreateOptions {
+            info: common::info(),
+            ..CreateOptions::default()
+        },
+    )
+    .unwrap();
     assert_eq!(session.modified().as_str(), "2026-03-01T08:00:00Z");
     assert!(session.current_drawing().is_some_and(|d| !d.is_empty()));
     common::at(&mut env, "2026-03-02T09:30:00Z");
@@ -338,7 +359,7 @@ fn a_table_imported_before_a_crash_is_kept() {
         let (path, mut env) = saved_project(dir.path(), layout);
         let (mut session, _) = ProjectSession::open(&path).unwrap();
         let hash = session.insert_table(common::TABLE.to_vec());
-        let command = with_table(&session, hash.clone());
+        let command = with_table(&session, hash);
         assert_eq!(session.missing_table(&command), None);
         session.document_mut().execute(command, &mut env).unwrap();
         session.flush_journal().unwrap();
@@ -378,10 +399,17 @@ fn a_table_of_an_unsaved_project_survives_a_crash() {
     let dir = tempfile::tempdir().unwrap();
     let mut env = common::env();
     let base = dimo_io::autosave::base_path(dir.path(), "t");
-    let mut session =
-        ProjectSession::create_autosaved(common::info(), common::drawing(&mut env), &base).unwrap();
+    let mut session = ProjectSession::create(
+        common::drawing(&mut env),
+        CreateOptions {
+            info: common::info(),
+            autosave_base: Some(base.clone()),
+            ..CreateOptions::default()
+        },
+    )
+    .unwrap();
     let hash = session.insert_table(common::TABLE.to_vec());
-    let command = with_table(&session, hash.clone());
+    let command = with_table(&session, hash);
     session.document_mut().execute(command, &mut env).unwrap();
     session.flush_journal().unwrap();
     drop(session); // crash

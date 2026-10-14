@@ -66,6 +66,10 @@ pub enum PdfError {
     #[error("writing the ballooned PDF failed: {0}")]
     Write(String),
 
+    /// The service was started without PDFium and cannot open PDFs (MF F1).
+    #[error("PDFium is not loaded in this service")]
+    NoPdfium,
+
     /// The render thread is gone (it panicked or could not start). Nothing more can be rendered
     /// in this process.
     #[error("PDFium render thread is not running")]

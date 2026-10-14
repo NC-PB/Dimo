@@ -8,7 +8,8 @@
 //!   project.json          dimo_core::Project, schema in docs/schema/project.schema.json
 //!   audit.jsonl           one dimo_core::AuditEntry per line, append only
 //!   tolerances/<id>.toml  custom tolerance tables used by the project (M2 decision 4)
-//!   drawings/<sha256>.pdf original drawing files, byte identical to the import (FR-DOC-07)
+//!   drawings/<sha256>.<ext> original drawing files, byte identical to the import (FR-DOC-07);
+//!                         `pdf`, or `jpg`, `png`, `tiff` for images (ADR 0010)
 //! ```
 //!
 //! `profile.toml` and `templates/` from the data model are added together with profiles and
@@ -25,10 +26,13 @@
 //! # Modules
 //!
 //! - [`ProjectFile`]: load and save in either layout, with migrations and drawing hash checks.
+//! - [`create`]: a new project from a drawing file, read through a `dimo_pdf::RasterOpener`
+//!   (MF F1), and the drawing of an open project.
 //! - [`import`]: a drawing's bytes and sheet data become a [`DrawingRevision`](dimo_core::DrawingRevision).
 //! - [`ProjectSession`]: an open project with its autosave journal ([`crate::journal`]).
 
 mod container;
+pub mod create;
 mod error;
 pub mod import;
 mod manifest;
@@ -36,24 +40,27 @@ pub mod migrate;
 mod session;
 
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
 use dimo_core::{AuditEntry, Project, Sha256Hex, Timestamp};
-use sha2::{Digest as _, Sha256};
 
 pub use container::Limits;
 pub(crate) use container::write_atomic;
+pub use create::{
+    AutosaveTarget, CreateError, CreatedProject, DrawingType, NewProject, create_from_drawing,
+    create_from_drawing_file, open_drawing, sniff,
+};
 pub use error::ProjectError;
 pub use import::{ImportedDrawing, SheetInfo, import_drawing};
 pub use manifest::Manifest;
-pub use session::{OpenReport, ProjectSession};
+pub use session::{CreateOptions, OpenReport, ProjectSession};
 
 /// The `format` value in every manifest.
 pub const FORMAT_NAME: &str = "dimo-project";
 /// The schema version this build writes and the highest it reads (NFR-REL-03).
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 4;
 /// File extension of project files, without the dot.
 pub const EXTENSION: &str = "dimo";
 /// Version of the Dimo build, written to the manifest.
@@ -93,7 +100,7 @@ impl Layout {
 
 /// SHA-256 of bytes as hex (FR-DOC-07).
 pub fn sha256(bytes: &[u8]) -> Sha256Hex {
-    Sha256Hex::from_bytes(&Sha256::digest(bytes).into())
+    Sha256Hex::of(bytes)
 }
 
 /// The JSON Schema of `project.json`, as published in `docs/schema/project.schema.json`
@@ -152,7 +159,7 @@ impl ProjectFile {
     /// Adds a drawing file and returns its hash. Adding the same bytes twice keeps one copy.
     pub fn insert_drawing(&mut self, bytes: Vec<u8>) -> Sha256Hex {
         let hash = sha256(&bytes);
-        self.drawings.entry(hash.clone()).or_insert(bytes);
+        self.drawings.entry(hash).or_insert(bytes);
         hash
     }
 
@@ -166,7 +173,7 @@ impl ProjectFile {
     /// stored as given; `dimo-tolerance` validates them (FR-TOL-07).
     pub fn insert_table(&mut self, bytes: Vec<u8>) -> Sha256Hex {
         let hash = sha256(&bytes);
-        self.tables.entry(hash.clone()).or_insert(bytes);
+        self.tables.entry(hash).or_insert(bytes);
         hash
     }
 
@@ -233,15 +240,13 @@ impl ProjectFile {
                 .ok_or_else(|| ProjectError::MissingTable(table.table.id.clone()))?;
             entries.push((name, Cow::Borrowed(bytes.as_slice())));
         }
-        let hashes: BTreeSet<&Sha256Hex> =
-            self.project.revisions.iter().map(|r| &r.sha256).collect();
-        for hash in hashes {
+        for (hash, name) in drawing_names(&self.project)? {
             let bytes = self
                 .drawings
-                .get(hash)
-                .ok_or_else(|| ProjectError::MissingDrawing(hash.clone()))?;
+                .get(&hash)
+                .ok_or(ProjectError::MissingDrawing(hash))?;
             entries.push((
-                format!("{DRAWINGS_DIR}/{hash}.pdf"),
+                format!("{DRAWINGS_DIR}/{name}"),
                 Cow::Borrowed(bytes.as_slice()),
             ));
         }
@@ -303,6 +308,29 @@ impl ProjectFile {
     }
 }
 
+/// The stored file name of every drawing by hash: one file per hash, named by the source of
+/// the revisions that use it (ADR 0010). Revisions that share a hash must agree on the source
+/// kind, on load and on save.
+fn drawing_names(project: &Project) -> Result<BTreeMap<Sha256Hex, String>, ProjectError> {
+    let mut names: BTreeMap<Sha256Hex, String> = BTreeMap::new();
+    for revision in &project.revisions {
+        let name = revision.stored_name();
+        match names.get(&revision.sha256) {
+            Some(other) if *other != name => {
+                return Err(ProjectError::InvalidDrawing(format!(
+                    "drawing {} is stored as {other} and {name}",
+                    revision.sha256
+                )));
+            }
+            Some(_) => {}
+            None => {
+                names.insert(revision.sha256, name);
+            }
+        }
+    }
+    Ok(names)
+}
+
 /// Parses raw entries: manifest check, migration, types, drawing hashes.
 fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> {
     let manifest = manifest::parse(&raw.manifest.ok_or(ProjectError::MissingEntry(MANIFEST))?)?;
@@ -345,23 +373,19 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
         .collect::<Result<Vec<AuditEntry>, _>>()?;
 
     let mut drawings = BTreeMap::new();
-    for revision in &project.revisions {
-        let hash = &revision.sha256;
-        if drawings.contains_key(hash) {
-            continue;
-        }
+    for (hash, name) in drawing_names(&project)? {
         let bytes = raw
             .drawings
-            .remove(hash)
-            .ok_or_else(|| ProjectError::MissingDrawing(hash.clone()))?;
+            .remove(&name)
+            .ok_or(ProjectError::MissingDrawing(hash))?;
         let actual = sha256(&bytes);
-        if actual != *hash {
+        if actual != hash {
             return Err(ProjectError::HashMismatch {
-                expected: hash.clone(),
+                expected: hash,
                 actual,
             });
         }
-        drawings.insert(hash.clone(), bytes);
+        drawings.insert(hash, bytes);
     }
 
     let mut tables = BTreeMap::new();
@@ -375,7 +399,7 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
         if actual != table.sha256 {
             return Err(ProjectError::TableHashMismatch {
                 id: id.clone(),
-                expected: table.sha256.clone(),
+                expected: table.sha256,
                 actual,
             });
         }

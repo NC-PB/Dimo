@@ -54,6 +54,7 @@ pub fn drawing(env: &mut FixedEnvironment) -> ImportedDrawing {
     import_drawing(
         DRAWING.to_vec(),
         "part-100.pdf",
+        dimo_core::DrawingSource::Pdf,
         &sha256(DRAWING),
         &sheets,
         env,

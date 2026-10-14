@@ -535,7 +535,7 @@ impl Cell {
 fn header(project: &Project, options: &ReportOptions) -> Header {
     let info = &project.report_info;
     let revision = project.current_revision();
-    let sha256 = revision.map_or_else(String::new, |r| r.sha256.as_str().to_owned());
+    let sha256 = revision.map_or_else(String::new, |r| r.sha256.to_hex());
     let report_date = if info.report_date.is_empty() {
         options
             .fallback_date

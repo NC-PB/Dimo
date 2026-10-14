@@ -85,7 +85,7 @@ fn new_project_command_undo_redo_save_and_reopen() {
     assert_eq!(snapshot.drawing.name, "test_drawing_1.pdf");
     assert_eq!(snapshot.drawing.sheets.len(), 1);
     assert_eq!(
-        snapshot.project.revisions[0].sha256.as_str(),
+        snapshot.project.revisions[0].sha256.to_hex(),
         TEST_DRAWING_1_SHA256
     );
     assert_eq!(snapshot.status.file_name, None);
@@ -94,7 +94,7 @@ fn new_project_command_undo_redo_save_and_reopen() {
     // The tile service knows the drawing under its content hash.
     assert!(
         tiles
-            .document(&dimo_pdf::ContentHash::from_hex(TEST_DRAWING_1_SHA256).unwrap())
+            .document(&dimo_core::Sha256Hex::from_hex(TEST_DRAWING_1_SHA256).unwrap())
             .is_some()
     );
 

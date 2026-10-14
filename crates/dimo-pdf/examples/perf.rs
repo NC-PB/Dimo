@@ -273,7 +273,7 @@ fn tile_range(grid: &TileGrid, sheet: u32, center: (f64, f64), margin: u32) -> T
     }
 }
 
-fn keys(hash: dimo_pdf::ContentHash, range: &TileRange) -> Vec<TileKey> {
+fn keys(hash: dimo_core::Sha256Hex, range: &TileRange) -> Vec<TileKey> {
     let mut out = Vec::new();
     for y in range.rows.clone() {
         for x in range.columns.clone() {
@@ -301,7 +301,7 @@ struct Fetched {
 /// Declares `range` as the interest and requests all its tiles at once, like the viewport.
 fn fetch(
     service: &TileService,
-    hash: dimo_pdf::ContentHash,
+    hash: dimo_core::Sha256Hex,
     range: &TileRange,
 ) -> Result<Fetched, BoxError> {
     service.set_interest(hash, Some(vec![range.clone()]));
@@ -333,7 +333,7 @@ fn fetch(
 
 fn serial_phase(
     service: &TileService,
-    hash: dimo_pdf::ContentHash,
+    hash: dimo_core::Sha256Hex,
     sheet: u32,
 ) -> Result<Stats, BoxError> {
     let doc = service.document(&hash).ok_or("document not open")?;
@@ -370,7 +370,7 @@ struct Pan {
 /// A pan along a path of waypoints (pixels at the detail level), one step per 60 Hz frame.
 fn pan_phase(
     service: &Arc<TileService>,
-    hash: dimo_pdf::ContentHash,
+    hash: dimo_core::Sha256Hex,
     sheet: u32,
 ) -> Result<Pan, BoxError> {
     let doc = service.document(&hash).ok_or("document not open")?;

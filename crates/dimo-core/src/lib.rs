@@ -24,6 +24,7 @@ pub mod document;
 pub mod env;
 pub mod evaluation;
 pub mod geometry;
+pub mod hash;
 pub mod history;
 pub mod id;
 pub mod language;
@@ -35,6 +36,7 @@ pub mod project;
 pub mod proposal;
 pub mod report;
 pub mod sheet;
+pub mod source;
 pub mod truth;
 pub mod zones;
 
@@ -80,6 +82,10 @@ pub use proposal::{BalloonPlacement, EngineVersion, ParseHint, ParseIssue, Propo
 pub use report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
 pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
+};
+pub use source::{
+    DrawingSource, ImageEdit, ImageFormat, ImagePoint, Orientation, Paper, PaperSize, SheetCorners,
+    Trim,
 };
 pub use zones::{AxisScheme, LabelKind, ZoneAxis, ZoneGridEdit, ZoneGridForm, zone_grid_form};
 

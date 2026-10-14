@@ -35,7 +35,10 @@ flowchart LR
   JOB --> DET --> VIS
   DET --> NOT --> TOL
   DET --> PDF
-  CORE --> IO --> REP
+  IO --> CORE
+  IO --> PDF
+  REP --> CORE
+  C --> IO
   CLI --> CORE
   CLI --> JOB
 ```
@@ -51,7 +54,7 @@ dimo/
     dimo-pdf/         PDF access: tile rendering, text runs with geometry, vector paths, ballooned PDF writing
     dimo-vision/      image preprocessing, OCR engine trait and backends, symbol classifier
     dimo-detect/      layout analysis, token grouping, characteristic proposals, confidence, balloon placement
-    dimo-io/          project container, migrations, imports (CSV, spreadsheet, QIF), exports (CSV, XLSX, QIF)
+    dimo-io/          project container, migrations, project creation from a drawing file, imports (CSV, spreadsheet, QIF), exports (CSV, XLSX, QIF)
     dimo-report/      report templating and PDF rendering
     dimo-cli/         headless command line tool
   apps/
@@ -111,6 +114,12 @@ trait OcrEngine {          // pluggable OCR backends
 trait SymbolClassifier {   // GD&T and other symbols
     fn classify(&self, crop: &GrayImage) -> Result<Vec<(Symbol, f32)>>;
 }
+trait RasterSource {       // what tiles are drawn from: a PDF page or an image (ADR 0010)
+    fn render_key(&self) -> Sha256Hex;                             // names the pixels
+    fn sheet_count(&self) -> usize;
+    fn sheet_size(&self, sheet: usize) -> Result<Size>;            // sheet space
+    fn render_region(&self, sheet: usize, region: Rect, zoom: f64) -> Result<RgbaImage>;
+}
 trait Exporter {           // report and data outputs
     fn export(&self, project: &Project, opts: &ExportOptions, out: &mut dyn Write) -> Result<()>;
 }
@@ -136,7 +145,7 @@ src/
 
 The viewport is the most demanding part:
 
-- **Tile layer:** `<img>` or canvas tiles requested through the custom URI protocol `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`. Tiles are rendered in Rust by pdfium on a worker pool and cached in memory (LRU) and on disk.
+- **Tile layer:** `<img>` or canvas tiles requested through the custom URI protocol `dimo://tile/{doc}/{sheet}/{zoom}/{x}/{y}`. Tiles are rendered in Rust from the drawing's `RasterSource` (PDFium for PDFs, an image source for photos and scans) on a worker pool and cached in memory (LRU) and on disk, keyed by source kind and render key (the content hash for a PDF).
 - **Overlay:** one SVG in sheet space with a single transform for pan and zoom. Balloons, leaders, selection boxes and proposal ghosts are SVG elements. A few hundred to a few thousand elements are well within SVG limits. If profiling shows otherwise, the overlay switches to canvas without changing the data flow.
 
 ## IPC

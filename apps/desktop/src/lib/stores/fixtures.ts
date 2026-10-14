@@ -70,6 +70,7 @@ export function emptyProject(): Project {
         label: "",
         file_name: "part.pdf",
         sha256: DOC_HASH,
+        source: { type: "pdf" },
         imported_at: "2026-10-09T10:00:00Z",
         sheets: [
           {

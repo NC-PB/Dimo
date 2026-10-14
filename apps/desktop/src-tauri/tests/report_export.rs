@@ -407,7 +407,7 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
     assert_eq!(issued.kind, ReportKind::InspectionReport);
     assert_eq!(issued.format, ReportFormat::Pdf);
     assert_eq!(issued.template.id, REPORT_TEMPLATE);
-    assert_eq!(issued.output_sha256.as_str(), "a".repeat(64));
+    assert_eq!(issued.output_sha256.to_hex(), "a".repeat(64));
     assert_eq!(issued.revision, project.current_revision);
 
     // One undo removes lock, filled info and record together.

@@ -503,6 +503,17 @@ revision: RevisionId;
 before: string; 
 /**  Label after. */
 after: string } | 
+/**
+ *  The source of a drawing revision changed, for example the image edit settings of a
+ *  page (MF F1). Label and sheets have changes of their own.
+ */
+{ type: "revision_changed"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  Source before. */
+before: DrawingSource; 
+/**  Source after. */
+after: DrawingSource } | 
 /**  An issued report record was inserted at `index` of `Project::issued_reports`. */
 { type: "issued_report_inserted"; 
 /**  Position in the list. */
@@ -910,6 +921,20 @@ revision: RevisionId;
 /**  New label; empty if unknown. */
 label: string } | 
 /**
+ *  Replaces the image edit settings of one page of an image drawing revision: rotation,
+ *  fine angle, corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1).
+ *  Refused for a PDF revision. Sheets and balloons do not change yet; the sheet size and
+ *  balloon positions that follow from an edit are derived in Rust when the image editor
+ *  comes (R.20, rule 2), never in the frontend.
+ */
+{ type: "set_image_edit"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  Zero based page, the index of its sheet. */
+page: number; 
+/**  New settings. */
+edit: ImageEdit } | 
+/**
  *  Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
  *  are those of the current revision, the time comes from the environment clock. Exports
  *  send it in a batch with [`Command::LockNumbering`], so lock and record are one undo
@@ -1090,7 +1115,10 @@ export type DevView = {
 
 /**  The drawing of a project as the viewport needs it. */
 export type DocumentInfo = {
-	/**  Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs. */
+	/**
+	 *  Render key of the drawing source, 64 hex digits: the content hash (SHA-256, FR-DOC-07)
+	 *  for a PDF. The `{doc}` part of tile URLs.
+	 */
 	doc: string,
 	/**  File name of the drawing without the directory. */
 	name: string,
@@ -1106,13 +1134,32 @@ export type DrawingRevision = {
 	label: string,
 	/**  File name at import, without directories. */
 	file_name: string,
-	/**  SHA-256 of the imported file. The file is stored as `drawings/<sha256>.pdf`. */
+	/**
+	 *  SHA-256 of the imported file, which is stored unchanged as
+	 *  `drawings/<sha256>.<extension>` ([`DrawingRevision::stored_name`]).
+	 */
 	sha256: Sha256Hex,
+	/**  What kind of file it is and, for images, how it becomes a sheet (MF F1, ADR 0010). */
+	source: DrawingSource,
 	/**  When the file was imported. */
 	imported_at: Timestamp,
 	/**  Sheets in page order. */
 	sheets: Sheet[],
 };
+
+/**  The kind of file a drawing revision was imported from. */
+export type DrawingSource = 
+/**  A PDF; sheets are its pages. */
+{ type: "pdf" } | 
+/**  A photo or scan; sheets are its pages (one for JPEG and PNG). */
+{ type: "image"; 
+/**  File format of the stored image. */
+format: ImageFormat; 
+/**
+ *  How each page becomes a sheet, in page order: entry `i` belongs to the sheet with
+ *  index `i`.
+ */
+pages: ImageEdit[] };
 
 /**
  *  Name and version of an engine that took part in making a proposal (data model `Proposal`:
@@ -1275,6 +1322,52 @@ export type HistoryEntry = {
 	after: Characteristic | null,
 	/**  Fields that changed; empty when the characteristic was created or removed. */
 	fields: CharacteristicField[],
+};
+
+/**
+ *  Non-destructive settings that turn a stored image into a sheet (R01 decisions 8 to 11).
+ *  See the module docs for coordinates and order. [`ImageEdit::default`] leaves the image as
+ *  it is.
+ */
+export type ImageEdit = {
+	/**  Clockwise quarter turns. */
+	rotation: Rotation,
+	/**  Further clockwise rotation in degrees, from -45 to 45, applied after the quarter turns. */
+	fine_angle: string,
+	/**
+	 *  Sheet corners in the stored image for perspective correction (R01 decision 8); `null`
+	 *  for none.
+	 */
+	corners: SheetCorners | null,
+	/**
+	 *  Part of the page to keep, as fractions of the page after rotation and corner correction
+	 *  (see the module docs); `null` keeps all of it.
+	 */
+	trim: Trim | null,
+	/**  Paper the trimmed image is mapped onto (R01 decision 9); `null` until the user picks it. */
+	paper: Paper | null,
+	/**
+	 *  Grey scale, white background and raised contrast for display and the ballooned PDF
+	 *  (R01 decision 11). The stored image stays as it is.
+	 */
+	clean_up: boolean,
+};
+
+/**  Image file formats a drawing can be imported from (R01 decision 7). HEIC is not supported. */
+export type ImageFormat = 
+/**  JPEG, one sheet. */
+"jpeg" | 
+/**  PNG, one sheet. */
+"png" | 
+/**  TIFF, one sheet per page. */
+"tiff";
+
+/**  A point in pixels of the stored image (see the module docs). */
+export type ImagePoint = {
+	/**  Pixels from the left edge. */
+	x: string,
+	/**  Pixels from the top edge. */
+	y: string,
 };
 
 /**
@@ -1614,6 +1707,13 @@ export type OpenNotice = {
  */
 export type OptionalDecimal = string | null;
 
+/**  Paper orientation. */
+export type Orientation = 
+/**  Taller than wide. */
+"portrait" | 
+/**  Wider than tall. */
+"landscape";
+
 /**  Oriented bounding box in sheet space: center, size and rotation (data model `SourceRegion`). */
 export type OrientedBox = {
 	/**  Center of the box. */
@@ -1646,6 +1746,38 @@ export type OverallVerdict =
 "fail" | 
 /**  No cell fails, but some are missing or not evaluated, or there are no cells. */
 "open";
+
+/**  The paper a photographed sheet is mapped onto (R01 decision 9). */
+export type Paper = 
+/**  A standard paper size. */
+{ format: "standard"; 
+/**  The size. */
+size: PaperSize; 
+/**  Portrait or landscape. */
+orientation: Orientation } | 
+/**  Width and height in mm as the sheet reads. */
+{ format: "custom"; 
+/**  Width in mm. */
+width_mm: string; 
+/**  Height in mm. */
+height_mm: string };
+
+/**  Standard paper sizes (R01 decision 9). */
+export type PaperSize = 
+/**  ISO 216 A4, 210 x 297 mm. */
+"a4" | 
+/**  ISO 216 A3, 297 x 420 mm. */
+"a3" | 
+/**  ISO 216 A2, 420 x 594 mm. */
+"a2" | 
+/**  ISO 216 A1, 594 x 841 mm. */
+"a1" | 
+/**  ISO 216 A0, 841 x 1189 mm. */
+"a0" | 
+/**  US Letter, 8.5 x 11 in. */
+"letter" | 
+/**  US Tabloid, 11 x 17 in. */
+"tabloid";
 
 /**  Something the parser assumed that the user should check (spec 08 stage 6). */
 export type ParseHint = 
@@ -1946,6 +2078,10 @@ export type RejectReason =
 "unknown_sample" | 
 /**  A drawing revision of the command does not exist. */
 "unknown_revision" | 
+/**  The drawing revision is a PDF, so it has no image edit settings (MF F1). */
+"not_an_image" | 
+/**  Image edit settings are out of range (MF F1). */
+"invalid_image_edit" | 
 /**  A sample serial is empty (M3 decision 6). */
 "empty_serial" | 
 /**  Another sample has this serial (M3 decision 6). */
@@ -2218,7 +2354,7 @@ export type SettingsView = {
 	os_user_name: string,
 };
 
-/**  SHA-256 of a file as 64 lowercase hex digits (FR-DOC-07). */
+/**  SHA-256 of a file, written as 64 lowercase hex digits (FR-DOC-07). */
 export type Sha256Hex = string;
 
 /**  One sheet (PDF page) of a drawing revision. */
@@ -2246,6 +2382,21 @@ export type Sheet = {
 	zone_grid: ZoneGrid | null,
 	/**  Views drawn by hand, in the order the user drew them (M2 decision 1). */
 	views: SheetView[],
+};
+
+/**
+ *  The four sheet corners in the stored image, named as the sheet reads after the quarter
+ *  turns (R01 decision 8).
+ */
+export type SheetCorners = {
+	/**  Top left corner of the sheet. */
+	top_left: ImagePoint,
+	/**  Top right corner of the sheet. */
+	top_right: ImagePoint,
+	/**  Bottom right corner of the sheet. */
+	bottom_right: ImagePoint,
+	/**  Bottom left corner of the sheet. */
+	bottom_left: ImagePoint,
 };
 
 /**
@@ -2504,6 +2655,21 @@ export type ToleranceTableInfo = {
 	draft: boolean,
 	/**  Classes to choose from (columns of its general parts); empty for fit tables. */
 	classes: string[],
+};
+
+/**
+ *  The part of a page to keep: its edges as fractions from 0 to 1 of the width (left, right)
+ *  and height (top, bottom) of the page after rotation and corner correction.
+ */
+export type Trim = {
+	/**  Left edge. */
+	left: string,
+	/**  Top edge. */
+	top: string,
+	/**  Right edge, more than `left`. */
+	right: string,
+	/**  Bottom edge, more than `top`. */
+	bottom: string,
 };
 
 /**  Values for text typed into the value field or the card (M2 decision 5). */

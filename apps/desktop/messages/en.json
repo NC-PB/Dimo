@@ -413,6 +413,8 @@
   "company_name_hint": "Printed on reports. Copied into the report details of a project that has no company name yet.",
   "refusal_unknown_sample": "This part no longer exists.",
   "refusal_unknown_revision": "This drawing revision no longer exists.",
+  "refusal_not_an_image": "Only drawings from a photo or scan have image settings.",
+  "refusal_invalid_image_edit": "The image settings are out of range.",
   "refusal_empty_serial": "The serial number must not be empty.",
   "refusal_duplicate_serial": "Another part already has this serial number.",
   "refusal_too_many_samples": "A project holds at most 500 parts.",

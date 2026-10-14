@@ -5,7 +5,8 @@
 
 use std::sync::Arc;
 
-use dimo_pdf::ContentHash;
+use dimo_core::Sha256Hex;
+use dimo_pdf::RasterSource;
 use dimo_pdf::tiles::{self, TileKey, TileService};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -174,6 +175,10 @@ pub enum RejectReason {
     UnknownSample,
     /// A drawing revision of the command does not exist.
     UnknownRevision,
+    /// The drawing revision is a PDF, so it has no image edit settings (MF F1).
+    NotAnImage,
+    /// Image edit settings are out of range (MF F1).
+    InvalidImageEdit,
     /// A sample serial is empty (M3 decision 6).
     EmptySerial,
     /// Another sample has this serial (M3 decision 6).
@@ -213,6 +218,8 @@ impl From<&dimo_core::CommandError> for RejectReason {
             E::Field(FieldError::ZeroQuantity) => Self::ZeroQuantity,
             E::UnknownSample(_) => Self::UnknownSample,
             E::UnknownRevision(_) => Self::UnknownRevision,
+            E::NotAnImage(_) => Self::NotAnImage,
+            E::InvalidImageEdit(_) => Self::InvalidImageEdit,
             E::Serial(SerialError::Empty) => Self::EmptySerial,
             E::Serial(SerialError::Duplicate(_)) => Self::DuplicateSerial,
             E::TooManySamples => Self::TooManySamples,
@@ -253,6 +260,22 @@ impl From<dimo_core::CommandError> for CommandError {
     }
 }
 
+impl From<dimo_io::project::CreateError> for CommandError {
+    fn from(error: dimo_io::project::CreateError) -> Self {
+        use dimo_io::project::CreateError;
+        match error {
+            CreateError::Read { .. } => Self::Io {
+                message: error.to_string(),
+            },
+            CreateError::Project(error) => error.into(),
+            CreateError::Open(error) => error.into(),
+            CreateError::UnknownType | CreateError::ImageNotSupported(_) => Self::InvalidDocument {
+                message: error.to_string(),
+            },
+        }
+    }
+}
+
 impl From<dimo_pdf::PdfError> for CommandError {
     fn from(error: dimo_pdf::PdfError) -> Self {
         Self::InvalidDocument {
@@ -275,7 +298,8 @@ pub struct SheetInfo {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub struct DocumentInfo {
-    /// Content hash (SHA-256, 64 hex digits, FR-DOC-07). The `{doc}` part of tile URLs.
+    /// Render key of the drawing source, 64 hex digits: the content hash (SHA-256, FR-DOC-07)
+    /// for a PDF. The `{doc}` part of tile URLs.
     pub doc: String,
     /// File name of the drawing without the directory.
     pub name: String,
@@ -284,20 +308,20 @@ pub struct DocumentInfo {
 }
 
 impl DocumentInfo {
-    /// Describes a document opened by the tile service under the file name `name`.
-    pub fn of(doc: &dimo_pdf::Document, name: &str) -> Self {
-        Self {
-            doc: doc.content_hash().to_hex(),
+    /// Describes a drawing source registered in the tile service under the file name `name`.
+    pub fn of(source: &dyn RasterSource, name: &str) -> Result<Self, CommandError> {
+        Ok(Self {
+            doc: source.render_key().to_hex(),
             name: name.to_owned(),
-            sheets: doc
-                .sheet_sizes()
+            sheets: source
+                .sheet_sizes()?
                 .iter()
                 .map(|s| SheetInfo {
                     width: s.width,
                     height: s.height,
                 })
                 .collect(),
-        }
+        })
     }
 }
 
@@ -361,8 +385,8 @@ impl From<TileRange> for tiles::TileRange {
     }
 }
 
-fn parse_doc(doc: &str) -> Result<ContentHash, CommandError> {
-    ContentHash::from_hex(doc).ok_or_else(|| CommandError::InvalidArgument {
+fn parse_doc(doc: &str) -> Result<Sha256Hex, CommandError> {
+    Sha256Hex::from_hex(doc).ok_or_else(|| CommandError::InvalidArgument {
         message: format!("document id {doc:?} is not a 64 digit hex content hash"),
     })
 }
@@ -439,6 +463,20 @@ mod tests {
         let json = serde_json::to_value(&locked).unwrap();
         assert_eq!(json["kind"], "rejected");
         assert_eq!(json["reason"], "numbering_locked");
+        let pdf = CommandError::from(dimo_core::CommandError::NotAnImage(
+            dimo_core::RevisionId::from_uuid(uuid::Uuid::nil()),
+        ));
+        assert!(matches!(
+            pdf,
+            CommandError::Rejected {
+                reason: RejectReason::NotAnImage,
+                ..
+            }
+        ));
+        assert_eq!(
+            serde_json::to_value(&pdf).unwrap()["reason"],
+            "not_an_image"
+        );
         let zero = CommandError::from(dimo_core::CommandError::Field(
             dimo_core::FieldError::ZeroQuantity,
         ));
@@ -453,7 +491,7 @@ mod tests {
 
     #[test]
     fn tile_address_parses_the_content_hash() {
-        let hash = ContentHash::of(b"x");
+        let hash = Sha256Hex::of(b"x");
         let address = TileAddress {
             doc: hash.to_hex(),
             sheet: 1,

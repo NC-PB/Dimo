@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use super::{Tile, TileKey};
+use super::{CacheKey, Tile};
 
 /// Least recently used cache of encoded tiles. The sum of the stored tile sizes never exceeds
 /// the budget: inserting evicts the least recently used tiles first, and a tile larger than the
@@ -16,8 +16,8 @@ pub struct MemoryCache {
     bytes: usize,
     peak: usize,
     clock: u64,
-    entries: HashMap<TileKey, Entry>,
-    by_use: BTreeMap<u64, TileKey>,
+    entries: HashMap<CacheKey, Entry>,
+    by_use: BTreeMap<u64, CacheKey>,
 }
 
 #[derive(Debug)]
@@ -40,7 +40,7 @@ impl MemoryCache {
     }
 
     /// The tile for `key`, marking it as most recently used.
-    pub fn get(&mut self, key: &TileKey) -> Option<Tile> {
+    pub fn get(&mut self, key: &CacheKey) -> Option<Tile> {
         let now = self.tick();
         let entry = self.entries.get_mut(key)?;
         self.by_use.remove(&entry.used);
@@ -51,7 +51,7 @@ impl MemoryCache {
 
     /// Stores a tile, replacing an older one for the same key, and evicts least recently used
     /// tiles until the budget holds.
-    pub fn insert(&mut self, key: TileKey, tile: Tile) {
+    pub fn insert(&mut self, key: CacheKey, tile: Tile) {
         self.remove(&key);
         let size = tile.len();
         if size > self.budget {
@@ -74,7 +74,7 @@ impl MemoryCache {
     }
 
     /// Removes the tile for `key`, if any.
-    pub fn remove(&mut self, key: &TileKey) {
+    pub fn remove(&mut self, key: &CacheKey) {
         if let Some(entry) = self.entries.remove(key) {
             self.by_use.remove(&entry.used);
             self.bytes -= entry.tile.len();
@@ -82,8 +82,8 @@ impl MemoryCache {
     }
 
     /// Removes every tile matching `predicate`.
-    pub fn retain(&mut self, mut predicate: impl FnMut(&TileKey) -> bool) {
-        let gone: Vec<TileKey> = self
+    pub fn retain(&mut self, mut predicate: impl FnMut(&CacheKey) -> bool) {
+        let gone: Vec<CacheKey> = self
             .entries
             .keys()
             .filter(|key| !predicate(key))
@@ -128,15 +128,20 @@ impl MemoryCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hash::ContentHash;
+    use crate::source::SourceKind;
+    use crate::tiles::TileKey;
+    use dimo_core::Sha256Hex;
 
-    fn key(x: u32) -> TileKey {
-        TileKey {
-            doc: ContentHash::of(b"memory"),
-            sheet: 0,
-            zoom: 0,
-            x,
-            y: 0,
+    fn key(x: u32) -> CacheKey {
+        CacheKey {
+            kind: SourceKind::Pdf,
+            tile: TileKey {
+                doc: Sha256Hex::of(b"memory"),
+                sheet: 0,
+                zoom: 0,
+                x,
+                y: 0,
+            },
         }
     }
 
@@ -182,8 +187,23 @@ mod tests {
         for x in 0..10 {
             cache.insert(key(x), tile(10));
         }
-        cache.retain(|k| k.x % 2 == 0);
+        cache.retain(|k| k.tile.x % 2 == 0);
         assert_eq!((cache.len(), cache.bytes()), (5, 50));
+    }
+
+    #[test]
+    fn the_source_kind_separates_tiles() {
+        let mut cache = MemoryCache::new(1000);
+        let pdf = key(0);
+        let image = CacheKey {
+            kind: SourceKind::Image,
+            ..pdf
+        };
+        cache.insert(pdf, tile(10));
+        assert!(cache.get(&image).is_none());
+        cache.insert(image, tile(20));
+        assert_eq!(cache.get(&pdf).map(|t| t.len()), Some(10));
+        assert_eq!(cache.get(&image).map(|t| t.len()), Some(20));
     }
 
     #[test]

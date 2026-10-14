@@ -28,8 +28,8 @@ use dimo_core::{
     TextSource, ToleranceDerivation, ToleranceSettings, Unit, UnitRounding, ZoneGrid,
 };
 use dimo_core::{
-    ReportFormat, ReportInfo, ReportKind, ResultCell, ResultEntry, ResultType, SampleId, Sha256Hex,
-    TemplateRef,
+    DrawingSource, Environment as _, ImageEdit, ImageFormat, ReportFormat, ReportInfo, ReportKind,
+    ResultCell, ResultEntry, ResultType, SampleId, Sha256Hex, TemplateRef,
 };
 use proptest::prelude::*;
 use rust_decimal::Decimal;
@@ -150,6 +150,15 @@ enum Op {
     RecordIssuedReport {
         pdf: bool,
     },
+    /// Image edit of a page of the image revision, or of the PDF revision (refused); page 2
+    /// does not exist and angles above 45 degrees are refused too (MF F1).
+    ImageEdit {
+        image: bool,
+        page: u32,
+        turns: u8,
+        angle: i8,
+        clean_up: bool,
+    },
     Batch(Vec<Op>),
 }
 
@@ -232,6 +241,8 @@ fn simple_op() -> impl Strategy<Value = Op> {
             .prop_map(|(number, bad_date)| Op::ReportInfo { number, bad_date }),
         1 => (0u8..3).prop_map(|label| Op::RevisionLabel { label }),
         1 => any::<bool>().prop_map(|pdf| Op::RecordIssuedReport { pdf }),
+        1 => (prop::bool::weighted(0.8), 0u32..3, 0u8..4, -50i8..50, any::<bool>())
+            .prop_map(|(image, page, turns, angle, clean_up)| Op::ImageEdit { image, page, turns, angle, clean_up }),
     ]
 }
 
@@ -688,6 +699,27 @@ fn command(project: &Project, op: &Op) -> Command {
                 ..ReportInfo::default()
             },
         },
+        Op::ImageEdit {
+            image,
+            page,
+            turns,
+            angle,
+            clean_up,
+        } => Command::SetImageEdit {
+            revision: project.revisions[usize::from(*image)].id,
+            page: *page,
+            edit: Box::new(ImageEdit {
+                rotation: [
+                    Rotation::Deg0,
+                    Rotation::Deg90,
+                    Rotation::Deg180,
+                    Rotation::Deg270,
+                ][usize::from(*turns)],
+                fine_angle: Decimal::new(i64::from(*angle), 0),
+                clean_up: *clean_up,
+                ..ImageEdit::default()
+            }),
+        },
         Op::RevisionLabel { label } => Command::UpdateRevisionLabel {
             revision: project.current_revision,
             label: ["A", " B ", ""][usize::from(*label)].into(),
@@ -726,9 +758,22 @@ fn replay(before: &Project, changes: &[dimo_core::Change]) -> Project {
     project
 }
 
+/// The common project plus an image revision of two pages that is not ballooned, for image
+/// edits.
 fn fresh() -> (Document, FixedEnvironment) {
     let mut env = common::env();
-    let project = common::project(&mut env);
+    let mut project = common::project(&mut env);
+    let mut image = project.revisions[0].clone();
+    image.id = dimo_core::RevisionId::from_uuid(env.new_uuid());
+    image.sha256 = Sha256Hex::of(b"scan");
+    for sheet in &mut image.sheets {
+        sheet.id = dimo_core::SheetId::from_uuid(env.new_uuid());
+    }
+    image.source = DrawingSource::Image {
+        format: ImageFormat::Tiff,
+        pages: vec![ImageEdit::default(); image.sheets.len()],
+    };
+    project.revisions.push(image);
     (Document::new(project), env)
 }
 

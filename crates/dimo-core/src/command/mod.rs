@@ -37,6 +37,7 @@ use crate::project::{
 use crate::proposal::{BalloonPlacement, Proposal};
 use crate::report::{ReportFormat, ReportInfo, ReportKind, TemplateRef};
 use crate::sheet::{Rotation, Scale, Sha256Hex, SheetView, ZoneGrid};
+use crate::source::ImageEdit;
 
 /// New position of one balloon.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -246,6 +247,19 @@ pub enum Command {
         /// New label; empty if unknown.
         label: String,
     },
+    /// Replaces the image edit settings of one page of an image drawing revision: rotation,
+    /// fine angle, corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1).
+    /// Refused for a PDF revision. Sheets and balloons do not change yet; the sheet size and
+    /// balloon positions that follow from an edit are derived in Rust when the image editor
+    /// comes (R.20, rule 2), never in the frontend.
+    SetImageEdit {
+        /// The revision.
+        revision: RevisionId,
+        /// Zero based page, the index of its sheet.
+        page: u32,
+        /// New settings.
+        edit: Box<ImageEdit>,
+    },
     /// Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
     /// are those of the current revision, the time comes from the environment clock. Exports
     /// send it in a batch with [`Command::LockNumbering`], so lock and record are one undo
@@ -307,6 +321,12 @@ pub enum CommandError {
     /// No drawing revision with this ID.
     #[error("unknown drawing revision {0}")]
     UnknownRevision(RevisionId),
+    /// The revision is not an image, so it has no image edit settings (MF F1).
+    #[error("drawing revision {0} is not an image")]
+    NotAnImage(RevisionId),
+    /// Image edit settings out of range.
+    #[error("invalid image edit: {0}")]
+    InvalidImageEdit(&'static str),
     /// A serial that is empty or used by another sample (M3 decision 6).
     #[error(transparent)]
     Serial(#[from] SerialError),
@@ -439,6 +459,11 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
         C::UpdateRevisionLabel { revision, label } => {
             reports::update_revision_label(tx, *revision, label)
         }
+        C::SetImageEdit {
+            revision,
+            page,
+            edit,
+        } => reports::set_image_edit(tx, *revision, *page, edit),
         C::RecordIssuedReport {
             kind,
             template,

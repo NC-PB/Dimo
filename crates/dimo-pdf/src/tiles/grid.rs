@@ -4,7 +4,9 @@ use std::ops::Range;
 
 use dimo_core::{Rect, Size};
 
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
+
+use crate::source::SourceKind;
 
 use super::TileError;
 
@@ -28,7 +30,7 @@ pub fn zoom_scale(level: i32) -> f64 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TileKey {
     /// SHA-256 of the document bytes (FR-DOC-07). Also the disk cache key.
-    pub doc: ContentHash,
+    pub doc: Sha256Hex,
     /// Zero based sheet index.
     pub sheet: u32,
     /// Zoom level, see [`zoom_scale`].
@@ -37,6 +39,16 @@ pub struct TileKey {
     pub x: u32,
     /// Row, zero at the top sheet edge.
     pub y: u32,
+}
+
+/// Key of a tile in the memory and disk caches: the tile and the kind of its source, so a PDF
+/// and an image with the same bytes never share tiles (MF F1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CacheKey {
+    /// Kind of the source the tile was rendered from.
+    pub kind: SourceKind,
+    /// The tile.
+    pub tile: TileKey,
 }
 
 impl TileKey {
@@ -50,7 +62,7 @@ impl TileKey {
         }
         let doc = parts
             .next()
-            .and_then(ContentHash::from_hex)
+            .and_then(Sha256Hex::from_hex)
             .ok_or_else(invalid)?;
         let mut number = || parts.next().ok_or_else(invalid);
         let sheet = number()?.parse().map_err(|_| invalid())?;
@@ -217,8 +229,8 @@ mod tests {
         height: 595.276,
     };
 
-    fn hash() -> ContentHash {
-        ContentHash::of(b"tile")
+    fn hash() -> Sha256Hex {
+        Sha256Hex::of(b"tile")
     }
 
     #[test]

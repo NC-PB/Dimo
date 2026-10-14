@@ -261,7 +261,7 @@ fn manifest_and_audit_content() {
     let audit = String::from_utf8(entries[2].1.clone()).unwrap();
     assert_eq!(audit.lines().count(), file.audit.len());
     assert!(audit.ends_with('\n'));
-    assert_eq!(SCHEMA_VERSION, 3);
+    assert_eq!(SCHEMA_VERSION, 4);
 }
 
 #[test]
@@ -395,7 +395,7 @@ fn newer_schema_versions_are_refused_and_left_untouched() {
             error,
             ProjectError::NewerVersion {
                 found: 99,
-                supported: 3
+                supported: 4
             }
         ),
         "{error}"

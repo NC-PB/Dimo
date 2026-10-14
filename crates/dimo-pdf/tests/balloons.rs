@@ -9,10 +9,11 @@
 use std::path::PathBuf;
 
 use dimo_core::Rect;
+use dimo_core::Sha256Hex;
 use dimo_core::truth::TruthFile;
 use dimo_pdf::{
-    Balloon, BalloonOutput, BalloonOverlay, BalloonShape, ContentHash, Leader, PdfDate, PdfEngine,
-    PdfError, Rgb, RgbaImage, SheetBalloons, SheetPoint, Stroke, TextRun,
+    Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, PdfEngine, PdfError,
+    Rgb, RgbaImage, SheetBalloons, SheetPoint, Stroke, TextRun,
 };
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
@@ -235,7 +236,7 @@ fn two_runs_are_byte_identical() {
         ballooned(&engine, BalloonOutput::Annotations { date: DATE })
     );
     // test_drawing_1 has no /ID, so both parts are derived: the first from the input.
-    let first = ContentHash::of(&corpus_drawing(TEST_DRAWING_1)).to_hex()[..32].to_uppercase();
+    let first = Sha256Hex::of(&corpus_drawing(TEST_DRAWING_1)).to_hex()[..32].to_uppercase();
     assert_eq!(count(&content, format!("/ID[<{first}><").as_bytes()), 1);
     // The only dates are the input's creation date and, for annotations, the given date.
     assert_eq!(count(&content, b"(D:"), 1);
@@ -287,7 +288,7 @@ fn fingerprint(img: &RgbaImage, cell: u32) -> String {
         "image: {} x {} px\ncells: {cell} px, grid {cols} x {rows}\ngrid sha256: {}\n\n{grid}",
         img.width(),
         img.height(),
-        ContentHash::of(grid.as_bytes()),
+        Sha256Hex::of(grid.as_bytes()),
     )
 }
 

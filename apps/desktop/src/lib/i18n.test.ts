@@ -35,6 +35,8 @@ describe("i18n (FR-SET-04)", () => {
     const reasons: RejectReason[] = [
       "unknown_sample",
       "unknown_revision",
+      "not_an_image",
+      "invalid_image_edit",
       "empty_serial",
       "duplicate_serial",
       "too_many_samples",

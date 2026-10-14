@@ -1,5 +1,5 @@
-//! Report data: header and approval data, revision labels, issued reports (M3 decisions 1
-//! and 17, FR-RVC-04, D-23).
+//! Report data and drawing revisions: header and approval data, revision labels, image edit
+//! settings, issued reports (M3 decisions 1 and 17, FR-RVC-04, D-23, MF F1).
 
 use super::{CommandError, Tx, index_u32};
 use crate::env::Environment;
@@ -8,6 +8,7 @@ use crate::measurement::is_date_or_empty;
 use crate::patch::Change;
 use crate::report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
 use crate::sheet::Sha256Hex;
+use crate::source::{DrawingSource, ImageEdit};
 
 pub(super) fn update_report_info(tx: &mut Tx<'_>, info: &ReportInfo) -> Result<(), CommandError> {
     if !is_date_or_empty(&info.report_date) {
@@ -44,6 +45,41 @@ pub(super) fn update_revision_label(
     Ok(())
 }
 
+pub(super) fn set_image_edit(
+    tx: &mut Tx<'_>,
+    revision: RevisionId,
+    page: u32,
+    edit: &ImageEdit,
+) -> Result<(), CommandError> {
+    let current = tx
+        .project
+        .revisions
+        .iter()
+        .find(|r| r.id == revision)
+        .ok_or(CommandError::UnknownRevision(revision))?;
+    let DrawingSource::Image { format, pages } = &current.source else {
+        return Err(CommandError::NotAnImage(revision));
+    };
+    let index = usize::try_from(page).unwrap_or(usize::MAX);
+    let Some(old) = pages.get(index) else {
+        return Err(CommandError::InvalidImageEdit("the image has no such page"));
+    };
+    edit.validate().map_err(CommandError::InvalidImageEdit)?;
+    if old != edit {
+        let mut new_pages = pages.clone();
+        new_pages[index] = edit.clone();
+        tx.push(Change::RevisionChanged {
+            revision,
+            before: current.source.clone(),
+            after: DrawingSource::Image {
+                format: *format,
+                pages: new_pages,
+            },
+        })?;
+    }
+    Ok(())
+}
+
 pub(super) fn record_issued_report(
     tx: &mut Tx<'_>,
     kind: ReportKind,
@@ -60,9 +96,9 @@ pub(super) fn record_issued_report(
         kind,
         template: template.clone(),
         revision: revision.id,
-        drawing_sha256: revision.sha256.clone(),
+        drawing_sha256: revision.sha256,
         exported_at: env.now(),
-        output_sha256: output_sha256.clone(),
+        output_sha256: *output_sha256,
         format,
     };
     tx.push(Change::IssuedReportInserted {

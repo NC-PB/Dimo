@@ -31,6 +31,7 @@ pub fn project(env: &mut FixedEnvironment) -> Project {
         label: "A".into(),
         file_name: "part.pdf".into(),
         sha256: Sha256Hex::from_bytes(&[7; 32]),
+        source: dimo_core::DrawingSource::Pdf,
         imported_at: Timestamp::parse("2026-01-01T00:00:00Z").unwrap(),
         sheets,
     };

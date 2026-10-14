@@ -31,11 +31,11 @@ use pdfium_render::prelude::{
 
 use crate::PdfError;
 use crate::font::{BALLOON_FONT, TrueTypeFont};
-use crate::hash::ContentHash;
 use crate::overlay::{
     Balloon, BalloonOutput, BalloonOverlay, PathSegment, PdfDate, Rgb, SheetPoint, Stroke,
 };
 use crate::text::page_to_sheet;
+use dimo_core::Sha256Hex;
 
 #[allow(clippy::needless_pass_by_value)] // used as a map_err callback
 fn write_error(e: PdfiumError) -> PdfError {
@@ -404,10 +404,10 @@ pub(crate) fn fix_trailer_id(out: &mut [u8], original: &[u8]) -> Result<(), PdfE
     }
     let generated_first = first.hex && out[first.content()] == out[second.content()];
     if generated_first {
-        write_hex(out, first.content(), ContentHash::of(original).as_bytes())?;
+        write_hex(out, first.content(), Sha256Hex::of(original).as_bytes())?;
     }
     out[second.content()].fill(b'0');
-    let hash = ContentHash::of(out);
+    let hash = Sha256Hex::of(out);
     write_hex(out, second.content(), hash.as_bytes())
 }
 
@@ -524,7 +524,7 @@ mod tests {
         let len = out.len();
         fix_trailer_id(&mut out, b"original").unwrap();
         assert_eq!(out.len(), len);
-        let first = &ContentHash::of(b"original").to_hex().to_uppercase()[..32];
+        let first = &Sha256Hex::of(b"original").to_hex().to_uppercase()[..32];
         let id = id_part(&out);
         assert!(id.starts_with(&format!("/ID[<{first}><")), "{id}");
         assert!(!id.contains(random));

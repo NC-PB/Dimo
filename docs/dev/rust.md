@@ -8,7 +8,8 @@
 - Crate dependency direction (no cycles, no shortcuts):
   `dimo-core` has no IO and depends on no other `dimo-*` crate except shared types.
   `dimo-notation` and `dimo-tolerance` are pure. `dimo-pdf`, `dimo-vision` do IO and rendering.
-  `dimo-detect` uses pdf, vision, notation, tolerance. `dimo-io` and `dimo-report` depend on core.
+  `dimo-detect` uses pdf, vision, notation, tolerance. `dimo-io` and `dimo-report` depend on core;
+  `dimo-io` also on pdf, to create projects from drawing files through `RasterOpener` (ADR 0010).
   Only `src-tauri` and `dimo-cli` may depend on everything.
 - No crate except `src-tauri` depends on `tauri`.
 
@@ -82,7 +83,7 @@ others are hand kept and easy to miss.
    area module under `patch/`, `applyChange` in `apps/desktop/src/lib/stores/patch.ts`
    (exhaustive) with `patch.test.ts`, and the change type string lists in
    `crates/dimo-io/src/project/migrate.rs` if it embeds a characteristic, sheet, numbering or
-   settings state.
+   settings state (`revision_changed` embeds drawing sources with their image edits).
 10. Frontend call: build the command where it is used, through `ProjectStore.execute` or
     `executeWith` (`apps/desktop/src/lib/stores/project.svelte.ts`).
 11. Tests: a case in `crates/dimo-core/tests/commands.rs` (or the area test file), the `Op`
@@ -110,7 +111,8 @@ A new field on `Characteristic`, `Project` or one of its parts (`ProjectInfo`,
 5. Migration: a `MIGRATIONS` entry and a `mod vN` in `crates/dimo-io/src/project/migrate.rs`
    with `project` and `audit_entry` functions. The audit migration must also patch the states
    inside stored changes (`characteristic_inserted`, `_removed`, `_changed`, and every other
-   change type that embeds the changed struct). Unit tests at the end of the file.
+   change type that embeds the changed struct, e.g. `revision_changed` for drawing sources). Unit tests at the end of the file. While a version is unreleased, its step is
+   extended instead of adding another (schema 4: `mod v3`, MF decision 1).
 6. Fixtures: never edit old ones under `crates/dimo-io/tests/fixtures/v*/`. Write the new one
    with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations`, add an `edit_vN` in
    `crates/dimo-io/tests/common/mod.rs`, and review the `migrations__*` and `container__*`

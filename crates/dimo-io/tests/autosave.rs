@@ -14,7 +14,7 @@ use dimo_core::Timestamp;
 use dimo_io::autosave::{self, recover_unsaved};
 use dimo_io::journal::journal_path;
 use dimo_io::lock::{LockOwner, ProjectLock, lock_path};
-use dimo_io::project::{Layout, ProjectError, ProjectSession};
+use dimo_io::project::{CreateOptions, Layout, ProjectError, ProjectSession};
 
 fn owner(user: &str) -> LockOwner {
     LockOwner {
@@ -28,8 +28,15 @@ fn owner(user: &str) -> LockOwner {
 fn crashed_unsaved(dir: &Path, id: &str) -> dimo_core::Project {
     let mut env = common::env();
     let base = autosave::base_path(dir, id);
-    let mut session =
-        ProjectSession::create_autosaved(common::info(), common::drawing(&mut env), &base).unwrap();
+    let mut session = ProjectSession::create(
+        common::drawing(&mut env),
+        CreateOptions {
+            info: common::info(),
+            autosave_base: Some(base.clone()),
+            ..CreateOptions::default()
+        },
+    )
+    .unwrap();
     assert_eq!(session.autosave_path(), Some(base.as_path()));
     common::edit(session.document_mut(), &mut env);
     assert_eq!(session.flush_journal().unwrap(), 8);
@@ -96,7 +103,15 @@ fn unchanged_unsaved_projects_are_deleted_not_restored() {
     let mut env = common::env();
     let base = autosave::base_path(dir.path(), "empty");
     drop(
-        ProjectSession::create_autosaved(common::info(), common::drawing(&mut env), &base).unwrap(),
+        ProjectSession::create(
+            common::drawing(&mut env),
+            CreateOptions {
+                info: common::info(),
+                autosave_base: Some(base.clone()),
+                ..CreateOptions::default()
+            },
+        )
+        .unwrap(),
     );
     assert!(base.exists());
     assert!(

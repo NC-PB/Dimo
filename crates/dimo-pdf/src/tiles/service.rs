@@ -1,4 +1,9 @@
-//! The tile service: document registry, worker pool and both caches.
+//! The tile service: source registry, worker pool and both caches.
+//!
+//! Sources are registered by their render key (the content hash for PDFs). A PDF opened through [`TileService::open_document`]
+//! (or [`RasterOpener::open_pdf`]) is kept as its [`Document`] too, for text and recognition;
+//! any other [`RasterSource`] is registered with [`TileService::insert_source`]. Tiles are
+//! rendered through the [`RasterSource`] only (MF F1).
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -7,13 +12,15 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, RwLock, mpsc};
 use std::thread::JoinHandle;
 use std::time::SystemTime;
 
+use dimo_core::Sha256Hex;
+
 use crate::engine::{Document, PdfEngine};
 use crate::error::PdfError;
-use crate::hash::ContentHash;
+use crate::source::{Opened, RasterOpener, RasterSource, SourceKind};
 
 use super::disk::DiskCache;
 use super::encode::encode_png;
-use super::grid::{TileGrid, TileKey, TileRange, zoom_scale};
+use super::grid::{CacheKey, TileGrid, TileKey, TileRange, zoom_scale};
 use super::memory::MemoryCache;
 use super::schedule::{Next, Scheduler};
 use super::{Tile, TileError};
@@ -85,9 +92,17 @@ pub struct TileService {
     workers: Vec<JoinHandle<()>>,
 }
 
+/// A registered source; `pdf` is the same source as a PDF document, if it is one.
+#[derive(Clone)]
+struct Registered {
+    source: Arc<dyn RasterSource>,
+    pdf: Option<Arc<Document>>,
+}
+
 struct Shared {
-    engine: PdfEngine,
-    docs: RwLock<HashMap<ContentHash, Arc<Document>>>,
+    /// PDFium, `None` for a service that renders other sources only.
+    engine: Option<PdfEngine>,
+    docs: RwLock<HashMap<Sha256Hex, Registered>>,
     memory: Mutex<MemoryCache>,
     disk: Option<DiskCache>,
     queue: Mutex<Scheduler<Done>>,
@@ -112,6 +127,16 @@ impl TileService {
     /// Starts the worker threads. When a disk cache is configured but cannot be created, the
     /// service runs without it and logs a warning.
     pub fn new(engine: PdfEngine, config: TileConfig) -> Self {
+        Self::start(Some(engine), config)
+    }
+
+    /// A service without PDFium: it renders sources registered with
+    /// [`TileService::insert_source`] and refuses to open PDFs.
+    pub fn without_pdf(config: TileConfig) -> Self {
+        Self::start(None, config)
+    }
+
+    fn start(engine: Option<PdfEngine>, config: TileConfig) -> Self {
         let TileConfig {
             memory_budget,
             disk_dir,
@@ -156,42 +181,89 @@ impl TileService {
         Self { shared, workers }
     }
 
-    /// Opens a document from its bytes and registers it under its content hash, or returns the
+    /// Opens a PDF from its bytes and registers it under its content hash, or returns the
     /// already open document with the same hash. Blocks while PDFium parses the file.
     pub fn open_document(&self, bytes: Vec<u8>) -> Result<Arc<Document>, PdfError> {
-        let hash = ContentHash::of(&bytes);
+        self.open_pdf_document(bytes).map(|(doc, _)| doc)
+    }
+
+    /// [`TileService::open_document`], also telling whether this call opened it.
+    fn open_pdf_document(&self, bytes: Vec<u8>) -> Result<(Arc<Document>, bool), PdfError> {
+        let hash = Sha256Hex::of(&bytes);
         let open = read(&self.shared.docs).get(&hash).cloned();
-        let doc = if let Some(doc) = open {
-            doc
-        } else {
-            let doc = Arc::new(self.shared.engine.open(bytes)?);
-            let mut docs = write(&self.shared.docs);
-            Arc::clone(docs.entry(hash).or_insert(doc))
+        let (doc, newly_opened) = match open {
+            Some(Registered { pdf: Some(doc), .. }) => (doc, false),
+            Some(Registered { source, .. }) => {
+                return Err(other_kind(&hash, source.kind()));
+            }
+            None => {
+                let engine = self.shared.engine.as_ref().ok_or(PdfError::NoPdfium)?;
+                let doc = Arc::new(engine.open(bytes)?);
+                let mut docs = write(&self.shared.docs);
+                let entry = docs.entry(hash).or_insert_with(|| Registered {
+                    source: Arc::clone(&doc) as Arc<dyn RasterSource>,
+                    pdf: Some(Arc::clone(&doc)),
+                });
+                match &entry.pdf {
+                    Some(pdf) if Arc::ptr_eq(pdf, &doc) => (doc, true),
+                    // Another thread opened it in between.
+                    Some(pdf) => (Arc::clone(pdf), false),
+                    None => return Err(other_kind(&hash, entry.source.kind())),
+                }
+            }
         };
+        self.touch(SourceKind::Pdf, &hash);
+        Ok((doc, newly_opened))
+    }
+
+    /// Registers a source under its [`RasterSource::render_key`] and returns it, or the source
+    /// already registered under that key. A source with other settings has another key, so it
+    /// never gets the tiles of the old settings; close the old one when it is no longer shown.
+    pub fn insert_source(&self, source: Arc<dyn RasterSource>) -> Arc<dyn RasterSource> {
+        let hash = source.render_key();
+        let registered = {
+            let mut docs = write(&self.shared.docs);
+            let entry = docs
+                .entry(hash)
+                .or_insert_with(|| Registered { source, pdf: None });
+            Arc::clone(&entry.source)
+        };
+        self.touch(registered.kind(), &hash);
+        registered
+    }
+
+    fn touch(&self, kind: SourceKind, hash: &Sha256Hex) {
         if let Some(disk) = &self.shared.disk
-            && let Err(e) = disk.touch(&hash)
+            && let Err(e) = disk.touch(kind, hash)
         {
             tracing::warn!("cannot mark tile cache use: {e}");
         }
-        Ok(doc)
     }
 
     /// The PDF engine the tiles render with, for other work such as writing a ballooned PDF.
-    pub fn engine(&self) -> &PdfEngine {
-        &self.shared.engine
+    /// `None` for a service started with [`TileService::without_pdf`].
+    pub fn engine(&self) -> Option<&PdfEngine> {
+        self.shared.engine.as_ref()
     }
 
-    /// The open document with this content hash.
-    pub fn document(&self, doc: &ContentHash) -> Option<Arc<Document>> {
-        read(&self.shared.docs).get(doc).cloned()
+    /// The open PDF document with this content hash.
+    pub fn document(&self, doc: &Sha256Hex) -> Option<Arc<Document>> {
+        read(&self.shared.docs).get(doc).and_then(|r| r.pdf.clone())
+    }
+
+    /// The registered source with this render key, of any kind.
+    pub fn source(&self, doc: &Sha256Hex) -> Option<Arc<dyn RasterSource>> {
+        read(&self.shared.docs)
+            .get(doc)
+            .map(|r| Arc::clone(&r.source))
     }
 
     /// Closes a document: queued requests for it are cancelled and its tiles leave the memory
     /// cache (the disk cache keeps them). Returns whether it was open.
-    pub fn close_document(&self, doc: &ContentHash) -> bool {
+    pub fn close_document(&self, doc: &Sha256Hex) -> bool {
         let was_open = write(&self.shared.docs).remove(doc).is_some();
         let waiters = lock(&self.shared.queue).remove_document(doc);
-        lock(&self.shared.memory).retain(|key| key.doc != *doc);
+        lock(&self.shared.memory).retain(|key| key.tile.doc != *doc);
         self.shared.cancel(waiters);
         was_open
     }
@@ -204,11 +276,14 @@ impl TileService {
         key: TileKey,
         done: impl FnOnce(Result<Tile, TileError>) + Send + 'static,
     ) {
-        if let Err(e) = self.validate(&key) {
-            done(Err(e));
-            return;
-        }
-        if let Some(tile) = lock(&self.shared.memory).get(&key) {
+        let kind = match self.validate(&key) {
+            Ok(kind) => kind,
+            Err(e) => {
+                done(Err(e));
+                return;
+            }
+        };
+        if let Some(tile) = lock(&self.shared.memory).get(&CacheKey { kind, tile: key }) {
             self.shared.memory_hits.fetch_add(1, Ordering::Relaxed);
             done(Ok(tile));
             return;
@@ -237,7 +312,7 @@ impl TileService {
     /// Declares which tiles of `doc` the viewport still wants (see "Cancellation" in the module
     /// docs). Queued requests outside `ranges` are answered with [`TileError::Cancelled`] now,
     /// later ones when a worker takes them. `None` serves every request again.
-    pub fn set_interest(&self, doc: ContentHash, ranges: Option<Vec<TileRange>>) {
+    pub fn set_interest(&self, doc: Sha256Hex, ranges: Option<Vec<TileRange>>) {
         let waiters = lock(&self.shared.queue).set_interest(doc, ranges);
         self.shared.cancel(waiters);
     }
@@ -266,12 +341,13 @@ impl TileService {
         }
     }
 
-    /// Checks that the tile exists: document open, sheet, zoom level and position in range.
-    fn validate(&self, key: &TileKey) -> Result<(), TileError> {
-        let doc = self
-            .document(&key.doc)
+    /// Checks that the tile exists: source registered, sheet, zoom level and position in
+    /// range. Returns the kind of the source.
+    fn validate(&self, key: &TileKey) -> Result<SourceKind, TileError> {
+        let source = self
+            .source(&key.doc)
             .ok_or_else(|| TileError::UnknownDocument(key.doc.to_hex()))?;
-        tile_grid(&doc, key).map(|_| ())
+        tile_grid(source.as_ref(), key).map(|_| source.kind())
     }
 }
 
@@ -330,34 +406,38 @@ impl Shared {
 
     /// Memory cache, then disk cache, then render and encode.
     fn produce(&self, key: &TileKey) -> Result<Tile, TileError> {
-        if let Some(tile) = lock(&self.memory).get(key) {
+        let source = read(&self.docs)
+            .get(&key.doc)
+            .map(|r| Arc::clone(&r.source))
+            .ok_or_else(|| TileError::UnknownDocument(key.doc.to_hex()))?;
+        let cache_key = CacheKey {
+            kind: source.kind(),
+            tile: *key,
+        };
+        if let Some(tile) = lock(&self.memory).get(&cache_key) {
             self.memory_hits.fetch_add(1, Ordering::Relaxed);
             return Ok(tile);
         }
-        if let Some(bytes) = self.disk.as_ref().and_then(|disk| disk.read(key)) {
+        if let Some(bytes) = self.disk.as_ref().and_then(|disk| disk.read(&cache_key)) {
             self.disk_hits.fetch_add(1, Ordering::Relaxed);
             let tile = Tile::new(bytes);
-            lock(&self.memory).insert(*key, tile.clone());
+            lock(&self.memory).insert(cache_key, tile.clone());
             return Ok(tile);
         }
-        let doc = read(&self.docs)
-            .get(&key.doc)
-            .cloned()
-            .ok_or_else(|| TileError::UnknownDocument(key.doc.to_hex()))?;
-        let grid = tile_grid(&doc, key)?;
+        let grid = tile_grid(source.as_ref(), key)?;
         let (region, (width, height)) = grid
             .tile_region(key.x, key.y)
             .zip(grid.tile_pixels(key.x, key.y))
             .ok_or_else(|| out_of_range(key))?;
-        // `render_region` applies the glyph edge margin itself.
-        let image = doc
+        // A PDF document applies the glyph edge margin itself.
+        let image = source
             .render_region(key.sheet as usize, region, zoom_scale(key.zoom))
             .map_err(|e| TileError::Render(e.to_string()))?;
         self.renders.fetch_add(1, Ordering::Relaxed);
         let tile = Tile::new(encode_png(&image, 0, 0, width, height)?);
-        lock(&self.memory).insert(*key, tile.clone());
+        lock(&self.memory).insert(cache_key, tile.clone());
         if let Some(disk) = &self.disk
-            && let Err(e) = disk.write(key, tile.as_bytes())
+            && let Err(e) = disk.write(&cache_key, tile.as_bytes())
         {
             tracing::warn!(tile = %key.route(), "cannot write tile to disk cache: {e}");
         }
@@ -371,6 +451,26 @@ impl Shared {
             waiter(Err(TileError::Cancelled));
         }
     }
+}
+
+/// PDFs open as registered documents, so they are ready for tiles. A source this call did not
+/// open (the drawing of the open project, opened again) is never released.
+impl RasterOpener for TileService {
+    fn open_pdf(&self, bytes: Vec<u8>) -> Result<Opened, PdfError> {
+        let (doc, newly_opened) = self.open_pdf_document(bytes)?;
+        Ok(Opened {
+            source: doc,
+            newly_opened,
+        })
+    }
+
+    fn release(&self, key: &Sha256Hex) {
+        self.close_document(key);
+    }
+}
+
+fn other_kind(hash: &Sha256Hex, kind: SourceKind) -> PdfError {
+    PdfError::Open(format!("{hash} is already open as a {kind} source"))
 }
 
 /// Prunes the disk cache on a background thread, so startup does not wait for it.
@@ -392,8 +492,8 @@ fn spawn_prune(shared: &Arc<Shared>, budget: u64) {
     }
 }
 
-fn tile_grid(doc: &Document, key: &TileKey) -> Result<TileGrid, TileError> {
-    let size = doc
+fn tile_grid(source: &dyn RasterSource, key: &TileKey) -> Result<TileGrid, TileError> {
+    let size = source
         .sheet_size(key.sheet as usize)
         .map_err(|e| TileError::OutOfRange(e.to_string()))?;
     let grid = TileGrid::new(size, key.zoom)?;

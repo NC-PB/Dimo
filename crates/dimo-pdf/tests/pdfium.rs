@@ -13,7 +13,8 @@
 use std::path::PathBuf;
 
 use dimo_core::Rect;
-use dimo_pdf::{ContentHash, PdfEngine, PdfError, RgbaImage};
+use dimo_core::Sha256Hex;
+use dimo_pdf::{PdfEngine, PdfError, RgbaImage};
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 const TEST_DRAWING_1_SHA256: &str =
@@ -64,7 +65,7 @@ fn provenance_hash(name: &str) -> (String, String) {
 // Needs no PDFium, so it always runs.
 #[test]
 fn test_drawing_1_hash_matches_provenance() {
-    let hash = ContentHash::of(&corpus_drawing(TEST_DRAWING_1)).to_hex();
+    let hash = Sha256Hex::of(&corpus_drawing(TEST_DRAWING_1)).to_hex();
     assert_eq!(hash, TEST_DRAWING_1_SHA256);
     let (prefix, suffix) = provenance_hash(TEST_DRAWING_1);
     assert!(prefix.len() >= 8, "PROVENANCE.md hash too short");
@@ -138,7 +139,7 @@ fn fingerprint(img: &RgbaImage, cell: u32) -> String {
         "image: {} x {} px\ncells: {cell} px, grid {cols} x {rows}\ngrid sha256: {}\n\n{grid}",
         img.width(),
         img.height(),
-        ContentHash::of(grid.as_bytes()),
+        Sha256Hex::of(grid.as_bytes()),
     )
 }
 

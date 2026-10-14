@@ -1,10 +1,11 @@
-//! Appliers for drawing revisions: sheets, revision labels and issued reports.
+//! Appliers for drawing revisions: sheets, revision sources and labels, issued reports.
 
 use super::{ChangeError, ensure};
 use crate::id::RevisionId;
 use crate::project::Project;
 use crate::report::IssuedReport;
 use crate::sheet::Sheet;
+use crate::source::DrawingSource;
 
 impl Project {
     pub(super) fn change_sheet(
@@ -37,6 +38,25 @@ impl Project {
             .ok_or(ChangeError("unknown revision"))?;
         ensure(slot.label == before, "revision label differs from before")?;
         after.clone_into(&mut slot.label);
+        Ok(())
+    }
+
+    pub(super) fn change_revision_source(
+        &mut self,
+        revision: RevisionId,
+        before: &DrawingSource,
+        after: &DrawingSource,
+    ) -> Result<(), ChangeError> {
+        let slot = self
+            .revisions
+            .iter_mut()
+            .find(|r| r.id == revision)
+            .ok_or(ChangeError("unknown revision"))?;
+        ensure(
+            slot.source == *before,
+            "revision source differs from before",
+        )?;
+        slot.source.clone_from(after);
         Ok(())
     }
 

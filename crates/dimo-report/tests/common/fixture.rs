@@ -25,6 +25,7 @@ fn revision(env: &mut FixedEnvironment) -> DrawingRevision {
         label: "B".into(),
         file_name: "bracket_rev-B.pdf".into(),
         sha256: Sha256Hex::parse(SHA256).expect("hash"),
+        source: dimo_core::DrawingSource::Pdf,
         imported_at: Timestamp::parse("2026-10-01T08:00:00Z").expect("time"),
         sheets: vec![Sheet::new(sheet, 0, size, SheetKind::VectorText)],
     }

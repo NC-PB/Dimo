@@ -10,15 +10,17 @@ publish.workspace = true
 
 [dependencies]
 dimo-core.workspace = true
+# Drawing sources for project creation (MF F1, ADR 0010).
+dimo-pdf.workspace = true
 csv.workspace = true
 rust_decimal.workspace = true
 rust_xlsxwriter.workspace = true
 serde.workspace = true
 # float_roundtrip: sheet geometry (f64) must load exactly as saved, or save, load, save differs.
 serde_json = { workspace = true, features = ["float_roundtrip"] }
-sha2.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 zip.workspace = true
 
 [dev-dependencies]

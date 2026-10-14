@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Change, IssuedReport, MeasurementResult, Sample } from "$lib/ipc/bindings";
+import type {
+  Change,
+  DrawingSource,
+  ImageEdit,
+  IssuedReport,
+  MeasurementResult,
+  Sample,
+} from "$lib/ipc/bindings";
 import {
   DOC_HASH,
   REVISION_ID,
@@ -183,4 +190,30 @@ describe("applying patches of samples, results and report data (T3.1)", () => {
       ]),
     ).toThrow(PatchMismatch);
   });
+
+  it("replaces the source of a drawing revision (MF F1)", () => {
+    const project = emptyProject();
+    const before: DrawingSource = { type: "pdf" };
+    const after: DrawingSource = {
+      type: "image",
+      format: "png",
+      pages: [{ ...noEdit, clean_up: true }],
+    };
+    const change = { type: "revision_changed", revision: REVISION_ID, before, after } as const;
+    const next = applyChanges(project, [change]);
+    expect(next.revisions[0]?.source).toEqual(after);
+    expect(next.revisions[0]?.sheets).toEqual(project.revisions[0]?.sheets);
+    const undone = applyChanges(next, [{ ...change, before: after, after: before }]);
+    expect(undone).toEqual(project);
+    expect(() => applyChanges(project, [{ ...change, revision: "x" }])).toThrow(PatchMismatch);
+  });
 });
+
+const noEdit: ImageEdit = {
+  rotation: "deg0",
+  fine_angle: "0",
+  corners: null,
+  trim: null,
+  paper: null,
+  clean_up: false,
+};

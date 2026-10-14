@@ -34,6 +34,11 @@ pub const MIGRATIONS: &[Migration] = &[
         project: v2::project,
         audit_entry: v2::audit_entry,
     },
+    Migration {
+        from: 3,
+        project: v3::project,
+        audit_entry: v3::audit_entry,
+    },
 ];
 
 fn object<'a>(
@@ -56,6 +61,47 @@ fn field<'a>(
     key: &str,
 ) -> std::result::Result<&'a mut Value, String> {
     map.get_mut(key).ok_or_else(|| format!("missing {key}"))
+}
+
+/// Version 3 to 4 (MF F1, ADR 0010; MF decision 1: F1 and F4 share this step). Drawing
+/// revisions get their source: every version 3 drawing is a PDF.
+///
+/// Later parts of schema 4 (F4, F3) add their rewrites here: project changes to [`project`],
+/// commands and changes of audit entries to [`audit_entry`].
+mod v3 {
+    use serde_json::{Value, json};
+
+    use super::{array, field, object};
+
+    type Result = std::result::Result<(), String>;
+
+    /// A version 3 revision: source `pdf`.
+    fn revision(value: &mut Value) -> Result {
+        let r = object(value, "revision")?;
+        r.insert("source".into(), json!({ "type": "pdf" }));
+        Ok(())
+    }
+
+    pub(super) fn project(value: &mut Value) -> Result {
+        let p = object(value, "project")?;
+        for r in array(field(p, "revisions")?, "revisions")? {
+            revision(r)?;
+        }
+        Ok(())
+    }
+
+    /// No version 3 command or change holds a whole revision (`revision_label_changed` holds
+    /// the label only), so the entries keep their shape. Checked: every change has a type.
+    pub(super) fn audit_entry(value: &mut Value) -> Result {
+        let entry = object(value, "audit entry")?;
+        for change in array(field(entry, "changes")?, "changes")? {
+            let c = object(change, "change")?;
+            if c.get("type").and_then(Value::as_str).is_none() {
+                return Err("change without type".into());
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Version 2 to 3 (T3.1, M3 decision 1): samples, results, report info and issued reports;
@@ -516,6 +562,38 @@ mod tests {
 
         let mut broken = json!({ "timestamp": "x", "changes": [{ "index": 0 }] });
         assert!((MIGRATIONS[1].audit_entry)(&mut broken).is_err());
+    }
+
+    /// Version 3 to 4: every revision becomes a PDF source; audit entries keep their shape and
+    /// read as the current types.
+    #[test]
+    fn version_3_revisions_become_pdf_sources() {
+        let mut project = json!({ "revisions": [
+            { "id": "00000000-0000-0000-0000-000000000001", "label": "A" },
+            { "id": "00000000-0000-0000-0000-000000000003", "label": "B" }
+        ]});
+        (MIGRATIONS[2].project)(&mut project).unwrap();
+        for revision in project["revisions"].as_array().unwrap() {
+            let source: dimo_core::DrawingSource =
+                serde_json::from_value(revision["source"].clone()).unwrap();
+            assert_eq!(source, dimo_core::DrawingSource::Pdf);
+        }
+        assert!((MIGRATIONS[2].project)(&mut json!({ "revisions": {} })).is_err());
+
+        let mut entry = json!({
+            "timestamp": "2026-03-01T08:00:00Z", "user": "t",
+            "action": { "type": "command", "command": { "type": "update_revision_label",
+                "revision": "00000000-0000-0000-0000-000000000001", "label": "B" } },
+            "changes": [{ "type": "revision_label_changed",
+                "revision": "00000000-0000-0000-0000-000000000001", "before": "A", "after": "B" }]
+        });
+        let before = entry.clone();
+        (MIGRATIONS[2].audit_entry)(&mut entry).unwrap();
+        assert_eq!(entry, before);
+        let typed: dimo_core::AuditEntry = serde_json::from_value(entry).unwrap();
+        assert_eq!(typed.changes.len(), 1);
+        let mut broken = json!({ "changes": [{ "index": 0 }] });
+        assert!((MIGRATIONS[2].audit_entry)(&mut broken).is_err());
     }
 
     #[test]

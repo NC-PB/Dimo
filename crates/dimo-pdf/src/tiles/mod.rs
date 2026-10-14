@@ -6,8 +6,10 @@
 //!
 //! # Addressing
 //!
-//! - `doc` is the SHA-256 of the drawing (FR-DOC-07) as 64 hex digits. A URL therefore always
-//!   names the same pixels, and the disk cache can use the same key.
+//! - `doc` is the render key of the source as 64 hex digits ([`crate::RasterSource::render_key`]):
+//!   the SHA-256 of the drawing (FR-DOC-07) for a PDF, the drawing plus its edit settings for
+//!   an image. A URL therefore always names the same pixels, and the disk cache can use the
+//!   same key.
 //! - `zoom` is a power of two level: `2^zoom` pixels per sheet unit, level 0 is 72 dpi
 //!   ([`MIN_ZOOM`]`..=`[`MAX_ZOOM`]). The viewport scales between levels.
 //! - `x`, `y` are column and row in the [`TileGrid`] of that sheet and level. Edge tiles are
@@ -17,7 +19,8 @@
 //!
 //! [`TileService::request`] answers from the memory cache at once when it can. Otherwise the
 //! request goes into a queue served by a small pool of worker threads. A worker checks the
-//! disk cache, else renders the tile through [`crate::Document::render_region`], encodes it
+//! disk cache, else renders the tile through [`crate::RasterSource::render_region`] of the
+//! registered source (a PDF [`crate::Document`] or, from R.19, an image), encodes it
 //! as PNG (see `encode.rs` for the choice) and stores it in both caches. PDFium itself renders
 //! one tile at a time on its own thread (see the crate docs), so the pool exists to overlap
 //! rendering with encoding and disk IO, and to keep at most one render per worker committed to
@@ -26,10 +29,12 @@
 //!
 //! # Caches
 //!
+//! Both caches key tiles by [`CacheKey`]: the tile plus the kind of its source.
+//!
 //! - Memory: [`MemoryCache`], least recently used tiles evicted first, a hard byte budget
 //!   ([`TileConfig::memory_budget`]).
 //! - Disk: in the directory the app passes, normally the user cache directory, never the
-//!   project. Keyed by content hash and a render version. Pruned to
+//!   project. Keyed by source kind, content hash and a render version. Pruned to
 //!   [`TileConfig::disk_budget`] when the service starts, least recently used documents first.
 //!
 //! # Cancellation
@@ -52,7 +57,7 @@ mod service;
 use std::sync::Arc;
 
 pub use encode::TILE_CONTENT_TYPE;
-pub use grid::{MAX_ZOOM, MIN_ZOOM, TILE_SIZE, TileGrid, TileKey, TileRange, zoom_scale};
+pub use grid::{CacheKey, MAX_ZOOM, MIN_ZOOM, TILE_SIZE, TileGrid, TileKey, TileRange, zoom_scale};
 pub use memory::MemoryCache;
 pub use service::{TileConfig, TileService, TileStats};
 

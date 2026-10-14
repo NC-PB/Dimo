@@ -428,6 +428,10 @@ export function rejectReasonText(reason: RejectReason): string | null {
       return m.refusal_unknown_sample();
     case "unknown_revision":
       return m.refusal_unknown_revision();
+    case "not_an_image":
+      return m.refusal_not_an_image();
+    case "invalid_image_edit":
+      return m.refusal_invalid_image_edit();
     case "empty_serial":
       return m.refusal_empty_serial();
     case "duplicate_serial":
