@@ -94,9 +94,9 @@ Acceptance:
 - Plan mode; ADR for the drawing source type and schema 4.
 
 Acceptance:
-- [ ] Version 3 projects open and save as version 4 (migration test); exports byte identical
-- [ ] The shell no longer calls PDFium to create a project
-- [ ] A test raster source (synthetic image) renders tiles through `TileService`
+- [x] Version 3 projects open and save as version 4 (migration test); exports byte identical
+- [x] The shell no longer calls PDFium to create a project
+- [x] A test raster source (synthetic image) renders tiles through `TileService`
 
 ### F4 Field-level update commands
 
@@ -175,6 +175,7 @@ Acceptance:
   id or message function instead of English text.
 - Dev modules loaded only through dynamic import in development; CI checks the release bundle
   contains no dev hooks.
+- Smoke test: the first run right after a rebuild failed twice in F1 (different UI timing checks: general tolerance not stored, first balloon missing), later runs pass. Find the cause (for example Vite optimizing dependencies on the first load) and make the first run reliable.
 - The delete confirmation count, sheet assignment of a characteristic and the result sort order
   come from Rust instead of TypeScript (rule 2 drift).
 
