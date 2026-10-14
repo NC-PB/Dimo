@@ -15,27 +15,17 @@ mod xlsx_list;
 
 use std::io::Write;
 
-use dimo_core::Project;
+use dimo_core::{Language, Project};
 
 pub use columns::{COLUMNS, Column};
 pub use csv_list::CsvListExporter;
 pub use xlsx_list::XlsxListExporter;
 
-/// Language of column headers and other fixed texts, chosen per export independent of the UI
-/// language (D-32).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum Language {
-    /// English.
-    #[default]
-    English,
-    /// German.
-    German,
-}
-
 /// Options shared by all exporters.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ExportOptions {
-    /// Language of headers and fixed texts.
+    /// Language of headers and fixed texts, chosen per export independent of the UI language
+    /// (D-32).
     pub language: Language,
 }
 

@@ -110,7 +110,7 @@ export const commands = {
 	 *  explanations in `language`. Changes nothing; accept them with the `accept_proposals`
 	 *  document command (ADR 0006). An empty list means the region holds no PDF text.
 	 */
-	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement, language: ExplainLanguage) => typedError<ProposalView[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement, language })),
+	proposeFromRegion: (sheet: SheetId, region: OrientedBox, placement: BalloonPlacement, language: Language) => typedError<ProposalView[], CommandError>(__TAURI_INVOKE("propose_from_region", { sheet, region, placement, language })),
 	/**
 	 *  Parses and interprets text typed for a characteristic on `sheet` (M2 decision 5), explained
 	 *  in `language`. `shorter_leg` is the shorter leg of an angle (T2.9a): text typed in the unit
@@ -125,7 +125,7 @@ export const commands = {
  *  A leg already stored on the characteristic or proposal, used with its own unit, so a
  *  later change of the sheet unit does not change it.
  */
-{ kind: "stored"; value: Length } | null, language: ExplainLanguage) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language })),
+{ kind: "stored"; value: Length } | null, language: Language) => typedError<TypedCallout, CommandError>(__TAURI_INVOKE("read_callout_text", { sheet, text, shorterLeg, language })),
 	/**  The order and numbers `strategy` would give, without changing the project (FR-BAL-05). */
 	previewNumbering: (strategy: NumberingStrategy) => typedError<NumberingPreview, CommandError>(__TAURI_INVOKE("preview_numbering", { strategy })),
 	/**
@@ -142,7 +142,7 @@ export const commands = {
 	 *  The explanation of the limits of characteristic `id` in `language` (FR-TOL-08); `null` if
 	 *  it has no derivation. Built by Rust from the stored derivation, never stored itself.
 	 */
-	explainCharacteristic: (id: CharId, language: ExplainLanguage) => typedError<string | null, CommandError>(__TAURI_INVOKE("explain_characteristic", { id, language })),
+	explainCharacteristic: (id: CharId, language: Language) => typedError<string | null, CommandError>(__TAURI_INVOKE("explain_characteristic", { id, language })),
 	/**  Change history of characteristic `id` from the audit log, oldest first (FR-CHR-10). */
 	characteristicHistory: (id: CharId) => typedError<HistoryEntry[], CommandError>(__TAURI_INVOKE("characteristic_history", { id })),
 	/**
@@ -1125,13 +1125,6 @@ export type EngineVersion = {
 	version: string,
 };
 
-/**  Language of explanations, the UI language of the frontend. */
-export type ExplainLanguage = 
-/**  English. */
-"en" | 
-/**  German. */
-"de";
-
 /**  What to export. */
 export type ExportFormat = 
 /**  A copy of the drawing with the balloons (FR-EXP-01). */
@@ -1152,7 +1145,7 @@ export type ExportFormat =
 /**  The export options used last, offered again in the export view. */
 export type ExportPreferences = {
 	/**  Language of the characteristic list headers and of the reports (D-32). */
-	language: ReportLanguage,
+	language: Language,
 	/**  Balloons as page content or annotations. */
 	pdf_balloons: PdfBalloons,
 	/**
@@ -1176,7 +1169,7 @@ export type ExportRequest = {
 	 *  Language of the characteristic list headers and of the reports (D-32); ignored for the
 	 *  ballooned PDF.
 	 */
-	language: ReportLanguage,
+	language: Language,
 	/**  Balloons as page content or annotations (D-33); only for the ballooned PDF. */
 	pdf_balloons: PdfBalloons,
 	/**
@@ -1400,6 +1393,13 @@ export type LabelKind =
 "letters" | 
 /**  `1, 2, 3, ...` */
 "numbers";
+
+/**  Language of generated text. Serialized as the two letter code (`en`, `de`). */
+export type Language = 
+/**  English: decimal point. */
+"en" | 
+/**  German: decimal comma. */
+"de";
 
 /**  The shorter leg sent with a callout text (T2.9a). */
 export type LegInput = 
@@ -2034,19 +2034,12 @@ export type ReportKind =
 /**  Results, verdicts and approval. */
 "inspection_report";
 
-/**  Language of column headers and fixed texts in exports, chosen per export (D-32). */
-export type ReportLanguage = 
-/**  English. */
-"en" | 
-/**  German. */
-"de";
-
 /**  The report the Report tab shows or prints, with the options of a normal export. */
 export type ReportView = {
 	/**  Check sheet or inspection report. */
 	kind: ReportKind,
 	/**  Language of the report (D-32). */
-	language: ReportLanguage,
+	language: Language,
 	/**  Blank result columns of a check sheet without samples, 1 to 10 (M3 decision 12). */
 	blank_columns: number,
 };

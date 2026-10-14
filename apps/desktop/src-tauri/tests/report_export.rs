@@ -12,6 +12,7 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 
+use dimo_core::Language;
 use dimo_core::{
     Command, FieldValue, Point, ReportFormat, ReportKind, ResultEntry, Sha256Hex, TemplateRef,
 };
@@ -20,7 +21,7 @@ use dimo_desktop::export::{
     report_warnings, run_steps, take_snapshot,
 };
 use dimo_desktop::session::AppSession;
-use dimo_desktop::settings::{PdfBalloons, ReportLanguage};
+use dimo_desktop::settings::PdfBalloons;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
 use rust_decimal::Decimal;
@@ -46,7 +47,7 @@ fn drawing() -> PathBuf {
         .join("../../../corpus/drawings/test_drawing_1.pdf")
 }
 
-fn request(format: ExportFormat, language: ReportLanguage) -> ExportRequest {
+fn request(format: ExportFormat, language: Language) -> ExportRequest {
     ExportRequest {
         format,
         language,
@@ -118,7 +119,7 @@ fn reports_are_byte_identical_when_exported_twice() {
     let session = session(&tiles);
     let snapshot = session.export_snapshot(false).unwrap();
     for format in REPORTS {
-        for language in [ReportLanguage::En, ReportLanguage::De] {
+        for language in [Language::En, Language::De] {
             let request = request(format, language);
             let first = render(&snapshot, &request, None).unwrap();
             // A new snapshot of the unchanged project, as a second click on export takes.
@@ -135,13 +136,13 @@ fn reports_are_byte_identical_when_exported_twice() {
     // The language changes the file.
     let en = render(
         &snapshot,
-        &request(ExportFormat::InspectionReportXlsx, ReportLanguage::En),
+        &request(ExportFormat::InspectionReportXlsx, Language::En),
         None,
     )
     .unwrap();
     let de = render(
         &snapshot,
-        &request(ExportFormat::InspectionReportXlsx, ReportLanguage::De),
+        &request(ExportFormat::InspectionReportXlsx, Language::De),
         None,
     )
     .unwrap();
@@ -154,7 +155,7 @@ fn job_steps_write_the_file_or_nothing_when_cancelled() {
     let session = session(&tiles);
     let snapshot = session.export_snapshot(false).unwrap();
     let dir = tempfile::tempdir().unwrap();
-    let request = request(ExportFormat::InspectionReportPdf, ReportLanguage::En);
+    let request = request(ExportFormat::InspectionReportPdf, Language::En);
 
     let path = dir.path().join("report.pdf");
     let mut steps = Vec::new();
@@ -229,7 +230,7 @@ fn snapshots_lock_drawing_exports_at_once_and_fill_issued_reports_only() {
         .unwrap();
     let issued = |format| ExportRequest {
         issued: true,
-        ..request(format, ReportLanguage::En)
+        ..request(format, Language::En)
     };
 
     // A report exported as issued changes nothing yet; its snapshot prints the filled info.
@@ -245,7 +246,7 @@ fn snapshots_lock_drawing_exports_at_once_and_fill_issued_reports_only() {
     // Not issued: nothing filled.
     let plain = take_snapshot(
         &mut session,
-        request(ExportFormat::CheckSheetPdf, ReportLanguage::En),
+        request(ExportFormat::CheckSheetPdf, Language::En),
     )
     .unwrap();
     assert!(plain.issued.is_none() && plain.lock.is_none());
@@ -268,7 +269,7 @@ fn first_report_export_stores_the_report_date_once() {
     let before = session.project().unwrap().clone();
 
     for format in REPORTS {
-        let request = request(format, ReportLanguage::En);
+        let request = request(format, Language::En);
         let first = take_snapshot(&mut session, request).unwrap();
         // The first export stores the date; the later ones find it.
         assert_eq!(
@@ -284,7 +285,7 @@ fn first_report_export_stores_the_report_date_once() {
     }
 
     // Another day: the stored date stays, so a re-export is byte identical.
-    let inspection = request(ExportFormat::InspectionReportPdf, ReportLanguage::En);
+    let inspection = request(ExportFormat::InspectionReportPdf, Language::En);
     let one = render(&session.export_snapshot(false).unwrap(), &inspection, None).unwrap();
     session.set_fixed_local_date(Some("2026-11-02"));
     let again = take_snapshot(&mut session, inspection).unwrap();
@@ -306,13 +307,13 @@ fn first_report_export_stores_the_report_date_once() {
     session.execute(Command::UpdateReportInfo { info }).unwrap();
     let kept = take_snapshot(
         &mut session,
-        request(ExportFormat::CheckSheetXlsx, ReportLanguage::En),
+        request(ExportFormat::CheckSheetXlsx, Language::En),
     )
     .unwrap();
     assert!(kept.date.is_none());
     assert_eq!(kept.snapshot.project.report_info.report_date, "2026-01-05");
     session.undo().unwrap();
-    let list = take_snapshot(&mut session, request(ExportFormat::Csv, ReportLanguage::En)).unwrap();
+    let list = take_snapshot(&mut session, request(ExportFormat::Csv, Language::En)).unwrap();
     assert!(list.date.is_none());
     assert_eq!(session.project().unwrap().report_info.report_date, "");
 }
@@ -326,7 +327,7 @@ fn issued_report_stores_the_report_date_in_its_one_undo_step() {
     let before = session.project().unwrap().clone();
     let issued = ExportRequest {
         issued: true,
-        ..request(ExportFormat::CheckSheetPdf, ReportLanguage::En)
+        ..request(ExportFormat::CheckSheetPdf, Language::En)
     };
     let start = take_snapshot(&mut session, issued).unwrap();
     assert!(start.date.is_none(), "nothing is stored before the write");
@@ -484,7 +485,7 @@ fn render_time_300_by_10() {
         ExportFormat::InspectionReportPdf,
         ExportFormat::InspectionReportXlsx,
     ] {
-        let request = request(format, ReportLanguage::En);
+        let request = request(format, Language::En);
         let start = std::time::Instant::now();
         let bytes = render(&snapshot, &request, None).unwrap();
         eprintln!(

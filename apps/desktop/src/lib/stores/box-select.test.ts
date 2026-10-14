@@ -5,7 +5,7 @@ import ProposalCard from "$lib/components/ProposalCard.svelte";
 import type {
   BalloonPlacement,
   CommandError,
-  ExplainLanguage,
+  Language,
   LegInput,
   OrientedBox,
   Proposal,
@@ -83,7 +83,7 @@ class FakeRecognition implements RecognitionCommands {
     sheet: SheetId,
     region: OrientedBox,
     placement: BalloonPlacement,
-    language: ExplainLanguage,
+    language: Language,
   ) => {
     expect([sheet, region, placement, language]).toEqual([SHEET_ID, BOX, PLACEMENT, "en"]);
     return ok<ProposalView[]>(

@@ -4,6 +4,7 @@
 //! the values of the characteristic. The text is plain and written for this program, not taken
 //! from any standard.
 
+use dimo_core::Language;
 use dimo_core::characteristic::{Characteristic, Length, Unit};
 use dimo_core::derivation::{
     DerivationHint, DerivationRule, RangeBound, SizeRange, TableLookup, TableRef,
@@ -13,15 +14,6 @@ use dimo_core::proposal::Proposal;
 use rust_decimal::Decimal;
 
 use crate::interpret::Interpretation;
-
-/// Language of an explanation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Language {
-    /// English.
-    English,
-    /// German.
-    German,
-}
 
 /// The values an explanation talks about: nominal, unit and deviations as stored.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -138,8 +130,8 @@ struct Text {
 impl Text {
     fn pick(&self, en: &str, de: &str) -> String {
         match self.language {
-            Language::English => en.to_owned(),
-            Language::German => de.to_owned(),
+            Language::En => en.to_owned(),
+            Language::De => de.to_owned(),
         }
     }
 
@@ -150,15 +142,15 @@ impl Text {
         );
         match rule {
             DerivationRule::Explicit => match self.language {
-                Language::English => format!("Tolerance written on the drawing: {}.", self.devs(v)),
-                Language::German => {
+                Language::En => format!("Tolerance written on the drawing: {}.", self.devs(v)),
+                Language::De => {
                     format!("Toleranz in der Zeichnung angegeben: {}.", self.devs(v))
                 }
             },
             DerivationRule::Fit { table, fit, range } => {
                 let source = match self.language {
-                    Language::English => format!("Fit {fit} from table {}.", self.table(table)),
-                    Language::German => {
+                    Language::En => format!("Fit {fit} from table {}.", self.table(table)),
+                    Language::De => {
                         format!("Passung {fit} aus Tabelle {}.", self.table(table))
                     }
                 };
@@ -166,10 +158,10 @@ impl Text {
             }
             DerivationRule::DrawingRule { lookup } => {
                 let source = match self.language {
-                    Language::English => {
+                    Language::En => {
                         format!("Drawing rule from table {}.", self.lookup(lookup))
                     }
-                    Language::German => {
+                    Language::De => {
                         format!("Zeichnungsregel aus Tabelle {}.", self.lookup(lookup))
                     }
                 };
@@ -177,25 +169,25 @@ impl Text {
             }
             DerivationRule::General { lookup } => {
                 let source = match self.language {
-                    Language::English => format!("General tolerance {}.", self.lookup(lookup)),
-                    Language::German => format!("Allgemeintoleranz {}.", self.lookup(lookup)),
+                    Language::En => format!("General tolerance {}.", self.lookup(lookup)),
+                    Language::De => format!("Allgemeintoleranz {}.", self.lookup(lookup)),
                 };
                 format!("{no_tol} {source} {}", self.in_range(v, Some(&lookup.range), true))
             }
             DerivationRule::CustomTable { lookup } => {
                 let source = match self.language {
-                    Language::English => format!("Custom table {}.", self.lookup(lookup)),
-                    Language::German => format!("Eigene Tabelle {}.", self.lookup(lookup)),
+                    Language::En => format!("Custom table {}.", self.lookup(lookup)),
+                    Language::De => format!("Eigene Tabelle {}.", self.lookup(lookup)),
                 };
                 format!("{no_tol} {source} {}", self.in_range(v, Some(&lookup.range), true))
             }
             DerivationRule::DecimalRule { places, tolerance } => {
                 let tol = self.with_unit(&format!("±{}", self.num(*tolerance)), v.unit);
                 match self.language {
-                    Language::English => format!(
+                    Language::En => format!(
                         "{no_tol} The nominal is written with {places} decimal places, so the decimal place rule gives {tol}."
                     ),
-                    Language::German => format!(
+                    Language::De => format!(
                         "{no_tol} Das Nennmaß hat {places} Nachkommastellen, daher gilt nach der Regel für Nachkommastellen {tol}."
                     ),
                 }
@@ -226,28 +218,28 @@ impl Text {
                     Some(Unit::Mm),
                 );
                 match self.language {
-                    Language::English => format!(
+                    Language::En => format!(
                         "The written deviations differ from fit {fit} in the table ({table}). The written values are kept."
                     ),
-                    Language::German => format!(
+                    Language::De => format!(
                         "Die angegebenen Abmaße weichen von der Passung {fit} in der Tabelle ab ({table}). Die angegebenen Werte gelten."
                     ),
                 }
             }
             DerivationHint::UnknownFit { fit } => match self.language {
-                Language::English => {
+                Language::En => {
                     format!("Fit {fit} is not in the fit table, so it gives no limits.")
                 }
-                Language::German => format!(
+                Language::De => format!(
                     "Die Passung {fit} ist nicht in der Passungstabelle, daher keine Grenzmaße daraus."
                 ),
             },
             DerivationHint::SizeOutsideTable { table } => match self.language {
-                Language::English => format!(
+                Language::En => format!(
                     "The size is outside the ranges of table {}.",
                     self.table(table)
                 ),
-                Language::German => format!(
+                Language::De => format!(
                     "Das Maß liegt außerhalb der Bereiche von Tabelle {}.",
                     self.table(table)
                 ),
@@ -267,10 +259,10 @@ impl Text {
         let (from, to) = (self.unit_name(c.from), self.unit_name(c.to));
         let places = c.places;
         match self.language {
-            Language::English => format!(
+            Language::En => format!(
                 "Values converted from {from} to {to} and rounded to {places} decimal places."
             ),
-            Language::German => format!(
+            Language::De => format!(
                 "Werte von {from} in {to} umgerechnet und auf {places} Nachkommastellen gerundet."
             ),
         }
@@ -278,20 +270,20 @@ impl Text {
 
     fn table(&self, table: &TableRef) -> String {
         match self.language {
-            Language::English => format!("{} version {}", table.id, table.version),
-            Language::German => format!("{} Version {}", table.id, table.version),
+            Language::En => format!("{} version {}", table.id, table.version),
+            Language::De => format!("{} Version {}", table.id, table.version),
         }
     }
 
     fn lookup(&self, lookup: &TableLookup) -> String {
         match self.language {
-            Language::English => format!(
+            Language::En => format!(
                 "{}, class {}, part {}",
                 self.table(&lookup.table),
                 lookup.class,
                 lookup.part
             ),
-            Language::German => format!(
+            Language::De => format!(
                 "{}, Klasse {}, Teil {}",
                 self.table(&lookup.table),
                 lookup.class,
@@ -310,8 +302,8 @@ impl Text {
         };
         let Some(range) = range else {
             return match self.language {
-                Language::English => format!("Deviations {devs}."),
-                Language::German => format!("Abmaße {devs}."),
+                Language::En => format!("Deviations {devs}."),
+                Language::De => format!("Abmaße {devs}."),
             };
         };
         let range = self.range(range);
@@ -329,10 +321,10 @@ impl Text {
             format!("{range}{table_unit}")
         };
         match self.language {
-            Language::English => {
+            Language::En => {
                 format!("Nominal {nominal} is in the range {range_unit}, so {devs}.")
             }
-            Language::German => {
+            Language::De => {
                 format!("Nennmaß {nominal} liegt im Bereich {range_unit}, daher {devs}.")
             }
         }
@@ -354,16 +346,16 @@ impl Text {
             }
         });
         let mut text = match (self.language, leg) {
-            (Language::English, Some(leg)) => {
+            (Language::En, Some(leg)) => {
                 format!("The shorter leg is {leg}, in the range {range} mm, so {devs}.")
             }
-            (Language::English, None) => {
+            (Language::En, None) => {
                 format!("The shorter leg is in the range {range} mm, so {devs}.")
             }
-            (Language::German, Some(leg)) => format!(
+            (Language::De, Some(leg)) => format!(
                 "Der kürzere Schenkel ist {leg} lang und liegt im Bereich {range} mm, daher {devs}."
             ),
-            (Language::German, None) => {
+            (Language::De, None) => {
                 format!("Der kürzere Schenkel liegt im Bereich {range} mm, daher {devs}.")
             }
         };
@@ -373,8 +365,8 @@ impl Text {
                 self.with_unit(&self.num(upper), Some(Unit::Deg)),
             );
             let (word, to) = match self.language {
-                Language::English => ("Limits", "to"),
-                Language::German => ("Grenzmaße", "bis"),
+                Language::En => ("Limits", "to"),
+                Language::De => ("Grenzmaße", "bis"),
             };
             for part in [" ", word, " ", &lower, " ", to, " ", &upper, "."] {
                 text.push_str(part);
@@ -386,8 +378,8 @@ impl Text {
     fn range(&self, range: &SizeRange) -> String {
         let mut parts = Vec::new();
         let (from, over, upto, below, any) = match self.language {
-            Language::English => ("from", "over", "up to and including", "below", "any size"),
-            Language::German => ("ab", "über", "bis einschließlich", "unter", "jede Größe"),
+            Language::En => ("from", "over", "up to and including", "below", "any size"),
+            Language::De => ("ab", "über", "bis einschließlich", "unter", "jede Größe"),
         };
         match range.min {
             Some(RangeBound {
@@ -435,8 +427,8 @@ impl Text {
             _ => {
                 let mut parts = Vec::new();
                 let (upper, lower, none) = match self.language {
-                    Language::English => ("upper limit", "lower limit", "no limits"),
-                    Language::German => ("Höchstmaß", "Mindestmaß", "keine Grenzmaße"),
+                    Language::En => ("upper limit", "lower limit", "no limits"),
+                    Language::De => ("Höchstmaß", "Mindestmaß", "keine Grenzmaße"),
                 };
                 if let Some(l) = v.lower_limit {
                     parts.push(format!("{lower} {}", self.with_unit(&self.num(l), v.unit)));
@@ -476,8 +468,8 @@ impl Text {
             value.to_string()
         };
         match self.language {
-            Language::English => text,
-            Language::German => text.replace('.', ","),
+            Language::En => text,
+            Language::De => text.replace('.', ","),
         }
     }
 
@@ -488,7 +480,7 @@ impl Text {
     /// Unit symbol; German writes inch as `Zoll`.
     fn unit_name(&self, unit: Unit) -> &'static str {
         match (self.language, unit) {
-            (Language::German, Unit::In) => "Zoll",
+            (Language::De, Unit::In) => "Zoll",
             _ => unit_name_en(unit),
         }
     }

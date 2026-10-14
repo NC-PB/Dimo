@@ -2,11 +2,9 @@
 
 use dimo_core::{
     Characteristic, CharacteristicKind, CharacteristicStatus, Classification, DerivationRule,
-    Project, Unit,
+    Language, Project, Unit,
 };
 use rust_decimal::Decimal;
-
-use super::Language;
 
 /// One column of the characteristic list. The order of [`COLUMNS`] is the column order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -120,8 +118,8 @@ impl Column {
             Self::Comment => ("Comment", "Kommentar"),
         };
         match language {
-            Language::English => en,
-            Language::German => de,
+            Language::En => en,
+            Language::De => de,
         }
     }
 

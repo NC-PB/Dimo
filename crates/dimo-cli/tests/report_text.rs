@@ -15,9 +15,10 @@ mod fixture;
 
 use std::fmt::Write as _;
 
+use dimo_core::Language;
 use dimo_core::{Project, ReportKind};
 use dimo_pdf::{PdfEngine, PdfError, TextRun};
-use dimo_report::{Language, ReportModel, ReportOptions, TemplateSet, render_report};
+use dimo_report::{ReportModel, ReportOptions, TemplateSet, render_report};
 
 fn pdfium_required() -> bool {
     std::env::var("CI").is_ok_and(|v| v == "true")

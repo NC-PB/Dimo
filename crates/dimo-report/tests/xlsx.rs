@@ -11,8 +11,9 @@ use std::fmt::Write as _;
 use std::io::Read;
 use std::time::Instant;
 
+use dimo_core::Language;
 use dimo_core::{Project, ReportKind};
-use dimo_report::{Language, ReportError, ReportModel, ReportOptions, TemplateSet, render_xlsx};
+use dimo_report::{ReportError, ReportModel, ReportOptions, TemplateSet, render_xlsx};
 
 fn bundled() -> TemplateSet {
     TemplateSet::bundled("dimo-default").expect("bundled template set")

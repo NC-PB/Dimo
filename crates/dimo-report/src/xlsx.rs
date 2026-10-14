@@ -26,8 +26,8 @@
 
 use std::fmt::Write as _;
 
-use dimo_core::ReportKind;
 use dimo_core::decimal::spreadsheet_number;
+use dimo_core::{Language, ReportKind};
 use rust_xlsxwriter::{
     DocProperties, ExcelDateTime, Format, FormatAlign, FormatBorder, Workbook, Worksheet, XlsxError,
 };
@@ -35,7 +35,7 @@ use rust_xlsxwriter::{
 use crate::model::{
     Cell, CellType, CellVerdict, Counts, GroupVerdict, Row, SAMPLES_PER_BLOCK, SampleColumn,
 };
-use crate::{Language, ReportError, ReportModel, TemplateSet};
+use crate::{ReportError, ReportModel, TemplateSet};
 
 /// Selects a text field of a sample column.
 type SampleField = fn(&SampleColumn) -> &str;

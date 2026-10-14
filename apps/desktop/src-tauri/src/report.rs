@@ -34,8 +34,9 @@ use crate::export::{
 use crate::ipc::{CommandError, DocumentInfo, tile_service};
 use crate::project::{emit_patched, with_session};
 use crate::session::{AppSession, ExportSnapshot};
-use crate::settings::{PdfBalloons, ReportLanguage};
+use crate::settings::PdfBalloons;
 use crate::tiles::TileState;
+use dimo_core::Language;
 
 /// How many preview documents stay open in the tile service.
 const OPEN_PREVIEWS: usize = 4;
@@ -47,7 +48,7 @@ pub struct ReportView {
     /// Check sheet or inspection report.
     pub kind: ReportKind,
     /// Language of the report (D-32).
-    pub language: ReportLanguage,
+    pub language: Language,
     /// Blank result columns of a check sheet without samples, 1 to 10 (M3 decision 12).
     pub blank_columns: u8,
 }
@@ -339,16 +340,13 @@ mod tests {
         for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
             let view = ReportView {
                 kind,
-                language: ReportLanguage::De,
+                language: Language::De,
                 blank_columns: 5,
             };
             let request = view.save_copy();
             assert_eq!(request.format.report(), Some((kind, ReportFormat::Pdf)));
             assert!(!request.issued && !request.open_after);
-            assert_eq!(
-                (request.language, request.blank_columns),
-                (ReportLanguage::De, 5)
-            );
+            assert_eq!((request.language, request.blank_columns), (Language::De, 5));
         }
     }
 

@@ -11,6 +11,7 @@
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 
+use dimo_core::Language;
 use dimo_core::{Command, FieldValue, Point, ReportKind, ResultEntry};
 use dimo_desktop::export::{render, run_steps, take_snapshot};
 use dimo_desktop::report::{
@@ -18,7 +19,6 @@ use dimo_desktop::report::{
     write_print_file,
 };
 use dimo_desktop::session::AppSession;
-use dimo_desktop::settings::ReportLanguage;
 use dimo_pdf::tiles::{TileConfig, TileKey, TileService};
 use dimo_pdf::{ContentHash, PdfEngine, PdfError};
 use rust_decimal::Decimal;
@@ -44,7 +44,7 @@ fn drawing() -> PathBuf {
         .join("../../../corpus/drawings/test_drawing_1.pdf")
 }
 
-fn view(kind: ReportKind, language: ReportLanguage) -> ReportView {
+fn view(kind: ReportKind, language: Language) -> ReportView {
     ReportView {
         kind,
         language,
@@ -52,11 +52,11 @@ fn view(kind: ReportKind, language: ReportLanguage) -> ReportView {
     }
 }
 
-const VIEWS: [(ReportKind, ReportLanguage); 4] = [
-    (ReportKind::CheckSheet, ReportLanguage::En),
-    (ReportKind::CheckSheet, ReportLanguage::De),
-    (ReportKind::InspectionReport, ReportLanguage::En),
-    (ReportKind::InspectionReport, ReportLanguage::De),
+const VIEWS: [(ReportKind, Language); 4] = [
+    (ReportKind::CheckSheet, Language::En),
+    (ReportKind::CheckSheet, Language::De),
+    (ReportKind::InspectionReport, Language::En),
+    (ReportKind::InspectionReport, Language::De),
 ];
 
 /// Two characteristics with limits, two samples, three of four results, no report date.
@@ -171,7 +171,7 @@ fn preview_pages_render_as_tiles() {
     let session = session(&tiles);
     let bytes = preview_bytes(
         &save_copy_snapshot(&session).unwrap(),
-        view(ReportKind::InspectionReport, ReportLanguage::En),
+        view(ReportKind::InspectionReport, Language::En),
     )
     .unwrap();
     let hash = ContentHash::of(&bytes);
@@ -247,7 +247,7 @@ fn checks_count_what_is_open_before_issuing() {
 fn print_prints_the_preview_and_stores_the_date_like_save_copy() {
     let Some(tiles) = service() else { return };
     let mut session = session(&tiles);
-    let view = view(ReportKind::InspectionReport, ReportLanguage::De);
+    let view = view(ReportKind::InspectionReport, Language::De);
     let preview = preview_bytes(&save_copy_snapshot(&session).unwrap(), view).unwrap();
     let (name, start) = print_snapshot(&mut session, view).unwrap();
     assert!(start.date.is_some(), "the date was stored");

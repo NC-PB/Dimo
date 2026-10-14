@@ -3,12 +3,12 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 
-use dimo_core::Project;
 use dimo_core::decimal::spreadsheet_number;
+use dimo_core::{Language, Project};
 use rust_xlsxwriter::{DocProperties, ExcelDateTime, Format, Workbook, Worksheet};
 
 use super::columns::{COLUMNS, Cell, rows};
-use super::{ExportError, ExportOptions, Exporter, Language};
+use super::{ExportError, ExportOptions, Exporter};
 
 /// Writes the characteristic list as an XLSX workbook with one sheet.
 ///
@@ -57,8 +57,8 @@ fn build(project: &Project, opts: ExportOptions) -> Result<Vec<u8>, ExportError>
 
     let sheet = workbook.add_worksheet();
     sheet.set_name(match opts.language {
-        Language::English => "Characteristics",
-        Language::German => "Merkmale",
+        Language::En => "Characteristics",
+        Language::De => "Merkmale",
     })?;
     for (col, column) in (0u16..).zip(COLUMNS) {
         sheet.write_string_with_format(0, col, column.header(opts.language), &header_format)?;

@@ -23,7 +23,7 @@ pub mod table;
 pub use context::{ContextError, DEFAULT_FIT_TABLE, ToleranceContext, import_custom_table};
 pub use designation::{Fit, Grade};
 pub use error::TableError;
-pub use explain::{ExplainValues, Language, explain};
+pub use explain::{ExplainValues, explain};
 pub use fit::{FitError, FitLimits};
 pub use format::{AppliesTo, Feature, RangeOf, Status, TableKind, ValueUnit};
 pub use interpret::{Interpretation, Measures, Note, interpret, interpret_with};

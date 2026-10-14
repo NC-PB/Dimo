@@ -270,6 +270,7 @@ pub fn sheet_unit(project: &Project, c: &Characteristic) -> Unit {
 mod tests {
     use super::*;
     use crate::interpret::ToleranceEngine;
+    use dimo_core::Language;
     use dimo_core::command::execute;
     use dimo_core::derivation::ToleranceDerivation;
     use dimo_core::project::{TableClass, ToleranceSettings};
@@ -278,7 +279,7 @@ mod tests {
         FixedEnvironment, RevisionId, Sha256Hex, Sheet, SheetId, SheetKind, Size, TableRef,
         Timestamp,
     };
-    use dimo_tolerance::{Language, TableSet, ToleranceContext, explain};
+    use dimo_tolerance::{TableSet, ToleranceContext, explain};
     use rust_decimal::Decimal;
 
     fn d(text: &str) -> Option<Decimal> {
@@ -349,7 +350,7 @@ mod tests {
         let before = project.clone();
         let explained = |p: &Project| {
             let c = p.characteristic(ids[0]).unwrap();
-            explain(c.derivation.as_ref().unwrap(), &c.into(), Language::English)
+            explain(c.derivation.as_ref().unwrap(), &c.into(), Language::En)
         };
         assert!(
             explained(&project).contains("class m"),

@@ -45,8 +45,9 @@ use tauri_specta::Event;
 use crate::ipc::{CommandError, JobId, JobProgress, tile_service};
 use crate::project::{SessionState, emit, emit_patched, with_session};
 use crate::session::{AppSession, ExportSnapshot, ProjectPatched};
-use crate::settings::{PdfBalloons, ReportLanguage};
+use crate::settings::PdfBalloons;
 use crate::tiles::TileState;
+use dimo_core::Language;
 
 /// The bundled report template set (M3 decision 10).
 pub const REPORT_TEMPLATE: &str = "dimo-default";
@@ -130,7 +131,7 @@ pub struct ExportRequest {
     pub format: ExportFormat,
     /// Language of the characteristic list headers and of the reports (D-32); ignored for the
     /// ballooned PDF.
-    pub language: ReportLanguage,
+    pub language: Language,
     /// Balloons as page content or annotations (D-33); only for the ballooned PDF.
     pub pdf_balloons: PdfBalloons,
     /// Blank result columns of a check sheet for a project without samples, 1 to 10 (M3
@@ -297,7 +298,7 @@ fn report_options(
     ReportOptions {
         blank_columns: request.blank_columns,
         fallback_date: Some(snapshot.modified.clone()),
-        ..ReportOptions::new(kind, request.language.into())
+        ..ReportOptions::new(kind, request.language)
     }
 }
 
@@ -326,7 +327,7 @@ fn render_prepared(
         .map_err(export_error);
     }
     let options = ExportOptions {
-        language: request.language.into(),
+        language: request.language,
     };
     let mut bytes = Vec::new();
     match request.format {
@@ -516,11 +517,8 @@ pub fn report_warnings(
     kind: ReportKind,
     limits_changed: bool,
 ) -> Result<ReportWarnings, CommandError> {
-    let model = ReportModel::build(
-        project,
-        &ReportOptions::new(kind, dimo_report::Language::En),
-    )
-    .map_err(export_error)?;
+    let model = ReportModel::build(project, &ReportOptions::new(kind, Language::En))
+        .map_err(export_error)?;
     Ok(ReportWarnings {
         draft_limits: model.flags.draft_limits,
         open_results: model.flags.open_results,

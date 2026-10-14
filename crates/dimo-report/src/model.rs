@@ -16,14 +16,14 @@ use std::collections::HashMap;
 
 use dimo_core::{
     AttributeValue, CharId, Characteristic, CharacteristicKind, Classification, DerivationRule,
-    MeasurementResult, MeasurementState, OverallVerdict, Project, ReportKind, ResultType,
+    Language, MeasurementResult, MeasurementState, OverallVerdict, Project, ReportKind, ResultType,
     ResultValue, RowState, SampleId, TableRef, Timestamp, Unit, Verdict, VerdictCounts,
     measured_characteristics, measurement_state,
 };
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::{Language, ReportDate, ReportError};
+use crate::{ReportDate, ReportError};
 
 /// Version of the data format. Increased when a field is removed or changes meaning; templates
 /// can check it (M7 custom templates).
@@ -70,10 +70,13 @@ impl ReportOptions {
     }
 }
 
+// Schema of `ReportModel::language`, a `dimo_core::Language` in the data. It only describes
+// the published data schema, which keeps this name and these descriptions; never built.
 /// Report language as written into the data (`en`, `de`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum LanguageCode {
+#[allow(dead_code)]
+enum LanguageCode {
     /// English: decimal point.
     En,
     /// German: decimal comma.
@@ -346,7 +349,8 @@ pub struct ReportModel {
     /// Which document.
     pub document: ReportKind,
     /// Report language; also passed to the template as `sys.inputs.lang`.
-    pub language: LanguageCode,
+    #[schemars(with = "LanguageCode")]
+    pub language: Language,
     /// Page header.
     pub header: Header,
     /// Overall result.
@@ -430,10 +434,7 @@ impl ReportModel {
         Ok(Self {
             format_version: DATA_FORMAT_VERSION,
             document: options.kind,
-            language: match options.language {
-                Language::En => LanguageCode::En,
-                Language::De => LanguageCode::De,
-            },
+            language: options.language,
             summary: Summary {
                 verdict: group_verdict(state.verdict),
                 counts: counts(state.counts),
@@ -476,10 +477,7 @@ impl ReportModel {
 
     /// The report language.
     pub fn language(&self) -> Language {
-        match self.language {
-            LanguageCode::En => Language::En,
-            LanguageCode::De => Language::De,
-        }
+        self.language
     }
 }
 

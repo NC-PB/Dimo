@@ -7,10 +7,11 @@ mod common;
 
 use common::context::{Cfg, context};
 use common::d;
+use dimo_core::Language;
 use dimo_core::characteristic::{Length, Unit};
 use dimo_core::derivation::ToleranceDerivation;
 use dimo_notation::parse_callout;
-use dimo_tolerance::{ExplainValues, Language, Measures, explain, interpret_with};
+use dimo_tolerance::{ExplainValues, Measures, explain, interpret_with};
 
 /// Interpret `text` and render the explanation in both languages.
 fn both(text: &str, cfg: Cfg, unit: Unit, output: Option<Unit>, leg: Option<&str>) -> String {
@@ -23,8 +24,8 @@ fn both(text: &str, cfg: Cfg, unit: Unit, output: Option<Unit>, leg: Option<&str
     let values = ExplainValues::from(&i);
     format!(
         "callout: {text}\nen: {}\nde: {}\n",
-        explain(&i.derivation, &values, Language::English),
-        explain(&i.derivation, &values, Language::German)
+        explain(&i.derivation, &values, Language::En),
+        explain(&i.derivation, &values, Language::De)
     )
 }
 
@@ -80,8 +81,8 @@ fn general_angle_inch_leg() {
     let values = ExplainValues::from(&i);
     insta::assert_snapshot!(format!(
         "callout: 30°, leg 1.5 in\nen: {}\nde: {}\n",
-        explain(&i.derivation, &values, Language::English),
-        explain(&i.derivation, &values, Language::German)
+        explain(&i.derivation, &values, Language::En),
+        explain(&i.derivation, &values, Language::De)
     ));
 }
 
@@ -140,7 +141,7 @@ fn manual() {
     let derivation = ToleranceDerivation::manual();
     insta::assert_snapshot!(format!(
         "en: {}\nde: {}\n",
-        explain(&derivation, &values, Language::English),
-        explain(&derivation, &values, Language::German)
+        explain(&derivation, &values, Language::En),
+        explain(&derivation, &values, Language::De)
     ));
 }

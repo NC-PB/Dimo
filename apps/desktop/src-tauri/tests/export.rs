@@ -8,10 +8,11 @@
 
 use std::path::PathBuf;
 
+use dimo_core::Language;
 use dimo_core::{BalloonShape, BalloonStyleOverride, Command, FieldValue, Point};
 use dimo_desktop::export::{ExportFormat, ExportRequest, render};
 use dimo_desktop::session::AppSession;
-use dimo_desktop::settings::{PdfBalloons, ReportLanguage};
+use dimo_desktop::settings::PdfBalloons;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
 
@@ -39,7 +40,7 @@ fn drawing() -> PathBuf {
 fn request(format: ExportFormat) -> ExportRequest {
     ExportRequest {
         format,
-        language: ReportLanguage::En,
+        language: Language::En,
         pdf_balloons: PdfBalloons::PageContent,
         blank_columns: 3,
         issued: false,
@@ -151,7 +152,7 @@ fn characteristic_lists_contain_the_rows() {
         "{csv}"
     );
     let german = ExportRequest {
-        language: ReportLanguage::De,
+        language: Language::De,
         ..request(ExportFormat::Csv)
     };
     let csv_de = String::from_utf8(render(&snapshot, &german, None).unwrap()).unwrap();

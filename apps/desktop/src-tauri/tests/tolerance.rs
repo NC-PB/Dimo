@@ -8,12 +8,12 @@
 
 use std::path::PathBuf;
 
+use dimo_core::Language;
 use dimo_core::{
     ChangeSource, CharId, Command, DerivationRule, FieldValue, Point, TableClass, TableRef,
     ToleranceDerivation,
 };
 use dimo_desktop::ipc::CommandError;
-use dimo_desktop::recognition::ExplainLanguage;
 use dimo_desktop::session::AppSession;
 use dimo_desktop::tolerance::{self, TableImport, TableUse};
 use dimo_pdf::tiles::{TileConfig, TileService};
@@ -155,11 +155,11 @@ fn reinterpret_after_a_settings_change() {
     );
     assert_eq!(limits(&session, plain), (d("50.3"), d("49.7")));
     assert_eq!(limits(&session, manual).0, d("60.5"));
-    let english = tolerance::explanation(&session, plain, ExplainLanguage::En)
+    let english = tolerance::explanation(&session, plain, Language::En)
         .unwrap()
         .unwrap();
     assert!(english.contains("class m"), "{english}");
-    let german = tolerance::explanation(&session, plain, ExplainLanguage::De)
+    let german = tolerance::explanation(&session, plain, Language::De)
         .unwrap()
         .unwrap();
     assert_ne!(english, german);
@@ -169,7 +169,7 @@ fn reinterpret_after_a_settings_change() {
     assert_eq!(limits(&session, plain), (d("50.3"), d("49.7")));
     tolerance::reinterpret(&mut session, &[plain]).unwrap();
     assert_eq!(limits(&session, plain), (d("50.15"), d("49.85")));
-    let english = tolerance::explanation(&session, plain, ExplainLanguage::En)
+    let english = tolerance::explanation(&session, plain, Language::En)
         .unwrap()
         .unwrap();
     assert!(english.contains("class f"), "{english}");
@@ -191,7 +191,7 @@ fn typed(session: &mut AppSession, text: &str) -> CharId {
     let id = add(session, text);
     let sheet = session.project().unwrap().revisions[0].sheets[0].id;
     let target = session.recognition_target(sheet).unwrap();
-    let reading = read_typed(&target, text, None, ExplainLanguage::En);
+    let reading = read_typed(&target, text, None, Language::En);
     session
         .execute(Command::UpdateFields {
             ids: vec![id],
@@ -398,7 +398,7 @@ fn shorter_leg_keeps_its_unit_when_the_sheet_unit_changes() {
     let target = session.recognition_target(sheet).unwrap();
     assert_eq!(target.unit, Unit::In);
     let stored = resolve_leg(Some(&LegInput::Stored(mm)), target.unit).unwrap();
-    let typed = read_typed(&target, "30°", stored, ExplainLanguage::En);
+    let typed = read_typed(&target, "30°", stored, Language::En);
     session
         .execute(Command::UpdateFields {
             ids: vec![id],

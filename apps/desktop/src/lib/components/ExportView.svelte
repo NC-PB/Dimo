@@ -3,7 +3,7 @@
   import JobStatus from "$lib/components/JobStatus.svelte";
   import { LOCALE_NAMES, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
-  import type { ExportFormat, PdfBalloons, ReportLanguage } from "$lib/ipc/bindings";
+  import type { ExportFormat, PdfBalloons, Language } from "$lib/ipc/bindings";
   import { EXPORT_FORMATS, exportStore } from "$lib/stores/export.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
@@ -14,7 +14,7 @@
    * with their options. The check sheet and the inspection report are on the Report tab, with
    * the preview, the checks before issuing and Print.
    */
-  const LANGUAGES: readonly { value: ReportLanguage; label: string }[] = [
+  const LANGUAGES: readonly { value: Language; label: string }[] = [
     { value: "en", label: LOCALE_NAMES.en },
     { value: "de", label: LOCALE_NAMES.de },
   ];
