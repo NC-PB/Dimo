@@ -1158,7 +1158,6 @@ dependencies = [
  "dimo-notation",
  "dimo-pdf",
  "dimo-tolerance",
- "dimo-vision",
  "rust_decimal",
 ]
 

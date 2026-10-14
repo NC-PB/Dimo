@@ -2,7 +2,8 @@
 
 use std::ops::Range;
 
-use crate::geometry::{SheetRect, SheetSize};
+use dimo_core::{Rect, Size};
+
 use crate::hash::ContentHash;
 
 use super::TileError;
@@ -132,7 +133,7 @@ pub struct TileGrid {
 impl TileGrid {
     /// The grid of a sheet of `size` at `zoom`. Fails for zoom levels outside
     /// [`MIN_ZOOM`]`..=`[`MAX_ZOOM`] and for sheets without a positive finite size.
-    pub fn new(size: SheetSize, zoom: i32) -> Result<Self, TileError> {
+    pub fn new(size: Size, zoom: i32) -> Result<Self, TileError> {
         if !(MIN_ZOOM..=MAX_ZOOM).contains(&zoom) {
             return Err(TileError::OutOfRange(format!(
                 "zoom level {zoom} outside {MIN_ZOOM}..={MAX_ZOOM}"
@@ -195,10 +196,10 @@ impl TileGrid {
     /// The sheet region tile `(x, y)` shows, or `None` outside the grid. Rendered at
     /// [`zoom_scale`]`(zoom)` it yields exactly [`TileGrid::tile_pixels`]: all values are
     /// multiples of a power of two, so the float arithmetic is exact.
-    pub fn tile_region(&self, x: u32, y: u32) -> Option<SheetRect> {
+    pub fn tile_region(&self, x: u32, y: u32) -> Option<Rect> {
         let (width, height) = self.tile_pixels(x, y)?;
         let scale = zoom_scale(self.zoom);
-        Some(SheetRect::new(
+        Some(Rect::new(
             f64::from(x * TILE_SIZE) / scale,
             f64::from(y * TILE_SIZE) / scale,
             f64::from(width) / scale,
@@ -211,7 +212,7 @@ impl TileGrid {
 mod tests {
     use super::*;
 
-    const A4: SheetSize = SheetSize {
+    const A4: Size = Size {
         width: 841.89,
         height: 595.276,
     };
@@ -255,16 +256,16 @@ mod tests {
                     let r = g.tile_region(x, y).unwrap();
                     let (w, h) = g.tile_pixels(x, y).unwrap();
                     // Exact: offsets and sizes are whole pixels at this scale.
-                    assert_eq!(r.x * scale, f64::from(x * TILE_SIZE));
-                    assert_eq!(r.y * scale, f64::from(y * TILE_SIZE));
-                    assert_eq!(r.width * scale, f64::from(w));
-                    assert_eq!(r.height * scale, f64::from(h));
+                    assert_eq!(r.origin.x * scale, f64::from(x * TILE_SIZE));
+                    assert_eq!(r.origin.y * scale, f64::from(y * TILE_SIZE));
+                    assert_eq!(r.size.width * scale, f64::from(w));
+                    assert_eq!(r.size.height * scale, f64::from(h));
                 }
             }
             // The last tile ends at the rounded up sheet edge.
             let last = g.tile_region(g.columns() - 1, 0).unwrap();
-            assert!(last.x + last.width >= A4.width);
-            assert!(last.x + last.width - A4.width < 1.0 / scale);
+            assert!(last.origin.x + last.size.width >= A4.width);
+            assert!(last.origin.x + last.size.width - A4.width < 1.0 / scale);
         }
     }
 

@@ -9,17 +9,25 @@
 | Output formats (CSV, XLSX, PDF structure, project JSON, report data JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
 | Report PDF text | text runs extracted with PDFium, `insta` snapshots (dimo-report may not use dimo-pdf) | `dimo-cli/tests/report_text.rs` |
 | Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` (truth) or `-p dimo-io --test schema` (project) or `-p dimo-tolerance --test schema` (tolerance tables) or `-p dimo-report --test report` (report data) | `dimo-core/tests/`, `dimo-io/tests/`, `dimo-tolerance/tests/`, `dimo-report/tests/` |
+| Export determinism | list exports compared byte for byte with committed golden files; regenerate after an intended change with `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` | `dimo-io/tests/golden/` |
 | Project file migrations | one fixture per schema version in folder mode, never changed after release; new one with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations` | `dimo-io/tests/fixtures/v<n>/` |
 | Box select (M2 exit criterion) | box select with the tolerance engine on every truth region of the corpus and of synth seeds 1 to 40, per callout category; fails below 99 percent of the common callouts, limits required (angles under a general tolerance read with the shorter leg of the truth, as typed on the card). Report: `cargo run -p dimo-cli -- eval box-select` | `dimo-detect/src/evaluation.rs`, `dimo-detect/tests/box_select_corpus.rs`, `dimo-cli/tests/box_select_evaluation.rs`, run by `check.sh` in CI |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
 | Frontend units | Vitest | `apps/desktop/src/**/*.test.ts` |
 | End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` to `m3` |
 | User guide shortcut reference | vitest compares the generated tables in `docs/user/<lang>/shortcuts.md` with `shortcuts.ts` and the message files; a mismatch prints the tables to paste | `apps/desktop/src/lib/shortcuts-docs.test.ts` |
+| Timing bounds | `#[ignore]` tests named `perf_*` (measurement state 20 ms, box select 50 ms, XLSX report 5 s), never in the default run; `scripts/perf-tests.sh` runs them one at a time, CI job `perf-tests` on macOS (informative, shared runners vary) | `src-tauri/tests/measurement.rs`, `src-tauri/tests/recognition.rs`, `dimo-report/tests/xlsx.rs` |
 | Performance | timed harness with a synthetic 50 sheet PDF, run by `scripts/perf.sh` (release build, takes minutes, not in CI) | `crates/dimo-pdf/examples/perf.rs`, generator `dimo-synth --stress`, results in `docs/perf/` |
 
 ## Rules
 
 - Every bug fix comes with a test that fails without the fix.
+- Test data builders grow with the model: extend the existing builder or fixture instead of
+  adding one per schema wave (no new `model_v<n>.rs` or `edit_v<n>` helpers).
+- Timing bounds never run in the default test run: name such a test `perf_*` and mark it
+  `#[ignore]`. Hand run release measurements that assert nothing (for example
+  `render_time_300_by_10` in `src-tauri/tests/report_export.rs`) stay ignored under their own
+  name.
 - Snapshot changes are reviewed, never blindly accepted.
 - Tests must not need the network. PDFium is loaded from `vendor/pdfium/`; tests that need it
   are skipped with a clear message if it is missing, and CI always provides it. With `CI=true` or

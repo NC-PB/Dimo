@@ -3,17 +3,12 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 
-use dimo_core::Project;
-use rust_decimal::Decimal;
+use dimo_core::decimal::spreadsheet_number;
+use dimo_core::{Language, Project};
 use rust_xlsxwriter::{DocProperties, ExcelDateTime, Format, Workbook, Worksheet};
 
 use super::columns::{COLUMNS, Cell, rows};
-use super::{ExportError, ExportOptions, Exporter, Language};
-
-/// Most significant digits a decimal can have to be written as a number cell. Spreadsheet
-/// numbers are IEEE doubles, which hold every decimal of up to 15 significant digits exactly as
-/// typed.
-const MAX_NUMBER_DIGITS: usize = 15;
+use super::{ExportError, ExportOptions, Exporter};
 
 /// Writes the characteristic list as an XLSX workbook with one sheet.
 ///
@@ -62,8 +57,8 @@ fn build(project: &Project, opts: ExportOptions) -> Result<Vec<u8>, ExportError>
 
     let sheet = workbook.add_worksheet();
     sheet.set_name(match opts.language {
-        Language::English => "Characteristics",
-        Language::German => "Merkmale",
+        Language::En => "Characteristics",
+        Language::De => "Merkmale",
     })?;
     for (col, column) in (0u16..).zip(COLUMNS) {
         sheet.write_string_with_format(0, col, column.header(opts.language), &header_format)?;
@@ -103,7 +98,7 @@ fn write_cell(
         Cell::Integer(n) => {
             sheet.write_number(row, col, f64::from(n))?;
         }
-        Cell::Decimal(d) => match number_value(d) {
+        Cell::Decimal(d) => match spreadsheet_number(d) {
             Some(number) => {
                 let format = formats.entry(d.scale()).or_insert_with(|| {
                     let places = d.scale() as usize;
@@ -122,14 +117,4 @@ fn write_cell(
         },
     }
     Ok(())
-}
-
-/// The value as a double if that is exact (see [`MAX_NUMBER_DIGITS`]).
-fn number_value(d: Decimal) -> Option<f64> {
-    let digits = d.mantissa().unsigned_abs().to_string().len();
-    if digits > MAX_NUMBER_DIGITS {
-        return None;
-    }
-    // Parsing the printed digits gives the double nearest to the decimal.
-    d.to_string().parse().ok()
 }

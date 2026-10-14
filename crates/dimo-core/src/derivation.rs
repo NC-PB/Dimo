@@ -114,6 +114,18 @@ pub enum DerivationRule {
 }
 
 impl DerivationRule {
+    /// Stable identifier of the rule: its `rule` tag in `project.json`, such as `explicit`,
+    /// `drawing_rule` or `no_tolerance_defined`. Never translated. Derived from the serde names,
+    /// so exports and reports can never drift from the project file.
+    pub fn id(&self) -> String {
+        // Serializing a rule cannot fail (no maps, no fallible fields); an empty id would only
+        // show up as an empty cell, and the tests cover every variant.
+        serde_json::to_value(self)
+            .ok()
+            .and_then(|json| json.get("rule")?.as_str().map(str::to_owned))
+            .unwrap_or_default()
+    }
+
     /// The rule without parameters, as in the corpus truth format.
     pub fn kind(&self) -> Option<ToleranceRule> {
         Some(match self {
@@ -216,6 +228,81 @@ impl ToleranceDerivation {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn lookup() -> TableLookup {
+        TableLookup {
+            table: TableRef {
+                id: "iso-2768-1".into(),
+                version: 1,
+            },
+            part: "linear".into(),
+            class: "m".into(),
+            range: SizeRange {
+                min: None,
+                max: None,
+            },
+        }
+    }
+
+    /// One rule of every variant; the match makes a new variant a compile error here.
+    fn every_rule() -> Vec<DerivationRule> {
+        let rules = vec![
+            DerivationRule::Explicit,
+            DerivationRule::Fit {
+                table: TableRef {
+                    id: "iso-286".into(),
+                    version: 1,
+                },
+                fit: "H7".into(),
+                range: None,
+            },
+            DerivationRule::DrawingRule { lookup: lookup() },
+            DerivationRule::General { lookup: lookup() },
+            DerivationRule::DecimalRule {
+                places: 2,
+                tolerance: Decimal::new(5, 2),
+            },
+            DerivationRule::CustomTable { lookup: lookup() },
+            DerivationRule::NoToleranceDefined,
+            DerivationRule::Manual,
+        ];
+        for rule in &rules {
+            match rule {
+                DerivationRule::Explicit
+                | DerivationRule::Fit { .. }
+                | DerivationRule::DrawingRule { .. }
+                | DerivationRule::General { .. }
+                | DerivationRule::DecimalRule { .. }
+                | DerivationRule::CustomTable { .. }
+                | DerivationRule::NoToleranceDefined
+                | DerivationRule::Manual => {}
+            }
+        }
+        rules
+    }
+
+    /// MF F9: the ids are the strings the list export, the report and `project.json` always
+    /// used.
+    #[test]
+    fn rule_ids_are_the_serde_tags() {
+        let ids: Vec<String> = every_rule().iter().map(DerivationRule::id).collect();
+        assert_eq!(
+            ids,
+            [
+                "explicit",
+                "fit",
+                "drawing_rule",
+                "general",
+                "decimal_rule",
+                "custom_table",
+                "no_tolerance_defined",
+                "manual",
+            ]
+        );
+        for rule in every_rule() {
+            assert_eq!(serde_json::to_value(&rule).unwrap()["rule"], rule.id());
+        }
+    }
 
     #[test]
     fn serializes_rule_with_parameters_flat() {

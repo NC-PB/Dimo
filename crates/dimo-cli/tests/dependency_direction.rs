@@ -19,6 +19,7 @@ const ALLOWED: &[(&str, &[&str])] = &[
         &[
             "dimo-core",
             "dimo-pdf",
+            // Allowed for OCR (M5); not a dependency today (MF F9).
             "dimo-vision",
             "dimo-notation",
             "dimo-tolerance",

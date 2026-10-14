@@ -26,6 +26,7 @@ pub mod evaluation;
 pub mod geometry;
 pub mod history;
 pub mod id;
+pub mod language;
 pub mod measurement;
 pub mod number;
 pub mod numbering;
@@ -62,6 +63,7 @@ pub use history::{
     characteristic_history,
 };
 pub use id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
+pub use language::Language;
 pub use measurement::{
     AttributeValue, MAX_SAMPLES, MAX_SAMPLES_PER_ADD, MeasurementResult, ResultCell, ResultEntry,
     ResultParseError, ResultSource, ResultType, ResultValue, Sample, SerialError,

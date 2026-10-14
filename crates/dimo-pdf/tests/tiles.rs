@@ -9,10 +9,11 @@
 use std::path::PathBuf;
 use std::sync::mpsc;
 
+use dimo_core::Rect;
 use dimo_pdf::tiles::{
     TILE_SIZE, Tile, TileConfig, TileError, TileGrid, TileKey, TileRange, TileService, zoom_scale,
 };
-use dimo_pdf::{ContentHash, PdfEngine, PdfError, SheetRect};
+use dimo_pdf::{ContentHash, PdfEngine, PdfError};
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 
@@ -101,7 +102,7 @@ fn tiles_join_into_the_full_sheet() {
         let grid = TileGrid::new(size, zoom).unwrap();
         assert_eq!((grid.columns(), grid.rows()), (columns, rows));
         let full = document
-            .render_region(0, SheetRect::full(size), zoom_scale(zoom))
+            .render_region(0, Rect::full(size), zoom_scale(zoom))
             .unwrap();
         let mut max_diff = 0u8;
         for k in all_tiles(&service, doc, &[zoom]) {

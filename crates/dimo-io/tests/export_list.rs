@@ -5,6 +5,7 @@
 use std::fmt::Write as _;
 use std::io::Read;
 
+use dimo_core::Language;
 use dimo_core::{
     Balloon, BalloonStyleOverride, CharId, Characteristic, CharacteristicKind,
     CharacteristicStatus, Classification, DisplayNumber, DrawingRevision, Environment,
@@ -12,9 +13,7 @@ use dimo_core::{
     SheetId, SheetKind, Size, SourceRegion, TextSource, Timestamp, Unit,
 };
 use dimo_core::{DerivationHint, DerivationRule, TableRef, ToleranceDerivation};
-use dimo_io::export::{
-    COLUMNS, CsvListExporter, ExportOptions, Exporter, Language, XlsxListExporter,
-};
+use dimo_io::export::{COLUMNS, CsvListExporter, ExportOptions, Exporter, XlsxListExporter};
 use rust_decimal::Decimal;
 
 fn dec(text: &str) -> Option<Decimal> {
@@ -172,20 +171,20 @@ fn read_entry(bytes: &[u8], name: &str) -> String {
 
 #[test]
 fn csv_english() {
-    let bytes = export(&CsvListExporter, &project(), Language::English);
+    let bytes = export(&CsvListExporter, &project(), Language::En);
     insta::assert_snapshot!(String::from_utf8(bytes).unwrap());
 }
 
 #[test]
 fn csv_german_headers() {
-    let bytes = export(&CsvListExporter, &project(), Language::German);
+    let bytes = export(&CsvListExporter, &project(), Language::De);
     let text = String::from_utf8(bytes).unwrap();
     insta::assert_snapshot!(text.lines().next().unwrap());
 }
 
 #[test]
 fn csv_has_one_field_per_column_and_numbers_ascend() {
-    let bytes = export(&CsvListExporter, &project(), Language::English);
+    let bytes = export(&CsvListExporter, &project(), Language::En);
     let mut reader = csv::Reader::from_reader(bytes.as_slice());
     let mut numbers = Vec::new();
     for record in reader.records() {
@@ -198,7 +197,7 @@ fn csv_has_one_field_per_column_and_numbers_ascend() {
 
 #[test]
 fn xlsx_sheet_content() {
-    let bytes = export(&XlsxListExporter, &project(), Language::English);
+    let bytes = export(&XlsxListExporter, &project(), Language::En);
     let mut snapshot = String::new();
     for name in [
         "xl/workbook.xml",
@@ -214,32 +213,62 @@ fn xlsx_sheet_content() {
 
 #[test]
 fn xlsx_german_sheet_name() {
-    let bytes = export(&XlsxListExporter, &project(), Language::German);
+    let bytes = export(&XlsxListExporter, &project(), Language::De);
     let workbook = read_entry(&bytes, "xl/workbook.xml");
     assert!(workbook.contains("name=\"Merkmale\""), "{workbook}");
     let strings = read_entry(&bytes, "xl/sharedStrings.xml");
     assert!(strings.contains("Nennmaß"));
 }
 
+/// Committed exports of [`project`], one per exporter and language: file name, XLSX (else
+/// CSV), language.
+const GOLDEN: &[(&str, bool, Language)] = &[
+    ("list_en.csv", false, Language::En),
+    ("list_de.csv", false, Language::De),
+    ("list_en.xlsx", true, Language::En),
+    ("list_de.xlsx", true, Language::De),
+];
+
+fn golden_path(name: &str) -> std::path::PathBuf {
+    // Resolved at run time so a shared target directory never points to a stale checkout.
+    let manifest = std::env::var("CARGO_MANIFEST_DIR")
+        .unwrap_or_else(|_| env!("CARGO_MANIFEST_DIR").to_owned());
+    std::path::PathBuf::from(manifest)
+        .join("tests/golden")
+        .join(name)
+}
+
+/// FR-EXP-11, rule 11: the exports equal files written at an earlier time on another run, so
+/// they depend on neither the clock nor the process. Byte for byte, also the ZIP container of
+/// the XLSX files. Regenerate after an intended change with
+/// `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` and review the diff.
 #[test]
-fn exports_are_byte_identical() {
-    for exporter in [
-        &CsvListExporter as &dyn Exporter,
-        &XlsxListExporter as &dyn Exporter,
-    ] {
-        for language in [Language::English, Language::German] {
-            let a = export(exporter, &project(), language);
-            // Let the wall clock move on, a clock dependent writer would differ.
-            std::thread::sleep(std::time::Duration::from_millis(2100));
-            let b = export(exporter, &project(), language);
-            assert_eq!(a, b, "{} {language:?}", exporter.file_extension());
+fn exports_match_the_golden_files() {
+    let update = std::env::var_os("DIMO_UPDATE_GOLDEN").is_some();
+    for &(name, xlsx, language) in GOLDEN {
+        let exporter: &dyn Exporter = if xlsx {
+            &XlsxListExporter
+        } else {
+            &CsvListExporter
+        };
+        let bytes = export(exporter, &project(), language);
+        assert_eq!(bytes, export(exporter, &project(), language), "{name}");
+        let path = golden_path(name);
+        if update {
+            std::fs::write(&path, &bytes).unwrap();
         }
+        let committed = std::fs::read(&path).expect("golden file in tests/golden");
+        assert!(
+            committed == bytes,
+            "{name} differs from tests/golden/{name}. If the change is intended, regenerate with \
+             DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list"
+        );
     }
 }
 
 #[test]
 fn xlsx_zip_entries_have_a_fixed_time() {
-    let bytes = export(&XlsxListExporter, &project(), Language::English);
+    let bytes = export(&XlsxListExporter, &project(), Language::En);
     let mut archive = entries(&bytes);
     for i in 0..archive.len() {
         let file = archive.by_index(i).unwrap();
@@ -266,12 +295,12 @@ fn structured_numbers_export_as_text_in_number_order() {
             _ => {}
         }
     }
-    let bytes = export(&CsvListExporter, &project, Language::English);
+    let bytes = export(&CsvListExporter, &project, Language::En);
     let mut reader = csv::Reader::from_reader(bytes.as_slice());
     let numbers: Vec<String> = reader.records().map(|r| r.unwrap()[0].to_owned()).collect();
     assert_eq!(numbers, ["1", "2", "2A", "2.1"]);
 
-    let bytes = export(&XlsxListExporter, &project, Language::English);
+    let bytes = export(&XlsxListExporter, &project, Language::En);
     let strings = read_entry(&bytes, "xl/sharedStrings.xml");
     assert!(
         strings.contains(">2A<") && strings.contains(">2.1<"),

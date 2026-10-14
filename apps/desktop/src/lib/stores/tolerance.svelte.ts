@@ -14,7 +14,7 @@ import {
   type Characteristic,
   type Command,
   type CommandError,
-  type ExplainLanguage,
+  type Language,
   type HistoryEntry,
   type LegOutcome,
   type LegSet,
@@ -36,7 +36,7 @@ type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandEr
 /** The tolerance commands. The generated `commands` in the app, fakes in tests. */
 export interface ToleranceApi {
   toleranceTables(): Promise<Result<ToleranceTableInfo[]>>;
-  explainCharacteristic(id: CharId, language: ExplainLanguage): Promise<Result<string | null>>;
+  explainCharacteristic(id: CharId, language: Language): Promise<Result<string | null>>;
   characteristicHistory(id: CharId): Promise<Result<HistoryEntry[]>>;
   reinterpretCharacteristics(ids: CharId[]): Promise<Result<Reinterpreted>>;
   importToleranceTable(): Promise<Result<TableImport>>;
@@ -307,7 +307,7 @@ export class ToleranceStore {
   }
 
   /** The explanation of a characteristic's limits in `language`, `null` without a rule. */
-  async explanation(id: CharId, language: ExplainLanguage): Promise<Result<string | null>> {
+  async explanation(id: CharId, language: Language): Promise<Result<string | null>> {
     return call(() => this.#api.explainCharacteristic(id, language));
   }
 

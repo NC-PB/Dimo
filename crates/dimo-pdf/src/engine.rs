@@ -7,12 +7,12 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError, mpsc};
 
 use dimo_core::geometry::OrientedBox;
+use dimo_core::{Rect, Size};
 use pdfium_render::prelude::{
     PdfColor, PdfDocument, PdfPage, PdfRenderConfig, Pdfium, PdfiumError,
 };
 
 use crate::PdfError;
-use crate::geometry::{SheetRect, SheetSize};
 use crate::hash::ContentHash;
 use crate::library::resolve_library_path;
 use crate::overlay::BalloonOverlay;
@@ -71,12 +71,12 @@ type Reply<T> = mpsc::Sender<Result<T, PdfError>>;
 enum Request {
     Open {
         bytes: Vec<u8>,
-        reply: Reply<(u64, Vec<SheetSize>)>,
+        reply: Reply<(u64, Vec<Size>)>,
     },
     Render {
         doc: u64,
         sheet: usize,
-        region: SheetRect,
+        region: Rect,
         zoom: f64,
         reply: Reply<RgbaImage>,
     },
@@ -206,7 +206,7 @@ impl PdfEngine {
 pub struct Document {
     id: u64,
     hash: ContentHash,
-    sheets: Vec<SheetSize>,
+    sheets: Vec<Size>,
     engine: PdfEngine,
 }
 
@@ -231,12 +231,12 @@ impl Document {
     }
 
     /// Sizes of all sheets in sheet units.
-    pub fn sheet_sizes(&self) -> &[SheetSize] {
+    pub fn sheet_sizes(&self) -> &[Size] {
         &self.sheets
     }
 
     /// Size of one sheet in sheet units.
-    pub fn sheet_size(&self, sheet: usize) -> Result<SheetSize, PdfError> {
+    pub fn sheet_size(&self, sheet: usize) -> Result<Size, PdfError> {
         self.sheets
             .get(sheet)
             .copied()
@@ -264,7 +264,7 @@ impl Document {
     pub fn render_region(
         &self,
         sheet: usize,
-        region: SheetRect,
+        region: Rect,
         zoom: f64,
     ) -> Result<RgbaImage, PdfError> {
         self.sheet_size(sheet)?;
@@ -274,22 +274,17 @@ impl Document {
             return self.render_raw(sheet, region, zoom);
         }
         let pad = f64::from(margin) / zoom;
-        let padded = SheetRect::new(
-            region.x - pad,
-            region.y - pad,
-            region.width + pad,
-            region.height + pad,
+        let padded = Rect::new(
+            region.origin.x - pad,
+            region.origin.y - pad,
+            region.size.width + pad,
+            region.size.height + pad,
         );
         let image = self.render_raw(sheet, padded, zoom)?;
         Ok(crop(&image, margin, margin, width, height))
     }
 
-    fn render_raw(
-        &self,
-        sheet: usize,
-        region: SheetRect,
-        zoom: f64,
-    ) -> Result<RgbaImage, PdfError> {
+    fn render_raw(&self, sheet: usize, region: Rect, zoom: f64) -> Result<RgbaImage, PdfError> {
         output_size(region, zoom)?;
         self.engine.call(|reply| Request::Render {
             doc: self.id,
@@ -360,20 +355,28 @@ impl Drop for Document {
 }
 
 /// Validates a render request and returns the output size in pixels.
-fn output_size(region: SheetRect, zoom: f64) -> Result<(u32, u32), PdfError> {
+fn output_size(region: Rect, zoom: f64) -> Result<(u32, u32), PdfError> {
     if !(zoom.is_finite() && zoom > 0.0) {
         return Err(PdfError::InvalidRender(format!(
             "zoom must be positive, got {zoom}"
         )));
     }
-    let values = [region.x, region.y, region.width, region.height];
-    if values.iter().any(|v| !v.is_finite()) || region.width <= 0.0 || region.height <= 0.0 {
+    let values = [
+        region.origin.x,
+        region.origin.y,
+        region.size.width,
+        region.size.height,
+    ];
+    if values.iter().any(|v| !v.is_finite())
+        || region.size.width <= 0.0
+        || region.size.height <= 0.0
+    {
         return Err(PdfError::InvalidRender(format!(
             "region must be finite with positive size, got {region:?}"
         )));
     }
-    let width = (region.width * zoom).round().max(1.0);
-    let height = (region.height * zoom).round().max(1.0);
+    let width = (region.size.width * zoom).round().max(1.0);
+    let height = (region.size.height * zoom).round().max(1.0);
     let max = f64::from(MAX_RENDER_SIDE);
     if width > max || height > max {
         return Err(PdfError::InvalidRender(format!(
@@ -544,21 +547,21 @@ fn with_page<T>(
 /// loading the page, so opening a project does not parse the content of every sheet
 /// (T0.9: 2.0 s instead of 0.2 s for 50 dense A0 sheets). The size is the same one
 /// `PdfPage::width` reports. If PDFium refuses, the page is loaded as a fallback.
-fn sheet_sizes(doc: &PdfDocument<'_>) -> Vec<SheetSize> {
+fn sheet_sizes(doc: &PdfDocument<'_>) -> Vec<Size> {
     let pages = doc.pages();
     pages
         .as_range()
         .map(|index| match pages.page_size(index) {
-            Ok(rect) => SheetSize {
+            Ok(rect) => Size {
                 width: f64::from(rect.width().value),
                 height: f64::from(rect.height().value),
             },
             Err(_) => pages.get(index).map_or(
-                SheetSize {
+                Size {
                     width: 0.0,
                     height: 0.0,
                 },
-                |page| SheetSize {
+                |page| Size {
                     width: f64::from(page.width().value),
                     height: f64::from(page.height().value),
                 },
@@ -567,7 +570,7 @@ fn sheet_sizes(doc: &PdfDocument<'_>) -> Vec<SheetSize> {
         .collect()
 }
 
-fn render(page: &PdfPage<'_>, region: SheetRect, zoom: f64) -> Result<RgbaImage, PdfError> {
+fn render(page: &PdfPage<'_>, region: Rect, zoom: f64) -> Result<RgbaImage, PdfError> {
     let (width, height) = output_size(region, zoom)?;
 
     // FPDF_RenderPageBitmapWithMatrix maps the displayed page to device space with one unit per
@@ -579,8 +582,8 @@ fn render(page: &PdfPage<'_>, region: SheetRect, zoom: f64) -> Result<RgbaImage,
     let matrix = (
         zoom as f32,
         zoom as f32,
-        (-region.x * zoom) as f32,
-        (-region.y * zoom) as f32,
+        (-region.origin.x * zoom) as f32,
+        (-region.origin.y * zoom) as f32,
     );
     // Both sides are at most MAX_RENDER_SIDE, which fits an i32.
     #[allow(clippy::cast_possible_wrap)]
@@ -629,24 +632,24 @@ mod tests {
 
     #[test]
     fn output_size_rounds() {
-        let r = SheetRect::new(10.0, 20.0, 256.0, 100.4);
+        let r = Rect::new(10.0, 20.0, 256.0, 100.4);
         assert_eq!(output_size(r, 1.0).unwrap(), (256, 100));
         assert_eq!(output_size(r, 0.5).unwrap(), (128, 50));
         // Tiny regions still produce one pixel.
         assert_eq!(
-            output_size(SheetRect::new(0.0, 0.0, 0.1, 0.1), 1.0).unwrap(),
+            output_size(Rect::new(0.0, 0.0, 0.1, 0.1), 1.0).unwrap(),
             (1, 1)
         );
     }
 
     #[test]
     fn output_size_rejects_bad_input() {
-        let r = SheetRect::new(0.0, 0.0, 100.0, 100.0);
+        let r = Rect::new(0.0, 0.0, 100.0, 100.0);
         assert!(output_size(r, 0.0).is_err());
         assert!(output_size(r, f64::NAN).is_err());
         assert!(output_size(r, -1.0).is_err());
-        assert!(output_size(SheetRect::new(0.0, 0.0, -1.0, 10.0), 1.0).is_err());
-        assert!(output_size(SheetRect::new(f64::INFINITY, 0.0, 1.0, 10.0), 1.0).is_err());
+        assert!(output_size(Rect::new(0.0, 0.0, -1.0, 10.0), 1.0).is_err());
+        assert!(output_size(Rect::new(f64::INFINITY, 0.0, 1.0, 10.0), 1.0).is_err());
         assert!(output_size(r, 200.0).is_err());
     }
 
@@ -746,7 +749,7 @@ mod page_cache_tests {
     }
 
     fn render_sheet(doc: &Document, sheet: usize) -> RgbaImage {
-        doc.render_region(sheet, SheetRect::new(0.0, 0.0, 100.0, 100.0), 1.0)
+        doc.render_region(sheet, Rect::new(0.0, 0.0, 100.0, 100.0), 1.0)
             .unwrap()
     }
 
@@ -832,7 +835,7 @@ mod page_cache_tests {
         let result = engine.call(|reply| Request::Render {
             doc: doc.id,
             sheet: 5,
-            region: SheetRect::new(0.0, 0.0, 10.0, 10.0),
+            region: Rect::new(0.0, 0.0, 10.0, 10.0),
             zoom: 1.0,
             reply,
         });

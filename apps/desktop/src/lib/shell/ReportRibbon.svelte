@@ -1,6 +1,6 @@
 <script lang="ts">
   import { LOCALE_NAMES, m } from "$lib/i18n";
-  import type { ReportFormat, ReportLanguage } from "$lib/ipc/bindings";
+  import type { ReportFormat, Language } from "$lib/ipc/bindings";
   import { exportStore } from "$lib/stores/export.svelte";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import CommandButton from "./CommandButton.svelte";
@@ -20,7 +20,7 @@
     { value: "pdf", label: () => m.export_format_pdf() },
     { value: "xlsx", label: () => m.export_format_xlsx() },
   ];
-  const LANGUAGES: readonly ReportLanguage[] = ["en", "de"];
+  const LANGUAGES: readonly Language[] = ["en", "de"];
 
   const prefs = $derived(settingsStore.current.export);
   const format = $derived(

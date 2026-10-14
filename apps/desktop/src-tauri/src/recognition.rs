@@ -20,13 +20,13 @@ use dimo_core::characteristic::FieldValue;
 use dimo_core::derivation::ToleranceDerivation;
 use dimo_core::geometry::OrientedBox;
 use dimo_core::proposal::{BalloonPlacement, ParseIssue, Proposal};
-use dimo_core::{Length, SheetId, Unit};
+use dimo_core::{Language, Length, SheetId, Unit};
 use dimo_detect::{
     BoxSelectContext, CalloutOnly, Interpreter, ToleranceEngine, box_select_with_notes,
     read_callout,
 };
 use dimo_pdf::tiles::TileService;
-use dimo_tolerance::{ExplainValues, Language, Measures, Note, TableSet, ToleranceContext};
+use dimo_tolerance::{ExplainValues, Measures, Note, TableSet, ToleranceContext};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -37,25 +37,6 @@ use crate::ipc::{CommandError, tile_service};
 use crate::project::with_session;
 use crate::session::RecognitionTarget;
 use crate::tiles::TileState;
-
-/// Language of explanations, the UI language of the frontend.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum ExplainLanguage {
-    /// English.
-    En,
-    /// German.
-    De,
-}
-
-impl From<ExplainLanguage> for Language {
-    fn from(language: ExplainLanguage) -> Self {
-        match language {
-            ExplainLanguage::En => Self::English,
-            ExplainLanguage::De => Self::German,
-        }
-    }
-}
 
 /// Something the tolerance engine could not decide, shown with a proposal, never stored.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -156,7 +137,7 @@ struct Values {
 fn explanation(
     derivation: Option<&ToleranceDerivation>,
     v: &Values,
-    language: ExplainLanguage,
+    language: Language,
 ) -> Option<String> {
     let values = ExplainValues {
         nominal: v.nominal,
@@ -167,7 +148,7 @@ fn explanation(
         lower_limit: v.lower_limit,
         shorter_leg: v.shorter_leg,
     };
-    derivation.map(|d| dimo_tolerance::explain(d, &values, language.into()))
+    derivation.map(|d| dimo_tolerance::explain(d, &values, language))
 }
 
 fn check_region(region: &OrientedBox) -> Result<(), CommandError> {
@@ -197,7 +178,7 @@ pub fn propose(
     sheet: SheetId,
     region: OrientedBox,
     placement: BalloonPlacement,
-    language: ExplainLanguage,
+    language: Language,
 ) -> Result<Vec<ProposalView>, CommandError> {
     check_region(&region)?;
     let doc = tiles
@@ -289,7 +270,7 @@ pub fn read_typed(
     target: &RecognitionTarget,
     text: &str,
     shorter_leg: Option<Length>,
-    language: ExplainLanguage,
+    language: Language,
 ) -> TypedCallout {
     let interpreter = interpreter(target);
     let r = read_callout(
@@ -326,7 +307,7 @@ pub async fn propose_from_region(
     sheet: SheetId,
     region: OrientedBox,
     placement: BalloonPlacement,
-    language: ExplainLanguage,
+    language: Language,
 ) -> Result<Vec<ProposalView>, CommandError> {
     let tiles = tile_service(&app.state::<TileState>())?;
     let target = with_session(app, move |_, session| session.recognition_target(sheet)).await?;
@@ -351,7 +332,7 @@ pub async fn read_callout_text(
     sheet: SheetId,
     text: String,
     shorter_leg: Option<LegInput>,
-    language: ExplainLanguage,
+    language: Language,
 ) -> Result<TypedCallout, CommandError> {
     let target = with_session(app, move |_, session| session.recognition_target(sheet)).await?;
     let leg = resolve_leg(shorter_leg.as_ref(), target.unit)?;

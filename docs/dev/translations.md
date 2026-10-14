@@ -201,7 +201,7 @@ with "du"; short hints may use the infinitive ("Leer lassen"), never "Sie".
 
 - Export and report languages are chosen per export, independent of the UI language (D-32).
   The headers of the characteristic list are defined in Rust
-  (`crates/dimo-io/src/export/columns.rs`, `Language`); a new export language needs a change
-  there and in `ReportLanguage` of `apps/desktop/src-tauri/src/settings.rs`.
+  (`crates/dimo-io/src/export/columns.rs`); a new export language needs a change there and in
+  the one `Language` type of `crates/dimo-core/src/language.rs`.
 - Enumeration values in exports (`linear`, `diameter`, ...) are stable identifiers and are never
   translated.

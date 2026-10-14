@@ -10,7 +10,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
 
-use dimo_core::ReportFormat;
+use dimo_core::{Language, ReportFormat};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager, WebviewWindow};
@@ -46,35 +46,6 @@ impl Theme {
     }
 }
 
-/// Language of column headers and fixed texts in exports, chosen per export (D-32).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum ReportLanguage {
-    /// English.
-    #[default]
-    En,
-    /// German.
-    De,
-}
-
-impl From<ReportLanguage> for dimo_report::Language {
-    fn from(language: ReportLanguage) -> Self {
-        match language {
-            ReportLanguage::En => Self::En,
-            ReportLanguage::De => Self::De,
-        }
-    }
-}
-
-impl From<ReportLanguage> for dimo_io::export::Language {
-    fn from(language: ReportLanguage) -> Self {
-        match language {
-            ReportLanguage::En => Self::English,
-            ReportLanguage::De => Self::German,
-        }
-    }
-}
-
 /// How balloons are written into the ballooned PDF (D-33).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -91,7 +62,7 @@ pub enum PdfBalloons {
 #[serde(rename_all = "snake_case")]
 pub struct ExportPreferences {
     /// Language of the characteristic list headers and of the reports (D-32).
-    pub language: ReportLanguage,
+    pub language: Language,
     /// Balloons as page content or annotations.
     pub pdf_balloons: PdfBalloons,
     /// Blank result columns of a check sheet for a project without samples, 1 to 10
@@ -108,7 +79,7 @@ pub struct ExportPreferences {
 impl Default for ExportPreferences {
     fn default() -> Self {
         Self {
-            language: ReportLanguage::default(),
+            language: Language::default(),
             pdf_balloons: PdfBalloons::default(),
             blank_columns: dimo_report::DEFAULT_BLANK_COLUMNS,
             check_sheet_format: ReportFormat::Pdf,
@@ -348,7 +319,7 @@ mod tests {
             user_name: "Anna Muster".into(),
             company_name: "Muster GmbH".into(),
             export: ExportPreferences {
-                language: ReportLanguage::De,
+                language: Language::De,
                 pdf_balloons: PdfBalloons::Annotations,
                 blank_columns: 5,
                 check_sheet_format: ReportFormat::Xlsx,
@@ -368,7 +339,7 @@ mod tests {
         assert_eq!(loaded.export, ExportPreferences::default());
         std::fs::write(&path, r#"{"export": {"language": "de"}}"#).unwrap();
         let loaded = AppSettings::load(&path);
-        assert_eq!(loaded.export.language, ReportLanguage::De);
+        assert_eq!(loaded.export.language, Language::De);
         assert_eq!(loaded.export.pdf_balloons, PdfBalloons::PageContent);
         assert_eq!(
             loaded.export.blank_columns, 3,

@@ -9,14 +9,13 @@
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use dimo_core::Language;
 use dimo_core::characteristic::{FieldValue, Origin, ToleranceRule};
 use dimo_core::geometry::{OrientedBox, Point, Size};
 use dimo_core::proposal::BalloonPlacement;
 use dimo_core::{Command, Environment as _, SheetId};
 use dimo_desktop::ipc::CommandError;
-use dimo_desktop::recognition::{
-    ExplainLanguage, InterpreterNote, parse_shorter_leg, propose, read_typed,
-};
+use dimo_desktop::recognition::{InterpreterNote, parse_shorter_leg, propose, read_typed};
 use dimo_desktop::session::AppSession;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
@@ -71,17 +70,7 @@ fn box_select_accept_undo_redo() {
     let sheet = session.project().unwrap().revisions[0].sheets[0].id;
     let target = session.recognition_target(sheet).unwrap();
 
-    // Warm: the page is loaded once; then a box select is a region query on the cached page.
-    propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
-    let started = Instant::now();
-    let views = propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
-    let took = started.elapsed();
-    assert!(
-        took < Duration::from_millis(50),
-        "box select took {took:?}, the direct call needs to stay below 50 ms"
-    );
-    eprintln!("box select on test_drawing_1: {took:?}");
-
+    let views = propose(&tiles, &target, sheet, C03, PLACEMENT, Language::En).unwrap();
     assert_eq!(views.len(), 1);
     // The tolerance engine explains the limits and finds the printed deviations differ from
     // ISO 286 H7 (T2.5).
@@ -139,16 +128,9 @@ fn box_select_accept_undo_redo() {
         ..C03
     };
     assert!(
-        propose(
-            &tiles,
-            &target,
-            sheet,
-            empty,
-            PLACEMENT,
-            ExplainLanguage::En
-        )
-        .unwrap()
-        .is_empty()
+        propose(&tiles, &target, sheet, empty, PLACEMENT, Language::En)
+            .unwrap()
+            .is_empty()
     );
     // A region without area is refused.
     let flat = OrientedBox {
@@ -159,9 +141,35 @@ fn box_select_accept_undo_redo() {
         ..C03
     };
     assert!(matches!(
-        propose(&tiles, &target, sheet, flat, PLACEMENT, ExplainLanguage::En),
+        propose(&tiles, &target, sheet, flat, PLACEMENT, Language::En),
         Err(CommandError::InvalidArgument { .. })
     ));
+}
+
+/// Performance test, ignored in the default run (`scripts/perf-tests.sh`): a box select on a
+/// loaded page stays below 50 ms.
+#[test]
+#[ignore = "performance test, run with scripts/perf-tests.sh"]
+fn perf_box_select_under_50_ms() {
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    let target = session.recognition_target(sheet).unwrap();
+
+    // Warm: the page is loaded once; then a box select is a region query on the cached page.
+    propose(&tiles, &target, sheet, C03, PLACEMENT, Language::En).unwrap();
+    let started = Instant::now();
+    let views = propose(&tiles, &target, sheet, C03, PLACEMENT, Language::En).unwrap();
+    let took = started.elapsed();
+    eprintln!("box select on test_drawing_1: {took:?}");
+    assert_eq!(views.len(), 1);
+    assert!(
+        took < Duration::from_millis(50),
+        "box select took {took:?}, the direct call needs to stay below 50 ms"
+    );
 }
 
 /// M2 decision 5: typed text gives the same values as the box selection.
@@ -174,7 +182,7 @@ fn typed_text_reads_like_box_select() {
         .unwrap();
     let sheet = session.project().unwrap().revisions[0].sheets[0].id;
     let target = session.recognition_target(sheet).unwrap();
-    let typed = read_typed(&target, "Ø30 H7 +0.0203 -0", None, ExplainLanguage::De);
+    let typed = read_typed(&target, "Ø30 H7 +0.0203 -0", None, Language::De);
     assert_eq!(typed.parse_error, None);
     assert!(
         typed.explanation.as_deref().is_some_and(|e| !e.is_empty()),
@@ -183,7 +191,7 @@ fn typed_text_reads_like_box_select() {
     assert!(typed.values.contains(&FieldValue::UpperLimit(
         Some(Decimal::new(300_203, 4)).into()
     )));
-    let note = read_typed(&target, "BREAK ALL SHARP EDGES", None, ExplainLanguage::En);
+    let note = read_typed(&target, "BREAK ALL SHARP EDGES", None, Language::En);
     assert!(note.parse_error.is_some());
     assert_eq!(
         note.values,
@@ -228,7 +236,7 @@ fn shorter_leg_gives_angle_limits() {
     let target = session.recognition_target(sheet).unwrap();
     assert_eq!(target.unit, Unit::Mm);
 
-    let unknown = read_typed(&target, "30°", None, ExplainLanguage::En);
+    let unknown = read_typed(&target, "30°", None, Language::En);
     assert_eq!(unknown.notes, [InterpreterNote::ShorterLegUnknown]);
     assert!(
         unknown
@@ -244,7 +252,7 @@ fn shorter_leg_gives_angle_limits() {
             unit: Unit::Mm
         })
     );
-    let typed = read_typed(&target, "30°", leg, ExplainLanguage::En);
+    let typed = read_typed(&target, "30°", leg, Language::En);
     assert!(typed.notes.is_empty(), "{typed:?}");
     assert!(
         typed
@@ -263,7 +271,7 @@ fn shorter_leg_gives_angle_limits() {
             && explanation.contains("Limits 29.5° to 30.5°"),
         "{explanation}"
     );
-    let german = read_typed(&target, "30°", leg, ExplainLanguage::De);
+    let german = read_typed(&target, "30°", leg, Language::De);
     let explanation = german.explanation.unwrap_or_default();
     assert!(
         explanation.contains("40 mm lang") && explanation.contains("Grenzmaße 29,5° bis 30,5°"),

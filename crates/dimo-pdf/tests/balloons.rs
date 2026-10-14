@@ -8,10 +8,11 @@
 
 use std::path::PathBuf;
 
+use dimo_core::Rect;
 use dimo_core::truth::TruthFile;
 use dimo_pdf::{
     Balloon, BalloonOutput, BalloonOverlay, BalloonShape, ContentHash, Leader, PdfDate, PdfEngine,
-    PdfError, Rgb, RgbaImage, SheetBalloons, SheetPoint, SheetRect, Stroke, TextRun,
+    PdfError, Rgb, RgbaImage, SheetBalloons, SheetPoint, Stroke, TextRun,
 };
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
@@ -182,8 +183,8 @@ fn ballooned_test_drawing_1_keeps_text() {
         assert!((run.font_size - 10.0).abs() < 1e-3, "{run:?}");
         // The number is centered on the balloon.
         let (cx, cy) = (
-            run.bbox.x + run.bbox.width / 2.0,
-            run.bbox.y + run.bbox.height / 2.0,
+            run.bbox.origin.x + run.bbox.size.width / 2.0,
+            run.bbox.origin.y + run.bbox.size.height / 2.0,
         );
         assert!((cx - balloon.center.x).abs() < 0.01, "{run:?}");
         assert!((cy - balloon.center.y).abs() < 1.5, "{run:?}");
@@ -332,7 +333,7 @@ fn ballooned_sheet_snapshot() {
     let doc = engine
         .open(ballooned(&engine, BalloonOutput::PageContent))
         .unwrap();
-    let full = SheetRect::full(doc.sheet_size(0).unwrap());
+    let full = Rect::full(doc.sheet_size(0).unwrap());
     let img = doc.render_region(0, full, 0.25).unwrap();
     assert_eq!((img.width(), img.height()), (396, 306));
     let margin = fingerprint_margin(&img, 12);
@@ -433,7 +434,7 @@ fn balloons_follow_crop_box_and_rotation() {
                 .unwrap();
             let doc = engine.open(out).unwrap();
             let img = doc
-                .render_region(0, SheetRect::new(90.0, 40.0, 60.0, 40.0), 4.0)
+                .render_region(0, Rect::new(90.0, 40.0, 60.0, 40.0), 4.0)
                 .unwrap();
             // Box edges at pixels x 40..200, y 40..120; corners black, outside white.
             for (x, y) in [(41, 41), (198, 41), (41, 118), (198, 118)] {
@@ -446,7 +447,7 @@ fn balloons_follow_crop_box_and_rotation() {
                 let runs = doc.text_runs(0).unwrap();
                 let run = runs.iter().find(|r| r.text == "7").unwrap();
                 assert_eq!(run.rotation, 0.0, "{page}");
-                let cx = run.bbox.x + run.bbox.width / 2.0;
+                let cx = run.bbox.origin.x + run.bbox.size.width / 2.0;
                 assert!((cx - 120.0).abs() < 0.01, "{page} {run:?}");
             }
         }

@@ -8,10 +8,11 @@
 
 use std::path::PathBuf;
 
+use dimo_core::Language;
 use dimo_core::{BalloonShape, BalloonStyleOverride, Command, FieldValue, Point};
 use dimo_desktop::export::{ExportFormat, ExportRequest, render};
 use dimo_desktop::session::AppSession;
-use dimo_desktop::settings::{PdfBalloons, ReportLanguage};
+use dimo_desktop::settings::PdfBalloons;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
 
@@ -39,7 +40,7 @@ fn drawing() -> PathBuf {
 fn request(format: ExportFormat) -> ExportRequest {
     ExportRequest {
         format,
-        language: ReportLanguage::En,
+        language: Language::En,
         pdf_balloons: PdfBalloons::PageContent,
         blank_columns: 3,
         issued: false,
@@ -107,8 +108,8 @@ fn ballooned_pdf_has_the_numbers_and_is_deterministic() {
     for (x, number) in [(150.0, "1"), (270.0, "2"), (390.0, "3")] {
         assert!(
             runs.iter().any(|r| r.text == number
-                && (r.bbox.x + r.bbox.width / 2.0 - x).abs() < 3.0
-                && (r.bbox.y + r.bbox.height / 2.0 - 120.0).abs() < 3.0),
+                && (r.bbox.origin.x + r.bbox.size.width / 2.0 - x).abs() < 3.0
+                && (r.bbox.origin.y + r.bbox.size.height / 2.0 - 120.0).abs() < 3.0),
             "balloon {number} not found at its position"
         );
     }
@@ -151,7 +152,7 @@ fn characteristic_lists_contain_the_rows() {
         "{csv}"
     );
     let german = ExportRequest {
-        language: ReportLanguage::De,
+        language: Language::De,
         ..request(ExportFormat::Csv)
     };
     let csv_de = String::from_utf8(render(&snapshot, &german, None).unwrap()).unwrap();

@@ -20,8 +20,9 @@ use tauri::{AppHandle, WebviewWindow};
 
 use crate::ipc::{CommandError, RejectReason};
 use crate::project::{emit_patched, with_session};
-use crate::recognition::{ExplainLanguage, parse_shorter_leg, shipped};
+use crate::recognition::{parse_shorter_leg, shipped};
 use crate::session::{AppSession, ProjectPatched};
+use dimo_core::Language;
 
 /// Largest custom table file read, as in the project container.
 const MAX_TABLE_BYTES: u64 = 16 * 1024 * 1024;
@@ -194,7 +195,7 @@ pub fn tables(session: &AppSession) -> Result<Vec<ToleranceTableInfo>, CommandEr
 pub fn explanation(
     session: &AppSession,
     id: CharId,
-    language: ExplainLanguage,
+    language: Language,
 ) -> Result<Option<String>, CommandError> {
     let project = session.project().ok_or(CommandError::NoProject)?;
     let c = project
@@ -204,7 +205,7 @@ pub fn explanation(
         })?;
     Ok(c.derivation
         .as_ref()
-        .map(|d| dimo_tolerance::explain(d, &ExplainValues::from(c), language.into())))
+        .map(|d| dimo_tolerance::explain(d, &ExplainValues::from(c), language)))
 }
 
 /// Re-interprets the characteristics `ids` with the current settings as one undo step; limits
@@ -348,7 +349,7 @@ pub async fn tolerance_tables(app: AppHandle) -> Result<Vec<ToleranceTableInfo>,
 pub async fn explain_characteristic(
     app: AppHandle,
     id: CharId,
-    language: ExplainLanguage,
+    language: Language,
 ) -> Result<Option<String>, CommandError> {
     with_session(app, move |_, session| explanation(session, id, language)).await
 }

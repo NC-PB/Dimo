@@ -17,14 +17,13 @@
 //! The geometry functions are pure and tested without PDFium; [`region_text`] collects the
 //! characters and rectangles from a loaded page.
 
-use dimo_core::geometry::{OrientedBox, Point, Size};
+use dimo_core::geometry::{OrientedBox, Point, Rect, Size};
 use pdfium_render::prelude::{
     PdfPage, PdfPageObject, PdfPageObjectCommon, PdfPageObjectsCommon, PdfPathSegmentType,
     PdfPathSegments,
 };
 
 use crate::PdfError;
-use crate::geometry::SheetRect;
 use crate::page_space::PageToSheet;
 use crate::text::{
     Glyph, TextRun, across, along, corners, glyph, merge_runs_indexed, page_to_sheet, text_error,
@@ -44,7 +43,7 @@ pub struct TextChar {
     /// The character as extracted (U+FFFD when the PDF has no Unicode value for it).
     pub ch: char,
     /// Loose box (advance width, font ascent to descent), axis aligned on the sheet.
-    pub bbox: SheetRect,
+    pub bbox: Rect,
     /// Rotation of the baseline in degrees, counterclockwise on the sheet, in `[0, 360)`.
     pub rotation: f64,
     /// Font size in sheet units.
@@ -139,16 +138,16 @@ fn run_frame(run: &TextRun, glyphs: &[Glyph]) -> OrientedBox {
     if !a.0.is_finite() {
         // No visible character: fall back to the axis aligned box.
         let b = run.bbox;
-        a = (b.x, b.x + b.width);
-        c = (b.y, b.y + b.height);
+        a = (b.origin.x, b.origin.x + b.size.width);
+        c = (b.origin.y, b.origin.y + b.size.height);
         return OrientedBox {
             center: Point {
                 x: f64::midpoint(a.0, a.1),
                 y: f64::midpoint(c.0, c.1),
             },
             size: Size {
-                width: b.width,
-                height: b.height,
+                width: b.size.width,
+                height: b.size.height,
             },
             angle: 0.0,
         };
@@ -191,12 +190,15 @@ pub(crate) fn contains(b: &OrientedBox, p: (f64, f64)) -> bool {
     x.abs() <= b.size.width / 2.0 + EPS && y.abs() <= b.size.height / 2.0 + EPS
 }
 
-fn rect_center(r: SheetRect) -> (f64, f64) {
-    (r.x + r.width / 2.0, r.y + r.height / 2.0)
+fn rect_center(r: Rect) -> (f64, f64) {
+    (
+        r.origin.x + r.size.width / 2.0,
+        r.origin.y + r.size.height / 2.0,
+    )
 }
 
 /// Axis aligned bounds of an oriented box.
-fn aabb(b: &OrientedBox) -> SheetRect {
+fn aabb(b: &OrientedBox) -> Rect {
     let pts = b.corners();
     let (mut x0, mut y0, mut x1, mut y1) = (
         f64::INFINITY,
@@ -210,7 +212,7 @@ fn aabb(b: &OrientedBox) -> SheetRect {
         x1 = x1.max(p.x);
         y1 = y1.max(p.y);
     }
-    SheetRect::new(x0, y0, x1 - x0, y1 - y0)
+    Rect::new(x0, y0, x1 - x0, y1 - y0)
 }
 
 /// Whether the rectangle with corners `rect` is a frame tightly around `frame` (see the module
@@ -259,7 +261,7 @@ pub(crate) fn is_tight_frame(frame: &OrientedBox, em: f64, rect: &[(f64, f64); 4
 fn closed_rectangles(
     page: &PdfPage<'_>,
     to_sheet: &PageToSheet,
-    near: &SheetRect,
+    near: &Rect,
 ) -> Vec<[(f64, f64); 4]> {
     let mut out = Vec::new();
     for object in page.objects().iter() {
@@ -316,8 +318,11 @@ fn closed_rectangles(
     out
 }
 
-fn overlaps(a: &SheetRect, b: &SheetRect) -> bool {
-    a.x <= b.x + b.width && b.x <= a.x + a.width && a.y <= b.y + b.height && b.y <= a.y + a.height
+fn overlaps(a: &Rect, b: &Rect) -> bool {
+    a.origin.x <= b.origin.x + b.size.width
+        && b.origin.x <= a.origin.x + a.size.width
+        && a.origin.y <= b.origin.y + b.size.height
+        && b.origin.y <= a.origin.y + a.size.height
 }
 
 /// The four corners if `points` (one sub path) is a rectangle: four corners with right angles,
@@ -362,7 +367,7 @@ mod tests {
                 let gx = x + advance * i as f64;
                 Glyph {
                     ch,
-                    bbox: SheetRect::new(gx, y - 0.8 * size, advance, size),
+                    bbox: Rect::new(gx, y - 0.8 * size, advance, size),
                     origin: (gx, y),
                     rotation: 0.0,
                     font_name: "Sans".to_owned(),
@@ -382,7 +387,7 @@ mod tests {
                 let gy = y - ADVANCE * i as f64;
                 Glyph {
                     ch,
-                    bbox: SheetRect::new(x - 8.0, gy - ADVANCE, SIZE, ADVANCE),
+                    bbox: Rect::new(x - 8.0, gy - ADVANCE, SIZE, ADVANCE),
                     origin: (x, gy),
                     rotation: 90.0,
                     font_name: "Sans".to_owned(),

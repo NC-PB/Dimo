@@ -26,8 +26,8 @@
 
 use std::fmt::Write as _;
 
-use dimo_core::ReportKind;
-use rust_decimal::Decimal;
+use dimo_core::decimal::spreadsheet_number;
+use dimo_core::{Language, ReportKind};
 use rust_xlsxwriter::{
     DocProperties, ExcelDateTime, Format, FormatAlign, FormatBorder, Workbook, Worksheet, XlsxError,
 };
@@ -35,7 +35,7 @@ use rust_xlsxwriter::{
 use crate::model::{
     Cell, CellType, CellVerdict, Counts, GroupVerdict, Row, SAMPLES_PER_BLOCK, SampleColumn,
 };
-use crate::{Language, ReportError, ReportModel, TemplateSet};
+use crate::{ReportError, ReportModel, TemplateSet};
 
 /// Selects a text field of a sample column.
 type SampleField = fn(&SampleColumn) -> &str;
@@ -45,9 +45,6 @@ type CountField = fn(&Counts) -> &str;
 
 /// Number of characteristic columns A to H.
 const FIXED_COLUMNS: u16 = 8;
-
-/// Most significant digits a decimal can have to be written as a number cell (as the T1.4 list).
-const MAX_NUMBER_DIGITS: usize = 15;
 
 /// Sheet names are limited to 31 characters.
 const MAX_SHEET_NAME: usize = 31;
@@ -454,7 +451,7 @@ impl<'a> Builder<'a> {
         sheet.write_string_with_format(row, 5, &r.unit, &text)?;
         let mut rule = match r.rule {
             Some(code) => {
-                let label = labels.nested("rules", rule_key(code))?;
+                let label = labels.nested("rules", &code.code())?;
                 join(" ", [label, &r.rule_detail])
             }
             None => String::new(),
@@ -725,7 +722,7 @@ fn write_decimal(
         Language::De => text.replace(',', "."),
     };
     let decimal = dimo_core::decimal::parse_decimal(&normalized);
-    let number = decimal.and_then(number_value);
+    let number = decimal.and_then(spreadsheet_number);
     if let (Some(d), Some(number)) = (decimal, number) {
         let mut code = if d.scale() == 0 {
             "0".to_owned()
@@ -745,31 +742,6 @@ fn write_decimal(
     };
     sheet.write_string_with_format(row, col, &text, format)?;
     Ok(())
-}
-
-/// The value as a double if that is exact (see [`MAX_NUMBER_DIGITS`]).
-fn number_value(d: Decimal) -> Option<f64> {
-    let digits = d.mantissa().unsigned_abs().to_string().len();
-    if digits > MAX_NUMBER_DIGITS {
-        return None;
-    }
-    d.to_string().parse().ok()
-}
-
-fn rule_key(code: crate::model::RuleCode) -> &'static str {
-    use crate::model::RuleCode::{
-        CustomTable, DecimalRule, DrawingRule, Explicit, Fit, General, Manual, NoToleranceDefined,
-    };
-    match code {
-        Explicit => "explicit",
-        Fit => "fit",
-        DrawingRule => "drawing_rule",
-        General => "general",
-        DecimalRule => "decimal_rule",
-        CustomTable => "custom_table",
-        NoToleranceDefined => "no_tolerance_defined",
-        Manual => "manual",
-    }
 }
 
 /// Joins the non empty parts with `separator`.

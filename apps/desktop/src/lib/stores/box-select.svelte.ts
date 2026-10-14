@@ -13,7 +13,7 @@ import {
   type BalloonPlacement,
   type CharId,
   type CommandError,
-  type ExplainLanguage,
+  type Language,
   type FieldValue,
   type InterpreterNote,
   type LegInput,
@@ -37,13 +37,13 @@ export interface RecognitionCommands {
     sheet: SheetId,
     region: OrientedBox,
     placement: BalloonPlacement,
-    language: ExplainLanguage,
+    language: Language,
   ): Promise<Result<ProposalView[]>>;
   readCalloutText(
     sheet: SheetId,
     text: string,
     shorterLeg: LegInput | null,
-    language: ExplainLanguage,
+    language: Language,
   ): Promise<Result<TypedCallout>>;
 }
 
@@ -53,7 +53,7 @@ export function legText(leg: { value: string } | null | undefined): string {
 }
 
 /** The language of explanations: the UI language. */
-export function explainLanguage(): ExplainLanguage {
+export function explainLanguage(): Language {
   return getLocale() === "de" ? "de" : "en";
 }
 

@@ -16,10 +16,11 @@ mod fixture;
 use std::path::PathBuf;
 use std::time::Instant;
 
+use dimo_core::Language;
 use dimo_core::{Project, ReportKind, Timestamp};
 use dimo_report::model::{CellVerdict, GroupVerdict};
 use dimo_report::{
-    Language, MAX_BLANK_COLUMNS, ReportDate, ReportError, ReportModel, ReportOptions, TemplateSet,
+    MAX_BLANK_COLUMNS, ReportDate, ReportError, ReportModel, ReportOptions, TemplateSet,
     data_schema_json, render_report,
 };
 

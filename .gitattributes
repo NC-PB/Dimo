@@ -8,6 +8,8 @@
 *.onnx binary
 *.dimo binary
 *.xlsx binary
+# Golden export files are compared byte for byte (FR-EXP-11).
+crates/dimo-io/tests/golden/* binary
 *.snap linguist-generated=false
 apps/desktop/src/lib/ipc/bindings.ts linguist-generated=true
 *.ttf binary

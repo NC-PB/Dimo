@@ -11,7 +11,6 @@ publish.workspace = true
 [dependencies]
 dimo-core.workspace = true
 dimo-pdf.workspace = true
-dimo-vision.workspace = true
 dimo-notation.workspace = true
 dimo-tolerance.workspace = true
 rust_decimal.workspace = true

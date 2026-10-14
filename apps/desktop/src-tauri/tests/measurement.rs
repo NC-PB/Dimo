@@ -180,14 +180,26 @@ fn changed_since_issued_report_of_the_open_project() {
     assert_eq!(session.changed_since_issued_report().unwrap(), vec![first]);
 }
 
-/// 300 characteristics by 10 samples: the query including JSON serialization (what the IPC
-/// layer sends) stays under 20 ms.
+/// 300 characteristics by 10 samples: the query answers with every row and sample.
+#[test]
+fn measurement_state_of_300_by_10() {
+    let Some(tiles) = service() else { return };
+    let session = session_with(&tiles, 300, 10);
+    let state = state_of(&session).unwrap();
+    assert_eq!((state.rows.len(), state.samples.len()), (300, 10));
+    assert!(serde_json::to_vec(&state).unwrap().len() > 1000);
+}
+
+/// Performance test, ignored in the default run (`scripts/perf-tests.sh`): 300 characteristics
+/// by 10 samples, the query including JSON serialization (what the IPC layer sends) stays
+/// under 20 ms.
 ///
 /// The bound is checked on the fastest of 30 runs: that is the cost of the code, while the
 /// mean also measures the machine load of a parallel test run (several times the bound when
 /// other builds share the CPU). Mean, median and slowest are printed for STATUS.md.
 #[test]
-fn measurement_state_takes_under_20_ms_for_300_by_10() {
+#[ignore = "performance test, run with scripts/perf-tests.sh"]
+fn perf_measurement_state_under_20_ms_for_300_by_10() {
     let Some(tiles) = service() else { return };
     let session = session_with(&tiles, 300, 10);
     let mut runs = Vec::new();

@@ -3,9 +3,8 @@
 
 #![allow(clippy::expect_used)] // Test crate; rust.md allows expect in tests.
 
-use dimo_report::{
-    Language, RenderRequest, ReportDate, ReportError, TemplateSet, bundled_ids, render_pdf,
-};
+use dimo_core::Language;
+use dimo_report::{RenderRequest, ReportDate, ReportError, TemplateSet, bundled_ids, render_pdf};
 use serde_json::{Value, json};
 
 /// A table document like a report: title, columns and rows from the data, page x of y.

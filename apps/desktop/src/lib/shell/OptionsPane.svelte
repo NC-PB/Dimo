@@ -11,7 +11,7 @@
     ExportPreferences,
     PdfBalloons,
     ReportFormat,
-    ReportLanguage,
+    Language,
     Theme,
   } from "$lib/ipc/bindings";
   import { baseLocale, extractLocaleFromNavigator } from "$lib/paraglide/runtime.js";
@@ -28,7 +28,7 @@
   const SYSTEM = "system";
   /** The language the operating system asks for, as the app would use it. */
   const systemLocale = extractLocaleFromNavigator() ?? baseLocale;
-  const REPORT_LANGUAGES: readonly { value: ReportLanguage; label: string }[] = [
+  const REPORT_LANGUAGES: readonly { value: Language; label: string }[] = [
     { value: "en", label: LOCALE_NAMES.en },
     { value: "de", label: LOCALE_NAMES.de },
   ];

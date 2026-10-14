@@ -41,6 +41,19 @@ pub struct Rect {
 }
 
 impl Rect {
+    /// Creates a rectangle from its top left corner and size.
+    pub const fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
+        Self {
+            origin: Point { x, y },
+            size: Size { width, height },
+        }
+    }
+
+    /// The rectangle covering a whole sheet of `size`.
+    pub const fn full(size: Size) -> Self {
+        Self::new(0.0, 0.0, size.width, size.height)
+    }
+
     /// True if the origin is finite and both sides are finite and positive.
     pub fn is_valid(&self) -> bool {
         let positive = |v: f64| v.is_finite() && v > 0.0;
@@ -92,6 +105,18 @@ mod tests {
 
     fn close(a: Point, x: f64, y: f64) -> bool {
         (a.x - x).abs() < 1e-9 && (a.y - y).abs() < 1e-9
+    }
+
+    #[test]
+    fn rect_from_corner_and_size() {
+        let r = Rect::new(10.0, 20.0, 30.0, 40.0);
+        assert_eq!((r.origin.x, r.origin.y), (10.0, 20.0));
+        assert_eq!((r.size.width, r.size.height), (30.0, 40.0));
+        let full = Rect::full(Size {
+            width: 595.0,
+            height: 842.0,
+        });
+        assert_eq!(full, Rect::new(0.0, 0.0, 595.0, 842.0));
     }
 
     #[test]

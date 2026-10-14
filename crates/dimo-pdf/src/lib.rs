@@ -22,7 +22,8 @@
 //! # Coordinates
 //!
 //! All geometry is in sheet space (AGENTS.md rule 4): PDF user units, origin at the top left of
-//! the sheet, y downward. See [`geometry`].
+//! the sheet, y downward, with the core types [`dimo_core::Rect`] and [`dimo_core::Size`]. The
+//! sheet is the page as PDFium displays it: crop box applied, page rotation applied.
 //!
 //! # Threading
 //!
@@ -56,7 +57,6 @@
 //! filled by `scripts/fetch-pdfium.sh`. The pinned release is in `scripts/pdfium.toml`; its API
 //! level must match the `pdfium_*` feature of pdfium-render in the workspace `Cargo.toml`.
 
-pub mod geometry;
 pub mod library;
 pub mod overlay;
 pub mod project_overlay;
@@ -76,7 +76,6 @@ mod writer;
 
 pub use engine::{Document, MAX_RENDER_SIDE, PdfEngine};
 pub use error::PdfError;
-pub use geometry::{SheetRect, SheetSize};
 pub use hash::ContentHash;
 pub use overlay::{
     Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, Rgb, SheetBalloons,

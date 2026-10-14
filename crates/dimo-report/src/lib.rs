@@ -26,6 +26,8 @@ use typst::foundations::{Datetime, Smart};
 use typst_layout::PagedDocument;
 use typst_pdf::{PdfOptions, Timestamp};
 
+use dimo_core::Language;
+
 pub use model::{
     DATA_FORMAT_VERSION, DEFAULT_BLANK_COLUMNS, MAX_BLANK_COLUMNS, ReportModel, ReportOptions,
     SAMPLES_PER_BLOCK, data_schema_json, document_name,
@@ -34,26 +36,6 @@ pub use template::{DATA_FILE, DocumentSpec, MANIFEST, TemplateSet, bundled_ids};
 pub use xlsx::render_xlsx;
 
 use world::SandboxWorld;
-
-/// Report language (D-32), chosen per export independent of the UI language. Templates see it
-/// as `sys.inputs.lang`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Language {
-    /// English.
-    En,
-    /// German.
-    De,
-}
-
-impl Language {
-    /// Two letter code passed to the template (`en`, `de`).
-    pub fn code(self) -> &'static str {
-        match self {
-            Self::En => "en",
-            Self::De => "de",
-        }
-    }
-}
 
 /// A calendar date (from the project, never from the clock).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -73,7 +55,8 @@ pub struct RenderRequest<'a> {
     pub document: &'a str,
     /// The report data, written to `/data.json` for the template.
     pub data: &'a serde_json::Value,
-    /// Report language.
+    /// Report language (D-32), chosen per export independent of the UI language. Templates see
+    /// it as `sys.inputs.lang` ([`Language::code`]).
     pub language: Language,
     /// Creation date written into the PDF metadata; `None` writes no date.
     pub date: Option<ReportDate>,

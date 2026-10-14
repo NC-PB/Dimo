@@ -1,0 +1,6 @@
+Nr,Art,Anforderung,Nennmaß,Oberes Abmaß,Unteres Abmaß,Obere Grenze,Untere Grenze,Einheit,Passung,Regel,Anzahl,Klassifizierung,Prüfmethode,Prüfmittel,Stichprobe,Häufigkeit,Prüfen,Status,Blatt,Kommentar
+1,diameter,⌀30 H7,30.0,,,30.021,30,mm,H7,fit,1,,,,,,yes,accepted,1,
+2,linear,"12.5 +0.1/-0.2, ""ream""
+bore",12.5,0.1,-0.2,12.6,12.3,mm,,explicit,4,critical,CMM,"Caliper, digital",100%,,yes,accepted,2,check after coating; see note 3
+3,angle,45°,45,,,,,deg,,no_tolerance_defined,1,,,,,,no,accepted,2,
+4,linear,,123456.7890123456789,,,0.000000000000001,,,,manual,1,,,,,,yes,proposed,,
