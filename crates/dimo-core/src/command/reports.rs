@@ -6,18 +6,26 @@ use crate::env::Environment;
 use crate::id::RevisionId;
 use crate::measurement::is_date_or_empty;
 use crate::patch::Change;
-use crate::report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
+use crate::report::{IssuedReport, ReportFormat, ReportInfoField, ReportKind, TemplateRef};
 use crate::sheet::Sha256Hex;
 use crate::source::{DrawingSource, ImageEdit};
 
-pub(super) fn update_report_info(tx: &mut Tx<'_>, info: &ReportInfo) -> Result<(), CommandError> {
-    if !is_date_or_empty(&info.report_date) {
-        return Err(CommandError::InvalidDate(info.report_date.clone()));
+/// Sets fields of the report header (MF F4); the resulting date must be a date or empty.
+pub(super) fn update_report_info(
+    tx: &mut Tx<'_>,
+    values: &[ReportInfoField],
+) -> Result<(), CommandError> {
+    let mut info = tx.project.report_info.clone();
+    for v in values {
+        info.set(v);
     }
-    if tx.project.report_info != *info {
+    if !is_date_or_empty(&info.report_date) {
+        return Err(CommandError::InvalidDate(info.report_date));
+    }
+    if tx.project.report_info != info {
         tx.push(Change::ReportInfoChanged {
             before: tx.project.report_info.clone(),
-            after: info.clone(),
+            after: info,
         })?;
     }
     Ok(())

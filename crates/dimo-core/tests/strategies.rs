@@ -26,8 +26,8 @@ use dimo_core::numbering::{preview, strategy_order};
 use dimo_core::{
     BalloonPlacement, CharId, CharacteristicKind, Command, CommandError, Document,
     FixedEnvironment, InsertPolicy, LockReason, MultiInstance, NumberingSettings,
-    NumberingStrategy, OrientedBox, Origin, Point, Proposal, Rect, Rotation, SheetView, Size,
-    SourceRegion, TextSource, ZoneGrid,
+    NumberingStrategy, OrientedBox, Origin, Point, Proposal, Rect, Rotation, SheetField, SheetView,
+    Size, SourceRegion, TextSource, ZoneGrid,
 };
 
 use CharacteristicKind as K;
@@ -189,9 +189,7 @@ fn each_strategy_gives_the_expected_order() {
                 s.run(Command::SetZoneGrid { sheet, grid: None }).unwrap();
                 s.run(Command::UpdateSheet {
                     sheet,
-                    rotation: Some(Rotation::Deg90),
-                    unit: None,
-                    scale: None,
+                    values: vec![SheetField::Rotation(Rotation::Deg90)],
                 })
                 .unwrap();
             },
@@ -204,9 +202,7 @@ fn each_strategy_gives_the_expected_order() {
                 let sheet = s.sheet(0);
                 s.run(Command::UpdateSheet {
                     sheet,
-                    rotation: Some(Rotation::Deg180),
-                    unit: None,
-                    scale: None,
+                    values: vec![SheetField::Rotation(Rotation::Deg180)],
                 })
                 .unwrap();
             },
@@ -648,9 +644,7 @@ fn reading_order_on_a_sheet_turned_270_degrees() {
     synth
         .run(Command::UpdateSheet {
             sheet,
-            rotation: Some(Rotation::Deg270),
-            unit: None,
-            scale: None,
+            values: vec![SheetField::Rotation(Rotation::Deg270)],
         })
         .unwrap();
     assert_eq!(synth.order(S::SheetZone), "ghadecjfbi");

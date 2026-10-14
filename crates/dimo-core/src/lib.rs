@@ -68,20 +68,22 @@ pub use id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
 pub use language::Language;
 pub use measurement::{
     AttributeValue, MAX_SAMPLES, MAX_SAMPLES_PER_ADD, MeasurementResult, ResultCell, ResultEntry,
-    ResultParseError, ResultSource, ResultType, ResultValue, Sample, SerialError,
+    ResultParseError, ResultSource, ResultType, ResultValue, Sample, SampleField, SerialError,
 };
 pub use number::DisplayNumber;
 pub use numbering::{NumberedCharacteristic, NumberingPreview};
 pub use patch::{Change, Patch};
 pub use project::{
     CustomTable, DecimalPlaceRule, InsertPolicy, LockReason, MultiInstance, Numbering,
-    NumberingLock, NumberingSettings, NumberingStrategy, Project, ProjectInfo, ProjectSettings,
-    TableClass, ToleranceSettings, UnitRounding,
+    NumberingLock, NumberingSettings, NumberingStrategy, Project, ProjectInfo, ProjectInfoField,
+    ProjectSettings, TableClass, ToleranceField, ToleranceSettings, UnitRounding,
 };
 pub use proposal::{BalloonPlacement, EngineVersion, ParseHint, ParseIssue, Proposal};
-pub use report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
+pub use report::{
+    IssuedReport, ReportFormat, ReportInfo, ReportInfoField, ReportKind, TemplateRef,
+};
 pub use sheet::{
-    DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetKind, SheetView, ZoneGrid,
+    DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetField, SheetKind, SheetView, ZoneGrid,
 };
 pub use source::{
     DrawingSource, ImageEdit, ImageFormat, ImagePoint, Orientation, Paper, PaperSize, SheetCorners,

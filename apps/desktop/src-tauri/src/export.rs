@@ -32,7 +32,8 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use dimo_core::{
-    Command, LockReason, Project, ReportFormat, ReportInfo, ReportKind, Sha256Hex, TemplateRef,
+    Command, LockReason, Project, ReportFormat, ReportInfo, ReportInfoField, ReportKind, Sha256Hex,
+    TemplateRef,
 };
 use dimo_io::export::{CsvListExporter, ExportOptions, Exporter, XlsxListExporter};
 use dimo_pdf::{BalloonOutput, PdfDate, PdfEngine, project_overlay};
@@ -616,12 +617,9 @@ fn fill_report_date(session: &mut AppSession) -> Result<Option<ProjectPatched>, 
     if !project.report_info.report_date.trim().is_empty() {
         return Ok(None);
     }
-    let info = ReportInfo {
-        report_date: session.local_date(),
-        ..project.report_info.clone()
-    };
+    let date = ReportInfoField::ReportDate(session.local_date());
     session
-        .execute(Command::UpdateReportInfo { info })
+        .execute(Command::UpdateReportInfo { values: vec![date] })
         .map(Some)
 }
 
@@ -741,7 +739,7 @@ impl Job<'_> {
         );
         let outcome = match result {
             Ok(sha256) => {
-                let issued = issued.map(|info| self.record(info, sha256));
+                let issued = issued.map(|info| self.record(&info, sha256));
                 let open_error = self
                     .request
                     .open_after
@@ -774,7 +772,7 @@ impl Job<'_> {
     }
 
     /// Records the written report as issued (M3 decision 17).
-    fn record(&self, info: ReportInfo, output_sha256: Sha256Hex) -> IssuedRecord {
+    fn record(&self, info: &ReportInfo, output_sha256: Sha256Hex) -> IssuedRecord {
         let Some((kind, format)) = self.request.format.report() else {
             return IssuedRecord::Refused {
                 error: export_error("not a report"),

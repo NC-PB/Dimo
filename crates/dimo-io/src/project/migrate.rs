@@ -64,9 +64,10 @@ fn field<'a>(
 }
 
 /// Version 3 to 4 (MF F1, ADR 0010; MF decision 1: F1 and F4 share this step). Drawing
-/// revisions get their source: every version 3 drawing is a PDF.
+/// revisions get their source: every version 3 drawing is a PDF. Update commands in the audit
+/// log become field value lists (MF F4).
 ///
-/// Later parts of schema 4 (F4, F3) add their rewrites here: project changes to [`project`],
+/// Later parts of schema 4 (F3) add their rewrites here: project changes to [`project`],
 /// commands and changes of audit entries to [`audit_entry`].
 mod v3 {
     use serde_json::{Value, json};
@@ -90,10 +91,100 @@ mod v3 {
         Ok(())
     }
 
-    /// No version 3 command or change holds a whole revision (`revision_label_changed` holds
-    /// the label only), so the entries keep their shape. Checked: every change has a type.
+    /// Keys of the records that whole record commands carried, in the order of the struct fields.
+    const PROJECT_INFO: &[&str] = &["part_number", "part_name", "customer", "order_reference"];
+    const REPORT_INFO: &[&str] = &[
+        "report_number",
+        "report_date",
+        "company_name",
+        "inspected_by",
+        "approved_by",
+        "remarks",
+    ];
+    const SAMPLE: &[&str] = &["serial", "date", "inspector", "gauges", "comment"];
+
+    /// Every key of `record` as a field value `{ "field": key, "value": ... }`, in `keys`
+    /// order. The old command set every field, so the list sets every field too: lossless.
+    fn values(record: &mut Value, keys: &[&str], what: &str) -> std::result::Result<Value, String> {
+        let record = object(record, what)?;
+        let values = keys
+            .iter()
+            .map(|key| {
+                let value = record
+                    .remove(*key)
+                    .ok_or_else(|| format!("{what}: missing {key}"))?;
+                Ok(json!({ "field": key, "value": value }))
+            })
+            .collect::<std::result::Result<Vec<_>, String>>()?;
+        Ok(Value::Array(values))
+    }
+
+    /// MF F4: the whole record and option per field update commands become field value
+    /// lists, also inside batches. `update_project_info` and `update_report_info` list every
+    /// field of the old `info`; `update_sample` names the sample by ID and lists every field
+    /// of the old sample; `update_sheet` lists the fields that were not `null`, the scale as
+    /// its two parts. The changes keep their shape, so the effect is the same.
+    fn command(value: &mut Value) -> Result {
+        let c = object(value, "command")?;
+        match c.get("type").and_then(Value::as_str) {
+            Some("update_project_info") => {
+                let mut info = c.remove("info").ok_or("update_project_info without info")?;
+                c.insert("values".into(), values(&mut info, PROJECT_INFO, "info")?);
+            }
+            Some("update_report_info") => {
+                let mut info = c.remove("info").ok_or("update_report_info without info")?;
+                c.insert("values".into(), values(&mut info, REPORT_INFO, "info")?);
+            }
+            Some("update_sample") => {
+                let mut sample = c.remove("sample").ok_or("update_sample without sample")?;
+                let id = object(&mut sample, "sample")?
+                    .remove("id")
+                    .ok_or("sample without id")?;
+                c.insert("values".into(), values(&mut sample, SAMPLE, "sample")?);
+                c.insert("sample".into(), id);
+            }
+            Some("update_sheet") => {
+                let mut out = Vec::new();
+                for key in ["rotation", "unit"] {
+                    match c.remove(key) {
+                        None | Some(Value::Null) => {}
+                        Some(v) => out.push(json!({ "field": key, "value": v })),
+                    }
+                }
+                match c.remove("scale") {
+                    None | Some(Value::Null) => {}
+                    Some(scale) => {
+                        let scale = scale.as_object().ok_or("scale is not an object")?;
+                        for (key, name) in
+                            [("drawing", "scale_drawing"), ("actual", "scale_actual")]
+                        {
+                            let part = scale
+                                .get(key)
+                                .ok_or_else(|| format!("scale without {key}"))?;
+                            out.push(json!({ "field": name, "value": part }));
+                        }
+                    }
+                }
+                c.insert("values".into(), Value::Array(out));
+            }
+            Some("batch") => {
+                for inner in array(field(c, "commands")?, "commands")? {
+                    command(inner)?;
+                }
+            }
+            Some(_) => {}
+            None => return Err("command without type".into()),
+        }
+        Ok(())
+    }
+
+    /// Commands: see [`command`]. No version 3 change holds a whole revision
+    /// (`revision_label_changed` holds the label only), so the changes keep their shape.
+    /// Checked: every change has a type.
     pub(super) fn audit_entry(value: &mut Value) -> Result {
         let entry = object(value, "audit entry")?;
+        let action = object(field(entry, "action")?, "action")?;
+        command(field(action, "command")?)?;
         for change in array(field(entry, "changes")?, "changes")? {
             let c = object(change, "change")?;
             if c.get("type").and_then(Value::as_str).is_none() {
@@ -594,6 +685,111 @@ mod tests {
         assert_eq!(typed.changes.len(), 1);
         let mut broken = json!({ "changes": [{ "index": 0 }] });
         assert!((MIGRATIONS[2].audit_entry)(&mut broken).is_err());
+    }
+
+    /// Version 3 to 4 (MF F4): whole record and option per field update commands become field
+    /// value lists with the same effect, also nested in batches and in undo and redo entries.
+    #[test]
+    fn version_3_update_commands_become_field_lists() {
+        use dimo_core::{
+            AuditAction, Command, ProjectInfoField as P, ReportInfoField as R, Rotation,
+            SampleField as S, SampleId, SheetField as F, SheetId, Unit,
+        };
+        let sheet = "00000000-0000-0000-0000-000000000002";
+        let sample = "00000000-0000-0000-0000-000000000005";
+        let old = json!({ "type": "batch", "commands": [
+            { "type": "update_project_info", "info": { "part_number": "4711", "part_name": "Shaft",
+              "customer": "", "order_reference": "PO-1" } },
+            { "type": "update_report_info", "info": { "report_number": "IR-7",
+              "report_date": "2026-03-02", "company_name": "Shop", "inspected_by": "t",
+              "approved_by": "", "remarks": "x" } },
+            { "type": "update_sample", "sample": { "id": sample, "serial": "SN-1",
+              "date": "", "inspector": "t", "gauges": "caliper", "comment": "" } },
+            { "type": "batch", "commands": [
+                { "type": "update_sheet", "sheet": sheet, "rotation": "deg90", "unit": null,
+                  "scale": { "drawing": 1, "actual": 2 } },
+                { "type": "update_sheet", "sheet": sheet, "rotation": null, "unit": "in",
+                  "scale": null }
+            ]},
+            { "type": "unlock_numbering" }
+        ]});
+        let text = |s: &str| s.to_owned();
+        let sheet_id: SheetId = serde_json::from_value(json!(sheet)).unwrap();
+        let expected = Command::Batch {
+            commands: vec![
+                Command::UpdateProjectInfo {
+                    values: vec![
+                        P::PartNumber(text("4711")),
+                        P::PartName(text("Shaft")),
+                        P::Customer(String::new()),
+                        P::OrderReference(text("PO-1")),
+                    ],
+                },
+                Command::UpdateReportInfo {
+                    values: vec![
+                        R::ReportNumber(text("IR-7")),
+                        R::ReportDate(text("2026-03-02")),
+                        R::CompanyName(text("Shop")),
+                        R::InspectedBy(text("t")),
+                        R::ApprovedBy(String::new()),
+                        R::Remarks(text("x")),
+                    ],
+                },
+                Command::UpdateSample {
+                    sample: serde_json::from_value::<SampleId>(json!(sample)).unwrap(),
+                    values: vec![
+                        S::Serial(text("SN-1")),
+                        S::Date(String::new()),
+                        S::Inspector(text("t")),
+                        S::Gauges(text("caliper")),
+                        S::Comment(String::new()),
+                    ],
+                },
+                Command::Batch {
+                    commands: vec![
+                        Command::UpdateSheet {
+                            sheet: sheet_id,
+                            values: vec![
+                                F::Rotation(Rotation::Deg90),
+                                F::ScaleDrawing(1),
+                                F::ScaleActual(2),
+                            ],
+                        },
+                        Command::UpdateSheet {
+                            sheet: sheet_id,
+                            values: vec![F::Unit(Unit::In)],
+                        },
+                    ],
+                },
+                Command::UnlockNumbering,
+            ],
+        };
+        for action in ["command", "undo", "redo"] {
+            let mut entry = json!({
+                "timestamp": "2026-03-01T08:00:00Z", "user": "t",
+                "action": { "type": action, "command": old.clone() },
+                "changes": []
+            });
+            (MIGRATIONS[2].audit_entry)(&mut entry).unwrap();
+            let typed: dimo_core::AuditEntry =
+                serde_json::from_value(entry.clone()).unwrap_or_else(|e| panic!("{e}\n{entry:#}"));
+            let (AuditAction::Command { command }
+            | AuditAction::Undo { command }
+            | AuditAction::Redo { command }) = typed.action;
+            assert_eq!(command, expected, "{action}");
+        }
+
+        for broken in [
+            json!({ "type": "update_project_info" }),
+            json!({ "type": "update_report_info", "info": { "report_number": "" } }),
+            json!({ "type": "update_sample", "sample": { "serial": "1" } }),
+            json!({ "type": "update_sheet", "sheet": sheet, "scale": 2 }),
+            json!({ "commands": [] }),
+        ] {
+            let mut entry = json!({ "action": { "type": "command", "command": broken },
+                "changes": [] });
+            assert!((MIGRATIONS[2].audit_entry)(&mut entry).is_err(), "{entry}");
+        }
     }
 
     #[test]

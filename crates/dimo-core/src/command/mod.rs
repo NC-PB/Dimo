@@ -22,21 +22,22 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::balloon::{BalloonStyle, BalloonStyleOverride};
-use crate::characteristic::{FieldError, FieldValue, Unit};
+use crate::characteristic::{FieldError, FieldValue};
 use crate::env::Environment;
 use crate::geometry::{OrientedBox, Point};
 use crate::id::{BalloonId, CharId, RevisionId, SampleId, SheetId};
 use crate::measurement::{
     MAX_SAMPLES, MAX_SAMPLES_PER_ADD, ResultCell, ResultEntry, ResultParseError, ResultType,
-    Sample, SerialError,
+    SampleField, SerialError,
 };
 use crate::patch::{Change, ChangeError, invert};
 use crate::project::{
-    LockReason, NumberingSettings, NumberingStrategy, Project, ProjectInfo, ToleranceSettings,
+    DecimalPlaceRule, LockReason, NumberingSettings, NumberingStrategy, Project, ProjectInfoField,
+    ToleranceField, ToleranceSettings,
 };
 use crate::proposal::{BalloonPlacement, Proposal};
-use crate::report::{ReportFormat, ReportInfo, ReportKind, TemplateRef};
-use crate::sheet::{Rotation, Scale, Sha256Hex, SheetView, ZoneGrid};
+use crate::report::{ReportFormat, ReportInfoField, ReportKind, TemplateRef};
+use crate::sheet::{Sha256Hex, SheetField, SheetView, ZoneGrid};
 use crate::source::ImageEdit;
 
 /// New position of one balloon.
@@ -123,16 +124,13 @@ pub enum Command {
         /// Insert them before this characteristic; `null` moves them to the end.
         before: Option<CharId>,
     },
-    /// Sets view rotation, unit or scale of a sheet; `null` keeps the current value (FR-DOC-05).
+    /// Sets view settings of a sheet: rotation, unit, scale parts (FR-DOC-05). Only the given
+    /// fields change, applied in order to the current sheet (MF F4).
     UpdateSheet {
         /// The sheet.
         sheet: SheetId,
-        /// New rotation.
-        rotation: Option<Rotation>,
-        /// New length unit, `mm` or `in`.
-        unit: Option<Unit>,
-        /// New scale.
-        scale: Option<Scale>,
+        /// Values, applied in order.
+        values: Vec<SheetField>,
     },
     /// Sets or removes the zone grid of a sheet (M2 decision 1, D-21).
     SetZoneGrid {
@@ -155,11 +153,34 @@ pub enum Command {
         /// New settings.
         settings: NumberingSettings,
     },
-    /// Sets the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). Limits
-    /// of existing characteristics do not change.
+    /// Replaces the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09).
+    /// Limits of existing characteristics do not change. Rust builds it from the current
+    /// settings (custom table import); edits of single settings use
+    /// [`Command::UpdateToleranceSettings`], [`Command::AddDecimalRule`] and
+    /// [`Command::RemoveDecimalRule`] (MF F4).
     SetToleranceSettings {
         /// New settings.
         settings: ToleranceSettings,
+    },
+    /// Sets single tolerance settings: general tolerance, drawing rule, unit rounding (FR-TOL-02,
+    /// FR-TOL-09, MF F4). Only the given fields change; the result is checked as a whole.
+    /// Limits of existing characteristics do not change.
+    UpdateToleranceSettings {
+        /// Values, applied in order.
+        values: Vec<ToleranceField>,
+    },
+    /// Adds a decimal place rule (FR-TOL-06, MF F4). Refused if there is a rule for the same
+    /// number of places; a batch of [`Command::RemoveDecimalRule`] and this command changes the
+    /// tolerance of a rule. Limits of existing characteristics do not change.
+    AddDecimalRule {
+        /// The rule.
+        rule: DecimalPlaceRule,
+    },
+    /// Removes the decimal place rule for this number of places; no change if there is none
+    /// (FR-TOL-06, MF F4).
+    RemoveDecimalRule {
+        /// Decimal places of the rule.
+        places: u32,
     },
     /// Reorders and renumbers all characteristics by a numbering strategy as one undo step, and
     /// makes it the strategy of the project (FR-BAL-04, D-21). The result equals
@@ -181,10 +202,10 @@ pub enum Command {
         /// New default.
         style: BalloonStyle,
     },
-    /// Replaces part and order data.
+    /// Sets part and order data. Only the given fields change (MF F4).
     UpdateProjectInfo {
-        /// New data.
-        info: ProjectInfo,
+        /// Values, applied in order.
+        values: Vec<ProjectInfoField>,
     },
     /// Adds `count` samples (1 to 100) at the end of the sample order (FR-MEA-01, M3
     /// decision 6). Serials continue the highest plain number, the inspector is the audit user
@@ -193,12 +214,14 @@ pub enum Command {
         /// How many samples to add.
         count: u32,
     },
-    /// Replaces serial, date, inspector, gauges and comment of the sample with the same ID. The
-    /// serial is trimmed, must not be empty and must be unique; the date is `YYYY-MM-DD` or
-    /// empty (M3 decision 6).
+    /// Sets serial, date, inspector, gauges or comment of a sample; only the given fields
+    /// change (MF F4). The serial is trimmed, must not be empty and must be unique; the date is
+    /// `YYYY-MM-DD` or empty (M3 decision 6).
     UpdateSample {
-        /// The sample with its new values.
-        sample: Sample,
+        /// The sample.
+        sample: SampleId,
+        /// Values, applied in order.
+        values: Vec<SampleField>,
     },
     /// Deletes samples with their results (M3 decision 16).
     DeleteSamples {
@@ -234,11 +257,11 @@ pub enum Command {
         /// New result type.
         result_type: ResultType,
     },
-    /// Replaces the report header and approval data (M3 decision 1). The report date is
-    /// `YYYY-MM-DD` or empty.
+    /// Sets report header and approval data (M3 decision 1); only the given fields change
+    /// (MF F4). The report date is `YYYY-MM-DD` or empty.
     UpdateReportInfo {
-        /// New data.
-        info: ReportInfo,
+        /// Values, applied in order.
+        values: Vec<ReportInfoField>,
     },
     /// Sets the label of a drawing revision, trimmed (FR-RVC-04).
     UpdateRevisionLabel {
@@ -431,12 +454,7 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
         C::MoveBalloons { moves } => balloons::move_balloons(tx, moves),
         C::RestyleBalloons { ids, style } => balloons::restyle(tx, ids, style),
         C::ResetBalloonStyle { ids } => balloons::reset_style(tx, ids),
-        C::UpdateSheet {
-            sheet,
-            rotation,
-            unit,
-            scale,
-        } => sheets::update(tx, *sheet, *rotation, *unit, *scale),
+        C::UpdateSheet { sheet, values } => sheets::update(tx, *sheet, values),
         C::SetZoneGrid { sheet, grid } => sheets::set_zone_grid(tx, *sheet, grid.as_ref()),
         C::SetViews { sheet, views } => sheets::set_views(tx, *sheet, views),
         C::SetNumberingSettings { settings } => numbering::set_settings(tx, *settings),
@@ -444,10 +462,13 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
         C::LockNumbering { reason } => numbering::lock(tx, *reason, env),
         C::UnlockNumbering => numbering::unlock(tx),
         C::SetToleranceSettings { settings } => settings::set_tolerance(tx, settings),
+        C::UpdateToleranceSettings { values } => settings::update_tolerance(tx, values),
+        C::AddDecimalRule { rule } => settings::add_decimal_rule(tx, *rule),
+        C::RemoveDecimalRule { places } => settings::remove_decimal_rule(tx, *places),
         C::SetDefaultBalloonStyle { style } => settings::set_default_balloon_style(tx, style),
-        C::UpdateProjectInfo { info } => settings::update_project_info(tx, info),
+        C::UpdateProjectInfo { values } => settings::update_project_info(tx, values),
         C::AddSamples { count } => measurement::add_samples(tx, *count, env),
-        C::UpdateSample { sample } => measurement::update_sample(tx, sample),
+        C::UpdateSample { sample, values } => measurement::update_sample(tx, *sample, values),
         C::DeleteSamples { ids } => measurement::delete_samples(tx, ids),
         C::MoveSamples { ids, before } => measurement::move_samples(tx, ids, *before),
         C::SetResults { results } => measurement::set_results(tx, results),
@@ -455,7 +476,7 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
         C::SetResultType { ids, result_type } => {
             measurement::set_result_type(tx, ids, *result_type)
         }
-        C::UpdateReportInfo { info } => reports::update_report_info(tx, info),
+        C::UpdateReportInfo { values } => reports::update_report_info(tx, values),
         C::UpdateRevisionLabel { revision, label } => {
             reports::update_revision_label(tx, *revision, label)
         }

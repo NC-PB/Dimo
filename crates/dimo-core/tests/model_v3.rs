@@ -9,9 +9,9 @@ use dimo_core::characteristic::FieldValue;
 use dimo_core::decimal::parse_decimal;
 use dimo_core::{
     AttributeValue, AuditAction, Change, CharId, Command, CommandError, Document, FixedEnvironment,
-    LockReason, MeasurementResult, Project, ReportFormat, ReportInfo, ReportKind, ResultCell,
-    ResultEntry, ResultParseError, ResultSource, ResultType, ResultValue, SampleId, SerialError,
-    Sha256Hex, TemplateRef,
+    LockReason, MeasurementResult, Project, ReportFormat, ReportInfo, ReportInfoField, ReportKind,
+    ResultCell, ResultEntry, ResultParseError, ResultSource, ResultType, ResultValue, SampleField,
+    SampleId, SerialError, Sha256Hex, TemplateRef,
 };
 use rust_decimal::Decimal;
 
@@ -131,10 +131,11 @@ fn add_samples_numbers_serials_and_checks_counts() {
                 && s.comment.is_empty())
     );
 
-    let mut renamed = doc.project().samples[1].clone();
-    renamed.serial = "  7 ".into();
-    doc.execute(Command::UpdateSample { sample: renamed }, &mut env)
-        .unwrap();
+    let renamed = Command::UpdateSample {
+        sample: doc.project().samples[1].id,
+        values: vec![SampleField::Serial("  7 ".into())],
+    };
+    doc.execute(renamed, &mut env).unwrap();
     assert_eq!(doc.project().samples[1].serial, "7");
     doc.execute(Command::AddSamples { count: 1 }, &mut env)
         .unwrap();
@@ -190,12 +191,19 @@ fn update_sample_checks_serial_and_date() {
         ("a-17", "", None),
     ];
     for (serial, date, error) in cases {
-        let mut sample = first.clone();
-        serial.clone_into(&mut sample.serial);
-        date.clone_into(&mut sample.date);
-        sample.gauges = "caliper 0-150".into();
+        let values = vec![
+            SampleField::Serial(serial.into()),
+            SampleField::Date(date.into()),
+            SampleField::Gauges("caliper 0-150".into()),
+        ];
         let before = doc.project().clone();
-        let result = doc.execute(Command::UpdateSample { sample }, &mut env);
+        let result = doc.execute(
+            Command::UpdateSample {
+                sample: first.id,
+                values,
+            },
+            &mut env,
+        );
         if let Some(error) = error {
             assert_eq!(result, Err(error), "{serial:?} {date:?}");
             assert_eq!(*doc.project(), before);
@@ -205,16 +213,16 @@ fn update_sample_checks_serial_and_date() {
             assert_eq!(doc.project().samples[0].gauges, "caliper 0-150");
         }
     }
-    let mut unknown = first;
-    unknown.id = SampleId::from_uuid(uuid::Uuid::from_u128(u128::MAX));
+    let unknown = SampleId::from_uuid(uuid::Uuid::from_u128(u128::MAX));
     assert_eq!(
         doc.execute(
             Command::UpdateSample {
-                sample: unknown.clone()
+                sample: unknown,
+                values: vec![]
             },
             &mut env
         ),
-        Err(CommandError::UnknownSample(unknown.id))
+        Err(CommandError::UnknownSample(unknown))
     );
 }
 
@@ -616,19 +624,19 @@ fn report_info_and_revision_label() {
         approved_by: "boss".into(),
         remarks: "first lot".into(),
     };
-    doc.execute(Command::UpdateReportInfo { info: info.clone() }, &mut env)
-        .unwrap();
+    let values = ReportInfo::default().changes_to(&info);
+    assert_eq!(values.len(), 6);
+    let update = Command::UpdateReportInfo { values };
+    doc.execute(update.clone(), &mut env).unwrap();
     assert_eq!(doc.project().report_info, info);
-    let patch = doc
-        .execute(Command::UpdateReportInfo { info: info.clone() }, &mut env)
-        .unwrap();
+    let patch = doc.execute(update, &mut env).unwrap();
     assert!(patch.is_empty());
-    let bad = ReportInfo {
-        report_date: "2026-13-01".into(),
-        ..info
+    assert_eq!(info.changes_to(&info), []);
+    let bad = Command::UpdateReportInfo {
+        values: vec![ReportInfoField::ReportDate("2026-13-01".into())],
     };
     assert_eq!(
-        doc.execute(Command::UpdateReportInfo { info: bad }, &mut env),
+        doc.execute(bad, &mut env),
         Err(CommandError::InvalidDate("2026-13-01".into()))
     );
 

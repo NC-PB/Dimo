@@ -15,7 +15,8 @@ use dimo_core::{
     ToleranceDerivation, ToleranceSettings, Unit, UnitRounding, ZoneGrid,
 };
 use dimo_core::{
-    ReportFormat, ReportInfo, ReportKind, ResultCell, ResultEntry, ResultType, TemplateRef,
+    ReportFormat, ReportInfoField, ReportKind, ResultCell, ResultEntry, ResultType, SampleField,
+    TemplateRef,
 };
 use dimo_io::project::{ImportedDrawing, ProjectFile, SheetInfo, import_drawing, sha256};
 
@@ -400,11 +401,15 @@ pub fn edit_v3(document: &mut Document, env: &mut FixedEnvironment) {
         .map(|c| c.id)
         .collect();
     let samples: Vec<_> = document.project().samples.iter().map(|s| s.id).collect();
-    let mut third = document.project().samples[2].clone();
-    third.serial = " SN-0042 ".into();
-    third.date = "2026-03-02".into();
-    third.gauges = "Caliper 0-150, plug gauge Ø8 H7".into();
-    third.comment = "first off".into();
+    let third = Command::UpdateSample {
+        sample: samples[2],
+        values: vec![
+            SampleField::Serial(" SN-0042 ".into()),
+            SampleField::Date("2026-03-02".into()),
+            SampleField::Gauges("Caliper 0-150, plug gauge Ø8 H7".into()),
+            SampleField::Comment("first off".into()),
+        ],
+    };
     let entry = |s: usize, c: usize, text: &str| ResultEntry {
         sample: samples[s],
         characteristic: chars[c],
@@ -412,7 +417,7 @@ pub fn edit_v3(document: &mut Document, env: &mut FixedEnvironment) {
         comment: None,
     };
     let commands = vec![
-        Command::UpdateSample { sample: third },
+        third,
         Command::SetResultType {
             ids: vec![chars[1]],
             result_type: ResultType::Attribute,
@@ -468,14 +473,14 @@ pub fn edit_v3(document: &mut Document, env: &mut FixedEnvironment) {
     let commands = vec![
         Command::DeleteSamples { ids: vec![added] },
         Command::UpdateReportInfo {
-            info: ReportInfo {
-                report_number: "IR-2026-007".into(),
-                report_date: "2026-03-02".into(),
-                company_name: "Example shop".into(),
-                inspected_by: "tester".into(),
-                approved_by: "Head of QA".into(),
-                remarks: "Lot of 3, all measured.\nSecond line.".into(),
-            },
+            values: vec![
+                ReportInfoField::ReportNumber("IR-2026-007".into()),
+                ReportInfoField::ReportDate("2026-03-02".into()),
+                ReportInfoField::CompanyName("Example shop".into()),
+                ReportInfoField::InspectedBy("tester".into()),
+                ReportInfoField::ApprovedBy("Head of QA".into()),
+                ReportInfoField::Remarks("Lot of 3, all measured.\nSecond line.".into()),
+            ],
         },
         Command::UpdateRevisionLabel {
             revision,

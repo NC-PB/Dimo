@@ -798,16 +798,15 @@ ids: BalloonId[] } |
 ids: CharId[]; 
 /**  Insert them before this characteristic; `null` moves them to the end. */
 before: CharId | null } | 
-/**  Sets view rotation, unit or scale of a sheet; `null` keeps the current value (FR-DOC-05). */
+/**
+ *  Sets view settings of a sheet: rotation, unit, scale parts (FR-DOC-05). Only the given
+ *  fields change, applied in order to the current sheet (MF F4).
+ */
 { type: "update_sheet"; 
 /**  The sheet. */
 sheet: SheetId; 
-/**  New rotation. */
-rotation: Rotation | null; 
-/**  New length unit, `mm` or `in`. */
-unit: Unit | null; 
-/**  New scale. */
-scale: Scale | null } | 
+/**  Values, applied in order. */
+values: SheetField[] } | 
 /**  Sets or removes the zone grid of a sheet (M2 decision 1, D-21). */
 { type: "set_zone_grid"; 
 /**  The sheet. */
@@ -829,12 +828,38 @@ views: SheetView[] } |
 /**  New settings. */
 settings: NumberingSettings } | 
 /**
- *  Sets the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09). Limits
- *  of existing characteristics do not change.
+ *  Replaces the tolerance rules of the project (M2 decision 2, FR-TOL-06, FR-TOL-09).
+ *  Limits of existing characteristics do not change. Rust builds it from the current
+ *  settings (custom table import); edits of single settings use
+ *  [`Command::UpdateToleranceSettings`], [`Command::AddDecimalRule`] and
+ *  [`Command::RemoveDecimalRule`] (MF F4).
  */
 { type: "set_tolerance_settings"; 
 /**  New settings. */
 settings: ToleranceSettings } | 
+/**
+ *  Sets single tolerance settings: general tolerance, drawing rule, unit rounding (FR-TOL-02,
+ *  FR-TOL-09, MF F4). Only the given fields change; the result is checked as a whole.
+ *  Limits of existing characteristics do not change.
+ */
+{ type: "update_tolerance_settings"; 
+/**  Values, applied in order. */
+values: ToleranceField[] } | 
+/**
+ *  Adds a decimal place rule (FR-TOL-06, MF F4). Refused if there is a rule for the same
+ *  number of places; a batch of [`Command::RemoveDecimalRule`] and this command changes the
+ *  tolerance of a rule. Limits of existing characteristics do not change.
+ */
+{ type: "add_decimal_rule"; 
+/**  The rule. */
+rule: DecimalPlaceRule } | 
+/**
+ *  Removes the decimal place rule for this number of places; no change if there is none
+ *  (FR-TOL-06, MF F4).
+ */
+{ type: "remove_decimal_rule"; 
+/**  Decimal places of the rule. */
+places: number } | 
 /**
  *  Reorders and renumbers all characteristics by a numbering strategy as one undo step, and
  *  makes it the strategy of the project (FR-BAL-04, D-21). The result equals
@@ -854,10 +879,10 @@ reason: LockReason } |
 { type: "set_default_balloon_style"; 
 /**  New default. */
 style: BalloonStyle } | 
-/**  Replaces part and order data. */
+/**  Sets part and order data. Only the given fields change (MF F4). */
 { type: "update_project_info"; 
-/**  New data. */
-info: ProjectInfo } | 
+/**  Values, applied in order. */
+values: ProjectInfoField[] } | 
 /**
  *  Adds `count` samples (1 to 100) at the end of the sample order (FR-MEA-01, M3
  *  decision 6). Serials continue the highest plain number, the inspector is the audit user
@@ -867,13 +892,15 @@ info: ProjectInfo } |
 /**  How many samples to add. */
 count: number } | 
 /**
- *  Replaces serial, date, inspector, gauges and comment of the sample with the same ID. The
- *  serial is trimmed, must not be empty and must be unique; the date is `YYYY-MM-DD` or
- *  empty (M3 decision 6).
+ *  Sets serial, date, inspector, gauges or comment of a sample; only the given fields
+ *  change (MF F4). The serial is trimmed, must not be empty and must be unique; the date is
+ *  `YYYY-MM-DD` or empty (M3 decision 6).
  */
 { type: "update_sample"; 
-/**  The sample with its new values. */
-sample: Sample } | 
+/**  The sample. */
+sample: SampleId; 
+/**  Values, applied in order. */
+values: SampleField[] } | 
 /**  Deletes samples with their results (M3 decision 16). */
 { type: "delete_samples"; 
 /**  Samples to delete. */
@@ -908,12 +935,12 @@ ids: CharId[];
 /**  New result type. */
 result_type: ResultType } | 
 /**
- *  Replaces the report header and approval data (M3 decision 1). The report date is
- *  `YYYY-MM-DD` or empty.
+ *  Sets report header and approval data (M3 decision 1); only the given fields change
+ *  (MF F4). The report date is `YYYY-MM-DD` or empty.
  */
 { type: "update_report_info"; 
-/**  New data. */
-info: ReportInfo } | 
+/**  Values, applied in order. */
+values: ReportInfoField[] } | 
 /**  Sets the label of a drawing revision, trimmed (FR-RVC-04). */
 { type: "update_revision_label"; 
 /**  The revision. */
@@ -1867,6 +1894,22 @@ export type ProjectInfo = {
 };
 
 /**
+ *  One field of the part data, used by
+ *  [`Command::UpdateProjectInfo`](crate::command::Command::UpdateProjectInfo) (MF F4).
+ * 
+ *  Serialized as `{ "field": "part_number", "value": "4711" }`.
+ */
+export type ProjectInfoField = 
+/**  Part number. */
+{ field: "part_number"; value: string } | 
+/**  Part name. */
+{ field: "part_name"; value: string } | 
+/**  Customer. */
+{ field: "customer"; value: string } | 
+/**  Order or purchase reference. */
+{ field: "order_reference"; value: string };
+
+/**
  *  The project was created, opened, restored or closed. Event `project-loaded`; also the result
  *  of `project_state`.
  */
@@ -2163,6 +2206,26 @@ export type ReportInfo = {
 	remarks: string,
 };
 
+/**
+ *  One field of the report header and approval data, used by
+ *  [`Command::UpdateReportInfo`](crate::command::Command::UpdateReportInfo) (MF F4).
+ * 
+ *  Serialized as `{ "field": "report_number", "value": "IR-7" }`.
+ */
+export type ReportInfoField = 
+/**  Report number. */
+{ field: "report_number"; value: string } | 
+/**  Report date as `YYYY-MM-DD`, or empty. */
+{ field: "report_date"; value: string } | 
+/**  Name of the issuing company. */
+{ field: "company_name"; value: string } | 
+/**  Who inspected the parts. */
+{ field: "inspected_by"; value: string } | 
+/**  Who approved the report. */
+{ field: "approved_by"; value: string } | 
+/**  Remarks printed on the report. */
+{ field: "remarks"; value: string };
+
 /**  Which document a report is (FR-EXP-04). */
 export type ReportKind = 
 /**  Characteristic list with empty result columns for printing. */
@@ -2322,6 +2385,24 @@ export type Sample = {
 };
 
 /**
+ *  One field of a sample, used by
+ *  [`Command::UpdateSample`](crate::command::Command::UpdateSample) (MF F4).
+ * 
+ *  Serialized as `{ "field": "serial", "value": "7" }`.
+ */
+export type SampleField = 
+/**  Serial number; trimmed, not empty, unique. */
+{ field: "serial"; value: string } | 
+/**  Measuring date as `YYYY-MM-DD`, or empty. */
+{ field: "date"; value: string } | 
+/**  Who measured the part. */
+{ field: "inspector"; value: string } | 
+/**  Gauges and instruments used. */
+{ field: "gauges"; value: string } | 
+/**  Free text. */
+{ field: "comment"; value: string };
+
+/**
  *  ID of a [`Sample`](crate::measurement::Sample), a measured part (FR-MEA-01).
  * 
  *  Serialized as a hyphenated lowercase UUID string.
@@ -2398,6 +2479,23 @@ export type SheetCorners = {
 	/**  Bottom left corner of the sheet. */
 	bottom_left: ImagePoint,
 };
+
+/**
+ *  One view setting of a sheet, used by
+ *  [`Command::UpdateSheet`](crate::command::Command::UpdateSheet) (FR-DOC-05, MF F4). The two
+ *  scale parts are separate fields, so typing both fast keeps both.
+ * 
+ *  Serialized as `{ "field": "unit", "value": "in" }`.
+ */
+export type SheetField = 
+/**  View rotation. */
+{ field: "rotation"; value: Rotation } | 
+/**  Length unit, `mm` or `in`. */
+{ field: "unit"; value: Unit } | 
+/**  Length on the drawing of the scale, at least 1. */
+{ field: "scale_drawing"; value: number } | 
+/**  Corresponding length on the part of the scale, at least 1. */
+{ field: "scale_actual"; value: number };
 
 /**
  *  ID of a [`Sheet`](crate::sheet::Sheet). Unique across all drawing revisions.
@@ -2620,6 +2718,25 @@ export type ToleranceDerivation = {
 	/**  Unit conversion applied, if any. */
 	conversion: UnitConversion | null,
 };
+
+/**
+ *  One tolerance setting other than decimal place rules and custom tables, used by
+ *  [`Command::UpdateToleranceSettings`](crate::command::Command::UpdateToleranceSettings)
+ *  (MF F4). Decimal place rules change one at a time with
+ *  [`Command::AddDecimalRule`](crate::command::Command::AddDecimalRule) and
+ *  [`Command::RemoveDecimalRule`](crate::command::Command::RemoveDecimalRule).
+ * 
+ *  Serialized as `{ "field": "mm_places", "value": 3 }`.
+ */
+export type ToleranceField = 
+/**  General tolerance standard and class; `null` removes it. */
+{ field: "general"; value: TableClass | null } | 
+/**  Drawing specific rule, a custom table of the project; `null` removes it. */
+{ field: "drawing_rule"; value: TableClass | null } | 
+/**  Decimal places of values converted to mm. */
+{ field: "mm_places"; value: number } | 
+/**  Decimal places of values converted to inch. */
+{ field: "inch_places"; value: number };
 
 /**
  *  Tolerance settings of a project (M2 decision 2, FR-TOL-01, FR-TOL-06, FR-TOL-09).

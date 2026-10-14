@@ -454,7 +454,7 @@ impl AppSession {
     pub fn record_issued_report(
         &mut self,
         state: SnapshotState,
-        info: ReportInfo,
+        info: &ReportInfo,
         report: Command,
     ) -> Result<Option<ProjectPatched>, CommandError> {
         let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
@@ -468,8 +468,9 @@ impl AppSession {
                 reason: dimo_core::LockReason::IssuedReport,
             });
         }
-        if project.report_info != info {
-            commands.push(Command::UpdateReportInfo { info });
+        let values = project.report_info.changes_to(info);
+        if !values.is_empty() {
+            commands.push(Command::UpdateReportInfo { values });
         }
         commands.push(report);
         self.execute(Command::Batch { commands }).map(Some)
