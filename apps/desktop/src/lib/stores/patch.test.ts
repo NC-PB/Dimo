@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Change, IssuedReport, MeasurementResult, Sample } from "$lib/ipc/bindings";
+import type {
+  Change,
+  DrawingRevision,
+  ImageEdit,
+  IssuedReport,
+  MeasurementResult,
+  Sample,
+} from "$lib/ipc/bindings";
 import {
   DOC_HASH,
   REVISION_ID,
@@ -183,4 +190,30 @@ describe("applying patches of samples, results and report data (T3.1)", () => {
       ]),
     ).toThrow(PatchMismatch);
   });
+
+  it("replaces a whole drawing revision (MF F1)", () => {
+    const project = emptyProject();
+    const before = project.revisions[0];
+    if (!before) throw new Error("fixture has a revision");
+    const after: DrawingRevision = {
+      ...before,
+      source: { type: "image", format: "png", edit: { ...noEdit, clean_up: true } },
+    };
+    const next = applyChanges(project, [{ type: "revision_changed", before, after }]);
+    expect(next.revisions[0]).toEqual(after);
+    const undone = applyChanges(next, [{ type: "revision_changed", before: after, after: before }]);
+    expect(undone.revisions[0]).toEqual(before);
+    expect(() =>
+      applyChanges(project, [{ type: "revision_changed", before, after: { ...after, id: "x" } }]),
+    ).toThrow(PatchMismatch);
+  });
 });
+
+const noEdit: ImageEdit = {
+  rotation: "deg0",
+  fine_angle: "0",
+  corners: null,
+  trim: null,
+  paper: null,
+  clean_up: false,
+};

@@ -413,6 +413,8 @@
   "company_name_hint": "Wird auf Berichten gedruckt. Wird in die Berichtsdaten eines Projekts übernommen, solange dort noch kein Firmenname steht.",
   "refusal_unknown_sample": "Dieses Teil gibt es nicht mehr.",
   "refusal_unknown_revision": "Diesen Änderungsstand gibt es nicht mehr.",
+  "refusal_not_an_image": "Nur Zeichnungen aus einem Foto oder Scan haben Bildeinstellungen.",
+  "refusal_invalid_image_edit": "Die Bildeinstellungen liegen außerhalb des gültigen Bereichs.",
   "refusal_empty_serial": "Die Seriennummer darf nicht leer sein.",
   "refusal_duplicate_serial": "Ein anderes Teil hat diese Seriennummer schon.",
   "refusal_too_many_samples": "Ein Projekt enthält höchstens 500 Teile.",

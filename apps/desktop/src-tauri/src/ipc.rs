@@ -174,6 +174,10 @@ pub enum RejectReason {
     UnknownSample,
     /// A drawing revision of the command does not exist.
     UnknownRevision,
+    /// The drawing revision is a PDF, so it has no image edit settings (MF F1).
+    NotAnImage,
+    /// Image edit settings are out of range (MF F1).
+    InvalidImageEdit,
     /// A sample serial is empty (M3 decision 6).
     EmptySerial,
     /// Another sample has this serial (M3 decision 6).
@@ -213,6 +217,8 @@ impl From<&dimo_core::CommandError> for RejectReason {
             E::Field(FieldError::ZeroQuantity) => Self::ZeroQuantity,
             E::UnknownSample(_) => Self::UnknownSample,
             E::UnknownRevision(_) => Self::UnknownRevision,
+            E::NotAnImage(_) => Self::NotAnImage,
+            E::InvalidImageEdit(_) => Self::InvalidImageEdit,
             E::Serial(SerialError::Empty) => Self::EmptySerial,
             E::Serial(SerialError::Duplicate(_)) => Self::DuplicateSerial,
             E::TooManySamples => Self::TooManySamples,
@@ -439,6 +445,20 @@ mod tests {
         let json = serde_json::to_value(&locked).unwrap();
         assert_eq!(json["kind"], "rejected");
         assert_eq!(json["reason"], "numbering_locked");
+        let pdf = CommandError::from(dimo_core::CommandError::NotAnImage(
+            dimo_core::RevisionId::from_uuid(uuid::Uuid::nil()),
+        ));
+        assert!(matches!(
+            pdf,
+            CommandError::Rejected {
+                reason: RejectReason::NotAnImage,
+                ..
+            }
+        ));
+        assert_eq!(
+            serde_json::to_value(&pdf).unwrap()["reason"],
+            "not_an_image"
+        );
         let zero = CommandError::from(dimo_core::CommandError::Field(
             dimo_core::FieldError::ZeroQuantity,
         ));

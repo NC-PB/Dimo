@@ -503,6 +503,15 @@ revision: RevisionId;
 before: string; 
 /**  Label after. */
 after: string } | 
+/**
+ *  A drawing revision changed as a whole, for example the image edit settings of its
+ *  source (MF F1). The ID stays the same.
+ */
+{ type: "revision_changed"; 
+/**  State before. */
+before: DrawingRevision; 
+/**  State after. */
+after: DrawingRevision } | 
 /**  An issued report record was inserted at `index` of `Project::issued_reports`. */
 { type: "issued_report_inserted"; 
 /**  Position in the list. */
@@ -909,6 +918,17 @@ info: ReportInfo } |
 revision: RevisionId; 
 /**  New label; empty if unknown. */
 label: string } | 
+/**
+ *  Replaces the image edit settings of an image drawing revision: rotation, fine angle,
+ *  corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1). Refused for a
+ *  PDF revision. Sheets and balloons do not change; the image editor (R.20) sends the
+ *  sheet and balloon changes that follow from an edit in the same batch.
+ */
+{ type: "set_image_edit"; 
+/**  The revision. */
+revision: RevisionId; 
+/**  New settings. */
+edit: ImageEdit } | 
 /**
  *  Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
  *  are those of the current revision, the time comes from the environment clock. Exports
@@ -2059,6 +2079,10 @@ export type RejectReason =
 "unknown_sample" | 
 /**  A drawing revision of the command does not exist. */
 "unknown_revision" | 
+/**  The drawing revision is a PDF, so it has no image edit settings (MF F1). */
+"not_an_image" | 
+/**  Image edit settings are out of range (MF F1). */
+"invalid_image_edit" | 
 /**  A sample serial is empty (M3 decision 6). */
 "empty_serial" | 
 /**  Another sample has this serial (M3 decision 6). */

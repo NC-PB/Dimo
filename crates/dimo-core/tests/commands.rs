@@ -590,3 +590,62 @@ fn project_json_round_trips_and_matches_its_schema() {
     assert!(schemas.validate(&float, index).is_err());
     assert!(serde_json::from_value::<dimo_core::Project>(float).is_err());
 }
+/// MF F1: image edit settings change as one `revision_changed` step, only on image revisions
+/// and only within range; an unchanged edit records nothing.
+#[test]
+fn image_edit_is_refused_for_pdf_revisions_and_undoable_for_images() {
+    use dimo_core::{DrawingSource, ImageEdit, ImageFormat};
+
+    let (mut doc, mut env) = doc_with(0);
+    let pdf = doc.project().revisions[0].id;
+    let edit = ImageEdit {
+        rotation: Rotation::Deg90,
+        fine_angle: "-2.5".parse().unwrap(),
+        clean_up: true,
+        ..ImageEdit::default()
+    };
+    let set = |revision, edit: &ImageEdit| Command::SetImageEdit {
+        revision,
+        edit: Box::new(edit.clone()),
+    };
+    assert_eq!(
+        doc.execute(set(pdf, &edit), &mut env),
+        Err(CommandError::NotAnImage(pdf))
+    );
+    let unknown = dimo_core::RevisionId::from_uuid(uuid::Uuid::nil());
+    assert_eq!(
+        doc.execute(set(unknown, &edit), &mut env),
+        Err(CommandError::UnknownRevision(unknown))
+    );
+
+    // An image revision, as release 0.1 will import it (R.19).
+    let mut project = doc.project().clone();
+    project.revisions[0].source = DrawingSource::Image {
+        format: ImageFormat::Png,
+        edit: Box::default(),
+    };
+    let mut doc = Document::new(project);
+    let original = doc.project().clone();
+    let image = original.revisions[0].id;
+    let patch = doc.execute(set(image, &edit), &mut env).unwrap();
+    let [Change::RevisionChanged { before, after }] = patch.changes.as_slice() else {
+        panic!("one revision change: {patch:?}");
+    };
+    assert_eq!(**before, original.revisions[0]);
+    assert_eq!(after.source.image_edit(), Some(&edit));
+    assert_eq!(after.sheets, before.sheets, "sheets stay");
+    assert!(
+        doc.execute(set(image, &edit), &mut env).unwrap().is_empty(),
+        "same edit, no change"
+    );
+    let too_steep = ImageEdit {
+        fine_angle: "46".parse().unwrap(),
+        ..edit.clone()
+    };
+    assert!(matches!(
+        doc.execute(set(image, &too_steep), &mut env),
+        Err(CommandError::InvalidImageEdit(_))
+    ));
+    doc.undo(&mut env).unwrap();
+    assert_eq!(*doc.project(), original);
+}

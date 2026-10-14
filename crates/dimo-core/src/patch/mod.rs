@@ -23,7 +23,7 @@ use crate::id::{CharId, RevisionId, SampleId};
 use crate::measurement::{MeasurementResult, ResultCell, Sample};
 use crate::project::{Numbering, Project, ProjectInfo, ProjectSettings};
 use crate::report::{IssuedReport, ReportInfo};
-use crate::sheet::Sheet;
+use crate::sheet::{DrawingRevision, Sheet};
 
 /// One primitive change of a project.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -161,6 +161,14 @@ pub enum Change {
         /// Label after.
         after: String,
     },
+    /// A drawing revision changed as a whole, for example the image edit settings of its
+    /// source (MF F1). The ID stays the same.
+    RevisionChanged {
+        /// State before.
+        before: Box<DrawingRevision>,
+        /// State after.
+        after: Box<DrawingRevision>,
+    },
     /// An issued report record was inserted at `index` of `Project::issued_reports`.
     IssuedReportInserted {
         /// Position in the list.
@@ -227,6 +235,7 @@ impl Change {
                 ResultChanged { cell },
                 ReportInfoChanged,
                 RevisionLabelChanged { revision },
+                RevisionChanged,
             ];
         }
     }
@@ -335,6 +344,7 @@ impl Project {
                 before,
                 after,
             } => self.change_revision_label(*revision, before, after),
+            C::RevisionChanged { before, after } => self.change_revision(before, after),
             C::IssuedReportInserted { index, report } => {
                 self.insert_issued_report(position(*index), report)
             }

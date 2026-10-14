@@ -172,6 +172,8 @@ function applyChange(project: Project, change: Change): Project {
         ),
       };
     }
+    case "revision_changed":
+      return { ...project, revisions: replaceById(project.revisions, change.after) };
     case "issued_report_inserted":
       return {
         ...project,

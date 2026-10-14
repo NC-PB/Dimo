@@ -1,5 +1,5 @@
-//! Report data: header and approval data, revision labels, issued reports (M3 decisions 1
-//! and 17, FR-RVC-04, D-23).
+//! Report data and drawing revisions: header and approval data, revision labels, image edit
+//! settings, issued reports (M3 decisions 1 and 17, FR-RVC-04, D-23, MF F1).
 
 use super::{CommandError, Tx, index_u32};
 use crate::env::Environment;
@@ -8,6 +8,7 @@ use crate::measurement::is_date_or_empty;
 use crate::patch::Change;
 use crate::report::{IssuedReport, ReportFormat, ReportInfo, ReportKind, TemplateRef};
 use crate::sheet::Sha256Hex;
+use crate::source::{DrawingSource, ImageEdit};
 
 pub(super) fn update_report_info(tx: &mut Tx<'_>, info: &ReportInfo) -> Result<(), CommandError> {
     if !is_date_or_empty(&info.report_date) {
@@ -39,6 +40,35 @@ pub(super) fn update_revision_label(
             revision,
             before: current.label.clone(),
             after: label.to_owned(),
+        })?;
+    }
+    Ok(())
+}
+
+pub(super) fn set_image_edit(
+    tx: &mut Tx<'_>,
+    revision: RevisionId,
+    edit: &ImageEdit,
+) -> Result<(), CommandError> {
+    let current = tx
+        .project
+        .revisions
+        .iter()
+        .find(|r| r.id == revision)
+        .ok_or(CommandError::UnknownRevision(revision))?;
+    let DrawingSource::Image { format, .. } = &current.source else {
+        return Err(CommandError::NotAnImage(revision));
+    };
+    edit.validate().map_err(CommandError::InvalidImageEdit)?;
+    let mut after = Box::new(current.clone());
+    after.source = DrawingSource::Image {
+        format: *format,
+        edit: Box::new(edit.clone()),
+    };
+    if after.source != current.source {
+        tx.push(Change::RevisionChanged {
+            before: Box::new(current.clone()),
+            after,
         })?;
     }
     Ok(())
