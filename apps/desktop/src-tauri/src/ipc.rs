@@ -6,6 +6,7 @@
 use std::sync::Arc;
 
 use dimo_core::Sha256Hex;
+use dimo_pdf::RasterSource;
 use dimo_pdf::tiles::{self, TileKey, TileService};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -259,6 +260,22 @@ impl From<dimo_core::CommandError> for CommandError {
     }
 }
 
+impl From<dimo_io::project::CreateError> for CommandError {
+    fn from(error: dimo_io::project::CreateError) -> Self {
+        use dimo_io::project::CreateError;
+        match error {
+            CreateError::Read { .. } => Self::Io {
+                message: error.to_string(),
+            },
+            CreateError::Project(error) => error.into(),
+            CreateError::Open(error) => error.into(),
+            CreateError::UnknownType | CreateError::ImageNotSupported(_) => Self::InvalidDocument {
+                message: error.to_string(),
+            },
+        }
+    }
+}
+
 impl From<dimo_pdf::PdfError> for CommandError {
     fn from(error: dimo_pdf::PdfError) -> Self {
         Self::InvalidDocument {
@@ -290,20 +307,20 @@ pub struct DocumentInfo {
 }
 
 impl DocumentInfo {
-    /// Describes a document opened by the tile service under the file name `name`.
-    pub fn of(doc: &dimo_pdf::Document, name: &str) -> Self {
-        Self {
-            doc: doc.content_hash().to_hex(),
+    /// Describes a drawing source registered in the tile service under the file name `name`.
+    pub fn of(source: &dyn RasterSource, name: &str) -> Result<Self, CommandError> {
+        Ok(Self {
+            doc: source.content_hash().to_hex(),
             name: name.to_owned(),
-            sheets: doc
-                .sheet_sizes()
+            sheets: source
+                .sheet_sizes()?
                 .iter()
                 .map(|s| SheetInfo {
                     width: s.width,
                     height: s.height,
                 })
                 .collect(),
-        }
+        })
     }
 }
 

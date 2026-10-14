@@ -11,8 +11,8 @@
 //!
 //! If the process dies in between, the journal survives and [`ProjectSession::open`] replays it.
 //!
-//! A project that was never saved has no file to continue. Created with
-//! [`ProjectSession::create_autosaved`], its initial state is written to an autosave base file
+//! A project that was never saved has no file to continue. Created with an autosave base file
+//! ([`CreateOptions::autosave_base`]), its initial state is written to an autosave base file
 //! (in the app data folder, see [`crate::autosave`]) and the journal continues that file.
 //! [`ProjectSession::open_autosaved`] restores it after a crash as an unsaved project. Saving
 //! or discarding deletes the base file together with its journal.
@@ -29,6 +29,18 @@ use super::error::ProjectError;
 use super::import::ImportedDrawing;
 use super::{Layout, ProjectFile};
 use crate::journal::{self, Journal, Recovery};
+
+/// How [`ProjectSession::create`] starts a project.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CreateOptions {
+    /// Part and order data.
+    pub info: ProjectInfo,
+    /// Report info the project starts with (M3 decision 15).
+    pub report_info: ReportInfo,
+    /// Autosave base file in the autosave folder ([`crate::autosave::base_path`]); `None`
+    /// journals nothing until the first save.
+    pub autosave_base: Option<PathBuf>,
+}
 
 /// What happened while opening a project.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -61,46 +73,26 @@ pub struct ProjectSession {
 
 impl ProjectSession {
     /// A new, unsaved project for one imported drawing. The project counts as created at the
-    /// drawing's import time.
-    pub fn create(info: ProjectInfo, drawing: ImportedDrawing) -> Self {
-        Self::create_with_report_info(info, ReportInfo::default(), drawing)
-    }
-
-    /// Like [`ProjectSession::create`], with the report info the project starts with (M3
-    /// decision 15). It is part of the initial state: no command, no undo step, not modified.
-    pub fn create_with_report_info(
-        info: ProjectInfo,
-        report_info: ReportInfo,
-        drawing: ImportedDrawing,
-    ) -> Self {
+    /// drawing's import time; its report info is part of the initial state (no command, no
+    /// undo step, not modified, M3 decision 15). With an autosave base file, the initial
+    /// state is written there now and the changes are journaled against it (NFR-REL-01).
+    /// Fails only when the base file cannot be written.
+    pub fn create(drawing: ImportedDrawing, options: CreateOptions) -> Result<Self, ProjectError> {
+        let CreateOptions {
+            info,
+            report_info,
+            autosave_base,
+        } = options;
         let created = drawing.revision.imported_at.clone();
         let mut project = Project::new(info, drawing.revision);
         project.report_info = report_info;
         let mut file = ProjectFile::new(project, created);
         file.insert_drawing(drawing.bytes);
-        Self::from_file(file, None)
-    }
-
-    /// A new, unsaved project like [`ProjectSession::create`], whose changes are journaled
-    /// against the autosave base file `base`, written now (NFR-REL-01).
-    pub fn create_autosaved(
-        info: ProjectInfo,
-        drawing: ImportedDrawing,
-        base: &Path,
-    ) -> Result<Self, ProjectError> {
-        Self::create_autosaved_with_report_info(info, ReportInfo::default(), drawing, base)
-    }
-
-    /// Like [`ProjectSession::create_autosaved`], with the initial report info.
-    pub fn create_autosaved_with_report_info(
-        info: ProjectInfo,
-        report_info: ReportInfo,
-        drawing: ImportedDrawing,
-        base: &Path,
-    ) -> Result<Self, ProjectError> {
-        let mut session = Self::create_with_report_info(info, report_info, drawing);
-        session.file.save(base, Layout::Zip)?;
-        session.autosave = Some(base.to_owned());
+        let mut session = Self::from_file(file, None);
+        if let Some(base) = autosave_base {
+            session.file.save(&base, Layout::Zip)?;
+            session.autosave = Some(base);
+        }
         Ok(session)
     }
 

@@ -25,11 +25,12 @@
 
 use std::path::{Path, PathBuf};
 
-use dimo_core::{Command, Environment, Patch, Project, ProjectInfo, ReportInfo, Sha256Hex, Size};
+use dimo_core::{Command, Environment, Patch, Project, ProjectInfo, ReportInfo, Sha256Hex};
 use dimo_io::autosave;
 use dimo_io::lock::{LockOwner, ProjectLock};
 use dimo_io::project::{
-    Layout, OpenReport, ProjectError, ProjectSession, SheetInfo, import_drawing,
+    AutosaveTarget, Layout, NewProject, OpenReport, ProjectSession, create_from_drawing_file,
+    open_drawing,
 };
 use dimo_pdf::tiles::TileService;
 use serde::{Deserialize, Serialize};
@@ -489,118 +490,41 @@ impl AppSession {
         Ok(())
     }
 
-    /// Creates a new, unsaved project from the drawing at `pdf` (FR-DOC-07) and replaces the
-    /// open project. `discard` allows dropping unsaved changes of the open project.
+    /// Creates a new, unsaved project from the drawing file at `path` (FR-DOC-07) and
+    /// replaces the open project. `discard` allows dropping unsaved changes of the open
+    /// project. Reading, opening and importing the drawing is `dimo-io`'s job
+    /// ([`dimo_io::project::create_from_drawing_file`]); the drawing opens in the tile service.
     pub fn create_from_drawing(
         &mut self,
         tiles: &TileService,
-        pdf: &Path,
+        path: &Path,
         discard: bool,
     ) -> Result<ProjectLoaded, CommandError> {
         self.ensure_can_replace(discard)?;
-        let bytes = std::fs::read(pdf).map_err(|e| CommandError::Io {
-            message: format!("{}: {e}", pdf.display()),
-        })?;
-        let name = pdf
+        let autosave = self.autosave_dir.clone().map(|dir| AutosaveTarget {
+            dir,
+            owner: self.owner(),
+        });
+        let options = NewProject {
+            info: ProjectInfo::default(),
+            report_info: self.initial_report_info(),
+            autosave,
+        };
+        let created = create_from_drawing_file(path, tiles, options, &mut self.env)?;
+        let name = path
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let doc = tiles.open_document(bytes.clone())?;
-        let hash = *doc.content_hash();
-        let imported = (|| {
-            let mut sheets = Vec::with_capacity(doc.sheet_count());
-            for (index, size) in doc.sheet_sizes().iter().enumerate() {
-                sheets.push(SheetInfo {
-                    size: Size {
-                        width: size.width,
-                        height: size.height,
-                    },
-                    kind: doc.analyze_sheet(index)?.kind,
-                });
-            }
-            let analyzed = Sha256Hex::parse(&hash.to_hex()).map_err(|e| CommandError::Io {
-                message: e.to_string(),
-            })?;
-            Ok::<_, CommandError>(import_drawing(
-                bytes,
-                &name,
-                dimo_core::DrawingSource::Pdf,
-                &analyzed,
-                &sheets,
-                &mut self.env,
-            )?)
-        })();
-        let drawing = match imported {
-            Ok(drawing) => drawing,
-            Err(error) => {
-                self.close_unused_document(tiles, &hash);
-                return Err(error);
-            }
-        };
-        let report_info = self.initial_report_info();
-        let (project, lock, journal_error) = match self.autosave_base() {
-            Ok(Some((base, lock))) => {
-                match ProjectSession::create_autosaved_with_report_info(
-                    ProjectInfo::default(),
-                    report_info.clone(),
-                    drawing.clone(),
-                    &base,
-                ) {
-                    Ok(project) => (project, Some(lock), None),
-                    Err(error) => {
-                        tracing::warn!("new project without autosave: {error}");
-                        let project = ProjectSession::create_with_report_info(
-                            ProjectInfo::default(),
-                            report_info,
-                            drawing,
-                        );
-                        (project, None, Some(error.to_string()))
-                    }
-                }
-            }
-            Ok(None) => (
-                ProjectSession::create_with_report_info(
-                    ProjectInfo::default(),
-                    report_info,
-                    drawing,
-                ),
-                None,
-                None,
-            ),
-            Err(error) => {
-                tracing::warn!("new project without autosave: {error}");
-                let project = ProjectSession::create_with_report_info(
-                    ProjectInfo::default(),
-                    report_info,
-                    drawing,
-                );
-                (project, None, Some(error.to_string()))
-            }
-        };
         let open = OpenProject {
-            project,
-            lock,
-            drawing: DocumentInfo::of(&doc, &name),
-            hash,
+            drawing: DocumentInfo::of(created.source.as_ref(), &name)?,
+            hash: *created.source.content_hash(),
+            project: created.session,
+            lock: created.lock,
             revision: 0,
-            journal_error,
+            journal_error: created.autosave_error.map(|e| e.to_string()),
             reported: Autosave::Clean,
         };
         Ok(self.replace(tiles, open, discard, None))
-    }
-
-    /// A new autosave base path in the autosave folder, locked.
-    fn autosave_base(&mut self) -> Result<Option<(PathBuf, ProjectLock)>, ProjectError> {
-        let Some(dir) = self.autosave_dir.clone() else {
-            return Ok(None);
-        };
-        std::fs::create_dir_all(&dir).map_err(|e| ProjectError::Io {
-            path: dir.clone(),
-            source: e,
-        })?;
-        let base = autosave::base_path(&dir, &self.env.new_uuid().to_string());
-        let lock = ProjectLock::acquire(&base, &self.owner())?;
-        Ok(Some((base, lock)))
     }
 
     /// Opens the project file or folder at `path` and replaces the open project. Replays its
@@ -650,28 +574,22 @@ impl AppSession {
         Ok(true)
     }
 
-    /// Opens the drawing of the current revision in the tile service.
+    /// Opens the drawing of the current revision in the tile service, through the source its
+    /// revision names ([`dimo_io::project::open_drawing`]).
     fn with_drawing(
         tiles: &TileService,
         project: ProjectSession,
         lock: Option<ProjectLock>,
     ) -> Result<OpenProject, CommandError> {
-        let revision =
-            project
-                .project()
-                .current_revision()
-                .ok_or_else(|| CommandError::Project {
-                    message: "the project has no current drawing revision".to_owned(),
-                })?;
-        let bytes = project
-            .drawing(&revision.sha256)
-            .ok_or_else(|| CommandError::Project {
-                message: format!("drawing {} is missing", revision.sha256),
-            })?;
-        let doc = tiles.open_document(bytes.to_vec())?;
+        let opened = open_drawing(&project, tiles)?;
+        let name = project
+            .project()
+            .current_revision()
+            .map(|r| r.file_name.clone())
+            .unwrap_or_default();
         Ok(OpenProject {
-            drawing: DocumentInfo::of(&doc, &revision.file_name),
-            hash: *doc.content_hash(),
+            drawing: DocumentInfo::of(opened.source.as_ref(), &name)?,
+            hash: *opened.source.content_hash(),
             project,
             lock,
             revision: 0,
@@ -745,12 +663,6 @@ impl AppSession {
             tiles.close_document(&old.hash);
         }
         // Dropping `old` releases its lock.
-    }
-
-    fn close_unused_document(&self, tiles: &TileService, hash: &Sha256Hex) {
-        if self.open.as_ref().is_none_or(|o| o.hash != *hash) {
-            tiles.close_document(hash);
-        }
     }
 
     /// Saves to the project file. Fails with [`CommandError::Project`] if it has none: use

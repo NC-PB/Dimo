@@ -1,0 +1,289 @@
+//! Creating a project from a drawing file, and opening the drawing of a project (FR-DOC-07,
+//! MF F1, ADR 0010).
+//!
+//! [`create_from_drawing_file`] is the one way a new project comes into being: it reads the
+//! file, finds out what it is from its first bytes, opens it through a
+//! [`RasterOpener`] (the tile service in the app, the PDF engine in tools), reads the sheets,
+//! imports the revision and starts the [`ProjectSession`], autosaved if an autosave folder is
+//! given. Callers never touch PDFium for this. PDFs are supported; JPEG, PNG and TIFF are
+//! recognized and refused with [`CreateError::ImageNotSupported`] until release 0.1 (R.19).
+//!
+//! [`open_drawing`] opens the drawing of the current revision of a project through the source
+//! its revision names.
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+
+use dimo_core::{DrawingSource, Environment, ImageFormat, ProjectInfo, ReportInfo, Size};
+use dimo_pdf::{Opened, PdfError, RasterOpener, RasterSource};
+
+use super::Limits;
+use super::error::ProjectError;
+use super::import::{ImportedDrawing, SheetInfo, import_drawing};
+use super::session::{CreateOptions, ProjectSession};
+use crate::autosave;
+use crate::lock::{LockOwner, ProjectLock};
+
+/// What a drawing file is, from its first bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DrawingType {
+    /// A PDF: `%PDF-` within the first 1024 bytes, as PDF readers accept it.
+    Pdf,
+    /// A JPEG, PNG or TIFF image.
+    Image(ImageFormat),
+}
+
+/// The type of a drawing file from its first bytes, `None` for anything else.
+pub fn sniff(bytes: &[u8]) -> Option<DrawingType> {
+    let head = &bytes[..bytes.len().min(1024)];
+    if head.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        Some(DrawingType::Image(ImageFormat::Jpeg))
+    } else if head.starts_with(b"\x89PNG\r\n\x1a\n") {
+        Some(DrawingType::Image(ImageFormat::Png))
+    } else if head.starts_with(b"II*\0") || head.starts_with(b"MM\0*") {
+        Some(DrawingType::Image(ImageFormat::Tiff))
+    } else if head.windows(5).any(|w| w == b"%PDF-") {
+        Some(DrawingType::Pdf)
+    } else {
+        None
+    }
+}
+
+/// Where a new project journals before its first save (NFR-REL-01).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AutosaveTarget {
+    /// The autosave folder in the app data folder; created if missing.
+    pub dir: PathBuf,
+    /// Who locks the autosave base file.
+    pub owner: LockOwner,
+}
+
+/// How a new project starts.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct NewProject {
+    /// Part and order data.
+    pub info: ProjectInfo,
+    /// Report info the project starts with (M3 decision 15): initial state, no undo step.
+    pub report_info: ReportInfo,
+    /// Autosave folder; `None` leaves the project unprotected until its first save.
+    pub autosave: Option<AutosaveTarget>,
+}
+
+/// A new project and the opened drawing.
+#[derive(Debug)]
+pub struct CreatedProject {
+    /// The project, not saved yet.
+    pub session: ProjectSession,
+    /// The drawing of its revision, open in the opener (the tile service in the app).
+    pub source: Arc<dyn RasterSource>,
+    /// Lock of the autosave base file, if the project is autosaved.
+    pub lock: Option<ProjectLock>,
+    /// Why the project is not autosaved although an autosave folder was given. The project is
+    /// created anyway; its changes are not protected until the first save.
+    pub autosave_error: Option<ProjectError>,
+}
+
+/// Why no project could be created from a drawing file.
+#[derive(Debug, thiserror::Error)]
+pub enum CreateError {
+    /// The file could not be read.
+    #[error("cannot read {}: {source}", path.display())]
+    Read {
+        /// The file.
+        path: PathBuf,
+        /// The operating system error.
+        source: std::io::Error,
+    },
+    /// Neither a PDF nor a supported image.
+    #[error("not a PDF or image drawing")]
+    UnknownType,
+    /// An image drawing; images become drawings with release 0.1 (R.19).
+    #[error("{0:?} images are not supported yet")]
+    ImageNotSupported(ImageFormat),
+    /// The reader could not open the file or read its sheets.
+    #[error(transparent)]
+    Open(#[from] PdfError),
+    /// The drawing or the project could not be stored.
+    #[error(transparent)]
+    Project(#[from] ProjectError),
+}
+
+/// Creates a new, unsaved project from the drawing file at `path` (FR-DOC-07). See the module
+/// docs. IDs, times and the autosave file name come from `env` (rule 11).
+pub fn create_from_drawing_file(
+    path: &Path,
+    opener: &dyn RasterOpener,
+    options: NewProject,
+    env: &mut dyn Environment,
+) -> Result<CreatedProject, CreateError> {
+    let read = |source| CreateError::Read {
+        path: path.to_owned(),
+        source,
+    };
+    let limit = Limits::DEFAULT.max_drawing;
+    if fs::metadata(path).map_err(read)?.len() > limit {
+        return Err(ProjectError::TooLarge {
+            name: path.display().to_string(),
+            limit,
+        }
+        .into());
+    }
+    let bytes = fs::read(path).map_err(read)?;
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    create_from_drawing(bytes, &name, opener, options, env)
+}
+
+/// [`create_from_drawing_file`] for bytes already read; `file_name` is stored with the
+/// revision (only its last path component).
+pub fn create_from_drawing(
+    bytes: Vec<u8>,
+    file_name: &str,
+    opener: &dyn RasterOpener,
+    options: NewProject,
+    env: &mut dyn Environment,
+) -> Result<CreatedProject, CreateError> {
+    let source_kind = match sniff(&bytes) {
+        Some(DrawingType::Pdf) => DrawingSource::Pdf,
+        Some(DrawingType::Image(format)) => return Err(CreateError::ImageNotSupported(format)),
+        None => return Err(CreateError::UnknownType),
+    };
+    let handle = opener.open_pdf(bytes.clone())?;
+    let hash = *handle.source.content_hash();
+    let drawing = sheets_of(handle.source.as_ref())
+        .map_err(CreateError::from)
+        .and_then(|sheets| {
+            Ok(import_drawing(
+                bytes,
+                file_name,
+                source_kind,
+                &hash,
+                &sheets,
+                env,
+            )?)
+        });
+    let drawing = match drawing {
+        Ok(drawing) => drawing,
+        Err(error) => {
+            if handle.newly_opened {
+                opener.release(&hash);
+            }
+            return Err(error);
+        }
+    };
+    let (session, lock, autosave_error) = start_session(drawing, options, env)?;
+    Ok(CreatedProject {
+        session,
+        source: handle.source,
+        lock,
+        autosave_error,
+    })
+}
+
+/// What the reader finds on each sheet.
+fn sheets_of(source: &dyn RasterSource) -> Result<Vec<SheetInfo>, PdfError> {
+    (0..source.sheet_count())
+        .map(|sheet| {
+            let size = source.sheet_size(sheet)?;
+            Ok(SheetInfo {
+                size: Size {
+                    width: size.width,
+                    height: size.height,
+                },
+                kind: source.sheet_kind(sheet)?,
+            })
+        })
+        .collect()
+}
+
+/// The session, autosaved against a new locked base file if possible. An autosave failure
+/// does not stop the project: it starts without autosave and the error is handed back.
+fn start_session(
+    drawing: ImportedDrawing,
+    options: NewProject,
+    env: &mut dyn Environment,
+) -> Result<(ProjectSession, Option<ProjectLock>, Option<ProjectError>), ProjectError> {
+    let NewProject {
+        info,
+        report_info,
+        autosave,
+    } = options;
+    let mut autosave_error = None;
+    if let Some(target) = autosave {
+        let autosaved = (|| {
+            fs::create_dir_all(&target.dir).map_err(|e| ProjectError::io(&target.dir, e))?;
+            let base = autosave::base_path(&target.dir, &env.new_uuid().to_string());
+            let lock = ProjectLock::acquire(&base, &target.owner)?;
+            let options = CreateOptions {
+                info: info.clone(),
+                report_info: report_info.clone(),
+                autosave_base: Some(base),
+            };
+            Ok::<_, ProjectError>((ProjectSession::create(drawing.clone(), options)?, lock))
+        })();
+        match autosaved {
+            Ok((session, lock)) => return Ok((session, Some(lock), None)),
+            Err(error) => {
+                tracing::warn!("new project without autosave: {error}");
+                autosave_error = Some(error);
+            }
+        }
+    }
+    let options = CreateOptions {
+        info,
+        report_info,
+        autosave_base: None,
+    };
+    Ok((
+        ProjectSession::create(drawing, options)?,
+        None,
+        autosave_error,
+    ))
+}
+
+/// Opens the drawing of the current revision of `project` through the source its revision
+/// names (MF F1).
+pub fn open_drawing(
+    project: &ProjectSession,
+    opener: &dyn RasterOpener,
+) -> Result<Opened, CreateError> {
+    let revision = project.project().current_revision().ok_or_else(|| {
+        ProjectError::InvalidDrawing("the project has no current drawing revision".into())
+    })?;
+    let bytes = project
+        .drawing(&revision.sha256)
+        .ok_or(ProjectError::MissingDrawing(revision.sha256))?;
+    match &revision.source {
+        DrawingSource::Pdf => Ok(opener.open_pdf(bytes.to_vec())?),
+        DrawingSource::Image { format, .. } => Err(CreateError::ImageNotSupported(*format)),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sniff_reads_the_first_bytes() {
+        assert_eq!(sniff(b"%PDF-1.7\n"), Some(DrawingType::Pdf));
+        // PDF readers accept junk before the header.
+        assert_eq!(sniff(b"\r\n\x00junk%PDF-1.4"), Some(DrawingType::Pdf));
+        let mut late = vec![b' '; 1024];
+        late.extend_from_slice(b"%PDF-1.4");
+        assert_eq!(sniff(&late), None, "only the first 1024 bytes count");
+        assert_eq!(
+            sniff(b"\xFF\xD8\xFF\xDB"),
+            Some(DrawingType::Image(ImageFormat::Jpeg))
+        );
+        assert_eq!(
+            sniff(b"\x89PNG\r\n\x1a\n"),
+            Some(DrawingType::Image(ImageFormat::Png))
+        );
+        assert_eq!(sniff(b"II*\0"), Some(DrawingType::Image(ImageFormat::Tiff)));
+        assert_eq!(sniff(b"MM\0*"), Some(DrawingType::Image(ImageFormat::Tiff)));
+        assert_eq!(sniff(b""), None);
+        assert_eq!(sniff(b"\0\0\0\x18ftypheic"), None, "HEIC is not supported");
+    }
+}

@@ -1,19 +1,9 @@
 //! Importing a drawing file (FR-DOC-07).
 //!
-//! `dimo-io` does not open PDFs: the crate rules allow it only `dimo-core`. The caller (the
-//! desktop shell or the CLI) opens the bytes with `dimo-pdf` and passes what it found per sheet
-//! together with the hash `dimo-pdf` computed. `dimo-cli/tests/project_import.rs` shows the
-//! glue:
-//!
-//! ```text
-//! let pdf = engine.open(bytes.clone())?;
-//! let sheets: Vec<SheetInfo> = (0..pdf.sheet_count())
-//!     .map(|i| SheetInfo { size: Size { width, height } of pdf.sheet_size(i)?,
-//!                          kind: pdf.analyze_sheet(i)?.kind })
-//!     .collect();
-//! let hash = Sha256Hex::parse(&pdf.content_hash().to_hex())?;
-//! let drawing = import_drawing(bytes, "part.pdf", DrawingSource::Pdf, &hash, &sheets, &mut env)?;
-//! ```
+//! [`import_drawing`] takes what a reader found per sheet together with the hash the reader
+//! computed. Projects are created through [`super::create_from_drawing_file`], which reads the
+//! sheets through a `dimo_pdf::RasterSource` and calls this; tests call it directly with
+//! sheet data of their own.
 //!
 //! The hash check ties the sheet data to the stored bytes: if the bytes handed in differ from
 //! the bytes that were analyzed, the import fails instead of storing a mismatched pair.

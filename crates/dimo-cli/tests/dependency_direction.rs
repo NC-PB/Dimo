@@ -25,7 +25,11 @@ const ALLOWED: &[(&str, &[&str])] = &[
             "dimo-tolerance",
         ],
     ),
-    ("dimo-io", &["dimo-core", "dimo-notation", "dimo-tolerance"]),
+    (
+        "dimo-io",
+        // dimo-pdf: drawing sources for project creation (MF F1, ADR 0010).
+        &["dimo-core", "dimo-pdf", "dimo-notation", "dimo-tolerance"],
+    ),
     (
         "dimo-report",
         &["dimo-core", "dimo-notation", "dimo-tolerance"],

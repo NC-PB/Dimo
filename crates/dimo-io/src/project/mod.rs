@@ -26,10 +26,13 @@
 //! # Modules
 //!
 //! - [`ProjectFile`]: load and save in either layout, with migrations and drawing hash checks.
+//! - [`create`]: a new project from a drawing file, read through a `dimo_pdf::RasterOpener`
+//!   (MF F1), and the drawing of an open project.
 //! - [`import`]: a drawing's bytes and sheet data become a [`DrawingRevision`](dimo_core::DrawingRevision).
 //! - [`ProjectSession`]: an open project with its autosave journal ([`crate::journal`]).
 
 mod container;
+pub mod create;
 mod error;
 pub mod import;
 mod manifest;
@@ -45,10 +48,14 @@ use dimo_core::{AuditEntry, Project, Sha256Hex, Timestamp};
 
 pub use container::Limits;
 pub(crate) use container::write_atomic;
+pub use create::{
+    AutosaveTarget, CreateError, CreatedProject, DrawingType, NewProject, create_from_drawing,
+    create_from_drawing_file, open_drawing, sniff,
+};
 pub use error::ProjectError;
 pub use import::{ImportedDrawing, SheetInfo, import_drawing};
 pub use manifest::Manifest;
-pub use session::{OpenReport, ProjectSession};
+pub use session::{CreateOptions, OpenReport, ProjectSession};
 
 /// The `format` value in every manifest.
 pub const FORMAT_NAME: &str = "dimo-project";

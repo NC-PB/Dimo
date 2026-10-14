@@ -1095,7 +1095,6 @@ dependencies = [
  "clap",
  "dimo-core",
  "dimo-detect",
- "dimo-io",
  "dimo-pdf",
  "dimo-report",
  "dimo-synth",
@@ -1168,6 +1167,7 @@ dependencies = [
  "boon",
  "csv",
  "dimo-core",
+ "dimo-pdf",
  "insta",
  "proptest",
  "rust_decimal",
@@ -1176,6 +1176,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",
+ "tracing",
  "zip",
 ]
 

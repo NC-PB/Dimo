@@ -123,7 +123,7 @@ pub async fn report_preview(
         let bytes = preview_bytes(&snapshot, view)?;
         let doc = tiles.open_document(bytes)?;
         let name = view.save_copy().format.file_name(&stem);
-        let info = DocumentInfo::of(&doc, &name);
+        let info = DocumentInfo::of(doc.as_ref(), &name)?;
         for old in render_app.state::<PreviewState>().push(*doc.content_hash()) {
             tiles.close_document(&old);
         }
