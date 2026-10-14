@@ -451,7 +451,7 @@ impl<'a> Builder<'a> {
         sheet.write_string_with_format(row, 5, &r.unit, &text)?;
         let mut rule = match r.rule {
             Some(code) => {
-                let label = labels.nested("rules", rule_key(code))?;
+                let label = labels.nested("rules", &code.code())?;
                 join(" ", [label, &r.rule_detail])
             }
             None => String::new(),
@@ -742,22 +742,6 @@ fn write_decimal(
     };
     sheet.write_string_with_format(row, col, &text, format)?;
     Ok(())
-}
-
-fn rule_key(code: crate::model::RuleCode) -> &'static str {
-    use crate::model::RuleCode::{
-        CustomTable, DecimalRule, DrawingRule, Explicit, Fit, General, Manual, NoToleranceDefined,
-    };
-    match code {
-        Explicit => "explicit",
-        Fit => "fit",
-        DrawingRule => "drawing_rule",
-        General => "general",
-        DecimalRule => "decimal_rule",
-        CustomTable => "custom_table",
-        NoToleranceDefined => "no_tolerance_defined",
-        Manual => "manual",
-    }
 }
 
 /// Joins the non empty parts with `separator`.

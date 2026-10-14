@@ -21,7 +21,8 @@ use dimo_core::{
     measured_characteristics, measurement_state,
 };
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::de::IntoDeserializer;
+use serde::{Deserialize, Serialize};
 
 use crate::{ReportDate, ReportError};
 
@@ -109,8 +110,10 @@ pub enum GroupVerdict {
     Open,
 }
 
+// The codes are the `DerivationRule::id`s (`rule_code`). Plain comment: the doc comment below
+// is the description in the published data schema.
 /// Which rule produced the limits (FR-TOL-08), as in `project.json`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum RuleCode {
     /// Tolerance written on the callout.
@@ -672,16 +675,21 @@ fn cell_verdict(verdict: Verdict) -> CellVerdict {
     }
 }
 
-fn rule_code(rule: &DerivationRule) -> RuleCode {
-    match rule {
-        DerivationRule::Explicit => RuleCode::Explicit,
-        DerivationRule::Fit { .. } => RuleCode::Fit,
-        DerivationRule::DrawingRule { .. } => RuleCode::DrawingRule,
-        DerivationRule::General { .. } => RuleCode::General,
-        DerivationRule::DecimalRule { .. } => RuleCode::DecimalRule,
-        DerivationRule::CustomTable { .. } => RuleCode::CustomTable,
-        DerivationRule::NoToleranceDefined => RuleCode::NoToleranceDefined,
-        DerivationRule::Manual => RuleCode::Manual,
+fn rule_code(rule: &DerivationRule) -> Option<RuleCode> {
+    let id = rule.id();
+    let code = RuleCode::deserialize(id.as_str().into_deserializer());
+    code.map_err(|_: serde::de::value::Error| tracing::warn!(%id, "rule without a report code"))
+        .ok()
+}
+
+impl RuleCode {
+    /// The code as written into the data, also the key of its label in the template
+    /// (`rules.<code>`).
+    pub fn code(self) -> String {
+        serde_json::to_value(self)
+            .ok()
+            .and_then(|json| json.as_str().map(str::to_owned))
+            .unwrap_or_default()
     }
 }
 
@@ -819,7 +827,7 @@ impl Formatter {
             upper_limit: self.optional(c.upper_limit),
             unit: c.unit.map_or("", unit_symbol).to_owned(),
             fit: c.fit.clone().unwrap_or_default(),
-            rule: c.derivation.as_ref().map(|d| rule_code(&d.rule)),
+            rule: c.derivation.as_ref().and_then(|d| rule_code(&d.rule)),
             rule_detail: c
                 .derivation
                 .as_ref()
@@ -843,6 +851,67 @@ impl Formatter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// MF F9: every rule has a report code, and code and label key are the rule id of
+    /// `project.json`, as the hand written tables were.
+    #[test]
+    fn rule_codes_are_the_rule_ids() {
+        use dimo_core::{SizeRange, TableLookup};
+        let table = TableRef {
+            id: "iso-2768-1".into(),
+            version: 1,
+        };
+        let lookup = TableLookup {
+            table: table.clone(),
+            part: "linear".into(),
+            class: "m".into(),
+            range: SizeRange {
+                min: None,
+                max: None,
+            },
+        };
+        let rules = [
+            DerivationRule::Explicit,
+            DerivationRule::Fit {
+                table,
+                fit: "H7".into(),
+                range: None,
+            },
+            DerivationRule::DrawingRule {
+                lookup: lookup.clone(),
+            },
+            DerivationRule::General {
+                lookup: lookup.clone(),
+            },
+            DerivationRule::DecimalRule {
+                places: 2,
+                tolerance: rust_decimal::Decimal::new(5, 2),
+            },
+            DerivationRule::CustomTable { lookup },
+            DerivationRule::NoToleranceDefined,
+            DerivationRule::Manual,
+        ];
+        let codes: Vec<String> = rules
+            .iter()
+            .map(|rule| rule_code(rule).expect("report code").code())
+            .collect();
+        assert_eq!(
+            codes,
+            [
+                "explicit",
+                "fit",
+                "drawing_rule",
+                "general",
+                "decimal_rule",
+                "custom_table",
+                "no_tolerance_defined",
+                "manual",
+            ]
+        );
+        for rule in &rules {
+            assert_eq!(rule_code(rule).map(RuleCode::code), Some(rule.id()));
+        }
+    }
 
     #[test]
     fn dates_are_real_calendar_dates() {

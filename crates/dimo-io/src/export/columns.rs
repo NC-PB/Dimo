@@ -1,8 +1,8 @@
 //! Columns of the characteristic list (FR-CHR-02) and their cell values.
 
 use dimo_core::{
-    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, DerivationRule,
-    Language, Project, Unit,
+    Characteristic, CharacteristicKind, CharacteristicStatus, Classification, Language, Project,
+    Unit,
 };
 use rust_decimal::Decimal;
 
@@ -167,7 +167,7 @@ impl Column {
             Self::Rule => c
                 .derivation
                 .as_ref()
-                .map_or(Cell::Empty, |d| Cell::Text(rule_id(&d.rule).to_owned())),
+                .map_or(Cell::Empty, |d| Cell::Text(d.rule.id())),
             Self::Quantity => Cell::Integer(c.quantity),
             Self::Classification => match c.classification {
                 Classification::None => Cell::Empty,
@@ -226,20 +226,6 @@ fn kind_id(kind: CharacteristicKind) -> &'static str {
         K::FlagNote => "flag_note",
         K::MaterialProcess => "material_process",
         K::Other => "other",
-    }
-}
-
-/// The rule as in `project.json` and the corpus truth format, never translated.
-fn rule_id(rule: &DerivationRule) -> &'static str {
-    match rule {
-        DerivationRule::Explicit => "explicit",
-        DerivationRule::Fit { .. } => "fit",
-        DerivationRule::DrawingRule { .. } => "drawing_rule",
-        DerivationRule::General { .. } => "general",
-        DerivationRule::DecimalRule { .. } => "decimal_rule",
-        DerivationRule::CustomTable { .. } => "custom_table",
-        DerivationRule::NoToleranceDefined => "no_tolerance_defined",
-        DerivationRule::Manual => "manual",
     }
 }
 
