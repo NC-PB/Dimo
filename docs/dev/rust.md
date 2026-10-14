@@ -57,7 +57,8 @@ others are hand kept and easy to miss.
 3. Handler in the area module under `crates/dimo-core/src/command/` (characteristics, balloons,
    sheets, numbering, settings, measurement, reports). It validates first, then pushes
    `patch::Change`s through `Tx::push`; record a change only if the state differs. Use the
-   shared helpers (`known_chars`, `change_settings`, `change_sheet`, `renumber_if_unlocked`).
+   shared helpers (`known_chars` in `mod.rs`, `change_settings` in `settings.rs`,
+   `renumber_if_unlocked` in `numbering.rs`).
 4. New refusal: a `CommandError` variant in `command/mod.rs`, its `RejectReason` and mapping in
    `apps/desktop/src-tauri/src/ipc.rs` (`impl From<&dimo_core::CommandError> for RejectReason`,
    exhaustive) with the mapping test in the same file.

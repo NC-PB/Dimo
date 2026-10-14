@@ -5,8 +5,8 @@
 //! the changes made so far are rolled back and the project is unchanged.
 //!
 //! Handlers live in one submodule per area (characteristics, balloons, sheets, numbering,
-//! settings, measurement, reports). Numbering rules (D-21, D-23) live in `numbering`: see
-//! [`Numbering`](crate::project::Numbering).
+//! settings, measurement, reports). Numbering rules (D-21, D-23) live in
+//! `command::numbering`: see [`Numbering`](crate::project::Numbering).
 
 mod balloons;
 mod characteristics;
