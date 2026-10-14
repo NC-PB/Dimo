@@ -111,6 +111,12 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
   through the dev server. The smoke test now starts Vite with `DIMO_E2E=1` (no watching, no hot
   reload) and fails at once on "page loaded again"; debug runs with a UI script also turn off
   WebKit background throttling.
+- **`bindings.ts` merge conflicts.** The file is generated. On a conflict take either side, then
+  regenerate with `cargo test -p dimo-desktop --test bindings` (the first run rewrites the file and
+  fails, the second passes; run it twice). Never format it with prettier. The same holds for the
+  command list: `apps/desktop/src-tauri/commands.txt` is one name per line, so a conflict there is
+  resolved by keeping both sides' lines; `cargo test -p dimo-desktop --test command_table` checks
+  it against `collect_commands!` in `lib.rs` (a conflict in that macro is also keep both).
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 

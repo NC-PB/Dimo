@@ -1,0 +1,71 @@
+# The single hand-kept list of IPC commands (F6).
+#
+# One command name per line (the Rust function name), grouped by module. build.rs reads this file
+# for the Tauri app manifest and writes the permission set `allow-app-commands` that
+# capabilities/default.json references. The test `tests/command_table.rs` checks that this list
+# equals the commands registered in `collect_commands!` (src/lib.rs), in both directions.
+# Lines starting with `#` and blank lines are ignored.
+
+# ipc
+app_info
+set_tile_interest
+
+# project
+project_state
+new_project
+open_project
+save_project
+save_project_as
+confirm_close
+close_project
+
+# recent
+recent_projects
+remove_recent_project
+open_recent_project
+
+# project
+execute
+undo
+redo
+
+# export
+export_project
+cancel_job
+report_export_warnings
+
+# report
+report_preview
+report_checks
+print_report
+
+# recognition
+propose_from_region
+read_callout_text
+
+# numbering
+preview_numbering
+zone_grid_form
+
+# tolerance
+tolerance_tables
+explain_characteristic
+characteristic_history
+reinterpret_characteristics
+general_tolerance_candidates
+apply_general_tolerance
+set_shorter_leg
+import_tolerance_table
+
+# measurement
+measurement_state
+changed_since_issued_report
+
+# settings
+app_settings
+set_app_settings
+
+# dev
+dev_startup
+dev_report_frame_times
+dev_log

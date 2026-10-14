@@ -22,9 +22,15 @@ only the permissions it needs (NFR-SEC-01).
 
 1. Implement the logic in the right crate, not in `src-tauri`.
 2. `src-tauri`: thin `#[tauri::command]` + `#[specta::specta]` wrapper, error type mapped to a
-   serializable error enum. Register in the builder and in the specta collector.
-3. Allow it in the capability file of the main window. Nothing more.
-4. Regenerate bindings, use them in the frontend.
+   serializable error enum. Register it in `collect_commands!` in `src/lib.rs`.
+3. Add its name to `apps/desktop/src-tauri/commands.txt` (one name per line, under its module
+   comment). `build.rs` turns that table into the permission set `allow-app-commands`, which
+   `capabilities/default.json` already references. Do not touch the capability file. The test
+   `cargo test -p dimo-desktop --test command_table` fails if the table and `collect_commands!`
+   differ in either direction.
+4. Regenerate bindings with `cargo test -p dimo-desktop --test bindings` (run twice: the first run
+   rewrites `bindings.ts` and fails), use them in the frontend. On a `bindings.ts` merge conflict
+   take either side and regenerate. Never format the file.
 
 ## Long running work
 
@@ -39,5 +45,5 @@ Tiles and image crops go through the `dimo://` protocol, never through commands 
 
 - [ ] No business rule added in TypeScript
 - [ ] Bindings regenerated and committed
-- [ ] Capability updated minimally
+- [ ] Name added to `commands.txt` (no capability edit needed)
 - [ ] Rust test for the logic, frontend test if there is view logic

@@ -25,8 +25,8 @@ use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events};
 
 /// Header written above the generated bindings. The file is excluded from eslint and prettier.
-const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src (ipc.rs, project.rs, session.rs, export.rs, recognition.rs, settings.rs, recent.rs, numbering.rs, tolerance.rs, measurement.rs, dev.rs). \
-Regenerate with `cargo test -p dimo-desktop --test bindings` or `tauri dev`.";
+const BINDINGS_HEADER: &str = "// Source: apps/desktop/src-tauri/src. \
+Regenerate with `cargo test -p dimo-desktop --test bindings` (run twice) or `tauri dev`.";
 
 /// Location of the committed TypeScript bindings, `apps/desktop/src/lib/ipc/bindings.ts`.
 pub fn bindings_path() -> PathBuf {
