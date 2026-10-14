@@ -71,17 +71,7 @@ fn box_select_accept_undo_redo() {
     let sheet = session.project().unwrap().revisions[0].sheets[0].id;
     let target = session.recognition_target(sheet).unwrap();
 
-    // Warm: the page is loaded once; then a box select is a region query on the cached page.
-    propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
-    let started = Instant::now();
     let views = propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
-    let took = started.elapsed();
-    assert!(
-        took < Duration::from_millis(50),
-        "box select took {took:?}, the direct call needs to stay below 50 ms"
-    );
-    eprintln!("box select on test_drawing_1: {took:?}");
-
     assert_eq!(views.len(), 1);
     // The tolerance engine explains the limits and finds the printed deviations differ from
     // ISO 286 H7 (T2.5).
@@ -162,6 +152,32 @@ fn box_select_accept_undo_redo() {
         propose(&tiles, &target, sheet, flat, PLACEMENT, ExplainLanguage::En),
         Err(CommandError::InvalidArgument { .. })
     ));
+}
+
+/// Performance test, ignored in the default run (`scripts/perf-tests.sh`): a box select on a
+/// loaded page stays below 50 ms.
+#[test]
+#[ignore = "performance test, run with scripts/perf-tests.sh"]
+fn perf_box_select_under_50_ms() {
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    let target = session.recognition_target(sheet).unwrap();
+
+    // Warm: the page is loaded once; then a box select is a region query on the cached page.
+    propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
+    let started = Instant::now();
+    let views = propose(&tiles, &target, sheet, C03, PLACEMENT, ExplainLanguage::En).unwrap();
+    let took = started.elapsed();
+    eprintln!("box select on test_drawing_1: {took:?}");
+    assert_eq!(views.len(), 1);
+    assert!(
+        took < Duration::from_millis(50),
+        "box select took {took:?}, the direct call needs to stay below 50 ms"
+    );
 }
 
 /// M2 decision 5: typed text gives the same values as the box selection.

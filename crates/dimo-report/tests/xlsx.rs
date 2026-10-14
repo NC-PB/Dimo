@@ -222,9 +222,7 @@ fn long_header_fields_keep_the_page_header() {
 #[test]
 fn large_report_300_rows_by_10_samples() {
     let project = fixture::large(300, 10);
-    let start = Instant::now();
     let first = xlsx(&project, ReportKind::InspectionReport, Language::De);
-    let elapsed = start.elapsed();
     assert_eq!(
         first,
         xlsx(&project, ReportKind::InspectionReport, Language::De)
@@ -237,9 +235,21 @@ fn large_report_300_rows_by_10_samples() {
     assert!(sheet.contains(r#"<colBreaks count="1""#));
     // 300 rows x 10 samples are number cells.
     assert!(sheet.matches("<v>").count() >= 3000);
-    assert!(elapsed.as_secs() < 5, "took {elapsed:?}");
     let check = xlsx(&project, ReportKind::CheckSheet, Language::En);
     assert!(read_entry(&check, "xl/worksheets/sheet1.xml").contains(r#"<row r="1""#));
+}
+
+/// Performance test, ignored in the default run (`scripts/perf-tests.sh`): the inspection
+/// report of 300 rows by 10 samples is written in under 5 s.
+#[test]
+#[ignore = "performance test, run with scripts/perf-tests.sh"]
+fn perf_large_report_under_5_s() {
+    let project = fixture::large(300, 10);
+    let start = Instant::now();
+    let bytes = xlsx(&project, ReportKind::InspectionReport, Language::De);
+    let elapsed = start.elapsed();
+    assert!(bytes.len() > 1000, "{} bytes", bytes.len());
+    assert!(elapsed.as_secs() < 5, "took {elapsed:?}");
 }
 
 /// An empty header field writes no label; the legend lists the open mark.

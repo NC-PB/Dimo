@@ -97,6 +97,43 @@ jobs:
       - name: Run checks
         run: ./scripts/check.sh
 
+  # MF F9: the timing assertions (20 ms, 50 ms, 5 s) are ignored `perf_*` tests outside the
+  # default test run. They run here on one platform, macOS as on the owner's machine. Shared
+  # runners have noisy neighbours and vary in speed, so a miss is informative only: the job is
+  # marked continue-on-error and does not block a merge. Compare with a local run of
+  # scripts/perf-tests.sh before acting on a failure.
+  perf-tests:
+    name: performance tests (informative)
+    runs-on: macos-15
+    timeout-minutes: 60
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    env:
+      DIMO_REQUIRE_PDFIUM: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install
+          rustc --version
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (2026-08-06)
+
+      - name: Cache PDFium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0 (2026-06-26)
+        with:
+          path: vendor/pdfium
+          key: pdfium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/pdfium.toml') }}
+
+      - name: Fetch PDFium
+        run: ./scripts/fetch-pdfium.sh
+
+      - name: Run performance tests
+        run: ./scripts/perf-tests.sh
+
   # D-43: a tag build (release) fails while any shipped tolerance table is a draft. check.sh runs
   # the same gate; this job names the reason on its own. Branch builds only warn.
   tolerance-tables:
