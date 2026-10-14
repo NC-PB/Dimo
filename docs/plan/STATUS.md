@@ -8,7 +8,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 - Milestone: **M3 Simple shop reports** ([plan](M3.md)): T3.1 to T3.10 done; UI rework T3.12 to T3.20 done; next **T3.21 shop floor user test**, then the owner's exit run (T3.11), mockups approved by the owner 2026-10-13 (Office-style shell, cnc-master brand colors, light and dark, About page with licenses, two UI bugs). Then the shop floor user test (T3.21) and the owner's exit run (T3.11)
 - M2 implemented, owner exit open. M0 and M1 implemented, owner reviews open
 - Owner, blocking release 0.1: set `verified` in the tolerance tables after the Tabellenbuch check (D-43; owner reports the tables look fine, files still `draft`)
-- Release target: 0.1 after M3. Plan in [R01.md](R01.md) (2026-10-14, decisions answered, ADR 0008 to accept; no code until the owner says so)
+- Release target: 0.1 after M3. Plan in [R01.md](R01.md) (2026-10-14, decisions answered, ADR 0008 accepted; no code until the owner says so)
 
 ## Tasks M0
 

@@ -1,6 +1,6 @@
 # ADR 0008: Update check as a button with a link to the release page
 
-Status: proposed
+Status: accepted (owner, 2026-10-14)
 
 ## Context
 D-05 planned the Tauri updater against GitHub Releases, off by default and offered once in the
