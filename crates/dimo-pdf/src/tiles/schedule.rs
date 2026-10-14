@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
 
 use super::{TileKey, TileRange};
 
@@ -18,7 +18,7 @@ use super::{TileKey, TileRange};
 pub(crate) struct Scheduler<W> {
     order: VecDeque<TileKey>,
     jobs: HashMap<TileKey, Job<W>>,
-    interest: HashMap<ContentHash, Vec<TileRange>>,
+    interest: HashMap<Sha256Hex, Vec<TileRange>>,
 }
 
 #[derive(Debug)]
@@ -96,7 +96,7 @@ impl<W> Scheduler<W> {
     /// queued job of the document.
     pub(crate) fn set_interest(
         &mut self,
-        doc: ContentHash,
+        doc: Sha256Hex,
         ranges: Option<Vec<TileRange>>,
     ) -> Vec<W> {
         let Some(ranges) = ranges else {
@@ -121,7 +121,7 @@ impl<W> Scheduler<W> {
 
     /// Removes every queued job of a document (closed document) and returns their waiters.
     /// Running jobs finish normally.
-    pub(crate) fn remove_document(&mut self, doc: &ContentHash) -> Vec<W> {
+    pub(crate) fn remove_document(&mut self, doc: &Sha256Hex) -> Vec<W> {
         self.interest.remove(doc);
         let mut removed = Vec::new();
         let jobs = &mut self.jobs;
@@ -158,7 +158,7 @@ impl<W> Scheduler<W> {
     }
 }
 
-fn wanted(interest: &HashMap<ContentHash, Vec<TileRange>>, key: &TileKey) -> bool {
+fn wanted(interest: &HashMap<Sha256Hex, Vec<TileRange>>, key: &TileKey) -> bool {
     interest
         .get(&key.doc)
         .is_none_or(|ranges| ranges.iter().any(|r| r.contains(key)))
@@ -168,8 +168,8 @@ fn wanted(interest: &HashMap<ContentHash, Vec<TileRange>>, key: &TileKey) -> boo
 mod tests {
     use super::*;
 
-    fn doc(name: &[u8]) -> ContentHash {
-        ContentHash::of(name)
+    fn doc(name: &[u8]) -> Sha256Hex {
+        Sha256Hex::of(name)
     }
 
     fn key(d: &[u8], x: u32) -> TileKey {

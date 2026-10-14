@@ -18,7 +18,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
 
 use super::TileKey;
 use super::encode::PNG_SIGNATURE;
@@ -46,7 +46,7 @@ impl DiskCache {
         Ok(Self { root })
     }
 
-    fn doc_dir(&self, doc: &ContentHash) -> PathBuf {
+    fn doc_dir(&self, doc: &Sha256Hex) -> PathBuf {
         self.root.join(doc.to_hex())
     }
 
@@ -83,7 +83,7 @@ impl DiskCache {
     }
 
     /// Records that a document was used now, so pruning keeps it longer.
-    pub(crate) fn touch(&self, doc: &ContentHash) -> io::Result<()> {
+    pub(crate) fn touch(&self, doc: &Sha256Hex) -> io::Result<()> {
         let dir = self.doc_dir(doc);
         fs::create_dir_all(&dir)?;
         let file = fs::File::create(dir.join(LAST_USED))?;
@@ -157,7 +157,7 @@ mod tests {
 
     fn key(doc: &[u8], x: u32) -> TileKey {
         TileKey {
-            doc: ContentHash::of(doc),
+            doc: Sha256Hex::of(doc),
             sheet: 1,
             zoom: -1,
             x,
@@ -206,8 +206,8 @@ mod tests {
         let cache = DiskCache::open(dir.path()).unwrap();
         for (doc, age) in [(b"old", 300), (b"mid", 200), (b"new", 100)] {
             cache.write(&key(doc, 0), &png(1000)).unwrap();
-            cache.touch(&ContentHash::of(doc)).unwrap();
-            let marker = cache.doc_dir(&ContentHash::of(doc)).join(LAST_USED);
+            cache.touch(&Sha256Hex::of(doc)).unwrap();
+            let marker = cache.doc_dir(&Sha256Hex::of(doc)).join(LAST_USED);
             let file = fs::File::options().write(true).open(marker).unwrap();
             file.set_modified(SystemTime::now() - Duration::from_secs(age))
                 .unwrap();
@@ -226,7 +226,7 @@ mod tests {
         let cache = DiskCache::open(dir.path()).unwrap();
         let started = SystemTime::now() - Duration::from_secs(60);
         cache.write(&key(b"a", 0), &png(1000)).unwrap();
-        cache.touch(&ContentHash::of(b"a")).unwrap();
+        cache.touch(&Sha256Hex::of(b"a")).unwrap();
         let left = cache.prune(0, started).unwrap();
         assert_eq!(left, 1000);
         assert!(cache.read(&key(b"a", 0)).is_some());

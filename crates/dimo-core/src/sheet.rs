@@ -2,12 +2,13 @@
 
 use std::fmt;
 
-use schemars::{JsonSchema, Schema, SchemaGenerator, json_schema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::characteristic::Unit;
 use crate::env::Timestamp;
 use crate::geometry::{Rect, Size};
+pub use crate::hash::{Sha256Error, Sha256Hex};
 use crate::id::{RevisionId, SheetId};
 
 /// How the text of a sheet is stored, which decides the recognition path (FR-DOC-03).
@@ -214,76 +215,6 @@ impl SheetView {
     }
 }
 
-/// SHA-256 of a file as 64 lowercase hex digits (FR-DOC-07).
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
-#[serde(try_from = "String", into = "String")]
-#[cfg_attr(feature = "specta", specta(transparent))]
-pub struct Sha256Hex(String);
-
-/// Error for text that is not 64 lowercase hex digits.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("invalid SHA-256 {0:?}, expected 64 lowercase hex digits")]
-pub struct Sha256Error(String);
-
-impl Sha256Hex {
-    /// Checks 64 lowercase hex digits.
-    pub fn parse(text: &str) -> Result<Self, Sha256Error> {
-        let hex = |b: u8| b.is_ascii_digit() || (b'a'..=b'f').contains(&b);
-        if text.len() == 64 && text.bytes().all(hex) {
-            Ok(Self(text.to_owned()))
-        } else {
-            Err(Sha256Error(text.to_owned()))
-        }
-    }
-
-    /// Hex digits from 32 hash bytes.
-    pub fn from_bytes(bytes: &[u8; 32]) -> Self {
-        use fmt::Write;
-        let mut text = String::with_capacity(64);
-        for b in bytes {
-            // Writing to a String cannot fail.
-            let _ = write!(text, "{b:02x}");
-        }
-        Self(text)
-    }
-
-    /// The hex digits.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl fmt::Display for Sha256Hex {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
-impl TryFrom<String> for Sha256Hex {
-    type Error = Sha256Error;
-
-    fn try_from(text: String) -> Result<Self, Self::Error> {
-        Self::parse(&text)
-    }
-}
-
-impl From<Sha256Hex> for String {
-    fn from(hash: Sha256Hex) -> Self {
-        hash.0
-    }
-}
-
-impl JsonSchema for Sha256Hex {
-    fn schema_name() -> std::borrow::Cow<'static, str> {
-        "Sha256Hex".into()
-    }
-
-    fn json_schema(_: &mut SchemaGenerator) -> Schema {
-        json_schema!({ "type": "string", "pattern": "^[0-9a-f]{64}$" })
-    }
-}
-
 /// One imported drawing file (data model `DrawingRevision`, FR-DOC-07).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -306,16 +237,6 @@ pub struct DrawingRevision {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn sha256_accepts_only_lowercase_hex() {
-        let zeros = "0".repeat(64);
-        assert!(Sha256Hex::parse(&zeros).is_ok());
-        assert!(Sha256Hex::parse(&"A".repeat(64)).is_err());
-        assert!(Sha256Hex::parse("abc").is_err());
-        assert_eq!(Sha256Hex::from_bytes(&[0xab; 32]).as_str(), "ab".repeat(32));
-        assert!(serde_json::from_str::<Sha256Hex>("\"xyz\"").is_err());
-    }
 
     #[test]
     fn rotation_and_scale_serialize_readably() {

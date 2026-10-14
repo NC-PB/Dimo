@@ -67,7 +67,7 @@ pub fn import_drawing(
     let actual = sha256(&bytes);
     if actual != *analyzed_hash {
         return Err(ProjectError::HashMismatch {
-            expected: analyzed_hash.clone(),
+            expected: *analyzed_hash,
             actual,
         });
     }

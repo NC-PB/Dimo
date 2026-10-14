@@ -502,7 +502,7 @@ mod tests {
         };
         assert_eq!(ok.validate(), Ok(()));
         let broken: [fn(&mut ToleranceSettings); 8] = [
-            |s| s.custom_tables[1].sha256 = s.custom_tables[0].sha256.clone(),
+            |s| s.custom_tables[1].sha256 = s.custom_tables[0].sha256,
             |s| s.decimal_rules.reverse(),
             |s| s.decimal_rules[0].tolerance = Decimal::ZERO,
             |s| s.decimal_rules[1].places = 11,

@@ -2218,7 +2218,7 @@ export type SettingsView = {
 	os_user_name: string,
 };
 
-/**  SHA-256 of a file as 64 lowercase hex digits (FR-DOC-07). */
+/**  SHA-256 of a file, written as 64 lowercase hex digits (FR-DOC-07). */
 export type Sha256Hex = string;
 
 /**  One sheet (PDF page) of a drawing revision. */

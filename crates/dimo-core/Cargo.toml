@@ -17,6 +17,8 @@ rust_decimal.workspace = true
 schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+# Content hash of drawings and tables (FR-DOC-07), one type for the workspace (MF F1).
+sha2.workspace = true
 specta = { workspace = true, optional = true }
 thiserror.workspace = true
 uuid.workspace = true
@@ -24,7 +26,6 @@ uuid.workspace = true
 [dev-dependencies]
 boon.workspace = true
 proptest.workspace = true
-sha2.workspace = true
 specta-serde.workspace = true
 specta-typescript.workspace = true
 

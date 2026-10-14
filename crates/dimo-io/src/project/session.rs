@@ -310,7 +310,7 @@ impl ProjectSession {
             if let Some(journal) = &mut self.journal {
                 journal.append_with_tables(&tables, self.document.audit())?;
             }
-            let written: Vec<Sha256Hex> = tables.iter().map(|(hash, _)| (*hash).clone()).collect();
+            let written: Vec<Sha256Hex> = tables.iter().map(|(hash, _)| *(*hash)).collect();
             self.journaled_tables.extend(written);
         }
         self.file.audit.extend(self.document.take_audit());

@@ -20,7 +20,8 @@ use dimo_desktop::report::{
 };
 use dimo_desktop::session::AppSession;
 use dimo_pdf::tiles::{TileConfig, TileKey, TileService};
-use dimo_pdf::{ContentHash, PdfEngine, PdfError};
+use dimo_core::Sha256Hex;
+use dimo_pdf::{PdfEngine, PdfError};
 use rust_decimal::Decimal;
 
 fn pdfium_required() -> bool {
@@ -174,7 +175,7 @@ fn preview_pages_render_as_tiles() {
         view(ReportKind::InspectionReport, Language::En),
     )
     .unwrap();
-    let hash = ContentHash::of(&bytes);
+    let hash = Sha256Hex::of(&bytes);
     let doc = tiles.open_document(bytes).unwrap();
     assert!(doc.sheet_count() >= 1);
     let page = doc.sheet_size(0).unwrap();

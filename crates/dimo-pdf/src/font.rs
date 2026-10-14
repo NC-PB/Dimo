@@ -24,7 +24,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::PdfError;
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
 
 /// The bundled balloon font program (Open Sans Bold 1.10, Apache License 2.0).
 pub(crate) static BALLOON_FONT: &[u8] = include_bytes!(concat!(
@@ -436,7 +436,7 @@ fn subset_tag(cmap: &BTreeMap<u16, u16>) -> String {
         bytes.extend_from_slice(&code.to_be_bytes());
         bytes.extend_from_slice(&glyph.to_be_bytes());
     }
-    ContentHash::of(&bytes)
+    Sha256Hex::of(&bytes)
         .as_bytes()
         .iter()
         .take(6)

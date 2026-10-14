@@ -4,7 +4,7 @@ use std::ops::Range;
 
 use dimo_core::{Rect, Size};
 
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
 
 use super::TileError;
 
@@ -28,7 +28,7 @@ pub fn zoom_scale(level: i32) -> f64 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TileKey {
     /// SHA-256 of the document bytes (FR-DOC-07). Also the disk cache key.
-    pub doc: ContentHash,
+    pub doc: Sha256Hex,
     /// Zero based sheet index.
     pub sheet: u32,
     /// Zoom level, see [`zoom_scale`].
@@ -50,7 +50,7 @@ impl TileKey {
         }
         let doc = parts
             .next()
-            .and_then(ContentHash::from_hex)
+            .and_then(Sha256Hex::from_hex)
             .ok_or_else(invalid)?;
         let mut number = || parts.next().ok_or_else(invalid);
         let sheet = number()?.parse().map_err(|_| invalid())?;
@@ -217,8 +217,8 @@ mod tests {
         height: 595.276,
     };
 
-    fn hash() -> ContentHash {
-        ContentHash::of(b"tile")
+    fn hash() -> Sha256Hex {
+        Sha256Hex::of(b"tile")
     }
 
     #[test]

@@ -9,7 +9,7 @@ use std::time::SystemTime;
 
 use crate::engine::{Document, PdfEngine};
 use crate::error::PdfError;
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
 
 use super::disk::DiskCache;
 use super::encode::encode_png;
@@ -87,7 +87,7 @@ pub struct TileService {
 
 struct Shared {
     engine: PdfEngine,
-    docs: RwLock<HashMap<ContentHash, Arc<Document>>>,
+    docs: RwLock<HashMap<Sha256Hex, Arc<Document>>>,
     memory: Mutex<MemoryCache>,
     disk: Option<DiskCache>,
     queue: Mutex<Scheduler<Done>>,
@@ -159,7 +159,7 @@ impl TileService {
     /// Opens a document from its bytes and registers it under its content hash, or returns the
     /// already open document with the same hash. Blocks while PDFium parses the file.
     pub fn open_document(&self, bytes: Vec<u8>) -> Result<Arc<Document>, PdfError> {
-        let hash = ContentHash::of(&bytes);
+        let hash = Sha256Hex::of(&bytes);
         let open = read(&self.shared.docs).get(&hash).cloned();
         let doc = if let Some(doc) = open {
             doc
@@ -182,13 +182,13 @@ impl TileService {
     }
 
     /// The open document with this content hash.
-    pub fn document(&self, doc: &ContentHash) -> Option<Arc<Document>> {
+    pub fn document(&self, doc: &Sha256Hex) -> Option<Arc<Document>> {
         read(&self.shared.docs).get(doc).cloned()
     }
 
     /// Closes a document: queued requests for it are cancelled and its tiles leave the memory
     /// cache (the disk cache keeps them). Returns whether it was open.
-    pub fn close_document(&self, doc: &ContentHash) -> bool {
+    pub fn close_document(&self, doc: &Sha256Hex) -> bool {
         let was_open = write(&self.shared.docs).remove(doc).is_some();
         let waiters = lock(&self.shared.queue).remove_document(doc);
         lock(&self.shared.memory).retain(|key| key.doc != *doc);
@@ -237,7 +237,7 @@ impl TileService {
     /// Declares which tiles of `doc` the viewport still wants (see "Cancellation" in the module
     /// docs). Queued requests outside `ranges` are answered with [`TileError::Cancelled`] now,
     /// later ones when a worker takes them. `None` serves every request again.
-    pub fn set_interest(&self, doc: ContentHash, ranges: Option<Vec<TileRange>>) {
+    pub fn set_interest(&self, doc: Sha256Hex, ranges: Option<Vec<TileRange>>) {
         let waiters = lock(&self.shared.queue).set_interest(doc, ranges);
         self.shared.cancel(waiters);
     }

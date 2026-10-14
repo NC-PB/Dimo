@@ -41,7 +41,6 @@ use std::fs;
 use std::path::Path;
 
 use dimo_core::{AuditEntry, Project, Sha256Hex, Timestamp};
-use sha2::{Digest as _, Sha256};
 
 pub use container::Limits;
 pub(crate) use container::write_atomic;
@@ -93,7 +92,7 @@ impl Layout {
 
 /// SHA-256 of bytes as hex (FR-DOC-07).
 pub fn sha256(bytes: &[u8]) -> Sha256Hex {
-    Sha256Hex::from_bytes(&Sha256::digest(bytes).into())
+    Sha256Hex::of(bytes)
 }
 
 /// The JSON Schema of `project.json`, as published in `docs/schema/project.schema.json`
@@ -152,7 +151,7 @@ impl ProjectFile {
     /// Adds a drawing file and returns its hash. Adding the same bytes twice keeps one copy.
     pub fn insert_drawing(&mut self, bytes: Vec<u8>) -> Sha256Hex {
         let hash = sha256(&bytes);
-        self.drawings.entry(hash.clone()).or_insert(bytes);
+        self.drawings.entry(hash).or_insert(bytes);
         hash
     }
 
@@ -166,7 +165,7 @@ impl ProjectFile {
     /// stored as given; `dimo-tolerance` validates them (FR-TOL-07).
     pub fn insert_table(&mut self, bytes: Vec<u8>) -> Sha256Hex {
         let hash = sha256(&bytes);
-        self.tables.entry(hash.clone()).or_insert(bytes);
+        self.tables.entry(hash).or_insert(bytes);
         hash
     }
 
@@ -239,7 +238,7 @@ impl ProjectFile {
             let bytes = self
                 .drawings
                 .get(hash)
-                .ok_or_else(|| ProjectError::MissingDrawing(hash.clone()))?;
+                .ok_or(ProjectError::MissingDrawing(*hash))?;
             entries.push((
                 format!("{DRAWINGS_DIR}/{hash}.pdf"),
                 Cow::Borrowed(bytes.as_slice()),
@@ -353,15 +352,15 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
         let bytes = raw
             .drawings
             .remove(hash)
-            .ok_or_else(|| ProjectError::MissingDrawing(hash.clone()))?;
+            .ok_or(ProjectError::MissingDrawing(*hash))?;
         let actual = sha256(&bytes);
         if actual != *hash {
             return Err(ProjectError::HashMismatch {
-                expected: hash.clone(),
+                expected: *hash,
                 actual,
             });
         }
-        drawings.insert(hash.clone(), bytes);
+        drawings.insert(*hash, bytes);
     }
 
     let mut tables = BTreeMap::new();
@@ -375,7 +374,7 @@ fn parse(mut raw: container::RawEntries) -> Result<LoadedProject, ProjectError> 
         if actual != table.sha256 {
             return Err(ProjectError::TableHashMismatch {
                 id: id.clone(),
-                expected: table.sha256.clone(),
+                expected: table.sha256,
                 actual,
             });
         }

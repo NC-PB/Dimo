@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use dimo_pdf::ContentHash;
+use dimo_core::Sha256Hex;
 use dimo_pdf::tiles::{self, TileKey, TileService};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -361,8 +361,8 @@ impl From<TileRange> for tiles::TileRange {
     }
 }
 
-fn parse_doc(doc: &str) -> Result<ContentHash, CommandError> {
-    ContentHash::from_hex(doc).ok_or_else(|| CommandError::InvalidArgument {
+fn parse_doc(doc: &str) -> Result<Sha256Hex, CommandError> {
+    Sha256Hex::from_hex(doc).ok_or_else(|| CommandError::InvalidArgument {
         message: format!("document id {doc:?} is not a 64 digit hex content hash"),
     })
 }
@@ -453,7 +453,7 @@ mod tests {
 
     #[test]
     fn tile_address_parses_the_content_hash() {
-        let hash = ContentHash::of(b"x");
+        let hash = Sha256Hex::of(b"x");
         let address = TileAddress {
             doc: hash.to_hex(),
             sheet: 1,

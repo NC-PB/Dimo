@@ -31,7 +31,6 @@ use dimo_io::lock::{LockOwner, ProjectLock};
 use dimo_io::project::{
     Layout, OpenReport, ProjectError, ProjectSession, SheetInfo, import_drawing,
 };
-use dimo_pdf::ContentHash;
 use dimo_pdf::tiles::TileService;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -198,7 +197,7 @@ struct OpenProject {
     #[allow(dead_code, reason = "held for its Drop")]
     lock: Option<ProjectLock>,
     drawing: DocumentInfo,
-    hash: ContentHash,
+    hash: Sha256Hex,
     revision: u32,
     /// Error of the last journal write, cleared by the next successful one.
     journal_error: Option<String>,
@@ -732,7 +731,7 @@ impl AppSession {
         mut old: OpenProject,
         discard: bool,
         tiles: Option<&TileService>,
-        keep: Option<&ContentHash>,
+        keep: Option<&Sha256Hex>,
     ) {
         if (discard || !old.project.is_modified())
             && let Err(error) = old.project.discard_journal()
@@ -747,7 +746,7 @@ impl AppSession {
         // Dropping `old` releases its lock.
     }
 
-    fn close_unused_document(&self, tiles: &TileService, hash: &ContentHash) {
+    fn close_unused_document(&self, tiles: &TileService, hash: &Sha256Hex) {
         if self.open.as_ref().is_none_or(|o| o.hash != *hash) {
             tiles.close_document(hash);
         }
@@ -933,7 +932,7 @@ impl AppSession {
 #[derive(Debug, Clone, PartialEq)]
 pub struct RecognitionTarget {
     /// Content hash of the drawing, its key in the tile service.
-    pub drawing: ContentHash,
+    pub drawing: Sha256Hex,
     /// Zero based page of the sheet in the drawing.
     pub page: usize,
     /// Unit of the sheet (D-20).

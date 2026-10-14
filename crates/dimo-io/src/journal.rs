@@ -167,7 +167,7 @@ impl Journal {
             })?;
             let line = TableLine {
                 table: TableFile {
-                    sha256: (*sha256).clone(),
+                    sha256: *(*sha256),
                     text: text.to_owned(),
                 },
             };

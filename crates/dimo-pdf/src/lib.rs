@@ -68,7 +68,6 @@ pub mod tiles;
 mod engine;
 mod error;
 mod font;
-mod hash;
 mod page_cache;
 mod page_space;
 mod raster;
@@ -76,7 +75,6 @@ mod writer;
 
 pub use engine::{Document, MAX_RENDER_SIDE, PdfEngine};
 pub use error::PdfError;
-pub use hash::ContentHash;
 pub use overlay::{
     Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, Rgb, SheetBalloons,
     SheetPoint, Stroke,

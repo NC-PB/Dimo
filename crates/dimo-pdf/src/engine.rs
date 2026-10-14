@@ -13,7 +13,7 @@ use pdfium_render::prelude::{
 };
 
 use crate::PdfError;
-use crate::hash::ContentHash;
+use dimo_core::Sha256Hex;
 use crate::library::resolve_library_path;
 use crate::overlay::BalloonOverlay;
 use crate::page_cache::{PAGES_PER_DOCUMENT, PageCache};
@@ -164,7 +164,7 @@ impl PdfEngine {
     /// Opens a PDF from its bytes. The SHA-256 of the bytes is computed on the calling thread
     /// (FR-DOC-07). The document stays open until the returned handle is dropped.
     pub fn open(&self, bytes: Vec<u8>) -> Result<Document, PdfError> {
-        let hash = ContentHash::of(&bytes);
+        let hash = Sha256Hex::of(&bytes);
         let (id, sheets) = self.call(|reply| Request::Open { bytes, reply })?;
         Ok(Document {
             id,
@@ -205,7 +205,7 @@ impl PdfEngine {
 /// Dropping the handle closes the document on the render thread.
 pub struct Document {
     id: u64,
-    hash: ContentHash,
+    hash: Sha256Hex,
     sheets: Vec<Size>,
     engine: PdfEngine,
 }
@@ -221,7 +221,7 @@ impl std::fmt::Debug for Document {
 
 impl Document {
     /// SHA-256 of the bytes the document was opened from (FR-DOC-07).
-    pub const fn content_hash(&self) -> &ContentHash {
+    pub const fn content_hash(&self) -> &Sha256Hex {
         &self.hash
     }
 

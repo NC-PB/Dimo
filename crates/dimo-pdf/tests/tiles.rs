@@ -13,7 +13,8 @@ use dimo_core::Rect;
 use dimo_pdf::tiles::{
     TILE_SIZE, Tile, TileConfig, TileError, TileGrid, TileKey, TileRange, TileService, zoom_scale,
 };
-use dimo_pdf::{ContentHash, PdfEngine, PdfError};
+use dimo_core::Sha256Hex;
+use dimo_pdf::{PdfEngine, PdfError};
 
 const TEST_DRAWING_1: &str = "test_drawing_1.pdf";
 
@@ -40,7 +41,7 @@ fn engine() -> Option<PdfEngine> {
     }
 }
 
-fn service(config: TileConfig) -> Option<(TileService, ContentHash)> {
+fn service(config: TileConfig) -> Option<(TileService, Sha256Hex)> {
     let service = TileService::new(engine()?, config);
     let doc = service
         .open_document(corpus_drawing(TEST_DRAWING_1))
@@ -49,7 +50,7 @@ fn service(config: TileConfig) -> Option<(TileService, ContentHash)> {
     Some((service, hash))
 }
 
-fn key(doc: ContentHash, zoom: i32, x: u32, y: u32) -> TileKey {
+fn key(doc: Sha256Hex, zoom: i32, x: u32, y: u32) -> TileKey {
     TileKey {
         doc,
         sheet: 0,
@@ -60,7 +61,7 @@ fn key(doc: ContentHash, zoom: i32, x: u32, y: u32) -> TileKey {
 }
 
 /// Every tile of a sheet at the zoom levels `zooms`.
-fn all_tiles(service: &TileService, doc: ContentHash, zooms: &[i32]) -> Vec<TileKey> {
+fn all_tiles(service: &TileService, doc: Sha256Hex, zooms: &[i32]) -> Vec<TileKey> {
     let size = service.document(&doc).unwrap().sheet_size(0).unwrap();
     let mut keys = Vec::new();
     for &zoom in zooms {
@@ -269,7 +270,7 @@ fn invalid_requests_fail_fast() {
     }) else {
         return;
     };
-    let unknown = ContentHash::of(b"not open");
+    let unknown = Sha256Hex::of(b"not open");
     assert!(matches!(
         service.get(key(unknown, 0, 0, 0)),
         Err(TileError::UnknownDocument(_))

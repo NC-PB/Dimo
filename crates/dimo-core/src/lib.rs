@@ -24,6 +24,7 @@ pub mod document;
 pub mod env;
 pub mod evaluation;
 pub mod geometry;
+pub mod hash;
 pub mod history;
 pub mod id;
 pub mod language;

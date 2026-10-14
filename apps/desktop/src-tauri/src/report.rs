@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
 
 use dimo_core::{CharId, Project, ReportFormat, ReportInfo, ReportKind, measurement_state};
-use dimo_pdf::ContentHash;
+use dimo_core::Sha256Hex;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};
@@ -89,13 +89,13 @@ pub fn preview_bytes(snapshot: &ExportSnapshot, view: ReportView) -> Result<Vec<
 /// Preview documents still open in the tile service, oldest first.
 #[derive(Debug, Default)]
 pub struct PreviewState {
-    open: Mutex<VecDeque<ContentHash>>,
+    open: Mutex<VecDeque<Sha256Hex>>,
 }
 
 impl PreviewState {
     /// Notes `doc` as the newest preview. Returns the previews to close: the oldest beyond
     /// [`OPEN_PREVIEWS`].
-    pub fn push(&self, doc: ContentHash) -> Vec<ContentHash> {
+    pub fn push(&self, doc: Sha256Hex) -> Vec<Sha256Hex> {
         let mut open = self.open.lock().unwrap_or_else(PoisonError::into_inner);
         open.retain(|d| *d != doc);
         open.push_back(doc);
@@ -251,7 +251,7 @@ fn print_dir(app: &AppHandle) -> Result<PathBuf, CommandError> {
 /// in the viewer is never replaced, and a print never overwrites a saved copy.
 pub fn print_file_name(save_copy_name: &str, bytes: &[u8]) -> String {
     let hash = dimo_io::project::sha256(bytes);
-    let short: String = hash.as_str().chars().take(12).collect();
+    let short: String = hash.to_hex().chars().take(12).collect();
     let stem = save_copy_name
         .strip_suffix(".pdf")
         .unwrap_or(save_copy_name);
@@ -324,15 +324,15 @@ mod tests {
     #[test]
     fn previews_keep_the_newest_few_open() {
         let state = PreviewState::default();
-        let docs: Vec<ContentHash> = (0u8..6).map(|i| ContentHash::of(&[i])).collect();
+        let docs: Vec<Sha256Hex> = (0u8..6).map(|i| Sha256Hex::of(&[i])).collect();
         for doc in &docs[..OPEN_PREVIEWS] {
-            assert_eq!(state.push(*doc), Vec::<ContentHash>::new());
+            assert_eq!(state.push(*doc), Vec::<Sha256Hex>::new());
         }
         assert_eq!(state.push(docs[4]), [docs[0]]);
         // The same document again only becomes the newest.
-        assert_eq!(state.push(docs[2]), Vec::<ContentHash>::new());
+        assert_eq!(state.push(docs[2]), Vec::<Sha256Hex>::new());
         assert_eq!(state.push(docs[5]), [docs[1]]);
-        assert_eq!(state.push(ContentHash::of(b"x")), [docs[3]]);
+        assert_eq!(state.push(Sha256Hex::of(b"x")), [docs[3]]);
     }
 
     #[test]

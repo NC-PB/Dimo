@@ -60,9 +60,9 @@ pub(super) fn record_issued_report(
         kind,
         template: template.clone(),
         revision: revision.id,
-        drawing_sha256: revision.sha256.clone(),
+        drawing_sha256: revision.sha256,
         exported_at: env.now(),
-        output_sha256: output_sha256.clone(),
+        output_sha256: *output_sha256,
         format,
     };
     tx.push(Change::IssuedReportInserted {

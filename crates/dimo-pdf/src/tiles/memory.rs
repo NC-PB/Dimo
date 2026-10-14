@@ -128,11 +128,11 @@ impl MemoryCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hash::ContentHash;
+    use dimo_core::Sha256Hex;
 
     fn key(x: u32) -> TileKey {
         TileKey {
-            doc: ContentHash::of(b"memory"),
+            doc: Sha256Hex::of(b"memory"),
             sheet: 0,
             zoom: 0,
             x,

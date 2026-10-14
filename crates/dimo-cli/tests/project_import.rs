@@ -65,7 +65,7 @@ fn test_drawing_1_imports_saves_and_reopens() {
     let Some(engine) = engine() else { return };
     let bytes = corpus_drawing();
     let (sheets, hash) = analyze(&engine, &bytes);
-    assert_eq!(hash.as_str(), TEST_DRAWING_1_SHA256);
+    assert_eq!(hash.to_hex(), TEST_DRAWING_1_SHA256);
 
     let mut env = FixedEnvironment::new();
     let drawing = import_drawing(
