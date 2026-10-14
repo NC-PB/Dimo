@@ -46,8 +46,8 @@ summarized in the STATUS decision log 2026-10-14.
   touch points for a command, about 10 for a field).
 
 Acceptance:
-- [ ] No source file in `dimo-core/src` above about 600 lines; all tests pass unchanged
-- [ ] Checklists written
+- [x] No source file in `dimo-core/src` above about 600 lines; all tests pass unchanged
+- [x] Checklists written
 
 ### F6 One command table
 
@@ -57,8 +57,8 @@ Acceptance:
   "on a `bindings.ts` conflict, regenerate" in HANDOVER.md.
 
 Acceptance:
-- [ ] Adding a command touches the function, the table and the generated bindings only
-- [ ] Test fails when the table and the registered commands differ
+- [x] Adding a command touches the function, the table and the generated bindings only
+- [x] Test fails when the table and the registered commands differ
 
 ### F9 Small cleanups
 

@@ -117,6 +117,8 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
   command list: `apps/desktop/src-tauri/commands.txt` is one name per line, so a conflict there is
   resolved by keeping both sides' lines; `cargo test -p dimo-desktop --test command_table` checks
   it against `collect_commands!` in `lib.rs` (a conflict in that macro is also keep both).
+- **Scratchpad per agent.** The session scratchpad is shared by all agents; give each agent its own
+  subfolder for logs (an F5 `check.log` was overwritten by another agent).
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 

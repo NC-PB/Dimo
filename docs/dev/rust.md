@@ -68,8 +68,9 @@ others are hand kept and easy to miss.
    `apps/desktop/src/lib/table/refusal.ts` if it needs details.
 6. Shell: nothing for a new variant. All commands go through the one Tauri command `execute`
    (`apps/desktop/src-tauri/src/project.rs`, `session.rs`). Only a new Tauri command needs the
-   function, its entry in the command list (`build.rs`, `lib.rs` `collect_commands!`) and the
-   permission in `capabilities/default.json` (see the `ipc-command` skill).
+   function, a line in `apps/desktop/src-tauri/commands.txt` and its entry in `lib.rs`
+   `collect_commands!`; `build.rs` generates the permission from the table and a test checks the
+   table against the registered commands (see the `ipc-command` skill).
 7. Bindings: `cargo test -p dimo-desktop --test bindings` rewrites
    `apps/desktop/src/lib/ipc/bindings.ts` and fails once; run it again and commit the file.
 8. History: `source` in `crates/dimo-core/src/history.rs` (not exhaustive) if the command names
