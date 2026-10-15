@@ -120,7 +120,7 @@ Acceptance:
   diagnostic detail in an expandable line.
 
 Acceptance:
-- [ ] Every user-visible error is translated (test over all kinds); German UI shows no English
+- [x] Every user-visible error is translated (test over all kinds); German UI shows no English
       error text in the smoke test
 
 ---
