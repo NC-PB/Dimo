@@ -37,6 +37,8 @@ tracing.workspace = true
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
+# MF F2: the CLI export renders byte identical to the app (tests/cli_export.rs).
+dimo-cli = { path = "../../../crates/dimo-cli" }
 tempfile.workspace = true
 
 [lints]

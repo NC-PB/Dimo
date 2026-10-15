@@ -1095,6 +1095,8 @@ dependencies = [
  "clap",
  "dimo-core",
  "dimo-detect",
+ "dimo-export",
+ "dimo-io",
  "dimo-pdf",
  "dimo-report",
  "dimo-synth",
@@ -1128,6 +1130,7 @@ name = "dimo-desktop"
 version = "0.0.0"
 dependencies = [
  "chrono",
+ "dimo-cli",
  "dimo-core",
  "dimo-detect",
  "dimo-export",

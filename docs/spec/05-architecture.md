@@ -189,3 +189,7 @@ dimo export project.dimo --format json
 ```
 
 This enables batch use and integration into automation tools without the GUI.
+
+`dimo export` exists since MF F2 for the built-in formats (`--format check-sheet-pdf` and the
+others, see `crates/dimo-cli/README.md`). It renders through `dimo-export`, the export registry
+the desktop app uses, so the same project and options give byte identical files.

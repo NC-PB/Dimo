@@ -13,15 +13,17 @@ clap.workspace = true
 # Box select evaluation (T2.9). The CLI may depend on every crate and on the generator (rust.md).
 dimo-core.workspace = true
 dimo-detect.workspace = true
+# `dimo export` (MF F2): the same export registry as the desktop app.
+dimo-export.workspace = true
+dimo-io.workspace = true
 dimo-pdf.workspace = true
+dimo-report.workspace = true
 dimo-synth = { path = "../../tools/synth" }
 dimo-tolerance.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
-# Report text snapshots (T3.6): dimo-report may not depend on dimo-pdf, the CLI may use both.
-dimo-report.workspace = true
 insta.workspace = true
 tempfile.workspace = true
 
