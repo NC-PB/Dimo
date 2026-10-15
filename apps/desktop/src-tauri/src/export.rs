@@ -8,9 +8,10 @@
 //! window keeps working meanwhile. The output depends only on the snapshot and the request:
 //! dates written into the files come from the project, never from the clock (FR-EXP-11).
 //!
-//! A job runs in steps: build the report model, render, write (NFR-PERF-06). [`cancel_job`]
-//! stops it before the next step; Typst cannot be interrupted while it renders (T3.2), so a
-//! cancel during rendering takes effect when rendering ends. A cancelled job writes nothing.
+//! A job ([`crate::job`]) runs in steps: build the report model, render, write
+//! (NFR-PERF-06). [`crate::job::cancel_job`] stops it before the next step; Typst cannot be
+//! interrupted while it renders (T3.2), so a cancel during rendering takes effect when rendering
+//! ends. A cancelled job writes nothing.
 //!
 //! "Export as issued" (D-23):
 //!
@@ -26,10 +27,8 @@
 //! The file is written to a temporary file next to the target and renamed, so a failed or
 //! cancelled export never leaves a half written file.
 
-use std::collections::HashMap;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use dimo_core::{
     Command, LockReason, Project, ReportFormat, ReportInfo, ReportInfoField, ReportKind, Sha256Hex,
@@ -40,11 +39,14 @@ use dimo_pdf::{BalloonOutput, PdfDate, PdfEngine, project_overlay};
 use dimo_report::{ReportModel, ReportOptions, TemplateSet};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tauri::{AppHandle, Manager, State, WebviewWindow};
+use tauri::{AppHandle, Manager, WebviewWindow};
 use tauri_specta::Event;
 
 use crate::dialogs::{self, DevOverride, Filter};
-use crate::ipc::{CommandError, ExportReason, InternalReason, JobId, JobProgress, tile_service};
+use crate::ipc::{CommandError, ExportReason, InternalReason, JobId, tile_service};
+use crate::job;
+pub(crate) use crate::job::next_job_id;
+pub use crate::job::{JobRegistry, JobStop};
 pub(crate) use crate::opener::{open_with_system, open_written_file};
 use crate::project::{SessionState, emit, emit_patched, with_session};
 use crate::session::{AppSession, ExportSnapshot, ProjectPatched};
@@ -227,61 +229,6 @@ impl ReportWarnings {
     }
 }
 
-/// Cancel flags of the running export jobs.
-#[derive(Debug, Default)]
-pub struct JobRegistry {
-    running: Mutex<HashMap<JobId, Arc<AtomicBool>>>,
-}
-
-impl JobRegistry {
-    /// Registers job `id` and returns its cancel flag.
-    pub fn start(&self, id: JobId) -> Arc<AtomicBool> {
-        let flag = Arc::new(AtomicBool::new(false));
-        self.lock().insert(id, Arc::clone(&flag));
-        flag
-    }
-
-    /// Asks job `id` to stop before its next step. False if no such job runs.
-    pub fn cancel(&self, id: JobId) -> bool {
-        self.lock().get(&id).is_some_and(|flag| {
-            flag.store(true, Ordering::SeqCst);
-            true
-        })
-    }
-
-    /// Forgets job `id` when it ended.
-    pub fn finish(&self, id: JobId) {
-        self.lock().remove(&id);
-    }
-
-    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<JobId, Arc<AtomicBool>>> {
-        self.running.lock().unwrap_or_else(PoisonError::into_inner)
-    }
-}
-
-/// IDs of background jobs within one app session.
-static NEXT_JOB: AtomicU32 = AtomicU32::new(1);
-
-/// A new job ID, also for recognition runs that answer directly (T2.6).
-pub(crate) fn next_job_id() -> JobId {
-    JobId(NEXT_JOB.fetch_add(1, Ordering::SeqCst))
-}
-
-/// Why a job stopped before it wrote its file.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum JobStop {
-    /// [`cancel_job`] was called.
-    Cancelled,
-    /// A step failed.
-    Failed(CommandError),
-}
-
-impl From<CommandError> for JobStop {
-    fn from(error: CommandError) -> Self {
-        Self::Failed(error)
-    }
-}
-
 /// What the build step produced for the render step.
 enum Prepared {
     /// Nothing to prepare: drawing and list exports.
@@ -459,19 +406,6 @@ pub async fn report_export_warnings(
     .await
 }
 
-/// Asks the export job `id` to stop before its next step. Returns false if no such job runs
-/// (it may just have ended). A job that is already writing its file finishes it and ends
-/// with its normal outcome.
-#[tauri::command]
-#[specta::specta]
-#[allow(
-    clippy::needless_pass_by_value,
-    reason = "Tauri commands take arguments by value"
-)]
-pub fn cancel_job(jobs: State<'_, JobRegistry>, id: JobId) -> bool {
-    jobs.cancel(id)
-}
-
 /// The report info printed on a report exported as issued, `None` for other exports.
 type IssuedInfo = Option<ReportInfo>;
 
@@ -587,27 +521,18 @@ pub async fn export_project(
     for patched in [lock, date].into_iter().flatten() {
         emit_patched(&app, patched);
     }
-    let id = next_job_id();
-    let cancel = app.state::<JobRegistry>().start(id);
     let job_app = app.clone();
-    let spawned = std::thread::Builder::new()
-        .name("dimo-export".into())
-        .spawn(move || {
-            let job = Job {
-                app: &job_app,
-                id,
-                snapshot: &snapshot,
-                request,
-                engine: engine.as_ref(),
-                path: &path,
-            };
-            job.run(&cancel, issued);
-            job_app.state::<JobRegistry>().finish(id);
-        });
-    if let Err(e) = spawned {
-        app.state::<JobRegistry>().finish(id);
-        return Err(CommandError::task_failed(e));
-    }
+    let id = job::spawn(&app, "dimo-export", move |id, cancel| {
+        let job = Job {
+            app: &job_app,
+            id,
+            snapshot: &snapshot,
+            request,
+            engine: engine.as_ref(),
+            path: &path,
+        };
+        job.run(cancel, issued);
+    })?;
     Ok(Some(id))
 }
 
@@ -623,16 +548,8 @@ struct Job<'a> {
 
 impl Job<'_> {
     fn run(&self, cancel: &AtomicBool, issued: IssuedInfo) {
-        let mut progress = |fraction: f64, message: &str| {
-            emit(
-                self.app,
-                &JobProgress {
-                    id: self.id,
-                    fraction,
-                    message: message.to_owned(),
-                },
-            );
-        };
+        let mut progress =
+            |fraction: f64, message: &str| job::progress(self.app, self.id, fraction, message);
         let result = run_steps(
             self.snapshot,
             &self.request,
@@ -794,16 +711,5 @@ mod tests {
             })
         ));
         assert!(!missing.exists());
-    }
-
-    #[test]
-    fn cancel_flags_follow_the_jobs() {
-        let jobs = JobRegistry::default();
-        let flag = jobs.start(JobId(4));
-        assert!(!jobs.cancel(JobId(5)), "unknown job");
-        assert!(jobs.cancel(JobId(4)));
-        assert!(flag.load(Ordering::SeqCst));
-        jobs.finish(JobId(4));
-        assert!(!jobs.cancel(JobId(4)), "ended job");
     }
 }
