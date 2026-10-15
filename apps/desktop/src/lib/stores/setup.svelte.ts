@@ -3,7 +3,7 @@
  * part number and customer. It opens by itself only for a project created from a drawing in
  * this window (`projectStore.createdSession`), never for an opened one, and the Drawing tab can
  * open it again. View state only: the answers go to Rust through the existing undoable commands
- * (`set_tolerance_settings` through the tolerance store, so the offer of decision 22 works as
+ * (`update_tolerance_settings` through the tolerance store, so the offer of decision 22 works as
  * usual, then `update_sheet` and `update_project_info` as one undo step).
  */
 
@@ -12,9 +12,11 @@ import type {
   Patch,
   Project,
   ProjectInfo,
+  ProjectInfoField,
   Scale,
   Sheet,
   TableClass,
+  ToleranceField,
   ToleranceSettings,
   Unit,
 } from "$lib/ipc/bindings";
@@ -45,7 +47,7 @@ export interface SetupProject {
 /** What the store needs of the tolerance settings. */
 export interface SetupTolerance {
   readonly settings: ToleranceSettings | null;
-  setSettings(change: Partial<ToleranceSettings>): Promise<boolean>;
+  setSettings(values: ToleranceField[]): Promise<boolean>;
 }
 
 export interface SetupDeps {
@@ -163,7 +165,7 @@ export class SetupStore {
     try {
       const settings = this.#tolerance.settings;
       if (settings !== null && !sameGeneral(answers.general, settings.general)) {
-        if (!(await this.#tolerance.setSettings({ general: answers.general }))) {
+        if (!(await this.#tolerance.setSettings([{ field: "general", value: answers.general }]))) {
           return false;
         }
       }
@@ -196,11 +198,15 @@ export class SetupStore {
         commands.push(updateSheetCommand(sheet, { unit, scale }));
       }
     }
-    if (info.part_number !== answers.partNumber || info.customer !== answers.customer) {
-      commands.push({
-        type: "update_project_info",
-        info: { ...info, part_number: answers.partNumber, customer: answers.customer },
-      });
+    const values: ProjectInfoField[] = [];
+    if (info.part_number !== answers.partNumber) {
+      values.push({ field: "part_number", value: answers.partNumber });
+    }
+    if (info.customer !== answers.customer) {
+      values.push({ field: "customer", value: answers.customer });
+    }
+    if (values.length > 0) {
+      commands.push({ type: "update_project_info", values });
     }
     return commands;
   }

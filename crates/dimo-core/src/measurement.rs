@@ -43,6 +43,40 @@ pub struct Sample {
     pub comment: String,
 }
 
+/// One field of a sample, used by
+/// [`Command::UpdateSample`](crate::command::Command::UpdateSample) (MF F4).
+///
+/// Serialized as `{ "field": "serial", "value": "7" }`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(tag = "field", content = "value", rename_all = "snake_case")]
+pub enum SampleField {
+    /// Serial number; trimmed, not empty, unique.
+    Serial(String),
+    /// Measuring date as `YYYY-MM-DD`, or empty.
+    Date(String),
+    /// Who measured the part.
+    Inspector(String),
+    /// Gauges and instruments used.
+    Gauges(String),
+    /// Free text.
+    Comment(String),
+}
+
+impl Sample {
+    /// Sets one field. Serial and date are not checked here.
+    pub fn set(&mut self, value: &SampleField) {
+        let (slot, text) = match value {
+            SampleField::Serial(t) => (&mut self.serial, t),
+            SampleField::Date(t) => (&mut self.date, t),
+            SampleField::Inspector(t) => (&mut self.inspector, t),
+            SampleField::Gauges(t) => (&mut self.gauges, t),
+            SampleField::Comment(t) => (&mut self.comment, t),
+        };
+        slot.clone_from(text);
+    }
+}
+
 /// Result of a go/no go or visual check (FR-MEA-06).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]

@@ -1,11 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Command, Patch, Project, Sheet } from "$lib/ipc/bindings";
+import type { Command, Patch, Sheet, SheetField } from "$lib/ipc/bindings";
 
 const mocks = vi.hoisted(() => ({
   sheets: [] as Sheet[],
   executed: [] as Command[],
-  queue: Promise.resolve() as Promise<unknown>,
 }));
+
+/** Applies one field like Rust does. */
+function apply(sheet: Sheet, value: SheetField): Sheet {
+  switch (value.field) {
+    case "rotation":
+      return { ...sheet, rotation: value.value };
+    case "unit":
+      return { ...sheet, unit: value.value };
+    case "scale_drawing":
+      return { ...sheet, scale: { ...sheet.scale, drawing: value.value } };
+    case "scale_actual":
+      return { ...sheet, scale: { ...sheet.scale, actual: value.value } };
+  }
+}
 
 // The singletons talk to Tauri; the tests give them a fake project that applies the command.
 vi.mock("$lib/stores/project.svelte", () => ({
@@ -17,14 +30,7 @@ vi.mock("$lib/stores/project.svelte", () => ({
       mocks.executed.push(command);
       if (command.type === "update_sheet") {
         mocks.sheets = mocks.sheets.map((s) =>
-          s.id === command.sheet
-            ? {
-                ...s,
-                rotation: command.rotation ?? s.rotation,
-                unit: command.unit ?? s.unit,
-                scale: command.scale ?? s.scale,
-              }
-            : s,
+          s.id === command.sheet ? command.values.reduce(apply, s) : s,
         );
       }
       // Rust answers after a moment; the store shows the change when this resolves.
@@ -33,19 +39,6 @@ vi.mock("$lib/stores/project.svelte", () => ({
           resolve({ changes: [] });
         }, 1);
       });
-    },
-    // Like the real store: built in turn, from the sheets after the earlier commands.
-    executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined> {
-      const run = mocks.queue.then(() => {
-        const project = {
-          current_revision: "r",
-          revisions: [{ id: "r", sheets: mocks.sheets }],
-        } as unknown as Project;
-        const command = build(project);
-        return command === null ? undefined : this.execute(command);
-      });
-      mocks.queue = run.catch(() => undefined);
-      return run;
     },
   },
 }));
@@ -101,18 +94,19 @@ describe("scale input (FR-DOC-05)", () => {
 });
 
 describe("sheet commands (T1.8)", () => {
-  it("sends only the changed value, null keeps the others", async () => {
+  it("sends only the changed values (MF F4)", async () => {
     await updateShownSheet({ unit: "in" });
     expect(mocks.executed).toEqual([
-      { type: "update_sheet", sheet: "s1", rotation: null, unit: "in", scale: null },
+      { type: "update_sheet", sheet: "s1", values: [{ field: "unit", value: "in" }] },
     ]);
     await updateShownSheet({ scale: { drawing: 2, actual: 1 } });
     expect(mocks.executed[1]).toEqual({
       type: "update_sheet",
       sheet: "s1",
-      rotation: null,
-      unit: null,
-      scale: { drawing: 2, actual: 1 },
+      values: [
+        { field: "scale_drawing", value: 2 },
+        { field: "scale_actual", value: 1 },
+      ],
     });
   });
 
@@ -130,18 +124,20 @@ describe("sheet commands (T1.8)", () => {
   it("adds up quick presses instead of reading a stale rotation", async () => {
     await Promise.all([rotateShownSheet(1), rotateShownSheet(1), rotateShownSheet(1)]);
     expect(mocks.sheets[0]?.rotation).toBe("deg270");
-    expect(mocks.executed.map((c) => (c.type === "update_sheet" ? c.rotation : null))).toEqual([
-      "deg90",
-      "deg180",
-      "deg270",
+    expect(mocks.executed.map((c) => (c.type === "update_sheet" ? c.values : null))).toEqual([
+      [{ field: "rotation", value: "deg90" }],
+      [{ field: "rotation", value: "deg180" }],
+      [{ field: "rotation", value: "deg270" }],
     ]);
   });
 
-  it("keeps both parts of a custom scale typed fast (T3.18)", async () => {
+  it("keeps both parts of a custom scale typed fast, one part per command (T3.18, MF F4)", async () => {
     await Promise.all([setShownScalePart("drawing", 3), setShownScalePart("actual", 7)]);
     expect(mocks.sheets[0]?.scale).toEqual({ drawing: 3, actual: 7 });
-    await setShownScalePart("actual", 7);
-    expect(mocks.executed).toHaveLength(2);
+    expect(mocks.executed).toEqual([
+      { type: "update_sheet", sheet: "s1", values: [{ field: "scale_drawing", value: 3 }] },
+      { type: "update_sheet", sheet: "s1", values: [{ field: "scale_actual", value: 7 }] },
+    ]);
   });
 
   it("does nothing without a sheet", async () => {

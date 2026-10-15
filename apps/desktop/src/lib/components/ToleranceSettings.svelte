@@ -5,7 +5,9 @@
    * decimal place rules and the rounding after unit conversion, `company_tables` the drawing
    * rule and the custom tables with their import. The general tolerance is a field on the Home
    * and Drawing tabs. Rust lists the tables and classes, checks every value and every imported
-   * file; each change is one undoable `set_tolerance_settings` command.
+   * file; each change is one undoable command that carries only what changed:
+   * `update_tolerance_settings` for drawing rule and rounding, `add_decimal_rule` and
+   * `remove_decimal_rule` for decimal place rules (MF F4).
    */
   import { m, tableImportText } from "$lib/i18n";
   import ErrorDetails from "./ErrorDetails.svelte";
@@ -83,30 +85,19 @@
       return;
     }
     const rule: DecimalPlaceRule = { places: count, tolerance: newTolerance.trim() };
-    // Rust wants the rules in order of places; it refuses duplicates.
-    const rules = [...settings.decimal_rules, rule].sort((a, b) => a.places - b.places);
-    if (await tolerance.setSettings({ decimal_rules: rules })) {
+    // Rust keeps the rules in order of places; it refuses a second rule for the same places.
+    if (await tolerance.addDecimalRule(rule)) {
       newPlaces = "";
       newTolerance = "";
     }
   }
 
-  function setRule(index: number, tolerance_: string) {
-    if (settings === null) {
-      return;
-    }
-    const rules = settings.decimal_rules.map((r, i) =>
-      i === index ? { ...r, tolerance: tolerance_.trim() } : r,
-    );
-    void tolerance.setSettings({ decimal_rules: rules });
+  function setRule(count: number, tolerance_: string) {
+    void tolerance.replaceDecimalRule({ places: count, tolerance: tolerance_.trim() });
   }
 
-  function removeRule(index: number) {
-    if (settings !== null) {
-      void tolerance.setSettings({
-        decimal_rules: settings.decimal_rules.filter((_, i) => i !== index),
-      });
-    }
+  function removeRule(count: number) {
+    void tolerance.removeDecimalRule(count);
   }
 
   const fieldClass = "min-h-8 rounded border border-border-strong bg-surface px-2 py-1 text-text";
@@ -127,7 +118,9 @@
           data-setting="drawing_rule"
           value={choice?.table.id ?? NONE}
           onchange={(e) => {
-            void tolerance.setSettings({ drawing_rule: pickTable(e.currentTarget.value, choice) });
+            void tolerance.setSettings([
+              { field: "drawing_rule", value: pickTable(e.currentTarget.value, choice) },
+            ]);
           }}
         >
           <option value={NONE}>{m.tolerance_none()}</option>
@@ -144,9 +137,9 @@
             data-setting="drawing_rule_class"
             value={choice.class}
             onchange={(e) => {
-              void tolerance.setSettings({
-                drawing_rule: { ...choice, class: e.currentTarget.value },
-              });
+              void tolerance.setSettings([
+                { field: "drawing_rule", value: { ...choice, class: e.currentTarget.value } },
+              ]);
             }}
           >
             {#each classesOf(choice) as cls (cls)}
@@ -212,7 +205,7 @@
     <section class="flex flex-col gap-2" aria-labelledby="decimal-rules-title">
       <h3 id="decimal-rules-title" class="font-semibold">{m.tolerance_decimal_rules()}</h3>
       <p class="text-xs text-text-muted">{m.tolerance_decimal_rules_hint()}</p>
-      {#each settings.decimal_rules as rule, i (rule.places)}
+      {#each settings.decimal_rules as rule (rule.places)}
         <div class="flex flex-wrap items-center gap-2">
           <span class="w-40 tabular-nums">{m.tolerance_places()}: {rule.places}</span>
           <label class="flex items-center gap-2">
@@ -223,7 +216,7 @@
               spellcheck="false"
               value={rule.tolerance}
               onchange={(e) => {
-                setRule(i, e.currentTarget.value);
+                setRule(rule.places, e.currentTarget.value);
               }}
             />
           </label>
@@ -232,7 +225,7 @@
             class={buttonClass}
             aria-label={m.tolerance_remove_rule({ places: String(rule.places) })}
             onclick={() => {
-              removeRule(i);
+              removeRule(rule.places);
             }}>✕</button
           >
         </div>
@@ -282,9 +275,7 @@
               if (count === null) {
                 return;
               }
-              void tolerance.setSettings({
-                unit_rounding: { ...settings.unit_rounding, [row.key]: count },
-              });
+              void tolerance.setSettings([{ field: row.key, value: count }]);
             }}
           />
         </label>

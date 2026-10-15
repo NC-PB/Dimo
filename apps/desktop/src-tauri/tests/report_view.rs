@@ -13,7 +13,9 @@ use std::sync::atomic::AtomicBool;
 
 use dimo_core::Language;
 use dimo_core::Sha256Hex;
-use dimo_core::{Command, FieldValue, Point, ReportKind, ResultEntry};
+use dimo_core::{
+    Command, FieldValue, Point, ProjectInfoField, ReportInfoField, ReportKind, ResultEntry,
+};
 use dimo_desktop::export::{render, run_steps, take_snapshot};
 use dimo_desktop::report::{
     ReportField, ReportView, checks, preview_bytes, print_snapshot, save_copy_snapshot,
@@ -214,15 +216,15 @@ fn checks_count_what_is_open_before_issuing() {
     assert!(!sheet.warnings.any());
 
     // Filled in: nothing left to ask for.
-    let mut info = session.project().unwrap().report_info.clone();
-    info.report_number = "IR-1".into();
     session
-        .execute(Command::UpdateReportInfo { info: info.clone() })
+        .execute(Command::UpdateReportInfo {
+            values: vec![ReportInfoField::ReportNumber("IR-1".into())],
+        })
         .unwrap();
-    let mut part = session.project().unwrap().info.clone();
-    part.part_number = "BR-1".into();
     session
-        .execute(Command::UpdateProjectInfo { info: part })
+        .execute(Command::UpdateProjectInfo {
+            values: vec![ProjectInfoField::PartNumber("BR-1".into())],
+        })
         .unwrap();
     assert_eq!(
         checks(&session, ReportKind::InspectionReport)
@@ -232,8 +234,11 @@ fn checks_count_what_is_open_before_issuing() {
     );
     // Without a company name in the project or the settings the field stays open.
     session.set_company_name("");
-    info.company_name = String::new();
-    session.execute(Command::UpdateReportInfo { info }).unwrap();
+    session
+        .execute(Command::UpdateReportInfo {
+            values: vec![ReportInfoField::CompanyName(String::new())],
+        })
+        .unwrap();
     assert_eq!(
         checks(&session, ReportKind::InspectionReport)
             .unwrap()

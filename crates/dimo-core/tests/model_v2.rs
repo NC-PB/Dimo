@@ -13,8 +13,8 @@ use dimo_core::{
     CommandError, DecimalPlaceRule, DerivationHint, DerivationRule, Document, FieldError,
     FixedEnvironment, HistoryAction, InsertPolicy, LockReason, NumberingSettings,
     NumberingStrategy, OrientedBox, Origin, ParseIssue, Point, Proposal, Rect, SheetView, Size,
-    SourceRegion, TableClass, TableRef, TextSource, ToleranceDerivation, ToleranceSettings,
-    ZoneGrid, characteristic_history,
+    SourceRegion, TableClass, TableRef, TextSource, ToleranceDerivation, ToleranceField,
+    ToleranceSettings, ZoneGrid, characteristic_history,
 };
 use rust_decimal::Decimal;
 
@@ -537,6 +537,100 @@ fn project_settings_commands() {
         doc.project().settings.tolerance,
         ToleranceSettings::default()
     );
+}
+
+/// MF F4: single tolerance settings and decimal rules change one at a time, applied to the
+/// current settings and checked as a whole.
+#[test]
+fn tolerance_fields_and_decimal_rules() {
+    let (mut doc, mut env) = fresh();
+    let rule = |places, tolerance| DecimalPlaceRule {
+        places,
+        tolerance: parse_decimal(tolerance).unwrap(),
+    };
+    for r in [rule(2, "0.05"), rule(0, "0.5"), rule(1, "0.1")] {
+        doc.execute(Command::AddDecimalRule { rule: r }, &mut env)
+            .unwrap();
+    }
+    // A second rule for 1 place is refused; remove and add in one batch changes it.
+    assert!(matches!(
+        doc.execute(
+            Command::AddDecimalRule {
+                rule: rule(1, "0.2")
+            },
+            &mut env
+        ),
+        Err(CommandError::InvalidProjectSetting(_))
+    ));
+    doc.execute(
+        Command::Batch {
+            commands: vec![
+                Command::RemoveDecimalRule { places: 1 },
+                Command::AddDecimalRule {
+                    rule: rule(1, "0.2"),
+                },
+            ],
+        },
+        &mut env,
+    )
+    .unwrap();
+    assert_eq!(
+        doc.project().settings.tolerance.decimal_rules,
+        [rule(0, "0.5"), rule(1, "0.2"), rule(2, "0.05")]
+    );
+    for bad in [rule(1, "0"), rule(11, "0.1")] {
+        assert!(matches!(
+            doc.execute(Command::AddDecimalRule { rule: bad }, &mut env),
+            Err(CommandError::InvalidProjectSetting(_))
+        ));
+    }
+    doc.execute(Command::RemoveDecimalRule { places: 0 }, &mut env)
+        .unwrap();
+    let patch = doc
+        .execute(Command::RemoveDecimalRule { places: 7 }, &mut env)
+        .unwrap();
+    assert!(patch.is_empty(), "no rule for 7 places: no change");
+    assert_eq!(
+        doc.project().settings.tolerance.decimal_rules,
+        [rule(1, "0.2"), rule(2, "0.05")]
+    );
+
+    let general = TableClass {
+        table: TableRef {
+            id: "iso-2768-1".into(),
+            version: 1,
+        },
+        class: "m".into(),
+    };
+    for value in [
+        ToleranceField::General(Some(general.clone())),
+        ToleranceField::MmPlaces(2),
+    ] {
+        doc.execute(
+            Command::UpdateToleranceSettings {
+                values: vec![value],
+            },
+            &mut env,
+        )
+        .unwrap();
+    }
+    let tolerance = &doc.project().settings.tolerance;
+    assert_eq!(tolerance.general.as_ref(), Some(&general));
+    assert_eq!(tolerance.unit_rounding.mm_places, 2);
+    assert_eq!(tolerance.unit_rounding.inch_places, 4);
+    assert_eq!(tolerance.decimal_rules.len(), 2);
+    for bad in [
+        ToleranceField::InchPlaces(11),
+        ToleranceField::DrawingRule(Some(general)),
+    ] {
+        assert!(matches!(
+            doc.execute(
+                Command::UpdateToleranceSettings { values: vec![bad] },
+                &mut env
+            ),
+            Err(CommandError::InvalidProjectSetting(_))
+        ));
+    }
 }
 
 #[test]

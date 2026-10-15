@@ -142,7 +142,8 @@ sentence and buttons that are registry commands, or a tab to switch to for plain
   returns a job ID; `job-progress` and `job-finished` events carry the progress and the result.
   Events can arrive before the ID, so job states are kept by ID.
 - Tolerances (`stores/tolerance.svelte.ts`, T2.8): `tolerance_tables` lists shipped and custom
-  tables with their classes and draft state, settings change with `set_tolerance_settings`,
+  tables with their classes and draft state, settings change with `update_tolerance_settings`,
+  `add_decimal_rule` and `remove_decimal_rule` (one field or rule per command, MF F4),
   `import_tolerance_table` opens the file dialog in Rust (`DIMO_DEV_IMPORT_TABLE` skips it in
   debug builds), `reinterpret_characteristics` re-reads the selection as one undo step, and
   `explain_characteristic` and `characteristic_history` feed the detail panel

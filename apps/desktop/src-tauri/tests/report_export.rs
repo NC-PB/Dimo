@@ -14,7 +14,8 @@ use std::sync::atomic::AtomicBool;
 
 use dimo_core::Language;
 use dimo_core::{
-    Command, FieldValue, Point, ReportFormat, ReportKind, ResultEntry, Sha256Hex, TemplateRef,
+    Command, FieldValue, Point, ReportFormat, ReportInfoField, ReportKind, ResultEntry, Sha256Hex,
+    TemplateRef,
 };
 use dimo_desktop::export::{
     ExportFormat, ExportRequest, JobStop, REPORT_TEMPLATE, render, report_template,
@@ -222,11 +223,13 @@ fn warnings_name_open_results_and_never_apply_to_blank_check_sheets() {
 fn snapshots_lock_drawing_exports_at_once_and_fill_issued_reports_only() {
     let Some(tiles) = service() else { return };
     let mut session = session(&tiles);
-    let mut blank = session.project().unwrap().report_info.clone();
-    blank.company_name = String::new();
-    blank.inspected_by = String::new();
     session
-        .execute(Command::UpdateReportInfo { info: blank })
+        .execute(Command::UpdateReportInfo {
+            values: vec![
+                ReportInfoField::CompanyName(String::new()),
+                ReportInfoField::InspectedBy(String::new()),
+            ],
+        })
         .unwrap();
     let issued = |format| ExportRequest {
         issued: true,
@@ -302,9 +305,11 @@ fn first_report_export_stores_the_report_date_once() {
     assert_eq!(session.project().unwrap(), &before);
 
     // A date the user entered is never replaced, and list exports do not store one.
-    let mut info = before.report_info.clone();
-    info.report_date = "2026-01-05".into();
-    session.execute(Command::UpdateReportInfo { info }).unwrap();
+    session
+        .execute(Command::UpdateReportInfo {
+            values: vec![ReportInfoField::ReportDate("2026-01-05".into())],
+        })
+        .unwrap();
     let kept = take_snapshot(
         &mut session,
         request(ExportFormat::CheckSheetXlsx, Language::En),
@@ -339,7 +344,7 @@ fn issued_report_stores_the_report_date_in_its_one_undo_step() {
     session
         .record_issued_report(
             start.snapshot.state,
-            info,
+            &info,
             Command::RecordIssuedReport {
                 kind: ReportKind::CheckSheet,
                 template: TemplateRef {
@@ -365,13 +370,13 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
     let Some(tiles) = service() else { return };
     let mut session = session(&tiles);
     // The user cleared company and inspector; the issued export fills them.
-    let mut blank = session.project().unwrap().report_info.clone();
-    blank.company_name = String::new();
-    blank.inspected_by = "  ".into();
-    blank.report_number = "IR-1".into();
     session
         .execute(Command::UpdateReportInfo {
-            info: blank.clone(),
+            values: vec![
+                ReportInfoField::CompanyName(String::new()),
+                ReportInfoField::InspectedBy("  ".into()),
+                ReportInfoField::ReportNumber("IR-1".into()),
+            ],
         })
         .unwrap();
     let before = session.project().unwrap().clone();
@@ -395,7 +400,7 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
         output_sha256: Sha256Hex::parse(&sha.repeat(64)).unwrap(),
     };
     let patched = session
-        .record_issued_report(snapshot.state, filled.clone(), record("a"))
+        .record_issued_report(snapshot.state, &filled, record("a"))
         .unwrap()
         .expect("unchanged project is recorded");
     assert!(!patched.patch.is_empty());
@@ -418,16 +423,13 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
     let stale = session.export_snapshot(false).unwrap().state;
     session
         .execute(Command::UpdateReportInfo {
-            info: dimo_core::ReportInfo {
-                remarks: "changed".into(),
-                ..blank
-            },
+            values: vec![ReportInfoField::Remarks("changed".into())],
         })
         .unwrap();
     let changed = session.project().unwrap().clone();
     assert!(
         session
-            .record_issued_report(stale, filled, record("b"))
+            .record_issued_report(stale, &filled, record("b"))
             .unwrap()
             .is_none()
     );

@@ -411,9 +411,11 @@ export class ProjectStore {
 
   /**
    * Executes the document command `build` makes from the project as it is when the command's
-   * turn comes, after every earlier edit is applied. Forms that send a whole record for one
-   * changed field (project info, report header, a sample) use it, so two fast edits of two
-   * fields both survive instead of the second sending the first field's old value (T3.18).
+   * turn comes, after every earlier edit is applied. Only forms whose command still replaces a
+   * whole record for one changed field use it (numbering settings, default balloon style), so
+   * two fast edits of two fields both survive instead of the second sending the first field's
+   * old value (T3.18). Project info, report header, sheets, samples and tolerance settings have
+   * field level commands and use {@link execute} (MF F4).
    * `build` returns `null` when there is nothing to send any more.
    */
   executeWith(build: (project: Project) => Command | null): Promise<Patch | undefined> {

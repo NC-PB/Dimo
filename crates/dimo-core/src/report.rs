@@ -31,6 +31,82 @@ pub struct ReportInfo {
     pub remarks: String,
 }
 
+/// One field of the report header and approval data, used by
+/// [`Command::UpdateReportInfo`](crate::command::Command::UpdateReportInfo) (MF F4).
+///
+/// Serialized as `{ "field": "report_number", "value": "IR-7" }`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(tag = "field", content = "value", rename_all = "snake_case")]
+pub enum ReportInfoField {
+    /// Report number.
+    ReportNumber(String),
+    /// Report date as `YYYY-MM-DD`, or empty.
+    ReportDate(String),
+    /// Name of the issuing company.
+    CompanyName(String),
+    /// Who inspected the parts.
+    InspectedBy(String),
+    /// Who approved the report.
+    ApprovedBy(String),
+    /// Remarks printed on the report.
+    Remarks(String),
+}
+
+impl ReportInfo {
+    /// Sets one field. The date is not checked here.
+    pub fn set(&mut self, value: &ReportInfoField) {
+        let (slot, text) = match value {
+            ReportInfoField::ReportNumber(t) => (&mut self.report_number, t),
+            ReportInfoField::ReportDate(t) => (&mut self.report_date, t),
+            ReportInfoField::CompanyName(t) => (&mut self.company_name, t),
+            ReportInfoField::InspectedBy(t) => (&mut self.inspected_by, t),
+            ReportInfoField::ApprovedBy(t) => (&mut self.approved_by, t),
+            ReportInfoField::Remarks(t) => (&mut self.remarks, t),
+        };
+        slot.clone_from(text);
+    }
+
+    /// The fields in which `other` differs from `self`, in declaration order: the values that
+    /// turn `self` into `other`. Every field is named, so a new one cannot be forgotten.
+    pub fn changes_to(&self, other: &Self) -> Vec<ReportInfoField> {
+        type Make = fn(String) -> ReportInfoField;
+        let Self {
+            report_number,
+            report_date,
+            company_name,
+            inspected_by,
+            approved_by,
+            remarks,
+        } = other;
+        let pairs: [(&String, &String, Make); 6] = [
+            (
+                &self.report_number,
+                report_number,
+                ReportInfoField::ReportNumber,
+            ),
+            (&self.report_date, report_date, ReportInfoField::ReportDate),
+            (
+                &self.company_name,
+                company_name,
+                ReportInfoField::CompanyName,
+            ),
+            (
+                &self.inspected_by,
+                inspected_by,
+                ReportInfoField::InspectedBy,
+            ),
+            (&self.approved_by, approved_by, ReportInfoField::ApprovedBy),
+            (&self.remarks, remarks, ReportInfoField::Remarks),
+        ];
+        pairs
+            .into_iter()
+            .filter(|(a, b, _)| a != b)
+            .map(|(_, b, field)| field(b.clone()))
+            .collect()
+    }
+}
+
 /// Which document a report is (FR-EXP-04).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]

@@ -34,6 +34,13 @@ MF decision 1: F1 and F4 share one schema increase, so 0.1 needs no second migra
   type, opens it through a `RasterOpener` (the tile service in the app) and imports it. `dimo-io`
   may therefore depend on `dimo-pdf`. The shell no longer calls PDFium to create a project.
 - One hash type, `dimo_core::Sha256Hex` (32 bytes, written as 64 lowercase hex digits as before).
+- Field level update commands (MF F4, same schema): `update_project_info`,
+  `update_report_info`, `update_sheet` and `update_sample` carry a list of
+  `{"field": ..., "value": ...}` entries instead of a whole record or one option per field;
+  single tolerance settings change with `update_tolerance_settings`, decimal place rules with
+  `add_decimal_rule` and `remove_decimal_rule`. The migration from 3 rewrites these commands in
+  the audit log (also inside batches, undo and redo) with every field the old command set, so
+  the conversion is lossless; the changes keep their whole before and after states.
 
 ## Consequences
 - Version 3 projects open and save as version 4; PDF projects export byte identical files.

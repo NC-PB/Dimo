@@ -91,6 +91,25 @@ impl fmt::Display for Scale {
     }
 }
 
+/// One view setting of a sheet, used by
+/// [`Command::UpdateSheet`](crate::command::Command::UpdateSheet) (FR-DOC-05, MF F4). The two
+/// scale parts are separate fields, so typing both fast keeps both.
+///
+/// Serialized as `{ "field": "unit", "value": "in" }`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(tag = "field", content = "value", rename_all = "snake_case")]
+pub enum SheetField {
+    /// View rotation.
+    Rotation(Rotation),
+    /// Length unit, `mm` or `in`.
+    Unit(Unit),
+    /// Length on the drawing of the scale, at least 1.
+    ScaleDrawing(u32),
+    /// Corresponding length on the part of the scale, at least 1.
+    ScaleActual(u32),
+}
+
 /// One sheet (PDF page) of a drawing revision.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -120,6 +139,16 @@ pub struct Sheet {
 }
 
 impl Sheet {
+    /// Sets one view setting. Unit and scale are not checked here.
+    pub fn set(&mut self, value: SheetField) {
+        match value {
+            SheetField::Rotation(v) => self.rotation = v,
+            SheetField::Unit(v) => self.unit = v,
+            SheetField::ScaleDrawing(v) => self.scale.drawing = v,
+            SheetField::ScaleActual(v) => self.scale.actual = v,
+        }
+    }
+
     /// A sheet with default view settings: not rotated, unit mm, scale 1:1, no zones, no views.
     pub fn new(id: SheetId, index: u32, size: Size, kind: SheetKind) -> Self {
         Self {

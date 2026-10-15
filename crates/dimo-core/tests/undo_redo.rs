@@ -23,13 +23,14 @@ use dimo_core::{
     BalloonId, BalloonMove, BalloonPlacement, BalloonShape, BalloonStyle, BalloonStyleOverride,
     CharId, CharacteristicKind, Command, DecimalPlaceRule, DerivationRule, Document,
     FixedEnvironment, InsertPolicy, LockReason, MultiInstance, NumberingSettings,
-    NumberingStrategy, OrientedBox, Origin, ParseHint, Point, Project, Proposal, RangeBound, Rect,
-    Rotation, Scale, SheetView, Size, SizeRange, SourceRegion, TableClass, TableLookup, TableRef,
-    TextSource, ToleranceDerivation, ToleranceSettings, Unit, UnitRounding, ZoneGrid,
+    NumberingStrategy, OrientedBox, Origin, ParseHint, Point, Project, ProjectInfoField, Proposal,
+    RangeBound, Rect, Rotation, SheetField, SheetView, Size, SizeRange, SourceRegion, TableClass,
+    TableLookup, TableRef, TextSource, ToleranceDerivation, ToleranceField, ToleranceSettings,
+    Unit, UnitRounding, ZoneGrid,
 };
 use dimo_core::{
-    DrawingSource, Environment as _, ImageEdit, ImageFormat, ReportFormat, ReportInfo, ReportKind,
-    ResultCell, ResultEntry, ResultType, SampleId, Sha256Hex, TemplateRef,
+    DrawingSource, Environment as _, ImageEdit, ImageFormat, ReportFormat, ReportInfoField,
+    ReportKind, ResultCell, ResultEntry, ResultType, SampleField, SampleId, Sha256Hex, TemplateRef,
 };
 use proptest::prelude::*;
 use rust_decimal::Decimal;
@@ -69,6 +70,18 @@ enum Op {
         class: Option<u8>,
         places: Vec<u32>,
         rounding: u32,
+    },
+    /// Single tolerance fields (MF F4); rounding above 10 is refused.
+    ToleranceFields {
+        /// General tolerance class f, m, c; 3 removes it; `None` leaves it out.
+        class: Option<u8>,
+        inch: Option<u32>,
+    },
+    /// Add or remove one decimal place rule (MF F4); places above 10 and a second rule for the
+    /// same places are refused.
+    DecimalRule {
+        places: u32,
+        remove: bool,
     },
     Update {
         picks: Vec<usize>,
@@ -209,6 +222,9 @@ fn simple_op() -> impl Strategy<Value = Op> {
             .prop_map(|(policy, strategy, sub_number)| Op::Numbering { policy, strategy, sub_number }),
         1 => (prop::option::of(0u8..3), prop::collection::vec(0u32..4, 0..3), 0u32..12)
             .prop_map(|(class, places, rounding)| Op::Tolerance { class, places, rounding }),
+        1 => (prop::option::of(0u8..4), prop::option::of(0u32..12))
+            .prop_map(|(class, inch)| Op::ToleranceFields { class, inch }),
+        1 => (0u32..12, any::<bool>()).prop_map(|(places, remove)| Op::DecimalRule { places, remove }),
         3 => (picks(), value()).prop_map(|(picks, value)| Op::Update { picks, value }),
         2 => (picks(), any::<i16>(), any::<bool>())
             .prop_map(|(picks, dx, anchor)| Op::MoveBalloons { picks, dx, anchor }),
@@ -557,6 +573,30 @@ fn command(project: &Project, op: &Op) -> Command {
                 custom_tables: Vec::new(),
             },
         },
+        Op::ToleranceFields { class, inch } => Command::UpdateToleranceSettings {
+            values: class
+                .map(|c| {
+                    ToleranceField::General((c < 3).then(|| TableClass {
+                        table: table_ref("iso-2768-1"),
+                        class: ["f", "m", "c"][usize::from(c)].into(),
+                    }))
+                })
+                .into_iter()
+                .chain(inch.map(ToleranceField::InchPlaces))
+                .collect(),
+        },
+        Op::DecimalRule { places, remove } => {
+            if *remove {
+                Command::RemoveDecimalRule { places: *places }
+            } else {
+                Command::AddDecimalRule {
+                    rule: DecimalPlaceRule {
+                        places: *places,
+                        tolerance: Decimal::new(i64::from(*places) + 1, 2),
+                    },
+                }
+            }
+        }
         Op::Update { picks, value } => Command::UpdateFields {
             ids: chars(project, picks),
             values: field_values(value),
@@ -604,19 +644,19 @@ fn command(project: &Project, op: &Op) -> Command {
             scale,
         } => Command::UpdateSheet {
             sheet: common::sheet(project, *sheet),
-            rotation: Some(
-                [
-                    Rotation::Deg0,
-                    Rotation::Deg90,
-                    Rotation::Deg180,
-                    Rotation::Deg270,
-                ][usize::from(*rotation)],
-            ),
-            unit: Some(if *inch { Unit::In } else { Unit::Mm }),
-            scale: Some(Scale {
-                drawing: scale.0,
-                actual: scale.1,
-            }),
+            values: vec![
+                SheetField::Rotation(
+                    [
+                        Rotation::Deg0,
+                        Rotation::Deg90,
+                        Rotation::Deg180,
+                        Rotation::Deg270,
+                    ][usize::from(*rotation)],
+                ),
+                SheetField::Unit(if *inch { Unit::In } else { Unit::Mm }),
+                SheetField::ScaleDrawing(scale.0),
+                SheetField::ScaleActual(scale.1),
+            ],
         },
         Op::ApplyNumbering { strategy } => Command::ApplyNumbering {
             strategy: strategy_of(*strategy),
@@ -632,10 +672,11 @@ fn command(project: &Project, op: &Op) -> Command {
             },
         },
         Op::Info { part } => Command::UpdateProjectInfo {
-            info: dimo_core::ProjectInfo {
-                part_number: format!("P-{part}"),
-                ..dimo_core::ProjectInfo::default()
-            },
+            values: vec![if part % 2 == 0 {
+                ProjectInfoField::PartNumber(format!("P-{part}"))
+            } else {
+                ProjectInfoField::Customer(format!("C-{part}"))
+            }],
         },
         Op::Unknown => Command::DeleteCharacteristics {
             ids: vec![CharId::from_uuid(uuid::Uuid::from_u128(u128::MAX))],
@@ -647,16 +688,20 @@ fn command(project: &Project, op: &Op) -> Command {
                 None => Command::DeleteSamples {
                     ids: vec![SampleId::from_uuid(uuid::Uuid::from_u128(u128::MAX))],
                 },
-                Some(sample) => {
-                    let mut sample = sample.clone();
-                    // Empty, duplicate ("1" or "2" may exist) and fresh serials.
-                    sample.serial =
-                        ["", " 1 ", "2", "S-7", "s-7", "  "][usize::from(*serial)].into();
-                    sample.date =
-                        ["", "2026-10-12", "2026-02-30", "2024-02-29"][usize::from(*date)].into();
-                    sample.inspector = format!("i{serial}");
-                    Command::UpdateSample { sample }
-                }
+                Some(sample) => Command::UpdateSample {
+                    sample: sample.id,
+                    values: vec![
+                        // Empty, duplicate ("1" or "2" may exist) and fresh serials.
+                        SampleField::Serial(
+                            ["", " 1 ", "2", "S-7", "s-7", "  "][usize::from(*serial)].into(),
+                        ),
+                        SampleField::Date(
+                            ["", "2026-10-12", "2026-02-30", "2024-02-29"][usize::from(*date)]
+                                .into(),
+                        ),
+                        SampleField::Inspector(format!("i{serial}")),
+                    ],
+                },
             }
         }
         Op::DeleteSamples { picks } => Command::DeleteSamples {
@@ -693,11 +738,12 @@ fn command(project: &Project, op: &Op) -> Command {
             ][usize::from(*result_type)],
         },
         Op::ReportInfo { number, bad_date } => Command::UpdateReportInfo {
-            info: ReportInfo {
-                report_number: format!("R-{number}"),
-                report_date: if *bad_date { "2026-1-1" } else { "2026-10-12" }.into(),
-                ..ReportInfo::default()
-            },
+            values: vec![
+                ReportInfoField::ReportNumber(format!("R-{number}")),
+                ReportInfoField::ReportDate(
+                    if *bad_date { "2026-1-1" } else { "2026-10-12" }.into(),
+                ),
+            ],
         },
         Op::ImageEdit {
             image,

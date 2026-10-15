@@ -527,9 +527,11 @@ describe("tolerance settings (T2.8, T3.16)", () => {
       general.dispatchEvent(new Event("change", { bubbles: true }));
     }
     await settle();
-    expect(stores.commands.at(-1)).toMatchObject({
-      type: "set_tolerance_settings",
-      settings: { general: { table: { id: "iso-2768-1", version: 1 }, class: "f" } },
+    expect(stores.commands.at(-1)).toEqual({
+      type: "update_tolerance_settings",
+      values: [
+        { field: "general", value: { table: { id: "iso-2768-1", version: 1 }, class: "f" } },
+      ],
     });
   });
 
@@ -650,7 +652,7 @@ describe("tolerance settings (T2.8, T3.16)", () => {
     expect(target.querySelector("[data-testid='general-offer']")).toBeNull();
 
     stores.general.candidates = ["c2"];
-    await stores.tolerance.setSettings({ unit_rounding: { mm_places: 3, inch_places: 4 } });
+    await stores.tolerance.setSettings([{ field: "mm_places", value: 3 }]);
     await settle();
     expect(stores.general.asked).toBe(1);
     expect(target.querySelector("[data-testid='general-offer']")).toBeNull();

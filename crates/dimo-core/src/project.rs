@@ -32,6 +32,37 @@ pub struct ProjectInfo {
     pub order_reference: String,
 }
 
+/// One field of the part data, used by
+/// [`Command::UpdateProjectInfo`](crate::command::Command::UpdateProjectInfo) (MF F4).
+///
+/// Serialized as `{ "field": "part_number", "value": "4711" }`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(tag = "field", content = "value", rename_all = "snake_case")]
+pub enum ProjectInfoField {
+    /// Part number.
+    PartNumber(String),
+    /// Part name.
+    PartName(String),
+    /// Customer.
+    Customer(String),
+    /// Order or purchase reference.
+    OrderReference(String),
+}
+
+impl ProjectInfo {
+    /// Sets one field.
+    pub fn set(&mut self, value: &ProjectInfoField) {
+        let (slot, text) = match value {
+            ProjectInfoField::PartNumber(t) => (&mut self.part_number, t),
+            ProjectInfoField::PartName(t) => (&mut self.part_name, t),
+            ProjectInfoField::Customer(t) => (&mut self.customer, t),
+            ProjectInfoField::OrderReference(t) => (&mut self.order_reference, t),
+        };
+        slot.clone_from(text);
+    }
+}
+
 /// Project wide settings.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -253,6 +284,48 @@ impl ToleranceSettings {
             return Err("the drawing rule must be a custom table of the project");
         }
         Ok(())
+    }
+}
+
+/// One tolerance setting other than decimal place rules and custom tables, used by
+/// [`Command::UpdateToleranceSettings`](crate::command::Command::UpdateToleranceSettings)
+/// (MF F4). Decimal place rules change one at a time with
+/// [`Command::AddDecimalRule`](crate::command::Command::AddDecimalRule) and
+/// [`Command::RemoveDecimalRule`](crate::command::Command::RemoveDecimalRule).
+///
+/// Serialized as `{ "field": "mm_places", "value": 3 }`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(tag = "field", content = "value", rename_all = "snake_case")]
+pub enum ToleranceField {
+    /// General tolerance standard and class; `null` removes it.
+    General(Option<TableClass>),
+    /// Drawing specific rule, a custom table of the project; `null` removes it.
+    DrawingRule(Option<TableClass>),
+    /// Decimal places of values converted to mm.
+    MmPlaces(u32),
+    /// Decimal places of values converted to inch.
+    InchPlaces(u32),
+}
+
+impl ToleranceSettings {
+    /// Sets one field. Call [`Self::validate`] afterwards.
+    pub fn set(&mut self, value: &ToleranceField) {
+        match value {
+            ToleranceField::General(v) => self.general.clone_from(v),
+            ToleranceField::DrawingRule(v) => self.drawing_rule.clone_from(v),
+            ToleranceField::MmPlaces(v) => self.unit_rounding.mm_places = *v,
+            ToleranceField::InchPlaces(v) => self.unit_rounding.inch_places = *v,
+        }
+    }
+
+    /// Inserts `rule` in the order of places. A rule for places that already have one stays
+    /// next to it, so [`Self::validate`] refuses the result.
+    pub fn add_decimal_rule(&mut self, rule: DecimalPlaceRule) {
+        let index = self
+            .decimal_rules
+            .partition_point(|r| r.places <= rule.places);
+        self.decimal_rules.insert(index, rule);
     }
 }
 

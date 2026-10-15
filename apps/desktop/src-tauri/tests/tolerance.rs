@@ -10,8 +10,8 @@ use std::path::PathBuf;
 
 use dimo_core::Language;
 use dimo_core::{
-    ChangeSource, CharId, Command, DerivationRule, FieldValue, Point, TableClass, TableRef,
-    ToleranceDerivation,
+    ChangeSource, CharId, Command, DerivationRule, FieldValue, Point, SheetField, TableClass,
+    TableRef, ToleranceDerivation,
 };
 use dimo_desktop::ipc::{ArgumentReason, CommandError, TableImportReason};
 use dimo_desktop::session::AppSession;
@@ -393,9 +393,7 @@ fn shorter_leg_keeps_its_unit_when_the_sheet_unit_changes() {
     session
         .execute(Command::UpdateSheet {
             sheet,
-            rotation: None,
-            unit: Some(Unit::In),
-            scale: None,
+            values: vec![SheetField::Unit(Unit::In)],
         })
         .unwrap();
     // Retyping the text sends the stored leg; it keeps its unit on the inch sheet.

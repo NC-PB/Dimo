@@ -11,7 +11,7 @@ use std::fs::{self, OpenOptions};
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
-use dimo_core::{Command, FixedEnvironment, LockReason, Project, ProjectInfo};
+use dimo_core::{Command, FixedEnvironment, LockReason, Project, ProjectInfoField};
 use dimo_io::journal::{self, journal_path, stale_path};
 use dimo_io::project::{CreateOptions, Layout, ProjectFile, ProjectSession};
 
@@ -36,10 +36,7 @@ fn rename(session: &mut ProjectSession, env: &mut FixedEnvironment, name: &str) 
         .document_mut()
         .execute(
             Command::UpdateProjectInfo {
-                info: ProjectInfo {
-                    part_name: name.into(),
-                    ..common::info()
-                },
+                values: vec![ProjectInfoField::PartName(name.into())],
             },
             env,
         )

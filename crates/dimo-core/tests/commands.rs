@@ -9,8 +9,9 @@ use dimo_core::characteristic::FieldValue;
 use dimo_core::decimal::parse_decimal;
 use dimo_core::{
     AuditAction, BalloonMove, BalloonShape, BalloonStyle, BalloonStyleOverride, Change,
-    CharacteristicKind, Command, CommandError, Document, LockReason, OrientedBox, Point, Rotation,
-    Scale, Size, TextSource, Unit,
+    CharacteristicKind, Command, CommandError, Document, LockReason, OrientedBox, Point,
+    ProjectInfoField, ReportInfoField, Rotation, SampleField, Scale, SheetField, Size, TextSource,
+    Unit,
 };
 
 fn dec(text: &str) -> dimo_core::decimal::OptionalDecimal {
@@ -203,9 +204,7 @@ fn unit_defaults_to_degrees_for_angles_and_to_the_sheet_unit() {
     doc.execute(
         Command::UpdateSheet {
             sheet,
-            rotation: None,
-            unit: Some(Unit::In),
-            scale: None,
+            values: vec![SheetField::Unit(Unit::In)],
         },
         &mut env,
     )
@@ -329,12 +328,10 @@ fn sheet_settings_are_validated() {
         .execute(
             Command::UpdateSheet {
                 sheet,
-                rotation: Some(Rotation::Deg90),
-                unit: None,
-                scale: Some(Scale {
-                    drawing: 1,
-                    actual: 2,
-                }),
+                values: vec![
+                    SheetField::Rotation(Rotation::Deg90),
+                    SheetField::ScaleActual(2),
+                ],
             },
             &mut env,
         )
@@ -348,27 +345,118 @@ fn sheet_settings_are_validated() {
     assert_eq!(after.unit, Unit::Mm);
 
     let invalid = [
-        (Some(Unit::Deg), None),
-        (
-            None,
-            Some(Scale {
-                drawing: 0,
-                actual: 1,
-            }),
-        ),
+        SheetField::Unit(Unit::Deg),
+        SheetField::ScaleDrawing(0),
+        SheetField::ScaleActual(0),
     ];
-    for (unit, scale) in invalid {
+    for value in invalid {
         let result = doc.execute(
             Command::UpdateSheet {
                 sheet,
-                rotation: None,
-                unit,
-                scale,
+                values: vec![value],
             },
             &mut env,
         );
         assert!(matches!(result, Err(CommandError::InvalidSheetSetting(_))));
     }
+    // A later field may repair an earlier one: only the result is checked.
+    doc.execute(
+        Command::UpdateSheet {
+            sheet,
+            values: vec![SheetField::ScaleDrawing(0), SheetField::ScaleDrawing(5)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    assert_eq!(
+        doc.project().sheet(sheet).unwrap().scale,
+        Scale {
+            drawing: 5,
+            actual: 2
+        }
+    );
+}
+
+/// MF F4: each update command carries only its fields and applies them to the state at run
+/// time, so two updates of different fields sent one after the other both survive.
+#[test]
+fn field_updates_of_different_fields_both_survive() {
+    let (mut doc, mut env) = doc_with(0);
+    let sheet = common::sheet(doc.project(), 0);
+    doc.execute(
+        Command::UpdateSheet {
+            sheet,
+            values: vec![SheetField::ScaleDrawing(2)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    doc.execute(
+        Command::UpdateSheet {
+            sheet,
+            values: vec![SheetField::ScaleActual(5)],
+        },
+        &mut env,
+    )
+    .unwrap();
+    assert_eq!(doc.project().sheet(sheet).unwrap().scale.to_string(), "2:5");
+
+    for value in [
+        ProjectInfoField::PartNumber("4711".into()),
+        ProjectInfoField::Customer("Customer A".into()),
+    ] {
+        doc.execute(
+            Command::UpdateProjectInfo {
+                values: vec![value],
+            },
+            &mut env,
+        )
+        .unwrap();
+    }
+    assert_eq!(doc.project().info.part_number, "4711");
+    assert_eq!(doc.project().info.customer, "Customer A");
+
+    for value in [
+        ReportInfoField::ReportNumber("IR-7".into()),
+        ReportInfoField::Remarks("ok".into()),
+    ] {
+        doc.execute(
+            Command::UpdateReportInfo {
+                values: vec![value],
+            },
+            &mut env,
+        )
+        .unwrap();
+    }
+    assert_eq!(doc.project().report_info.report_number, "IR-7");
+    assert_eq!(doc.project().report_info.remarks, "ok");
+
+    doc.execute(Command::AddSamples { count: 1 }, &mut env)
+        .unwrap();
+    let sample = doc.project().samples[0].id;
+    for value in [
+        SampleField::Gauges("caliper".into()),
+        SampleField::Comment("first part".into()),
+    ] {
+        doc.execute(
+            Command::UpdateSample {
+                sample,
+                values: vec![value],
+            },
+            &mut env,
+        )
+        .unwrap();
+    }
+    let part = &doc.project().samples[0];
+    assert_eq!(
+        (part.gauges.as_str(), part.comment.as_str()),
+        ("caliper", "first part")
+    );
+
+    // Undo takes back one field update at a time.
+    doc.undo(&mut env).unwrap();
+    assert_eq!(doc.project().samples[0].gauges, "caliper");
+    assert_eq!(doc.project().samples[0].comment, "");
 }
 
 #[test]
@@ -527,8 +615,13 @@ fn settings_and_info_commands() {
     assert_eq!(doc.project().settings.balloon_style, style);
     let mut info = doc.project().info.clone();
     info.customer = "Customer A".into();
-    doc.execute(Command::UpdateProjectInfo { info: info.clone() }, &mut env)
-        .unwrap();
+    doc.execute(
+        Command::UpdateProjectInfo {
+            values: vec![ProjectInfoField::Customer("Customer A".into())],
+        },
+        &mut env,
+    )
+    .unwrap();
     assert_eq!(doc.project().info, info);
     let bad = BalloonStyle {
         outline_mm: 0.0,

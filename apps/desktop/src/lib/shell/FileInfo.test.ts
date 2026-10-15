@@ -4,7 +4,7 @@
  * undoable Rust command, nothing is changed in the frontend.
  */
 import { flushSync, mount, tick, unmount } from "svelte";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ProjectBalloonStyle from "$lib/components/ProjectBalloonStyle.svelte";
 import ToleranceSettings from "$lib/components/ToleranceSettings.svelte";
 import type { Command, MeasurementState } from "$lib/ipc/bindings";
@@ -147,14 +147,46 @@ describe("File > Info (T3.16)", () => {
       "update_project_info",
       "update_revision_label",
       "update_report_info",
-      "set_tolerance_settings",
+      "update_tolerance_settings",
     ]);
-    expect(s.sent[0]).toMatchObject({ info: { part_number: "4711" } });
-    expect(s.sent[1]).toMatchObject({ label: "C" });
-    expect(s.sent[2]).toMatchObject({ info: { report_number: "IR-7" } });
-    expect(s.sent[3]).toMatchObject({
-      settings: { general: { table: { id: "iso-2768-1" }, class: "m" } },
+    expect(s.sent[0]).toEqual({
+      type: "update_project_info",
+      values: [{ field: "part_number", value: "4711" }],
     });
+    expect(s.sent[1]).toMatchObject({ label: "C" });
+    expect(s.sent[2]).toEqual({
+      type: "update_report_info",
+      values: [{ field: "report_number", value: "IR-7" }],
+    });
+    expect(s.sent[3]).toMatchObject({
+      values: [{ field: "general", value: { table: { id: "iso-2768-1" }, class: "m" } }],
+    });
+  });
+
+  it("sends fast edits of several fields as one field each, none overwriting another (MF F4)", async () => {
+    const s = setup();
+    render(FileInfo, {
+      projectStore: s.project,
+      toleranceStore: s.tolerance,
+      measurementStore: s.measurement,
+    });
+    await settle();
+    // Five edits before any of them has finished.
+    change('input[id$="-part_number"]', "4711");
+    change('input[id$="-part_name"]', "Shaft");
+    change('input[id$="-customer"]', "Muster AG");
+    change('input[id$="-report_number"]', "IR-7");
+    change('input[id$="-inspected_by"]', "A. Weber");
+    await vi.waitFor(() => {
+      expect(s.sent).toHaveLength(5);
+    });
+    expect(s.sent).toEqual([
+      { type: "update_project_info", values: [{ field: "part_number", value: "4711" }] },
+      { type: "update_project_info", values: [{ field: "part_name", value: "Shaft" }] },
+      { type: "update_project_info", values: [{ field: "customer", value: "Muster AG" }] },
+      { type: "update_report_info", values: [{ field: "report_number", value: "IR-7" }] },
+      { type: "update_report_info", values: [{ field: "inspected_by", value: "A. Weber" }] },
+    ]);
   });
 
   it("shows the progress counts Rust returns", async () => {
@@ -174,7 +206,7 @@ describe("File > Info (T3.16)", () => {
 });
 
 describe("project settings dialogs of the Drawing tab (T3.16)", () => {
-  it("adds a decimal place rule with set_tolerance_settings", async () => {
+  it("adds, changes and removes a decimal place rule, one rule per command (MF F4)", async () => {
     const s = setup();
     render(ToleranceSettings, {
       section: "decimal_rules",
@@ -192,10 +224,52 @@ describe("project settings dialogs of the Drawing tab (T3.16)", () => {
     }
     target.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true }));
     await settle();
-    expect(s.sent.at(-1)).toMatchObject({
-      type: "set_tolerance_settings",
-      settings: { decimal_rules: [{ places: 2, tolerance: "0.05" }] },
+    expect(s.sent.at(-1)).toEqual({
+      type: "add_decimal_rule",
+      rule: { places: 2, tolerance: "0.05" },
     });
+
+    // The fake Rust changes nothing, so show a rule as if it had been added.
+    s.project.applyPatched({
+      session: 1,
+      revision: 1,
+      patch: {
+        changes: [
+          {
+            type: "settings_changed",
+            before: emptyProject().settings,
+            after: {
+              ...emptyProject().settings,
+              tolerance: {
+                ...emptyProject().settings.tolerance,
+                decimal_rules: [{ places: 2, tolerance: "0.05" }],
+              },
+            },
+          },
+        ],
+      },
+      status: status(),
+    });
+    await settle();
+    const rule = [...target.querySelectorAll<HTMLInputElement>("input")].find(
+      (i) => i.value === "0.05",
+    );
+    expect(rule).toBeDefined();
+    if (rule) {
+      rule.value = "0.1";
+      rule.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    await settle();
+    expect(s.sent.at(-1)).toEqual({
+      type: "batch",
+      commands: [
+        { type: "remove_decimal_rule", places: 2 },
+        { type: "add_decimal_rule", rule: { places: 2, tolerance: "0.1" } },
+      ],
+    });
+    target.querySelector<HTMLButtonElement>("button[aria-label]")?.click();
+    await settle();
+    expect(s.sent.at(-1)).toEqual({ type: "remove_decimal_rule", places: 2 });
   });
 
   it("changes the project balloon style with set_default_balloon_style", async () => {

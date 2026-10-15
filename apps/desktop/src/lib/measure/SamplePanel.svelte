@@ -1,7 +1,7 @@
 <script lang="ts">
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/i18n";
-  import type { Sample, SampleId } from "$lib/ipc/bindings";
+  import type { SampleId } from "$lib/ipc/bindings";
   import Pane from "$lib/pane/Pane.svelte";
   import PaneSection from "$lib/pane/PaneSection.svelte";
   import { measurementStore, type MeasurementStore } from "$lib/stores/measurement.svelte";
@@ -46,16 +46,12 @@
     if (current === undefined || input.value === current[field]) {
       return;
     }
-    // The sample is built when the command runs, so a fast edit of another field of the same
-    // part is not overwritten with its old value (T3.18).
-    const value = input.value;
-    const patch = await project.executeWith((p) => {
-      const latest = p.samples.find((s) => s.id === current.id);
-      if (latest === undefined || latest[field] === value) {
-        return null;
-      }
-      const next: Sample = { ...latest, [field]: value };
-      return { type: "update_sample", sample: next };
+    // Only this field: Rust applies it to the part as it is then, so a fast edit of another
+    // field of the same part is not overwritten with its old value (T3.18, MF F4).
+    const patch = await project.execute({
+      type: "update_sample",
+      sample: current.id,
+      values: [{ field, value: input.value }],
     });
     if (patch === undefined) {
       const error = project.error;

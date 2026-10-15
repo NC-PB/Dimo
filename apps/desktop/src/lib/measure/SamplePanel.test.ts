@@ -3,8 +3,8 @@
  * The part pane of the Measure tab (T3.19): fields of the active part and its counts per
  * verdict as Rust computes them.
  */
-import { flushSync, mount, tick, unmount } from "svelte";
-import { afterEach, describe, expect, it } from "vitest";
+import { flushSync, mount, unmount } from "svelte";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Command, MeasurementState } from "$lib/ipc/bindings";
 import { emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { MeasurementStore } from "$lib/stores/measurement.svelte";
@@ -85,29 +85,36 @@ describe("part pane (T3.19)", () => {
     expect(counts.replace(/\s+/g, " ")).toContain("0 missing");
   });
 
-  it("sends a changed field as one update_sample", async () => {
+  it("sends each changed field alone, also when typed fast (T3.18, MF F4)", async () => {
     const { root, sent } = await render();
-    const gauges = [...root.querySelectorAll("label")].find(
-      (l) => l.textContent.trim() === "Gauges",
-    );
-    const input = root.querySelector<HTMLInputElement>(`#${gauges?.htmlFor ?? "none"}`);
-    if (!input) {
-      throw new Error("no gauges field");
-    }
-    input.value = "Caliper 150";
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-    await tick();
+    const field = (label: string): HTMLInputElement => {
+      const l = [...root.querySelectorAll("label")].find((e) => e.textContent.trim() === label);
+      const input = root.querySelector<HTMLInputElement>(`#${l?.htmlFor ?? "none"}`);
+      if (!input) {
+        throw new Error(`no ${label} field`);
+      }
+      return input;
+    };
+    // Two fields changed before the first command has finished: two commands with one field.
+    const gauges = field("Gauges");
+    gauges.value = "Caliper 150";
+    gauges.dispatchEvent(new Event("change", { bubbles: true }));
+    const comment = field("Comment");
+    comment.value = "first off";
+    comment.dispatchEvent(new Event("change", { bubbles: true }));
+    await vi.waitFor(() => {
+      expect(sent).toHaveLength(2);
+    });
     expect(sent).toEqual([
       {
         type: "update_sample",
-        sample: {
-          id: "s1",
-          serial: "S-002",
-          date: "",
-          inspector: "A. Weber",
-          gauges: "Caliper 150",
-          comment: "",
-        },
+        sample: "s1",
+        values: [{ field: "gauges", value: "Caliper 150" }],
+      },
+      {
+        type: "update_sample",
+        sample: "s1",
+        values: [{ field: "comment", value: "first off" }],
       },
     ]);
   });

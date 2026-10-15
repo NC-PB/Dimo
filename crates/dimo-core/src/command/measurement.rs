@@ -7,7 +7,7 @@ use crate::env::Environment;
 use crate::id::{CharId, SampleId};
 use crate::measurement::{
     MAX_SAMPLES, MAX_SAMPLES_PER_ADD, MeasurementResult, ResultCell, ResultEntry, ResultSource,
-    ResultType, Sample, check_serial, is_date_or_empty, next_serials, parse_result,
+    ResultType, Sample, SampleField, check_serial, is_date_or_empty, next_serials, parse_result,
 };
 use crate::patch::Change;
 use crate::project::Project;
@@ -100,19 +100,25 @@ pub(super) fn add_samples(
     Ok(())
 }
 
-pub(super) fn update_sample(tx: &mut Tx<'_>, sample: &Sample) -> Result<(), CommandError> {
+/// Sets fields of a sample (MF F4). The resulting serial is trimmed and checked, the date must
+/// be a date or empty.
+pub(super) fn update_sample(
+    tx: &mut Tx<'_>,
+    id: SampleId,
+    values: &[SampleField],
+) -> Result<(), CommandError> {
     let current = tx
         .project
-        .sample(sample.id)
-        .ok_or(CommandError::UnknownSample(sample.id))?;
-    let serial = check_serial(&tx.project.samples, &sample.serial, Some(sample.id))?;
-    if !is_date_or_empty(&sample.date) {
-        return Err(CommandError::InvalidDate(sample.date.clone()));
+        .sample(id)
+        .ok_or(CommandError::UnknownSample(id))?;
+    let mut after = current.clone();
+    for v in values {
+        after.set(v);
     }
-    let after = Sample {
-        serial,
-        ..sample.clone()
-    };
+    after.serial = check_serial(&tx.project.samples, &after.serial, Some(id))?;
+    if !is_date_or_empty(&after.date) {
+        return Err(CommandError::InvalidDate(after.date));
+    }
     if *current != after {
         tx.push(Change::SampleChanged {
             before: current.clone(),

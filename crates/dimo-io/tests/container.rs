@@ -8,7 +8,7 @@ mod common;
 use std::fs;
 use std::io::{Cursor, Read as _, Write as _};
 
-use dimo_core::{Command, Document, Point, Project, Rotation, Scale, Unit};
+use dimo_core::{Command, Document, Point, Project, Rotation, Scale, SheetField, Unit};
 use dimo_io::project::{
     APP_VERSION, Layout, Limits, ProjectError, ProjectFile, SCHEMA_VERSION, sha256,
 };
@@ -90,12 +90,11 @@ fn sheet_rotation_unit_and_scale_survive_save_and_load() {
         .execute(
             Command::UpdateSheet {
                 sheet: sheets[0],
-                rotation: Some(Rotation::Deg270),
-                unit: Some(Unit::In),
-                scale: Some(Scale {
-                    drawing: 2,
-                    actual: 1,
-                }),
+                values: vec![
+                    SheetField::Rotation(Rotation::Deg270),
+                    SheetField::Unit(Unit::In),
+                    SheetField::ScaleDrawing(2),
+                ],
             },
             &mut env,
         )
@@ -104,12 +103,7 @@ fn sheet_rotation_unit_and_scale_survive_save_and_load() {
         .execute(
             Command::UpdateSheet {
                 sheet: sheets[1],
-                rotation: None,
-                unit: None,
-                scale: Some(Scale {
-                    drawing: 1,
-                    actual: 20,
-                }),
+                values: vec![SheetField::ScaleActual(20)],
             },
             &mut env,
         )
