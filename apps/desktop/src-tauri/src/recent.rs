@@ -311,9 +311,11 @@ mod tests {
         );
         std::fs::write(&store, "{ nope").unwrap();
         assert_eq!(load_json::<RecentList>(&store), RecentList::default());
+        // An absolute path on every platform (`/abs/b.dimo` is not absolute on Windows).
+        let absolute = dir.path().join("b.dimo");
         std::fs::write(
             &store,
-            r#"{"projects": ["relative.dimo", "/abs/b.dimo"], "x": 1}"#,
+            serde_json::json!({ "projects": ["relative.dimo", absolute], "x": 1 }).to_string(),
         )
         .unwrap();
         let loaded = load_json::<RecentList>(&store);
