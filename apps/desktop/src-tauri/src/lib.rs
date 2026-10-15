@@ -10,6 +10,7 @@ pub mod error;
 pub mod export;
 pub mod fsio;
 pub mod ipc;
+pub mod logging;
 pub mod measurement;
 pub mod numbering;
 pub mod opener;
@@ -134,7 +135,7 @@ fn refresh_bindings(
 /// Starts the desktop app. In debug builds the bindings are regenerated first.
 #[allow(
     clippy::print_stderr,
-    reason = "binding export warning in debug builds, no tracing subscriber yet"
+    reason = "binding export warning in debug builds, before the log file is opened"
 )]
 pub fn run() -> tauri::Result<()> {
     let builder = specta_builder();
@@ -157,6 +158,10 @@ pub fn run() -> tauri::Result<()> {
         .invoke_handler(builder.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(tiles::SCHEME, tiles::handle)
         .setup(move |app| {
+            // The log file first, so everything after it is logged (D-06).
+            if let Some(dir) = dev::dev_folder("logs", app.path().app_log_dir().ok()) {
+                logging::init(&dir);
+            }
             builder.mount_events(app);
             // Tile cache in the user cache directory, never in the project (07 Data model).
             let cache_dir = dev::dev_folder("cache", app.path().app_cache_dir().ok())
