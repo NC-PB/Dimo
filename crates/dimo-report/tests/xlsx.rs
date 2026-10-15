@@ -134,6 +134,48 @@ fn zip_entries_have_a_fixed_time() {
     }
 }
 
+/// FR-EXP-11, NFR-PORT-03: the ZIP metadata does not depend on the platform the test runs on.
+/// `rust_xlsxwriter` leaves the host system to the `zip` crate, which writes DOS on Windows;
+/// the writer marks every entry as written on Unix, so all platforms give the same bytes.
+#[test]
+fn zip_metadata_is_platform_independent() {
+    let bytes = xlsx(
+        &fixture::project(),
+        ReportKind::InspectionReport,
+        Language::En,
+    );
+    let meta = dimo_core::zip_host::entry_metadata(&bytes).expect("zip");
+    let names: Vec<&str> = meta.iter().map(|m| m.name.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "[Content_Types].xml",
+            "_rels/.rels",
+            "xl/_rels/workbook.xml.rels",
+            "xl/theme/theme1.xml",
+            "xl/styles.xml",
+            "xl/workbook.xml",
+            "xl/worksheets/sheet1.xml",
+            "xl/sharedStrings.xml",
+            "docProps/core.xml",
+            "docProps/app.xml",
+        ],
+        "entry order"
+    );
+    for entry in &meta {
+        assert_eq!(entry.host(), 3, "{}: host Unix", entry.name);
+        assert_eq!(
+            entry.external_attributes,
+            0o100_600 << 16,
+            "{}: Unix mode, no DOS bits",
+            entry.name
+        );
+        // 1980-01-01 00:00:00 in DOS format.
+        assert_eq!(entry.dos_time_date, (0, 0x21), "{}", entry.name);
+        assert_eq!(entry.method, 8, "{}: deflate", entry.name);
+    }
+}
+
 /// Values keep their typed decimals as number cells; the number format carries the scale and
 /// the verdict mark, so the cells read in greyscale. German values are stored with a point.
 #[test]

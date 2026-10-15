@@ -9,7 +9,7 @@
 | Output formats (CSV, XLSX, PDF structure, project JSON, report data JSON) | `insta` snapshots | `dimo-io`, `dimo-report` |
 | Report PDF text | text runs extracted with PDFium, `insta` snapshots (dimo-report may not use dimo-pdf) | `dimo-cli/tests/report_text.rs` |
 | Generated JSON schemas (`docs/schema/`) | test compares with the types; regenerate with `DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth` (truth) or `-p dimo-io --test schema` (project) or `-p dimo-tolerance --test schema` (tolerance tables) or `-p dimo-report --test report` (report data) | `dimo-core/tests/`, `dimo-io/tests/`, `dimo-tolerance/tests/`, `dimo-report/tests/` |
-| Export determinism | list exports compared byte for byte with committed golden files; regenerate after an intended change with `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` | `dimo-io/tests/golden/` |
+| Export determinism | list exports compared byte for byte with committed golden files; the same on every platform, also the ZIP metadata of XLSX files (host system, attributes, times, entry order); a mismatch names the first differing ZIP entry and field and writes the produced file to `target/golden-mismatch/dimo-io/`, which CI uploads as the artifact `golden-mismatch-<os>` when the job fails; regenerate after an intended change with `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` | `dimo-io/tests/golden/` |
 | Project file migrations | one fixture per schema version in folder mode, never changed after release; new one with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations` | `dimo-io/tests/fixtures/v<n>/` |
 | Box select (M2 exit criterion) | box select with the tolerance engine on every truth region of the corpus and of synth seeds 1 to 40, per callout category; fails below 99 percent of the common callouts, limits required (angles under a general tolerance read with the shorter leg of the truth, as typed on the card). Report: `cargo run -p dimo-cli -- eval box-select` | `dimo-detect/src/evaluation.rs`, `dimo-detect/tests/box_select_corpus.rs`, `dimo-cli/tests/box_select_evaluation.rs`, run by `check.sh` in CI |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
@@ -30,6 +30,9 @@
   `render_time_300_by_10` in `src-tauri/tests/report_export.rs`) stay ignored under their own
   name.
 - Snapshot changes are reviewed, never blindly accepted.
+- Tests run on Windows too (CI). Build paths with `Path::join` and `tempfile` directories, never
+  `"/..."` literals as absolute paths; compare paths as `Path`, not as strings with `/`; text
+  read from disk may be checked out with CRLF where `.gitattributes` does not say `eol=lf`.
 - Tests must not need the network. PDFium is loaded from `vendor/pdfium/`; tests that need it
   are skipped with a clear message if it is missing, and CI always provides it. With `CI=true` or
   `DIMO_REQUIRE_PDFIUM=1` a missing library fails these tests instead of skipping them.

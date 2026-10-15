@@ -135,6 +135,9 @@ pub enum ReportError {
     /// The spreadsheet could not be written.
     #[error("XLSX export failed: {0}")]
     Xlsx(#[from] rust_xlsxwriter::XlsxError),
+    /// The spreadsheet container could not be made platform independent.
+    #[error("XLSX export failed: {0}")]
+    Zip(#[from] dimo_core::zip_host::ZipHostError),
     /// Typst could not write the PDF.
     #[error("PDF export failed: {}", first(.0))]
     Pdf(Vec<Diagnostic>),

@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::io::Write;
 
 use dimo_core::decimal::spreadsheet_number;
+use dimo_core::zip_host::set_unix_host;
 use dimo_core::{Language, Project};
 use rust_xlsxwriter::{DocProperties, ExcelDateTime, Format, Workbook, Worksheet};
 
@@ -16,7 +17,8 @@ use super::{ExportError, ExportOptions, Exporter};
 /// the stored number of decimal places, so `90.0` is shown as `90.0`. Longer decimals, which a
 /// double cannot hold, are text cells with the exact digits. Display numbers, quantities and
 /// sheet numbers are whole number cells, everything else is text. The workbook properties are
-/// constant (fixed creation date, no clock), so identical input gives identical bytes.
+/// constant (fixed creation date, no clock) and the ZIP entries are marked as written on Unix
+/// on every platform, so identical input gives identical bytes everywhere.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct XlsxListExporter;
 
@@ -80,7 +82,10 @@ fn build(project: &Project, opts: ExportOptions) -> Result<Vec<u8>, ExportError>
     let last_row = u32::try_from(rows.len()).unwrap_or(u32::MAX);
     let last_col = u16::try_from(COLUMNS.len() - 1).unwrap_or(u16::MAX);
     sheet.autofilter(0, 0, last_row, last_col)?;
-    Ok(workbook.save_to_buffer()?)
+    let mut bytes = workbook.save_to_buffer()?;
+    // FR-EXP-11, NFR-PORT-03: the ZIP host system would otherwise depend on the platform.
+    set_unix_host(&mut bytes)?;
+    Ok(bytes)
 }
 
 fn write_cell(
