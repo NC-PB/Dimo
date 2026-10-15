@@ -9,10 +9,12 @@
 //! Debug builds started with `DIMO_DEV_HOME` write to `logs/dimo.log` below that folder instead.
 //!
 //! The file is capped at [`MAX_LOG_BYTES`]: when it is full it becomes `dimo.log.1` (replacing
-//! the older one) and a new file starts, so the logs never take more than twice the cap. Release
-//! builds log `info` and above; debug builds also log `debug` events of the Dimo crates and
-//! mirror every line to the terminal. Nothing leaves the computer (rule 9). The lines hold what
-//! the code logs: errors, warnings and file paths, never drawing or project content.
+//! the older one) and a new file starts; lines are cut at [`MAX_LINE_BYTES`], so the logs take
+//! at most about twice the cap. Release builds log `info` and above; debug builds also log
+//! `debug` events of the Dimo crates and mirror every line to the terminal. Nothing leaves the
+//! computer (rule 9). The lines hold what the code logs: errors, warnings, the start line and
+//! file paths. Code must not log drawing or project content; error texts of libraries (Typst
+//! diagnostics, panics) are logged as they are and are checked again for R.10.
 //!
 //! The subscriber is written here on top of `tracing` itself instead of `tracing-subscriber`, so
 //! no new crate is needed (rule 10). It does not track spans: only events are written.
@@ -33,6 +35,23 @@ pub const LOG_FILE: &str = "dimo.log";
 
 /// Size at which the log file is rotated, 1 MiB.
 pub const MAX_LOG_BYTES: u64 = 1024 * 1024;
+
+/// Longest line written; longer messages are cut, so one event cannot fill the log.
+pub const MAX_LINE_BYTES: usize = 8 * 1024;
+
+thread_local! {
+    /// True while this thread writes an event.
+    static IN_EVENT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Clears [`IN_EVENT`] when an event is written, also by a panic.
+struct InEvent;
+
+impl Drop for InEvent {
+    fn drop(&mut self) {
+        IN_EVENT.with(|busy| busy.set(false));
+    }
+}
 
 /// What a [`FileLog`] writes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -194,6 +213,12 @@ impl Subscriber for FileLog {
     fn record_follows_from(&self, _span: &Id, _follows: &Id) {}
 
     fn event(&self, event: &Event<'_>) {
+        // An event raised while this thread writes one (a panic inside the write reaching the
+        // panic hook) is dropped: logging it would lock the output twice.
+        if IN_EVENT.with(|busy| busy.replace(true)) {
+            return;
+        }
+        let _done = InEvent;
         let metadata = event.metadata();
         let mut line = Line::default();
         event.record(&mut line);
@@ -207,12 +232,18 @@ impl Subscriber for FileLog {
         );
         // One event is one line, also when the message has line breaks.
         let mut text = text.replace(['\n', '\r'], " ");
+        if text.len() > MAX_LINE_BYTES {
+            let mut end = MAX_LINE_BYTES;
+            while !text.is_char_boundary(end) {
+                end -= 1;
+            }
+            text.truncate(end);
+            text.push_str(" [cut]");
+        }
         text.push('\n');
         if self.level.mirror {
-            #[allow(clippy::print_stderr, reason = "debug builds mirror the log")]
-            {
-                eprint!("{text}");
-            }
+            // Not `eprint!`, which panics when standard error is closed.
+            let _ = std::io::stderr().write_all(text.as_bytes());
         }
         self.write_line(&text);
     }
@@ -274,10 +305,13 @@ mod tests {
             tracing::debug!("detail of a dimo crate");
             tracing::debug!(target: "other_crate", "noise of another crate");
             tracing::trace!("too detailed");
+            tracing::info!("{}", "ü".repeat(MAX_LINE_BYTES));
         });
         let text = std::fs::read_to_string(&path).unwrap();
         let lines: Vec<&str> = text.lines().collect();
-        assert_eq!(lines.len(), 3, "{text}");
+        assert_eq!(lines.len(), 4, "{text}");
+        assert!(lines[3].ends_with(" [cut]"), "long lines are cut");
+        assert!(lines[3].len() <= MAX_LINE_BYTES + 6);
         assert!(
             lines[0].ends_with(
                 " WARN dimo_desktop::logging::tests: cannot write /x/settings.json: denied"
