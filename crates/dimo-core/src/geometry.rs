@@ -87,6 +87,17 @@ pub struct OrientedBox {
 }
 
 impl OrientedBox {
+    /// True if center and angle are finite and both sides are finite and positive. The one
+    /// region rule of new characteristics and of box select (MF F2).
+    pub fn is_valid(&self) -> bool {
+        let positive = |v: f64| v.is_finite() && v > 0.0;
+        self.center.x.is_finite()
+            && self.center.y.is_finite()
+            && self.angle.is_finite()
+            && positive(self.size.width)
+            && positive(self.size.height)
+    }
+
     /// The four corners in sheet space.
     pub fn corners(&self) -> [Point; 4] {
         // Counterclockwise as seen on the sheet means clockwise in the y down frame.
@@ -117,6 +128,28 @@ mod tests {
             height: 842.0,
         });
         assert_eq!(full, Rect::new(0.0, 0.0, 595.0, 842.0));
+    }
+
+    #[test]
+    fn regions_need_finite_values_and_a_positive_size() {
+        let good = OrientedBox {
+            center: Point { x: 10.0, y: 20.0 },
+            size: Size {
+                width: 4.0,
+                height: 2.0,
+            },
+            angle: 30.0,
+        };
+        assert!(good.is_valid());
+        let mut flat = good;
+        flat.size.height = 0.0;
+        let mut far = good;
+        far.center.x = f64::INFINITY;
+        let mut turned = good;
+        turned.angle = f64::NAN;
+        for bad in [flat, far, turned] {
+            assert!(!bad.is_valid(), "{bad:?}");
+        }
     }
 
     #[test]

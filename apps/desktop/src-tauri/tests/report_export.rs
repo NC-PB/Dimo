@@ -15,16 +15,16 @@ use std::sync::atomic::AtomicBool;
 use dimo_core::Language;
 use dimo_core::{
     Command, FieldValue, Point, ReportFormat, ReportInfoField, ReportKind, ResultEntry, Sha256Hex,
-    TemplateRef,
 };
 use dimo_desktop::export::{
-    ExportFormat, ExportRequest, JobStop, REPORT_TEMPLATE, render, report_template,
-    report_warnings, run_steps, take_snapshot,
+    ExportFormat, ExportRequest, JobStop, render, run_steps, take_snapshot,
 };
 use dimo_desktop::session::AppSession;
 use dimo_desktop::settings::PdfBalloons;
+use dimo_export::REPORT_TEMPLATE;
 use dimo_pdf::tiles::{TileConfig, TileService};
 use dimo_pdf::{PdfEngine, PdfError};
+use dimo_report::issue::{issued_info, report_warnings};
 use rust_decimal::Decimal;
 
 fn pdfium_required() -> bool {
@@ -340,20 +340,12 @@ fn issued_report_stores_the_report_date_in_its_one_undo_step() {
     let info = start.issued.unwrap();
     assert_eq!(info.report_date, "2026-10-13");
     assert_eq!(start.snapshot.project.report_info.report_date, "2026-10-13");
-    let template = report_template().unwrap();
     session
         .record_issued_report(
             start.snapshot.state,
             &info,
-            Command::RecordIssuedReport {
-                kind: ReportKind::CheckSheet,
-                template: TemplateRef {
-                    id: template.id().to_owned(),
-                    version: template.version(),
-                },
-                format: ReportFormat::Pdf,
-                output_sha256: Sha256Hex::parse(&"c".repeat(64)).unwrap(),
-            },
+            ExportFormat::CheckSheetPdf,
+            Sha256Hex::parse(&"c".repeat(64)).unwrap(),
         )
         .unwrap()
         .expect("recorded");
@@ -383,24 +375,19 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
     assert!(!before.is_numbering_locked());
 
     let snapshot = session.export_snapshot(false).unwrap();
-    let filled = session.issued_report_info(&snapshot.project.report_info);
+    let filled = issued_info(&snapshot.project.report_info, &session.issue_defaults());
     assert_eq!(filled.company_name, "Muster GmbH");
     assert_eq!(filled.inspected_by, "Anna");
     assert_eq!(filled.report_number, "IR-1", "set fields stay");
 
-    let template = report_template().unwrap();
-    assert_eq!(template.id(), REPORT_TEMPLATE);
-    let record = |sha: &str| Command::RecordIssuedReport {
-        kind: ReportKind::InspectionReport,
-        template: TemplateRef {
-            id: template.id().to_owned(),
-            version: template.version(),
-        },
-        format: ReportFormat::Pdf,
-        output_sha256: Sha256Hex::parse(&sha.repeat(64)).unwrap(),
-    };
+    let sha = |c: &str| Sha256Hex::parse(&c.repeat(64)).unwrap();
     let patched = session
-        .record_issued_report(snapshot.state, &filled, record("a"))
+        .record_issued_report(
+            snapshot.state,
+            &filled,
+            ExportFormat::InspectionReportPdf,
+            sha("a"),
+        )
         .unwrap()
         .expect("unchanged project is recorded");
     assert!(!patched.patch.is_empty());
@@ -429,7 +416,7 @@ fn issued_report_locks_fills_and_records_in_one_undo_step() {
     let changed = session.project().unwrap().clone();
     assert!(
         session
-            .record_issued_report(stale, &filled, record("b"))
+            .record_issued_report(stale, &filled, ExportFormat::InspectionReportPdf, sha("b"))
             .unwrap()
             .is_none()
     );

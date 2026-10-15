@@ -525,6 +525,22 @@ impl From<dimo_io::export::ExportError> for CommandError {
     }
 }
 
+impl From<dimo_export::ExportError> for CommandError {
+    fn from(error: dimo_export::ExportError) -> Self {
+        use dimo_export::ExportError as E;
+        match error {
+            E::Report(e) => e.into(),
+            E::Template(e) => Self::internal(InternalReason::ReportTemplate, e),
+            E::List(e) => e.into(),
+            E::Pdf(e) => Self::export_pdf(&e),
+            E::NoPdfEngine => Self::export(ExportReason::NoPdfEngine, "no PDF engine"),
+            E::NoDrawing | E::NotAReport(_) | E::NotPrepared | E::InvalidTime(_) => {
+                Self::internal(InternalReason::Bug, error)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::io::{Error, ErrorKind};
@@ -678,6 +694,38 @@ mod tests {
             CommandError::export_pdf(&PdfError::Write("x".to_owned())),
             CommandError::Export {
                 reason: ExportReason::PdfFailed,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn registry_errors_keep_their_reasons() {
+        use dimo_export::ExportError as E;
+        let reason = |error: E| match CommandError::from(error) {
+            CommandError::Export { reason, .. } => Some(reason),
+            _ => None,
+        };
+        assert_eq!(reason(E::NoPdfEngine), Some(ExportReason::NoPdfEngine));
+        assert_eq!(
+            reason(E::Pdf(PdfError::Write("x".to_owned()))),
+            Some(ExportReason::PdfFailed)
+        );
+        assert_eq!(
+            reason(E::Report(ReportError::InvalidOptions("x".to_owned()))),
+            Some(ExportReason::ReportFailed)
+        );
+        assert!(matches!(
+            CommandError::from(E::Template(ReportError::UnknownTemplate("x".to_owned()))),
+            CommandError::Internal {
+                reason: InternalReason::ReportTemplate,
+                ..
+            }
+        ));
+        assert!(matches!(
+            CommandError::from(E::NoDrawing),
+            CommandError::Internal {
+                reason: InternalReason::Bug,
                 ..
             }
         ));

@@ -11,6 +11,7 @@
 //! [`render_report`] renders a model with the matching document of a template set;
 //! [`render_xlsx`] writes the same model as a spreadsheet (T3.7).
 
+pub mod issue;
 pub mod model;
 mod template;
 mod world;

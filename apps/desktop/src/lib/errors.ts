@@ -46,6 +46,7 @@ const REJECT: Texts<RejectReason> = {
   invalid_date: m.refusal_invalid_date,
   invalid_result: m.refusal_invalid_result,
   result_type_conflict: m.refusal_result_type_conflict,
+  missing_table: m.refusal_missing_table,
   nothing_to_undo: m.refusal_nothing_to_undo,
   nothing_to_redo: m.refusal_nothing_to_redo,
   internal: m.refusal_internal,

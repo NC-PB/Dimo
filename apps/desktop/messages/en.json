@@ -477,6 +477,7 @@
   "refusal_invalid_style": "Balloon sizes must be positive numbers.",
   "refusal_invalid_sheet_setting": "This sheet setting is not valid (unit, scale, zone grid or view).",
   "refusal_invalid_project_setting": "These project settings are not valid.",
+  "refusal_missing_table": "This company table is not stored in the project yet. Import it again.",
   "refusal_nothing_to_undo": "There is nothing to undo.",
   "refusal_nothing_to_redo": "There is nothing to redo.",
   "show_measure": "Show the measurement grid",

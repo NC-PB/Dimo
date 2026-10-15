@@ -57,11 +57,6 @@ fn sheet_of(project: &Project, c: &Characteristic) -> Option<SheetId> {
         .or_else(|| c.sources.first().map(|s| s.sheet))
 }
 
-fn valid_region(r: &OrientedBox) -> bool {
-    let positive = |v: f64| v.is_finite() && v > 0.0;
-    finite(r.center) && r.angle.is_finite() && positive(r.size.width) && positive(r.size.height)
-}
-
 /// Checks sheet and geometry of a new characteristic with its balloon.
 fn check_new(
     project: &Project,
@@ -75,7 +70,7 @@ fn check_new(
     if !finite(placement.position) || !finite(placement.anchor) {
         return Err(CommandError::InvalidGeometry("balloon position or anchor"));
     }
-    if region.is_some_and(|r| !valid_region(r)) {
+    if region.is_some_and(|r| !r.is_valid()) {
         return Err(CommandError::InvalidGeometry("region"));
     }
     Ok(())

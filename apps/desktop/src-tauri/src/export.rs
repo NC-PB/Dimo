@@ -3,392 +3,50 @@
 //! XLSX (FR-EXP-04, T3.8).
 //!
 //! `export_project` asks for the target file in a Rust save dialog, takes an
-//! [`ExportSnapshot`] of the project and starts a background job, then returns its [`JobId`]
-//! at once. The job reports [`JobProgress`] and ends with one [`JobFinished`] event; the
-//! window keeps working meanwhile. The output depends only on the snapshot and the request:
-//! dates written into the files come from the project, never from the clock (FR-EXP-11).
+//! [`ExportSnapshot`](crate::session::ExportSnapshot) of the project and starts a background
+//! job, then returns its [`JobId`] at once. The job reports progress and ends with one
+//! [`JobFinished`] event; the window keeps working meanwhile. The output depends only on the
+//! snapshot and the request: dates written into the files come from the project, never from the
+//! clock (FR-EXP-11).
 //!
 //! A job ([`crate::job`]) runs in steps: build the report model, render, write
 //! (NFR-PERF-06). [`crate::job::cancel_job`] stops it before the next step; Typst cannot be
 //! interrupted while it renders (T3.2), so a cancel during rendering takes effect when rendering
 //! ends. A cancelled job writes nothing.
 //!
-//! "Export as issued" (D-23):
+//! Formats, rendering and the rules of "export as issued" and of the report date live in the
+//! crates (MF F2): `dimo_export` (registry, [`dimo_export::render`], [`dimo_export::plan`]) and
+//! `dimo_report::issue`. The shell keeps:
 //!
-//! - Ballooned PDF and characteristic list: the numbering is locked (`LockNumbering` with
-//!   reason `issued_report`) in the same session step that takes the snapshot, so the issued
-//!   numbers are exactly the exported ones. The lock stays when the export fails afterwards.
-//! - Check sheet and inspection report (M3 decisions 15 and 17): the report is rendered with an
-//!   empty company name and inspector filled from the settings and the audit user. After the
-//!   file is written, one undoable step locks the numbering, stores the filled report info and
-//!   adds the [`dimo_core::IssuedReport`] with the SHA-256 of the file. If the project changed
-//!   while the job ran, nothing is recorded and the outcome says so.
-//!
-//! The file is written to a temporary file next to the target and renamed, so a failed or
-//! cancelled export never leaves a half written file.
+//! - [`request`]: the IPC request, its dialog filter and the outcome events;
+//! - [`pipeline`]: the snapshot following the plan, the job steps and the file write;
+//! - this module: the Tauri commands and the job thread. A report exported as issued is
+//!   recorded after the write; if the project changed while the job ran, nothing is recorded and
+//!   the outcome says so (M3 decision 17).
+
+mod pipeline;
+mod request;
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 
-use dimo_core::{
-    Command, LockReason, Project, ReportFormat, ReportInfo, ReportInfoField, ReportKind, Sha256Hex,
-    TemplateRef,
-};
-use dimo_io::export::{CsvListExporter, ExportOptions, Exporter, XlsxListExporter};
-use dimo_pdf::{BalloonOutput, PdfDate, PdfEngine, project_overlay};
-use dimo_report::{ReportModel, ReportOptions, TemplateSet};
-use serde::{Deserialize, Serialize};
-use specta::Type;
+use dimo_core::{ReportInfo, ReportKind, Sha256Hex};
+use dimo_pdf::PdfEngine;
+use dimo_report::issue::ReportWarnings;
 use tauri::{AppHandle, Manager, WebviewWindow};
-use tauri_specta::Event;
 
-use crate::dialogs::{self, DevOverride, Filter};
-use crate::ipc::{CommandError, ExportReason, InternalReason, JobId, tile_service};
+use crate::dialogs::{self, DevOverride};
+use crate::ipc::{CommandError, ExportReason, JobId, tile_service};
 use crate::job;
 pub(crate) use crate::job::next_job_id;
 pub use crate::job::{JobRegistry, JobStop};
 pub(crate) use crate::opener::{open_with_system, open_written_file};
 use crate::project::{SessionState, emit, emit_patched, with_session};
-use crate::session::{AppSession, ExportSnapshot, ProjectPatched};
-use crate::settings::PdfBalloons;
+use crate::session::ExportSnapshot;
 use crate::tiles::TileState;
-use dimo_core::Language;
-
-/// The bundled report template set (M3 decision 10).
-pub const REPORT_TEMPLATE: &str = "dimo-default";
-
-/// What to export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum ExportFormat {
-    /// A copy of the drawing with the balloons (FR-EXP-01).
-    BalloonedPdf,
-    /// The characteristic list as CSV (FR-EXP-09).
-    Csv,
-    /// The characteristic list as an Excel workbook.
-    Xlsx,
-    /// The check sheet as PDF (FR-EXP-04).
-    CheckSheetPdf,
-    /// The check sheet as an Excel workbook.
-    CheckSheetXlsx,
-    /// The inspection report as PDF (FR-EXP-04).
-    InspectionReportPdf,
-    /// The inspection report as an Excel workbook.
-    InspectionReportXlsx,
-}
-
-impl ExportFormat {
-    /// The export of report `kind` in file `format`.
-    pub const fn report_export(kind: ReportKind, format: ReportFormat) -> Self {
-        match (kind, format) {
-            (ReportKind::CheckSheet, ReportFormat::Pdf) => Self::CheckSheetPdf,
-            (ReportKind::CheckSheet, ReportFormat::Xlsx) => Self::CheckSheetXlsx,
-            (ReportKind::InspectionReport, ReportFormat::Pdf) => Self::InspectionReportPdf,
-            (ReportKind::InspectionReport, ReportFormat::Xlsx) => Self::InspectionReportXlsx,
-        }
-    }
-
-    /// Report kind and file format, `None` for the drawing and list exports.
-    pub const fn report(self) -> Option<(ReportKind, ReportFormat)> {
-        match self {
-            Self::BalloonedPdf | Self::Csv | Self::Xlsx => None,
-            Self::CheckSheetPdf => Some((ReportKind::CheckSheet, ReportFormat::Pdf)),
-            Self::CheckSheetXlsx => Some((ReportKind::CheckSheet, ReportFormat::Xlsx)),
-            Self::InspectionReportPdf => Some((ReportKind::InspectionReport, ReportFormat::Pdf)),
-            Self::InspectionReportXlsx => Some((ReportKind::InspectionReport, ReportFormat::Xlsx)),
-        }
-    }
-
-    /// File name extension without the dot.
-    pub const fn extension(self) -> &'static str {
-        match self {
-            Self::BalloonedPdf | Self::CheckSheetPdf | Self::InspectionReportPdf => "pdf",
-            Self::Csv => "csv",
-            Self::Xlsx | Self::CheckSheetXlsx | Self::InspectionReportXlsx => "xlsx",
-        }
-    }
-
-    /// Suggested file name for a project whose files are named `stem`.
-    pub fn file_name(self, stem: &str) -> String {
-        let suffix = match self {
-            Self::BalloonedPdf => "ballooned",
-            Self::Csv | Self::Xlsx => "characteristics",
-            Self::CheckSheetPdf | Self::CheckSheetXlsx => "check-sheet",
-            Self::InspectionReportPdf | Self::InspectionReportXlsx => "inspection-report",
-        };
-        format!("{stem}_{suffix}.{}", self.extension())
-    }
-
-    /// File type filter of the save dialog.
-    pub const fn filter(self) -> Filter {
-        match self {
-            Self::BalloonedPdf | Self::CheckSheetPdf | Self::InspectionReportPdf => Filter {
-                name: "PDF",
-                extensions: &["pdf"],
-            },
-            Self::Csv => Filter {
-                name: "CSV",
-                extensions: &["csv"],
-            },
-            Self::Xlsx | Self::CheckSheetXlsx | Self::InspectionReportXlsx => Filter {
-                name: "Excel",
-                extensions: &["xlsx"],
-            },
-        }
-    }
-}
-
-/// An export the user asked for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub struct ExportRequest {
-    /// What to export.
-    pub format: ExportFormat,
-    /// Language of the characteristic list headers and of the reports (D-32); ignored for the
-    /// ballooned PDF.
-    pub language: Language,
-    /// Balloons as page content or annotations (D-33); only for the ballooned PDF.
-    pub pdf_balloons: PdfBalloons,
-    /// Blank result columns of a check sheet for a project without samples, 1 to 10 (M3
-    /// decision 12); ignored otherwise.
-    pub blank_columns: u8,
-    /// Export as issued (D-23): locks the numbering; a report is also recorded as issued.
-    pub issued: bool,
-    /// After a successful job, open the written file with the system default application.
-    pub open_after: bool,
-}
-
-/// What happened to the "issued" record of a report exported as issued (M3 decision 17).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(tag = "state", rename_all = "snake_case")]
-pub enum IssuedRecord {
-    /// Numbering locked and report recorded, as one undo step.
-    Recorded,
-    /// The project changed while the job ran, so the file no longer shows it: nothing was
-    /// recorded. The file was written.
-    ProjectChanged,
-    /// The record was refused; the file was written.
-    Refused {
-        /// Why.
-        error: CommandError,
-    },
-}
-
-/// How a job ended.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(tag = "state", rename_all = "snake_case")]
-pub enum JobOutcome {
-    /// The file was written.
-    Done {
-        /// File name of the written file, without the directory.
-        file_name: String,
-        /// For a report exported as issued: whether it was recorded. `null` otherwise.
-        issued: Option<IssuedRecord>,
-        /// If the request asked to open the file and that failed: why. The file was written.
-        /// `null` if the file was opened or not asked for.
-        open_error: Option<CommandError>,
-    },
-    /// Nothing was written.
-    Failed {
-        /// Why.
-        error: CommandError,
-    },
-    /// Cancelled with `cancel_job`; nothing was written.
-    Cancelled,
-}
-
-/// A background job ended. Event `job-finished`; sent once per job, after its last progress.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type, Event)]
-#[serde(rename_all = "snake_case")]
-pub struct JobFinished {
-    /// The job.
-    pub id: JobId,
-    /// Result.
-    pub outcome: JobOutcome,
-}
-
-/// Warnings before a report is exported as issued (M3 decision 17). They never block the
-/// export; the user confirms them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub struct ReportWarnings {
-    /// Limits of at least one printed characteristic come from a draft table (D-43).
-    pub draft_limits: bool,
-    /// Inspection report: results are missing or not evaluated, or there are no samples, so
-    /// the overall verdict is open. Always false for the check sheet.
-    pub open_results: bool,
-    /// Limits or result type of a characteristic changed after the last issued report (M3
-    /// decision 16).
-    pub limits_changed: bool,
-}
-
-impl ReportWarnings {
-    /// True if any warning applies.
-    pub const fn any(self) -> bool {
-        self.draft_limits || self.open_results || self.limits_changed
-    }
-}
-
-/// What the build step produced for the render step.
-enum Prepared {
-    /// Nothing to prepare: drawing and list exports.
-    Direct,
-    /// A report model and the template set to render it with.
-    Report(Box<ReportModel>, TemplateSet),
-}
-
-/// The bundled report template set.
-pub fn report_template() -> Result<TemplateSet, CommandError> {
-    TemplateSet::bundled(REPORT_TEMPLATE)
-        .map_err(|e| CommandError::internal(InternalReason::ReportTemplate, e))
-}
-
-/// Report options of `request` for `snapshot`: the date falls back to the project's last
-/// change, the `modified` time of its manifest (M3 decision 14).
-fn report_options(
-    snapshot: &ExportSnapshot,
-    request: ExportRequest,
-    kind: ReportKind,
-) -> ReportOptions {
-    ReportOptions {
-        blank_columns: request.blank_columns,
-        fallback_date: Some(snapshot.modified.clone()),
-        ..ReportOptions::new(kind, request.language)
-    }
-}
-
-/// Step 1: builds the report model of a report export.
-fn prepare(snapshot: &ExportSnapshot, request: ExportRequest) -> Result<Prepared, CommandError> {
-    let Some((kind, _)) = request.format.report() else {
-        return Ok(Prepared::Direct);
-    };
-    let model = ReportModel::build(&snapshot.project, &report_options(snapshot, request, kind))?;
-    Ok(Prepared::Report(Box::new(model), report_template()?))
-}
-
-/// Step 2: the bytes of the file.
-fn render_prepared(
-    prepared: &Prepared,
-    snapshot: &ExportSnapshot,
-    request: ExportRequest,
-    engine: Option<&PdfEngine>,
-) -> Result<Vec<u8>, CommandError> {
-    if let Prepared::Report(model, template) = prepared {
-        return match request.format.report() {
-            Some((_, ReportFormat::Xlsx)) => dimo_report::render_xlsx(template, model),
-            _ => dimo_report::render_report(template, model),
-        }
-        .map_err(CommandError::from);
-    }
-    let options = ExportOptions {
-        language: request.language,
-    };
-    let mut bytes = Vec::new();
-    match request.format {
-        ExportFormat::Csv => CsvListExporter.export(&snapshot.project, &options, &mut bytes)?,
-        ExportFormat::Xlsx => XlsxListExporter.export(&snapshot.project, &options, &mut bytes)?,
-        ExportFormat::BalloonedPdf => {
-            let engine = engine
-                .ok_or_else(|| CommandError::export(ExportReason::NoPdfEngine, "no PDF engine"))?;
-            let drawing = snapshot.drawing.clone().ok_or_else(|| {
-                CommandError::internal(InternalReason::Bug, "the snapshot has no drawing")
-            })?;
-            let output = match request.pdf_balloons {
-                PdfBalloons::PageContent => BalloonOutput::PageContent,
-                PdfBalloons::Annotations => BalloonOutput::Annotations {
-                    date: PdfDate::from_timestamp(&snapshot.modified).ok_or_else(|| {
-                        CommandError::internal(
-                            InternalReason::Bug,
-                            format_args!("invalid project time {}", snapshot.modified),
-                        )
-                    })?,
-                },
-            };
-            let overlay = project_overlay(&snapshot.project, output);
-            bytes = engine
-                .write_ballooned(drawing, overlay)
-                .map_err(|e| CommandError::export_pdf(&e))?;
-        }
-        ExportFormat::CheckSheetPdf
-        | ExportFormat::CheckSheetXlsx
-        | ExportFormat::InspectionReportPdf
-        | ExportFormat::InspectionReportXlsx => {
-            return Err(CommandError::internal(
-                InternalReason::Bug,
-                "the report model was not built",
-            ));
-        }
-    }
-    Ok(bytes)
-}
-
-/// The bytes of an export of `snapshot`. Pure apart from PDFium: same snapshot and request,
-/// same bytes (FR-EXP-11).
-pub fn render(
-    snapshot: &ExportSnapshot,
-    request: &ExportRequest,
-    engine: Option<&PdfEngine>,
-) -> Result<Vec<u8>, CommandError> {
-    let prepared = prepare(snapshot, *request)?;
-    render_prepared(&prepared, snapshot, *request, engine)
-}
-
-/// Runs the steps of an export job: build, render, write (NFR-PERF-06). Checks `cancel`
-/// before each step and reports progress through `progress`. Returns the SHA-256 of the
-/// written file; on [`JobStop`] no file was written.
-pub fn run_steps(
-    snapshot: &ExportSnapshot,
-    request: &ExportRequest,
-    engine: Option<&PdfEngine>,
-    path: &Path,
-    cancel: &AtomicBool,
-    progress: &mut dyn FnMut(f64, &str),
-) -> Result<Sha256Hex, JobStop> {
-    let mut step = |fraction: f64, message: &str| {
-        if let Some(delay) = crate::dev::dev_export_delay() {
-            std::thread::sleep(delay);
-        }
-        if cancel.load(Ordering::SeqCst) {
-            return Err(JobStop::Cancelled);
-        }
-        progress(fraction, message);
-        Ok(())
-    };
-    step(0.0, "building")?;
-    let prepared = prepare(snapshot, *request)?;
-    step(0.2, "rendering")?;
-    let bytes = render_prepared(&prepared, snapshot, *request, engine)?;
-    step(0.8, "writing")?;
-    write_file(path, &bytes)?;
-    Ok(dimo_io::project::sha256(&bytes))
-}
-
-/// Writes `bytes` to `path` through a unique temporary file in the same directory
-/// ([`crate::fsio::write_atomic`]), so a failed or cancelled export never leaves half a file.
-pub fn write_file(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
-    if path.file_name().is_none() {
-        return Err(CommandError::export(
-            ExportReason::InvalidFileName,
-            format_args!("{} is not a file name", path.display()),
-        ));
-    }
-    crate::fsio::write_atomic(path, bytes).map_err(|e| CommandError::export_io(path, &e))
-}
-
-/// The warnings of [`ReportWarnings`] for report `kind` of `project`; `limits_changed` from
-/// the audit log (M3 decision 16).
-pub fn report_warnings(
-    project: &Project,
-    kind: ReportKind,
-    limits_changed: bool,
-) -> Result<ReportWarnings, CommandError> {
-    let model = ReportModel::build(project, &ReportOptions::new(kind, Language::En))?;
-    Ok(ReportWarnings {
-        draft_limits: model.flags.draft_limits,
-        open_results: model.flags.open_results,
-        limits_changed,
-    })
-}
+pub use dimo_export::ExportFormat;
+pub use pipeline::{ExportStart, render, run_steps, take_snapshot, write_file};
+pub use request::{ExportRequest, IssuedRecord, JobFinished, JobOutcome, filter};
 
 /// The warnings to confirm before report `kind` of the open project is exported as issued
 /// (M3 decision 17). They never block the export.
@@ -401,76 +59,9 @@ pub async fn report_export_warnings(
     with_session(app, move |_, session| {
         let project = session.project().ok_or(CommandError::NoProject)?;
         let changed = !session.changed_since_issued_report()?.is_empty();
-        report_warnings(project, kind, changed)
+        Ok(dimo_report::issue::report_warnings(project, kind, changed)?)
     })
     .await
-}
-
-/// The report info printed on a report exported as issued, `None` for other exports.
-type IssuedInfo = Option<ReportInfo>;
-
-/// What an export starts from.
-#[derive(Debug)]
-pub struct ExportStart {
-    /// The copy the job renders.
-    pub snapshot: ExportSnapshot,
-    /// For a report exported as issued: the report info it prints, recorded after the write.
-    pub issued: IssuedInfo,
-    /// For an issued drawing or list export: the patch of the numbering lock, to emit.
-    pub lock: Option<ProjectPatched>,
-    /// For a normal report export of a project without a report date: the patch that stored
-    /// today's date, to emit (T3.9).
-    pub date: Option<ProjectPatched>,
-}
-
-/// Takes the snapshot of an export. For an issued drawing or list export the numbering is
-/// locked first (T1.9). A report exported as issued is not changed here: its snapshot gets the
-/// filled report info, with today's date if the report date is empty, and the lock follows after
-/// the write in one undo step with the stored info (M3 decisions 15 and 17). A normal report
-/// export of a project without a report date stores today's date first, as one undo step, so
-/// that later exports print the same date and stay byte identical (T3.9, FR-EXP-11).
-pub fn take_snapshot(
-    session: &mut AppSession,
-    request: ExportRequest,
-) -> Result<ExportStart, CommandError> {
-    let report = request.format.report();
-    let lock = if request.issued && report.is_none() {
-        Some(session.execute(Command::LockNumbering {
-            reason: LockReason::IssuedReport,
-        })?)
-    } else {
-        None
-    };
-    let date = if report.is_some() && !request.issued {
-        fill_report_date(session)?
-    } else {
-        None
-    };
-    let mut snapshot = session.export_snapshot(request.format == ExportFormat::BalloonedPdf)?;
-    let issued = (request.issued && report.is_some()).then(|| {
-        let filled = session.issued_report_info(&snapshot.project.report_info);
-        snapshot.project.report_info = filled.clone();
-        filled
-    });
-    Ok(ExportStart {
-        snapshot,
-        issued,
-        lock,
-        date,
-    })
-}
-
-/// Stores today's date as the report date of the open project if it has none, as one undoable
-/// step (T3.9). `None` if the report date is set.
-fn fill_report_date(session: &mut AppSession) -> Result<Option<ProjectPatched>, CommandError> {
-    let project = session.project().ok_or(CommandError::NoProject)?;
-    if !project.report_info.report_date.trim().is_empty() {
-        return Ok(None);
-    }
-    let date = ReportInfoField::ReportDate(session.local_date());
-    session
-        .execute(Command::UpdateReportInfo { values: vec![date] })
-        .map(Some)
 }
 
 /// Asks for the target file and starts the export as a background job. Returns `null` if the
@@ -493,19 +84,18 @@ pub async fn export_project(
     })
     .await?;
     let suggested = format.file_name(&stem);
-    let engine = match format {
-        ExportFormat::BalloonedPdf => {
-            let engine = tile_service(&app.state::<TileState>())
-                .ok()
-                .and_then(|tiles| tiles.engine().cloned());
-            Some(engine.ok_or_else(|| {
-                CommandError::export(ExportReason::NoPdfEngine, "PDFium is not loaded")
-            })?)
-        }
-        _ => None,
+    let engine = if format.needs_drawing() {
+        let engine = tile_service(&app.state::<TileState>())
+            .ok()
+            .and_then(|tiles| tiles.engine().cloned());
+        Some(engine.ok_or_else(|| {
+            CommandError::export(ExportReason::NoPdfEngine, "PDFium is not loaded")
+        })?)
+    } else {
+        None
     };
     let Some(path) =
-        dialogs::save_file(&window, format.filter(), &suggested, DevOverride::ExportDir).await
+        dialogs::save_file(&window, filter(format), &suggested, DevOverride::ExportDir).await
     else {
         return Ok(None);
     };
@@ -547,7 +137,7 @@ struct Job<'a> {
 }
 
 impl Job<'_> {
-    fn run(&self, cancel: &AtomicBool, issued: IssuedInfo) {
+    fn run(&self, cancel: &AtomicBool, issued: Option<ReportInfo>) {
         let mut progress =
             |fraction: f64, message: &str| job::progress(self.app, self.id, fraction, message);
         let result = run_steps(
@@ -600,27 +190,20 @@ impl Job<'_> {
 
     /// Records the written report as issued (M3 decision 17).
     fn record(&self, info: &ReportInfo, output_sha256: Sha256Hex) -> IssuedRecord {
-        let Some((kind, format)) = self.request.format.report() else {
+        // Loads the template reference before the session lock; the record reuses it.
+        if let Err(error) = dimo_export::bundled_template_ref() {
             return IssuedRecord::Refused {
-                error: CommandError::internal(InternalReason::Bug, "not a report"),
+                error: error.into(),
             };
-        };
-        let template = match report_template() {
-            Ok(set) => TemplateRef {
-                id: set.id().to_owned(),
-                version: set.version(),
-            },
-            Err(error) => return IssuedRecord::Refused { error },
-        };
-        let command = Command::RecordIssuedReport {
-            kind,
-            template,
-            format,
-            output_sha256,
-        };
+        }
         let state = self.app.state::<SessionState>();
         let mut session = state.lock();
-        match session.record_issued_report(self.snapshot.state, info, command) {
+        match session.record_issued_report(
+            self.snapshot.state,
+            info,
+            self.request.format,
+            output_sha256,
+        ) {
             Ok(Some(patched)) => {
                 emit_patched(self.app, patched);
                 IssuedRecord::Recorded
@@ -631,85 +214,5 @@ impl Job<'_> {
                 IssuedRecord::Refused { error }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn file_names_follow_the_project() {
-        assert_eq!(
-            ExportFormat::BalloonedPdf.file_name("part"),
-            "part_ballooned.pdf"
-        );
-        assert_eq!(
-            ExportFormat::Csv.file_name("part"),
-            "part_characteristics.csv"
-        );
-        assert_eq!(
-            ExportFormat::Xlsx.file_name("part"),
-            "part_characteristics.xlsx"
-        );
-        assert_eq!(
-            ExportFormat::CheckSheetPdf.file_name("part"),
-            "part_check-sheet.pdf"
-        );
-        assert_eq!(
-            ExportFormat::CheckSheetXlsx.file_name("part"),
-            "part_check-sheet.xlsx"
-        );
-        assert_eq!(
-            ExportFormat::InspectionReportPdf.file_name("part"),
-            "part_inspection-report.pdf"
-        );
-        assert_eq!(
-            ExportFormat::InspectionReportXlsx.file_name("part"),
-            "part_inspection-report.xlsx"
-        );
-    }
-
-    #[test]
-    fn report_formats_map_both_ways() {
-        for kind in [ReportKind::CheckSheet, ReportKind::InspectionReport] {
-            for format in [ReportFormat::Pdf, ReportFormat::Xlsx] {
-                let export = ExportFormat::report_export(kind, format);
-                assert_eq!(export.report(), Some((kind, format)));
-            }
-        }
-        assert_eq!(ExportFormat::Csv.report(), None);
-        for format in [
-            ExportFormat::BalloonedPdf,
-            ExportFormat::Csv,
-            ExportFormat::Xlsx,
-            ExportFormat::CheckSheetPdf,
-            ExportFormat::CheckSheetXlsx,
-            ExportFormat::InspectionReportPdf,
-            ExportFormat::InspectionReportXlsx,
-        ] {
-            assert_eq!(format.filter().extensions, [format.extension()]);
-        }
-        assert_eq!(ExportFormat::InspectionReportXlsx.filter().name, "Excel");
-        assert_eq!(ExportFormat::CheckSheetPdf.filter().name, "PDF");
-    }
-
-    #[test]
-    fn files_are_written_whole_or_not_at_all() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("list.csv");
-        write_file(&path, b"a,b\n").unwrap();
-        assert_eq!(std::fs::read(&path).unwrap(), b"a,b\n");
-        let names: Vec<_> = std::fs::read_dir(dir.path()).unwrap().collect();
-        assert_eq!(names.len(), 1, "no temporary file is left");
-        let missing = dir.path().join("missing").join("list.csv");
-        assert!(matches!(
-            write_file(&missing, b"x"),
-            Err(CommandError::Export {
-                reason: ExportReason::WriteFailed,
-                ..
-            })
-        ));
-        assert!(!missing.exists());
     }
 }

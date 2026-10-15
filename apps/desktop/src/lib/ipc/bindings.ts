@@ -2278,6 +2278,8 @@ export type RejectReason =
 "invalid_result" | 
 /**  The result type cannot change while results of the other type exist (M3 decision 4). */
 "result_type_conflict" | 
+/**  A custom tolerance table of the settings is not stored in the project (M2 decision 4). */
+"missing_table" | 
 /**  Undo without history. */
 "nothing_to_undo" | 
 /**  Redo without history. */

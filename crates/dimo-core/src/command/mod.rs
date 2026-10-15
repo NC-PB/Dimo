@@ -376,6 +376,11 @@ pub enum CommandError {
     /// The result type cannot change while results of the other type exist (M3 decision 4).
     #[error("characteristic {0} has results of the other result type; clear them first")]
     ResultTypeConflict(CharId),
+    /// The command lists a custom tolerance table whose file is not stored in the project
+    /// (M2 decision 4); the project could not be saved. Checked by the project session, which
+    /// holds the table files.
+    #[error("custom tolerance table {0} is not stored in the project")]
+    MissingTable(String),
     /// Undo with an empty undo history.
     #[error("nothing to undo")]
     NothingToUndo,

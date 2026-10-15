@@ -16,7 +16,7 @@ use dimo_core::Sha256Hex;
 use dimo_core::{
     Command, FieldValue, Point, ProjectInfoField, ReportInfoField, ReportKind, ResultEntry,
 };
-use dimo_desktop::export::{render, run_steps, take_snapshot};
+use dimo_desktop::export::{ExportRequest, render, run_steps, take_snapshot};
 use dimo_desktop::report::{
     ReportField, ReportView, checks, preview_bytes, print_snapshot, save_copy_snapshot,
     write_print_file,
@@ -140,7 +140,7 @@ fn preview_is_the_file_save_copy_writes() {
         let mut session = session(&tiles);
         let view = view(kind, language);
         let before = session.project().unwrap().clone();
-        let preview = preview_bytes(&save_copy_snapshot(&session).unwrap(), view).unwrap();
+        let preview = preview_bytes(&save_copy_snapshot(&session, view).unwrap(), view).unwrap();
         assert_eq!(
             session.project().unwrap(),
             &before,
@@ -157,7 +157,7 @@ fn preview_is_the_file_save_copy_writes() {
             "2026-10-13"
         );
         // After the export stored the date, the preview still equals a new copy.
-        let again = preview_bytes(&save_copy_snapshot(&session).unwrap(), view).unwrap();
+        let again = preview_bytes(&save_copy_snapshot(&session, view).unwrap(), view).unwrap();
         assert_eq!(
             again,
             saved_copy(&mut session, view),
@@ -172,11 +172,8 @@ fn preview_is_the_file_save_copy_writes() {
 fn preview_pages_render_as_tiles() {
     let Some(tiles) = service() else { return };
     let session = session(&tiles);
-    let bytes = preview_bytes(
-        &save_copy_snapshot(&session).unwrap(),
-        view(ReportKind::InspectionReport, Language::En),
-    )
-    .unwrap();
+    let view = view(ReportKind::InspectionReport, Language::En);
+    let bytes = preview_bytes(&save_copy_snapshot(&session, view).unwrap(), view).unwrap();
     let hash = Sha256Hex::of(&bytes);
     let doc = tiles.open_document(bytes).unwrap();
     assert!(doc.sheet_count() >= 1);
@@ -254,7 +251,7 @@ fn print_prints_the_preview_and_stores_the_date_like_save_copy() {
     let Some(tiles) = service() else { return };
     let mut session = session(&tiles);
     let view = view(ReportKind::InspectionReport, Language::De);
-    let preview = preview_bytes(&save_copy_snapshot(&session).unwrap(), view).unwrap();
+    let preview = preview_bytes(&save_copy_snapshot(&session, view).unwrap(), view).unwrap();
     let (name, start) = print_snapshot(&mut session, view).unwrap();
     assert!(start.date.is_some(), "the date was stored");
     assert!(start.issued.is_none() && start.lock.is_none());
@@ -266,4 +263,69 @@ fn print_prints_the_preview_and_stores_the_date_like_save_copy() {
     assert_eq!(std::fs::read(path).unwrap(), preview);
     let (_, again) = print_snapshot(&mut session, view).unwrap();
     assert!(again.date.is_none(), "stored once");
+}
+
+/// MF F2: one report date rule (`dimo_report::issue::report_date`). Preview, Save copy, Print and
+/// the issued export print the same date: today while none is stored, else the stored one.
+#[test]
+fn preview_save_copy_print_and_issued_export_print_one_report_date() {
+    let Some(tiles) = service() else { return };
+    let mut session = session(&tiles);
+    let view = view(ReportKind::InspectionReport, Language::En);
+    let date = |project: &dimo_core::Project| project.report_info.report_date.clone();
+    for stored in ["", "2026-01-05"] {
+        session
+            .execute(Command::UpdateReportInfo {
+                values: vec![ReportInfoField::ReportDate(stored.into())],
+            })
+            .unwrap();
+        let info = session.project().unwrap().report_info.clone();
+        let expected = dimo_report::issue::report_date(&info, "2026-10-13").to_owned();
+        let want = if stored.is_empty() {
+            "2026-10-13"
+        } else {
+            stored
+        };
+        assert_eq!(expected, want);
+        let before = session.project().unwrap().clone();
+
+        let preview = save_copy_snapshot(&session, view).unwrap();
+        assert_eq!(date(&preview.project), expected, "preview");
+        assert_eq!(
+            session.project().unwrap(),
+            &before,
+            "the preview stores nothing"
+        );
+
+        let issued = take_snapshot(
+            &mut session,
+            ExportRequest {
+                issued: true,
+                ..view.save_copy()
+            },
+        )
+        .unwrap();
+        assert_eq!(date(&issued.snapshot.project), expected, "issued export");
+        assert_eq!(issued.issued.unwrap().report_date, expected);
+        assert_eq!(
+            session.project().unwrap(),
+            &before,
+            "recorded after the write"
+        );
+
+        let copy = take_snapshot(&mut session, view.save_copy()).unwrap();
+        assert_eq!(date(&copy.snapshot.project), expected, "save copy");
+        assert_eq!(date(session.project().unwrap()), expected, "stored");
+        assert_eq!(copy.date.is_some(), stored.is_empty());
+        if copy.date.is_some() {
+            session.undo().unwrap();
+        }
+
+        let (_, print) = print_snapshot(&mut session, view).unwrap();
+        assert_eq!(date(&print.snapshot.project), expected, "print");
+        assert_eq!(print.date.is_some(), stored.is_empty());
+        if print.date.is_some() {
+            session.undo().unwrap();
+        }
+    }
 }
