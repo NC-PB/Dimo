@@ -477,6 +477,7 @@
   "refusal_invalid_style": "Ballongrößen müssen positive Zahlen sein.",
   "refusal_invalid_sheet_setting": "Diese Blatteinstellung ist ungültig (Einheit, Maßstab, Zonenraster oder Ansicht).",
   "refusal_invalid_project_setting": "Diese Projekteinstellungen sind ungültig.",
+  "refusal_missing_table": "Diese Firmentabelle ist noch nicht im Projekt gespeichert. Importieren Sie sie erneut.",
   "refusal_nothing_to_undo": "Es gibt nichts zum Rückgängigmachen.",
   "refusal_nothing_to_redo": "Es gibt nichts zum Wiederholen.",
   "show_measure": "Messwerttabelle anzeigen",

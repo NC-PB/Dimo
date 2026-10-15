@@ -32,10 +32,10 @@
 //!   drawing" (T3.17).
 //! - `DIMO_DEV_IMPORT_TABLE=<path>`: "import custom table" skips the open dialog and reads this
 //!   table file (T2.8).
-//! - `DIMO_DEV_HOME=<dir>`: the cache, data and config folders of the app (tiles, autosave,
-//!   `settings.json`) are `cache`, `data` and `config` below this folder instead of the
-//!   user's, so a scripted run neither reads nor changes the settings of the person running it
-//!   (T1.10).
+//! - `DIMO_DEV_HOME=<dir>`: the cache, data, config and log folders of the app (tiles,
+//!   autosave, `settings.json`, `dimo.log`) are `cache`, `data`, `config` and `logs` below this
+//!   folder instead of the user's, so a scripted run neither reads nor changes the settings of
+//!   the person running it (T1.10).
 //!
 //! While `DIMO_DEV_OPEN` is set, a debug build does not restore unsaved projects at startup, so
 //! a crashed autosave of real work is left for the next normal start.

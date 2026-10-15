@@ -10,6 +10,8 @@
   `dimo-notation` and `dimo-tolerance` are pure. `dimo-pdf`, `dimo-vision` do IO and rendering.
   `dimo-detect` uses pdf, vision, notation, tolerance. `dimo-io` and `dimo-report` depend on core;
   `dimo-io` also on pdf, to create projects from drawing files through `RasterOpener` (ADR 0010).
+  `dimo-export` is the export registry facade over core, io, pdf and report (MF F2): formats,
+  the export plan and one `render` for the app and the CLI.
   Only `src-tauri` and `dimo-cli` may depend on everything.
 - No crate except `src-tauri` depends on `tauri`.
 
@@ -77,7 +79,8 @@ others are hand kept and easy to miss.
    `apps/desktop/src/lib/ipc/bindings.ts` and fails once; run it again and commit the file.
 8. History: `source` in `crates/dimo-core/src/history.rs` (not exhaustive) if the command names
    characteristics directly; otherwise its changes count as rule driven. `missing_table` in
-   `crates/dimo-io/src/project/session.rs` if the command can name a custom table.
+   `crates/dimo-io/src/project/session.rs` if the command can name a custom table
+   (`ProjectSession::execute` refuses it with `CommandError::MissingTable`).
 9. New primitive change, if no existing `Change` fits: the variant in
    `crates/dimo-core/src/patch/mod.rs`, an entry in the `inverse_of!` lists in `Change::inverse`
    (exhaustive), a dispatch arm in `Project::apply_change` (exhaustive) with an applier in the
@@ -160,7 +163,8 @@ main text.
    matching enum (`IoReason`, `DocumentReason`, `ExportReason`, ...) if none fits. Refused
    document commands use `rejected` with a `RejectReason` (see "adding a command").
 2. Map crate errors in `error.rs` only: the `From` impls (`ProjectError`, `CreateError`,
-   `PdfError`, `ReportError`, `ExportError`, `dimo_core::CommandError`) and the helpers
+   `PdfError`, `ReportError`, `ExportError`, `dimo_export::ExportError`,
+   `dimo_core::CommandError`) and the helpers
    (`CommandError::io`, `export_io`, `export_pdf`, `argument`, `internal`, `task_failed`). Do
    not build `message`-only errors at the call site. Operating system errors get their reason
    from `IoReason::of` (not found, permission denied, file locked by another program, disk
@@ -176,3 +180,18 @@ main text.
    every kind and reason from `bindings.ts` and fails if one lacks a text in either language
    or if the German text equals the English one. Show errors with `commandErrorMessage` and the
    diagnostic text with `ErrorDetails.svelte` (`errorDetail`).
+
+## Exports and report issuing
+
+Domain rules of exports live in the crates, the shell only runs them (MF F2):
+
+- `dimo_report::issue`: the one report date rule (`report_date`: the stored date, else today),
+  the report info of new projects and of issued reports, the record command, the checks and
+  warnings before issuing. Today's date, company name and audit user come in as
+  `IssueDefaults`; no crate reads a clock.
+- `dimo_export`: the formats (`ExportFormat`), `plan` (what to execute before the snapshot,
+  the report info a report prints, whether to record it), `record_command`, and `render`, the
+  one function the desktop job and the CLI (`dimo export`) render through.
+- A new export format: a variant of `ExportFormat` and its arms (exhaustive), then the frontend
+  menu. Preview, Save copy, Print and the issued export must take their report info from
+  `plan`, never from the project directly.

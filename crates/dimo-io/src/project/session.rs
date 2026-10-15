@@ -21,8 +21,8 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 use dimo_core::{
-    AuditEntry, Change, CharId, Command, Document, HistoryEntry, Project, ProjectInfo, ReportInfo,
-    Sha256Hex, Timestamp,
+    AuditEntry, Change, CharId, Command, CommandError, Document, Environment, HistoryEntry, Patch,
+    Project, ProjectInfo, ReportInfo, Sha256Hex, Timestamp,
 };
 
 use super::error::ProjectError;
@@ -171,6 +171,20 @@ impl ProjectSession {
     /// [`ProjectSession::flush_journal`] after each batch.
     pub fn document_mut(&mut self) -> &mut Document {
         &mut self.document
+    }
+
+    /// Executes `command` as one undo step. Refuses a command that would list a custom table
+    /// whose file is not stored in the project ([`CommandError::MissingTable`], M2 decision 4),
+    /// since the project could then not be saved. Call [`ProjectSession::flush_journal`] after.
+    pub fn execute(
+        &mut self,
+        command: Command,
+        env: &mut dyn Environment,
+    ) -> Result<Patch, CommandError> {
+        if let Some(id) = self.missing_table(&command) {
+            return Err(CommandError::MissingTable(id));
+        }
+        self.document.execute(command, env)
     }
 
     /// The current project state.

@@ -4,12 +4,17 @@
 //! invoke handler and the generated TypeScript bindings, so both always agree (NFR-MNT-03).
 
 pub mod dev;
+pub mod dialogs;
 pub mod env;
 pub mod error;
 pub mod export;
+pub mod fsio;
 pub mod ipc;
+pub mod job;
+pub mod logging;
 pub mod measurement;
 pub mod numbering;
+pub mod opener;
 pub mod project;
 pub mod recent;
 pub mod recognition;
@@ -57,7 +62,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             project::undo,
             project::redo,
             export::export_project,
-            export::cancel_job,
+            job::cancel_job,
             export::report_export_warnings,
             report::report_preview,
             report::report_checks,
@@ -135,7 +140,7 @@ fn refresh_bindings(
 /// Starts the desktop app. In debug builds the bindings are regenerated first.
 #[allow(
     clippy::print_stderr,
-    reason = "binding export warning in debug builds, no tracing subscriber yet"
+    reason = "binding export warning in debug builds, before the log file is opened"
 )]
 pub fn run() -> tauri::Result<()> {
     let builder = specta_builder();
@@ -158,6 +163,10 @@ pub fn run() -> tauri::Result<()> {
         .invoke_handler(builder.invoke_handler())
         .register_asynchronous_uri_scheme_protocol(tiles::SCHEME, tiles::handle)
         .setup(move |app| {
+            // The log file first, so everything after it is logged (D-06).
+            if let Some(dir) = dev::dev_folder("logs", app.path().app_log_dir().ok()) {
+                logging::init(&dir);
+            }
             builder.mount_events(app);
             // Tile cache in the user cache directory, never in the project (07 Data model).
             let cache_dir = dev::dev_folder("cache", app.path().app_cache_dir().ok())
@@ -167,7 +176,7 @@ pub fn run() -> tauri::Result<()> {
             let autosave_dir = dev::dev_folder("data", app.path().app_data_dir().ok())
                 .map(|dir| dir.join(AUTOSAVE_FOLDER));
             app.manage(project::SessionState::new(autosave_dir));
-            app.manage(export::JobRegistry::default());
+            app.manage(job::JobRegistry::default());
             app.manage(report::PreviewState::default());
             // Settings of the user in the app config directory (T1.9).
             let settings_path = dev::dev_folder("config", app.path().app_config_dir().ok())

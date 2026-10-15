@@ -34,6 +34,11 @@ const ALLOWED: &[(&str, &[&str])] = &[
         "dimo-report",
         &["dimo-core", "dimo-notation", "dimo-tolerance"],
     ),
+    (
+        "dimo-export",
+        // The export registry facade (MF F2): list exports, reports and the ballooned PDF.
+        &["dimo-core", "dimo-io", "dimo-pdf", "dimo-report"],
+    ),
 ];
 
 /// Crate names declared in any dependency table of a manifest.

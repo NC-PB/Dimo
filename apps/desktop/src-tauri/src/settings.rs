@@ -3,12 +3,12 @@
 //! decision 12: blank check sheet columns and report formats).
 //!
 //! Stored as `settings.json` in the app config directory. Only Rust reads and writes the file;
-//! the webview has no file system access (NFR-SEC-01). Missing fields take their defaults and
-//! unknown fields are ignored, so older and newer files still load; a file that cannot be read is ignored with a
-//! warning and replaced at the next change.
+//! the webview has no file system access (NFR-SEC-01). The file is a [`JsonStore`]: missing
+//! fields take their defaults and unknown fields are ignored, so older and newer files still load;
+//! a file that cannot be read is ignored with a warning in the log and replaced at the next
+//! change.
 
-use std::path::{Path, PathBuf};
-use std::sync::{Mutex, PoisonError};
+use std::path::PathBuf;
 
 use dimo_core::{Language, ReportFormat};
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ use specta::Type;
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 use crate::env::os_user_name;
+use crate::fsio::{JsonStore, Stored};
 use crate::ipc::CommandError;
 use crate::project::{MAIN_WINDOW, SessionState};
 
@@ -128,61 +129,11 @@ impl AppSettings {
         });
         self
     }
-
-    /// Reads the settings file. A missing file gives the defaults; a broken one too, with a
-    /// warning.
-    pub fn load(path: &Path) -> Self {
-        let text = match std::fs::read_to_string(path) {
-            Ok(text) => text,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Self::default(),
-            Err(error) => {
-                tracing::warn!("cannot read {}: {error}", path.display());
-                return Self::default();
-            }
-        };
-        // Fields missing in the file keep their defaults: the file is laid over the defaults.
-        let parsed = serde_json::from_str::<serde_json::Value>(&text).and_then(|file| {
-            let mut merged = serde_json::to_value(Self::default())?;
-            overlay(&mut merged, file);
-            serde_json::from_value::<Self>(merged)
-        });
-        match parsed {
-            Ok(settings) => settings.normalized(),
-            Err(error) => {
-                tracing::warn!("ignoring malformed {}: {error}", path.display());
-                Self::default()
-            }
-        }
-    }
-
-    /// Writes the settings file: first a temporary file next to it, then a rename, so a crash
-    /// never leaves half a file.
-    pub fn save(&self, path: &Path) -> std::io::Result<()> {
-        if let Some(dir) = path.parent() {
-            std::fs::create_dir_all(dir)?;
-        }
-        let mut text = serde_json::to_string_pretty(self).map_err(std::io::Error::other)?;
-        text.push('\n');
-        let temporary = path.with_extension("json.tmp");
-        std::fs::write(&temporary, text)?;
-        std::fs::rename(&temporary, path)
-    }
 }
 
-/// Lays `top` over `base`: objects are merged key by key, other values replace.
-fn overlay(base: &mut serde_json::Value, top: serde_json::Value) {
-    match (base, top) {
-        (serde_json::Value::Object(base), serde_json::Value::Object(top)) => {
-            for (key, value) in top {
-                match base.get_mut(&key) {
-                    Some(slot) => overlay(slot, value),
-                    None => {
-                        base.insert(key, value);
-                    }
-                }
-            }
-        }
-        (base, top) => *base = top,
+impl Stored for AppSettings {
+    fn repaired(self) -> Self {
+        self.normalized()
     }
 }
 
@@ -199,38 +150,31 @@ pub struct SettingsView {
 /// The settings of the running app and where they are stored.
 #[derive(Debug)]
 pub struct SettingsState {
-    path: Option<PathBuf>,
-    current: Mutex<AppSettings>,
+    store: JsonStore<AppSettings>,
 }
 
 impl SettingsState {
     /// Loads the settings from `path`; without a path (no config directory) the defaults are
     /// used and changes are kept for this run only.
     pub fn load(path: Option<PathBuf>) -> Self {
-        let current = path.as_deref().map(AppSettings::load).unwrap_or_default();
         Self {
-            path,
-            current: Mutex::new(current),
+            store: JsonStore::load(path),
         }
     }
 
     /// The current settings.
     pub fn get(&self) -> AppSettings {
-        self.current
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone()
+        self.store.get()
     }
 
     /// Stores new settings and writes the file. On a write error the settings still apply to
     /// this run and the error is returned.
     pub fn set(&self, settings: AppSettings) -> Result<AppSettings, CommandError> {
         let settings = settings.normalized();
-        *self.current.lock().unwrap_or_else(PoisonError::into_inner) = settings.clone();
-        if let Some(path) = &self.path {
-            settings
-                .save(path)
-                .map_err(|e| CommandError::io(path, &e))?;
+        let ((), written) = self.store.update(|current| *current = settings.clone());
+        if let (Err(error), Some(path)) = (written, self.store.path()) {
+            tracing::warn!("cannot write {}: {error}", path.display());
+            return Err(CommandError::io(path, &error));
         }
         Ok(settings)
     }
@@ -296,14 +240,19 @@ pub async fn set_app_settings(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fsio::{load_json, save_json};
+
+    fn load(path: &std::path::Path) -> AppSettings {
+        load_json(path)
+    }
 
     #[test]
     fn missing_and_broken_files_give_defaults() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join(SETTINGS_FILE);
-        assert_eq!(AppSettings::load(&path), AppSettings::default());
+        assert_eq!(load(&path), AppSettings::default());
         std::fs::write(&path, "{ not json").unwrap();
-        assert_eq!(AppSettings::load(&path), AppSettings::default());
+        assert_eq!(load(&path), AppSettings::default());
     }
 
     #[test]
@@ -324,18 +273,21 @@ mod tests {
                 open_after_export: true,
             },
         };
-        settings.save(&path).unwrap();
-        assert_eq!(AppSettings::load(&path), settings);
-        assert!(!path.with_extension("json.tmp").exists());
+        save_json(&path, &settings).unwrap();
+        assert_eq!(load(&path), settings);
+        assert_eq!(
+            std::fs::read_dir(path.parent().unwrap()).unwrap().count(),
+            1
+        );
         let text = std::fs::read_to_string(&path).unwrap();
         assert!(text.contains("\"theme\": \"dark\""), "{text}");
         std::fs::write(&path, r#"{"theme": "light", "future": 1}"#).unwrap();
-        let loaded = AppSettings::load(&path);
+        let loaded = load(&path);
         assert_eq!(loaded.theme, Theme::Light);
         assert_eq!(loaded.locale, None);
         assert_eq!(loaded.export, ExportPreferences::default());
         std::fs::write(&path, r#"{"export": {"language": "de"}}"#).unwrap();
-        let loaded = AppSettings::load(&path);
+        let loaded = load(&path);
         assert_eq!(loaded.export.language, Language::De);
         assert_eq!(loaded.export.pdf_balloons, PdfBalloons::PageContent);
         assert_eq!(
@@ -349,9 +301,9 @@ mod tests {
         );
         assert_eq!(loaded.theme, Theme::System);
         std::fs::write(&path, r#"{"export": {"blank_columns": 40}}"#).unwrap();
-        assert_eq!(AppSettings::load(&path).export.blank_columns, 10);
+        assert_eq!(load(&path).export.blank_columns, 10);
         std::fs::write(&path, r#"{"export": {"blank_columns": 0}}"#).unwrap();
-        assert_eq!(AppSettings::load(&path).export.blank_columns, 1);
+        assert_eq!(load(&path).export.blank_columns, 1);
     }
 
     #[test]

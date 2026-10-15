@@ -7,7 +7,7 @@
 //! step and journaled. The settings themselves change with the document command
 //! `set_tolerance_settings` through [`crate::project::execute`].
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use dimo_core::{CharId, Command, HistoryEntry, TableRef, Unit};
 use dimo_detect::ToleranceEngine;
@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, WebviewWindow};
 
+use crate::dialogs::{self, DevOverride, Filter};
 use crate::ipc::{CommandError, InternalReason, RejectReason, TableImportReason};
 use crate::project::{emit_patched, with_session};
 use crate::recognition::{parse_shorter_leg, shipped};
@@ -463,18 +464,12 @@ pub async fn import_tolerance_table(
         session.project().map(|_| ()).ok_or(CommandError::NoProject)
     })
     .await?;
-    let path: PathBuf = if let Some(path) = crate::dev::dev_import_table() {
-        path
-    } else {
-        let picked = rfd::AsyncFileDialog::new()
-            .add_filter("TOML", &["toml"])
-            .set_parent(&window)
-            .pick_file()
-            .await;
-        let Some(file) = picked else {
-            return Ok(TableImport::Cancelled);
-        };
-        file.path().to_path_buf()
+    let filter = Filter {
+        name: "TOML",
+        extensions: &["toml"],
+    };
+    let Some(path) = dialogs::pick_file(&window, filter, DevOverride::ImportTable).await else {
+        return Ok(TableImport::Cancelled);
     };
     with_session(app, move |app, session| {
         let mut result = import(session, &path)?;

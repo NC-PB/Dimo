@@ -9,8 +9,11 @@
 //!   documents stay open, so a late answer of an older preview never closes the one on screen.
 //! - **Checks.** [`report_checks`] lists what to look at before issuing: the warnings of M3
 //!   decision 17 with counts, and the report header fields that are still empty after issuing
-//!   would fill company and inspector (decision 15). Computed here, never in the webview
-//!   (rule 2).
+//!   would fill company and inspector (decision 15). Computed in `dimo_report::issue`, never in
+//!   the webview (rule 2).
+//!
+//! All three print the report info of [`dimo_export::plan`], so they show the same report date
+//! as Save copy and the issued export (`dimo_report::issue::report_date`, MF F2).
 //! - **Print.** [`print_report`] writes the PDF that "Save copy" would write into a temporary
 //!   folder and opens it with the system's PDF viewer, which prints it with its own dialog. It
 //!   reuses the open after export path: no print API, no new capability (NFR-SEC-01). Like
@@ -22,14 +25,15 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, PoisonError};
 
 use dimo_core::Sha256Hex;
-use dimo_core::{CharId, Project, ReportFormat, ReportInfo, ReportKind, measurement_state};
+use dimo_core::{ReportFormat, ReportKind};
+pub use dimo_report::issue::{ReportChecks, ReportField};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};
 
 use crate::export::{
-    ExportFormat, ExportRequest, ExportStart, ReportWarnings, open_with_system, open_written_file,
-    render, report_warnings, take_snapshot, write_file,
+    ExportFormat, ExportRequest, ExportStart, open_with_system, open_written_file, render,
+    take_snapshot, write_file,
 };
 use crate::ipc::{CommandError, DocumentInfo, IoReason, tile_service};
 use crate::project::{emit_patched, with_session};
@@ -69,15 +73,23 @@ impl ReportView {
     }
 }
 
-/// The snapshot "Save copy" would export, without changing the project: a project without a
-/// report date gets today's date, as the export stores it first (T3.9). Used by the preview,
-/// so it shows the file that "Save copy" writes today.
-pub fn save_copy_snapshot(session: &AppSession) -> Result<ExportSnapshot, CommandError> {
+/// The snapshot "Save copy" of `view` would export, without changing the project: the report
+/// info of its [`dimo_export::plan`], so a project without a report date prints today's date,
+/// as the export stores it first (T3.9). Used by the preview, so it shows the file that
+/// "Save copy" writes today.
+pub fn save_copy_snapshot(
+    session: &AppSession,
+    view: ReportView,
+) -> Result<ExportSnapshot, CommandError> {
     let mut snapshot = session.export_snapshot(false)?;
-    let info = &mut snapshot.project.report_info;
-    if info.report_date.trim().is_empty() {
-        info.report_date = session.local_date();
-    }
+    let request = view.save_copy();
+    dimo_export::plan(
+        &snapshot.project,
+        request.format,
+        request.issued,
+        &session.issue_defaults(),
+    )
+    .apply(&mut snapshot.project);
     Ok(snapshot)
 }
 
@@ -113,8 +125,8 @@ pub async fn report_preview(
     app: AppHandle,
     view: ReportView,
 ) -> Result<DocumentInfo, CommandError> {
-    let (snapshot, stem) = with_session(app.clone(), |_, session| {
-        Ok((save_copy_snapshot(session)?, session.file_stem()))
+    let (snapshot, stem) = with_session(app.clone(), move |_, session| {
+        Ok((save_copy_snapshot(session, view)?, session.file_stem()))
     })
     .await?;
     let tiles = tile_service(&app.state::<TileState>())?;
@@ -132,93 +144,16 @@ pub async fn report_preview(
     .await
 }
 
-/// A report header field the Report tab asks for before issuing (T3.19).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum ReportField {
-    /// Part number (project info).
-    PartNumber,
-    /// Report number.
-    ReportNumber,
-    /// Company name; filled from the settings when a report is issued.
-    CompanyName,
-    /// Inspected by; filled with the user name when a report is issued.
-    InspectedBy,
-}
-
-/// What to look at before report `kind` is issued (T3.19, M3 decisions 15 to 17). Nothing here
-/// blocks issuing.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub struct ReportChecks {
-    /// The warnings confirmed before an issued export (decision 17).
-    pub warnings: ReportWarnings,
-    /// Parts (samples) of the project.
-    pub samples: u32,
-    /// Characteristics the report lists (measured ones, decision 5).
-    pub rows: u32,
-    /// Inspection report: cells without a result. Zero for the check sheet.
-    pub missing_values: u32,
-    /// Inspection report: values without limits, not evaluated. Zero for the check sheet.
-    pub not_evaluated: u32,
-    /// Listed characteristics whose limits come from a draft tolerance table (D-43).
-    pub draft_rows: u32,
-    /// Listed characteristics whose limits or result type changed after the last issued report
-    /// (decision 16).
-    pub changed_rows: u32,
-    /// Header fields that would still be empty on the issued report, in header order.
-    pub missing_fields: Vec<ReportField>,
-}
-
-fn count(n: usize) -> u32 {
-    u32::try_from(n).unwrap_or(u32::MAX)
-}
-
-/// The checks of report `kind` of `project`. `changed` lists the characteristics changed since
-/// the last issued report, `filled` is the report info as issuing would print it.
-pub fn checks_of(
-    project: &Project,
-    kind: ReportKind,
-    changed: &[CharId],
-    filled: &ReportInfo,
-) -> Result<ReportChecks, CommandError> {
-    let state = measurement_state(project);
-    let warnings = report_warnings(project, kind, !changed.is_empty())?;
-    let measured = |id: &CharId| state.rows.iter().any(|r| r.characteristic == *id);
-    let inspection = kind == ReportKind::InspectionReport;
-    let mut missing_fields = Vec::new();
-    for (field, value) in [
-        (ReportField::PartNumber, &project.info.part_number),
-        (ReportField::ReportNumber, &filled.report_number),
-        (ReportField::CompanyName, &filled.company_name),
-        (ReportField::InspectedBy, &filled.inspected_by),
-    ] {
-        if value.trim().is_empty() {
-            missing_fields.push(field);
-        }
-    }
-    Ok(ReportChecks {
-        warnings,
-        samples: count(project.samples.len()),
-        rows: state.to_inspect,
-        missing_values: if inspection { state.counts.missing } else { 0 },
-        not_evaluated: if inspection {
-            state.counts.not_evaluated
-        } else {
-            0
-        },
-        draft_rows: count(state.rows.iter().filter(|r| r.draft).count()),
-        changed_rows: count(changed.iter().filter(|id| measured(id)).count()),
-        missing_fields,
-    })
-}
-
 /// The checks of report `kind` of the project open in `session`.
 pub fn checks(session: &AppSession, kind: ReportKind) -> Result<ReportChecks, CommandError> {
     let project = session.project().ok_or(CommandError::NoProject)?;
     let changed = session.changed_since_issued_report()?;
-    let filled = session.issued_report_info(&project.report_info);
-    checks_of(project, kind, &changed, &filled)
+    Ok(dimo_report::issue::report_checks(
+        project,
+        kind,
+        &changed,
+        &session.issue_defaults(),
+    )?)
 }
 
 /// What to look at before report `kind` of the open project is issued: warnings with counts
@@ -300,7 +235,7 @@ pub async fn print_report(app: AppHandle, view: ReportView) -> Result<String, Co
         let bytes = render(&start.snapshot, &view.save_copy(), None)?;
         let path = write_print_file(&dir, &name, &bytes)?;
         if crate::dev::dev_export_dir().is_none() {
-            open_written_file(&path, format, open_with_system)?;
+            open_written_file(&path, format.extension(), open_with_system)?;
         }
         Ok(path
             .file_name()

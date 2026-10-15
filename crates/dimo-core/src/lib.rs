@@ -46,7 +46,8 @@ pub use balloon::{
 };
 pub use characteristic::{
     Characteristic, CharacteristicKind, CharacteristicStatus, Classification, FieldError,
-    FieldValue, Inspection, Length, Origin, SourceRegion, TextSource, ToleranceRule, Unit,
+    FieldValue, Inspection, InvalidLength, Length, Origin, SourceRegion, TextSource, ToleranceRule,
+    Unit,
 };
 pub use command::{BalloonMove, Command, CommandError, RejectReason};
 pub use derivation::{

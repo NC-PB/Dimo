@@ -26,6 +26,7 @@ flowchart LR
     TOL[dimo-tolerance]
     IO[dimo-io]
     REP[dimo-report]
+    EXP[dimo-export]
     JOB[Job runner]
   end
   CLI[dimo-cli]
@@ -38,8 +39,13 @@ flowchart LR
   IO --> CORE
   IO --> PDF
   REP --> CORE
+  EXP --> IO
+  EXP --> REP
+  EXP --> PDF
   C --> IO
+  C --> EXP
   CLI --> CORE
+  CLI --> EXP
   CLI --> JOB
 ```
 
@@ -55,7 +61,8 @@ dimo/
     dimo-vision/      image preprocessing, OCR engine trait and backends, symbol classifier
     dimo-detect/      layout analysis, token grouping, characteristic proposals, confidence, balloon placement
     dimo-io/          project container, migrations, project creation from a drawing file, imports (CSV, spreadsheet, QIF), exports (CSV, XLSX, QIF)
-    dimo-report/      report templating and PDF rendering
+    dimo-report/      report templating and PDF rendering, report issuing rules (report date, issued fill, checks)
+    dimo-export/      export registry: formats, export plan, one render function for app and CLI
     dimo-cli/         headless command line tool
   apps/
     desktop/
@@ -182,3 +189,7 @@ dimo export project.dimo --format json
 ```
 
 This enables batch use and integration into automation tools without the GUI.
+
+`dimo export` exists since MF F2 for the built-in formats (`--format check-sheet-pdf` and the
+others, see `crates/dimo-cli/README.md`). It renders through `dimo-export`, the export registry
+the desktop app uses, so the same project and options give byte identical files.

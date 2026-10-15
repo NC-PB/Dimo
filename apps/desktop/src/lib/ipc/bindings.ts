@@ -78,9 +78,9 @@ export const commands = {
 	 */
 	exportProject: (request: ExportRequest) => typedError<number | null, CommandError>(__TAURI_INVOKE("export_project", { request })),
 	/**
-	 *  Asks the export job `id` to stop before its next step. Returns false if no such job runs
-	 *  (it may just have ended). A job that is already writing its file finishes it and ends
-	 *  with its normal outcome.
+	 *  Asks the job `id` to stop before its next step. Returns false if no such job runs (it may
+	 *  just have ended). A job that is already writing its file finishes it and ends with its
+	 *  normal outcome.
 	 */
 	cancelJob: (id: JobId) => __TAURI_INVOKE<boolean>("cancel_job", { id }),
 	/**
@@ -2302,6 +2302,8 @@ export type RejectReason =
 "invalid_result" | 
 /**  The result type cannot change while results of the other type exist (M3 decision 4). */
 "result_type_conflict" | 
+/**  A custom tolerance table of the settings is not stored in the project (M2 decision 4). */
+"missing_table" | 
 /**  Undo without history. */
 "nothing_to_undo" | 
 /**  Redo without history. */

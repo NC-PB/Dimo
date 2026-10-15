@@ -152,16 +152,7 @@ fn explanation(
 }
 
 fn check_region(region: &OrientedBox) -> Result<(), CommandError> {
-    let finite = [
-        region.center.x,
-        region.center.y,
-        region.size.width,
-        region.size.height,
-        region.angle,
-    ]
-    .iter()
-    .all(|v| v.is_finite());
-    if finite && region.size.width > 0.0 && region.size.height > 0.0 {
+    if region.is_valid() {
         Ok(())
     } else {
         Err(CommandError::argument(
@@ -232,13 +223,10 @@ pub fn propose(
 /// The shorter leg typed on the proposal card or in the detail panel (T2.9a), in the unit of the
 /// sheet: empty text means no leg; anything but a positive number is refused.
 pub fn parse_shorter_leg(text: Option<&str>, unit: Unit) -> Result<Option<Length>, CommandError> {
-    let Some(text) = text.map(str::trim).filter(|t| !t.is_empty()) else {
-        return Ok(None);
-    };
-    Length::parse(text, unit).map(Some).ok_or_else(|| {
+    Length::parse_optional(text.unwrap_or_default(), unit).map_err(|e| {
         CommandError::argument(
             ArgumentReason::ShorterLeg,
-            format_args!("the shorter leg {text:?} is not a positive number"),
+            format_args!("the shorter leg {e}"),
         )
     })
 }
