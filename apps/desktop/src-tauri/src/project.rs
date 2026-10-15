@@ -1,7 +1,7 @@
 //! Project commands and events of the main window (T1.5). The logic lives in
 //! [`crate::session`] and the `dimo-*` crates; this module only adds dialogs, threads and events.
 //!
-//! File dialogs run in Rust (`rfd`), so the webview never names a path (NFR-SEC-01). Every
+//! File dialogs run in Rust ([`crate::dialogs`]), so the webview never names a path (NFR-SEC-01). Every
 //! command that touches the session runs on the blocking pool and emits its events while it
 //! still holds the session, so events arrive in the order they happened. The main thread
 //! (window and quit events) never waits for the session: it reads a flag that every unlock
@@ -20,9 +20,22 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 use tauri_specta::Event;
 
+use crate::dialogs::{self, DevOverride, Filter};
 use crate::ipc::{CommandError, InternalReason, tile_service};
 use crate::session::{AppSession, CloseRequested, ProjectLoaded, ProjectPatched};
 use crate::tiles::TileState;
+
+/// File type of the drawing dialog.
+const PDF_FILTER: Filter = Filter {
+    name: "PDF",
+    extensions: &["pdf", "PDF"],
+};
+
+/// File type of the project dialogs.
+const PROJECT_FILTER: Filter = Filter {
+    name: "Dimo",
+    extensions: &[EXTENSION],
+};
 
 /// Label of the main window, as in `tauri.conf.json`.
 pub const MAIN_WINDOW: &str = "main";
@@ -134,18 +147,8 @@ pub async fn new_project(
 ) -> Result<bool, CommandError> {
     check_unsaved(&app.state::<SessionState>(), discard)?;
     let tiles = tile_service(&app.state::<TileState>())?;
-    let path = if let Some(path) = crate::dev::dev_new_drawing() {
-        path
-    } else {
-        let picked = rfd::AsyncFileDialog::new()
-            .add_filter("PDF", &["pdf", "PDF"])
-            .set_parent(&window)
-            .pick_file()
-            .await;
-        let Some(file) = picked else {
-            return Ok(false);
-        };
-        file.path().to_path_buf()
+    let Some(path) = dialogs::pick_file(&window, PDF_FILTER, DevOverride::NewDrawing).await else {
+        return Ok(false);
     };
     with_session(app, move |app, session| {
         let loaded = session.create_from_drawing(&tiles, &path, discard)?;
@@ -166,15 +169,10 @@ pub async fn open_project(
 ) -> Result<bool, CommandError> {
     check_unsaved(&app.state::<SessionState>(), discard)?;
     let tiles = tile_service(&app.state::<TileState>())?;
-    let picked = rfd::AsyncFileDialog::new()
-        .add_filter("Dimo", &[EXTENSION])
-        .set_parent(&window)
-        .pick_file()
-        .await;
-    let Some(file) = picked else {
+    let Some(path) = dialogs::pick_file(&window, PROJECT_FILTER, DevOverride::None).await else {
         return Ok(false);
     };
-    open_path(app, tiles, file.path().to_path_buf(), discard).await
+    open_path(app, tiles, path, discard).await
 }
 
 /// Opens the project at `path` (from the file dialog or the recent list) and puts it first on
@@ -242,23 +240,11 @@ pub async fn save_project_as(app: AppHandle, window: WebviewWindow) -> Result<bo
         }
     })
     .await?;
-    let mut path = if let Some(path) = crate::dev::dev_save_as() {
-        path
-    } else {
-        let picked = rfd::AsyncFileDialog::new()
-            .add_filter("Dimo", &[EXTENSION])
-            .set_file_name(suggested)
-            .set_parent(&window)
-            .save_file()
-            .await;
-        let Some(file) = picked else {
-            return Ok(false);
-        };
-        file.path().to_path_buf()
+    let Some(path) =
+        dialogs::save_file(&window, PROJECT_FILTER, &suggested, DevOverride::SaveAs).await
+    else {
+        return Ok(false);
     };
-    if path.extension().is_none() {
-        path.set_extension(EXTENSION);
-    }
     with_session(app, move |app, session| {
         let status = session.save_as(&path)?;
         emit(app, &status);

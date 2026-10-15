@@ -8,12 +8,12 @@
 //! the list (NFR-SEC-01: the webview never chooses a file by itself).
 
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, PoisonError};
 
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};
 
+use crate::fsio::{JsonStore, Stored};
 use crate::ipc::{CommandError, RecentReason, tile_service};
 use crate::project::SessionState;
 use crate::tiles::TileState;
@@ -57,41 +57,14 @@ impl RecentList {
     pub fn entries(&self) -> Vec<RecentProject> {
         self.projects.iter().map(|p| RecentProject::of(p)).collect()
     }
+}
 
-    /// Reads the list. A missing or broken file gives an empty list (with a warning when
-    /// broken); entries that are not absolute paths are dropped.
-    pub fn load(path: &Path) -> Self {
-        let text = match std::fs::read_to_string(path) {
-            Ok(text) => text,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Self::default(),
-            Err(error) => {
-                tracing::warn!("cannot read {}: {error}", path.display());
-                return Self::default();
-            }
-        };
-        match serde_json::from_str::<Self>(&text) {
-            Ok(mut list) => {
-                list.projects.retain(|p| p.is_absolute());
-                list.projects.truncate(MAX_RECENT);
-                list
-            }
-            Err(error) => {
-                tracing::warn!("ignoring malformed {}: {error}", path.display());
-                Self::default()
-            }
-        }
-    }
-
-    /// Writes the list through a temporary file and a rename, like the settings.
-    pub fn save(&self, path: &Path) -> std::io::Result<()> {
-        if let Some(dir) = path.parent() {
-            std::fs::create_dir_all(dir)?;
-        }
-        let mut text = serde_json::to_string_pretty(self).map_err(std::io::Error::other)?;
-        text.push('\n');
-        let temporary = path.with_extension("json.tmp");
-        std::fs::write(&temporary, text)?;
-        std::fs::rename(&temporary, path)
+impl Stored for RecentList {
+    /// Drops entries that are not absolute paths and keeps at most [`MAX_RECENT`].
+    fn repaired(mut self) -> Self {
+        self.projects.retain(|p| p.is_absolute());
+        self.projects.truncate(MAX_RECENT);
+        self
     }
 }
 
@@ -142,26 +115,20 @@ impl RecentProject {
 /// The list of the running app and where it is stored.
 #[derive(Debug)]
 pub struct RecentState {
-    path: Option<PathBuf>,
-    list: Mutex<RecentList>,
+    store: JsonStore<RecentList>,
 }
 
 impl RecentState {
     /// Loads the list from `path`; without a path the list lives for this run only.
     pub fn load(path: Option<PathBuf>) -> Self {
-        let list = path.as_deref().map(RecentList::load).unwrap_or_default();
         Self {
-            path,
-            list: Mutex::new(list),
+            store: JsonStore::load(path),
         }
     }
 
     fn change<T>(&self, change: impl FnOnce(&mut RecentList) -> T) -> T {
-        let mut list = self.list.lock().unwrap_or_else(PoisonError::into_inner);
-        let result = change(&mut list);
-        if let Some(path) = &self.path
-            && let Err(error) = list.save(path)
-        {
+        let (result, written) = self.store.update(change);
+        if let (Err(error), Some(path)) = (written, self.store.path()) {
             // The list is a convenience: a write error must not fail the open or save.
             tracing::warn!("cannot write {}: {error}", path.display());
         }
@@ -180,19 +147,12 @@ impl RecentState {
 
     /// The entries for the frontend.
     pub fn entries(&self) -> Vec<RecentProject> {
-        self.list
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .entries()
+        self.store.read(RecentList::entries)
     }
 
     /// The stored path that the webview named, if it is on the list.
     fn find(&self, path: &str) -> Option<PathBuf> {
-        self.list
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .find(path)
-            .cloned()
+        self.store.read(|list| list.find(path).cloned())
     }
 }
 
@@ -271,6 +231,7 @@ pub async fn open_recent_project(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fsio::{load_json, save_json};
 
     fn temp_file(dir: &Path, name: &str) -> PathBuf {
         let path = dir.join(name);
@@ -339,20 +300,23 @@ mod tests {
     fn file_round_trip_and_broken_files() {
         let dir = tempfile::tempdir().unwrap();
         let store = dir.path().join("config").join(RECENT_FILE);
-        assert_eq!(RecentList::load(&store), RecentList::default());
+        assert_eq!(load_json::<RecentList>(&store), RecentList::default());
         let mut list = RecentList::default();
         list.add(&temp_file(dir.path(), "a.dimo"));
-        list.save(&store).unwrap();
-        assert_eq!(RecentList::load(&store), list);
-        assert!(!store.with_extension("json.tmp").exists());
+        save_json(&store, &list).unwrap();
+        assert_eq!(load_json::<RecentList>(&store), list);
+        assert_eq!(
+            std::fs::read_dir(store.parent().unwrap()).unwrap().count(),
+            1
+        );
         std::fs::write(&store, "{ nope").unwrap();
-        assert_eq!(RecentList::load(&store), RecentList::default());
+        assert_eq!(load_json::<RecentList>(&store), RecentList::default());
         std::fs::write(
             &store,
             r#"{"projects": ["relative.dimo", "/abs/b.dimo"], "x": 1}"#,
         )
         .unwrap();
-        let loaded = RecentList::load(&store);
+        let loaded = load_json::<RecentList>(&store);
         assert_eq!(loaded.projects.len(), 1);
         assert!(loaded.projects[0].is_absolute());
     }
@@ -364,11 +328,11 @@ mod tests {
         let state = RecentState::load(Some(store.clone()));
         let file = temp_file(dir.path(), "a.dimo");
         state.add(&file);
-        assert_eq!(RecentList::load(&store).projects, vec![file.clone()]);
+        assert_eq!(load_json::<RecentList>(&store).projects, vec![file.clone()]);
         let key = state.entries()[0].path.clone();
         assert_eq!(state.find(&key), Some(file.clone()));
         state.remove(&file);
-        assert_eq!(RecentList::load(&store), RecentList::default());
+        assert_eq!(load_json::<RecentList>(&store), RecentList::default());
         let memory = RecentState::load(None);
         memory.add(&file);
         assert_eq!(memory.entries().len(), 1);

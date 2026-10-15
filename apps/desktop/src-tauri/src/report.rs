@@ -235,7 +235,7 @@ pub async fn print_report(app: AppHandle, view: ReportView) -> Result<String, Co
         let bytes = render(&start.snapshot, &view.save_copy(), None)?;
         let path = write_print_file(&dir, &name, &bytes)?;
         if crate::dev::dev_export_dir().is_none() {
-            open_written_file(&path, format, open_with_system)?;
+            open_written_file(&path, format.extension(), open_with_system)?;
         }
         Ok(path
             .file_name()

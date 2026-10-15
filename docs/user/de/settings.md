@@ -104,3 +104,15 @@ JetBrains Mono und die Lucide-Symbole), mit Copyright-Hinweis und vollständigem
 Texte sind Teil der App und erscheinen daher auch ohne Internetverbindung. Lizenztexte stehen im
 englischen Original. Die Lizenzen der übrigen Open-Source-Bibliotheken, mit denen Dimo gebaut ist,
 stehen in der Datei `THIRD_PARTY_LICENSES`, die jeder Version beiliegt.
+
+## Protokolldatei
+
+Dimo schreibt Meldungen wie Warnungen und Fehler (zum Beispiel eine fehlgeschlagene automatische
+Sicherung, einen fehlgeschlagenen Export oder eine unlesbare Einstellungsdatei) und die gestartete
+Version in eine Protokolldatei auf Ihrem Computer. Sie enthält Meldungen und Dateipfade, nicht den
+Inhalt von Zeichnungen oder Projekten, und nichts wird verschickt. Erreicht sie 1 MB, wird sie in
+`dimo.log.1` umbenannt und eine neue Datei beginnt. Wenn Sie ein Problem melden, hilft das Protokoll, die Ursache zu finden:
+
+- macOS: `~/Library/Logs/io.github.nc-pb.dimo/dimo.log`
+- Windows: `%LOCALAPPDATA%\io.github.nc-pb.dimo\logs\dimo.log`
+- Linux: `~/.local/share/io.github.nc-pb.dimo/logs/dimo.log`

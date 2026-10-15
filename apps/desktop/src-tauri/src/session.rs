@@ -23,266 +23,28 @@
 //! autosave base file in `<app data>/autosave/` ([`dimo_io::autosave`]); after a crash
 //! [`AppSession::recover_unsaved`] restores it at the next start.
 
+mod open;
+mod payload;
+mod reads;
+
 use std::path::{Path, PathBuf};
 
-use dimo_core::{Command, Environment, Patch, Project, ProjectInfo, ReportInfo, Sha256Hex};
-use dimo_export::{ExportFormat, Source};
+use dimo_core::{Command, Environment, Patch, ProjectInfo, Sha256Hex};
 use dimo_io::autosave;
 use dimo_io::lock::{LockOwner, ProjectLock};
 use dimo_io::project::{
-    AutosaveTarget, Layout, NewProject, OpenReport, ProjectSession, create_from_drawing_file,
-    open_drawing,
+    AutosaveTarget, Layout, NewProject, ProjectSession, create_from_drawing_file, open_drawing,
 };
 use dimo_pdf::tiles::TileService;
 use dimo_report::issue::IssueDefaults;
-use serde::{Deserialize, Serialize};
-use specta::Type;
-use tauri_specta::Event;
 
 use crate::env::DesktopEnvironment;
-use crate::ipc::{AutosaveReason, CommandError, DocumentInfo, ProjectReason, RejectReason};
-
-/// Autosave state of the open project (NFR-REL-01).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(tag = "state", rename_all = "snake_case")]
-pub enum Autosave {
-    /// No changes since the project was opened or saved.
-    Clean,
-    /// Unsaved changes, all written to the autosave journal.
-    Journaled,
-    /// Unsaved changes that are not in a journal: the last write failed, or there is no
-    /// place for a journal. The timer retries.
-    Failed {
-        /// Why, for the frontend to translate.
-        reason: AutosaveReason,
-        /// Diagnostic text for the "Details" line and bug reports.
-        message: String,
-    },
-}
-
-/// File, undo and autosave state of the open project, for toolbar and title.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub struct ProjectStatus {
-    /// File name of the project without the directory; `null` until it is saved.
-    pub file_name: Option<String>,
-    /// True if there are changes that are not in the project file.
-    pub modified: bool,
-    /// True if undo has a step.
-    pub can_undo: bool,
-    /// True if redo has a step.
-    pub can_redo: bool,
-    /// Autosave state.
-    pub autosave: Autosave,
-}
-
-/// Everything the frontend shows of an open project.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub struct ProjectSnapshot {
-    /// Number of patches applied since the project was loaded.
-    pub revision: u32,
-    /// The project state.
-    pub project: Project,
-    /// The drawing of the current revision, opened for tile rendering.
-    pub drawing: DocumentInfo,
-    /// File, undo and autosave state.
-    pub status: ProjectStatus,
-}
-
-/// What opening a project found worth telling the user.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub struct OpenNotice {
-    /// A project that was never saved was restored from the autosave folder after a crash.
-    pub restored_unsaved: bool,
-    /// Changes replayed from the autosave journal after a crash.
-    pub recovered_changes: u32,
-    /// The last change before the crash was written incompletely and dropped.
-    pub dropped_incomplete_change: bool,
-    /// A journal that did not fit the project was moved to this file and not applied.
-    pub set_aside_journal: Option<String>,
-    /// The file had this older schema version and was converted (NFR-REL-03).
-    pub migrated_from: Option<u32>,
-}
-
-impl OpenNotice {
-    /// The notice for an open report, `None` if there is nothing to tell.
-    fn from_report(report: &OpenReport, restored_unsaved: bool) -> Option<Self> {
-        let notice = Self {
-            restored_unsaved,
-            recovered_changes: u32::try_from(report.recovered_entries).unwrap_or(u32::MAX),
-            dropped_incomplete_change: report.dropped_incomplete_line,
-            set_aside_journal: report
-                .discarded_journal
-                .as_ref()
-                .map(|(_, path)| path.display().to_string()),
-            migrated_from: report.migrated_from,
-        };
-        let empty = !notice.restored_unsaved
-            && notice.recovered_changes == 0
-            && !notice.dropped_incomplete_change
-            && notice.set_aside_journal.is_none()
-            && notice.migrated_from.is_none();
-        (!empty).then_some(notice)
-    }
-}
-
-/// The project was created, opened, restored or closed. Event `project-loaded`; also the result
-/// of `project_state`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type, Event)]
-#[serde(rename_all = "snake_case")]
-pub struct ProjectLoaded {
-    /// Increases with every load or close; patches name the session they belong to.
-    pub session: u32,
-    /// The project, `null` when none is open.
-    pub snapshot: Option<ProjectSnapshot>,
-    /// Shown once to the user, for example after crash recovery.
-    pub notice: Option<OpenNotice>,
-}
-
-/// A command, undo or redo changed the project. Event `project-patched`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type, Event)]
-#[serde(rename_all = "snake_case")]
-pub struct ProjectPatched {
-    /// Session the patch belongs to.
-    pub session: u32,
-    /// Revision after the patch: the previous revision plus one.
-    pub revision: u32,
-    /// What changed.
-    pub patch: Patch,
-    /// State after the patch.
-    pub status: ProjectStatus,
-}
-
-/// File or autosave state changed without a patch: after save, save as, or an autosave write
-/// on the timer. Event `project-status-changed`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type, Event)]
-#[serde(rename_all = "snake_case")]
-pub struct ProjectStatusChanged {
-    /// Session the status belongs to.
-    pub session: u32,
-    /// The new state.
-    pub status: ProjectStatus,
-}
-
-/// The user asked to close the window while the project has unsaved changes. The frontend asks
-/// what to do and answers with `confirm_close`. Event `close-requested`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type, Event)]
-pub struct CloseRequested;
-
-/// An immutable copy of what an export reads, so the job runs without the session.
-#[derive(Debug, Clone, PartialEq)]
-pub struct ExportSnapshot {
-    /// The project state when the export started.
-    pub project: Project,
-    /// Time of the last change of the project, for dates written into exports (FR-EXP-11).
-    pub modified: dimo_core::Timestamp,
-    /// The drawing file of the current revision, when the export needs it.
-    pub drawing: Option<Vec<u8>>,
-    /// Session and patch revision the copy was taken at. An issued report is recorded only if
-    /// the project is still in this state when the file is written (M3 decision 17).
-    pub state: SnapshotState,
-}
-
-impl ExportSnapshot {
-    /// What the export renders from (`dimo_export::render`).
-    pub fn source(&self) -> Source<'_> {
-        Source {
-            project: &self.project,
-            modified: &self.modified,
-            drawing: self.drawing.as_deref(),
-        }
-    }
-}
-
-/// Where in the history of the app session a snapshot was taken.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SnapshotState {
-    /// [`AppSession::session`].
-    pub session: u32,
-    /// Patch revision within the session.
-    pub revision: u32,
-}
-
-/// A project that is open in the app.
-#[derive(Debug)]
-struct OpenProject {
-    project: ProjectSession,
-    /// Held while open; dropping it releases the project for other instances.
-    #[allow(dead_code, reason = "held for its Drop")]
-    lock: Option<ProjectLock>,
-    drawing: DocumentInfo,
-    hash: Sha256Hex,
-    revision: u32,
-    /// Error of the last journal write, cleared by the next successful one.
-    journal_error: Option<(AutosaveReason, String)>,
-    /// Autosave state last sent to the frontend.
-    reported: Autosave,
-}
-
-impl OpenProject {
-    fn autosave(&self) -> Autosave {
-        if let Some((reason, message)) = &self.journal_error {
-            return Autosave::Failed {
-                reason: *reason,
-                message: message.clone(),
-            };
-        }
-        if !self.project.is_modified() {
-            return Autosave::Clean;
-        }
-        if self.project.location().is_some() || self.project.autosave_path().is_some() {
-            Autosave::Journaled
-        } else {
-            Autosave::Failed {
-                reason: AutosaveReason::NoFolder,
-                message: "no autosave folder available".to_owned(),
-            }
-        }
-    }
-
-    fn status(&mut self) -> ProjectStatus {
-        let autosave = self.autosave();
-        self.reported = autosave.clone();
-        let document = self.project.document();
-        ProjectStatus {
-            file_name: self
-                .project
-                .location()
-                .and_then(|(path, _)| path.file_name())
-                .map(|name| name.to_string_lossy().into_owned()),
-            modified: self.project.is_modified(),
-            can_undo: document.can_undo(),
-            can_redo: document.can_redo(),
-            autosave,
-        }
-    }
-
-    fn snapshot(&mut self) -> ProjectSnapshot {
-        ProjectSnapshot {
-            revision: self.revision,
-            project: self.project.project().clone(),
-            drawing: self.drawing.clone(),
-            status: self.status(),
-        }
-    }
-
-    /// Writes pending audit entries to the journal and remembers a failure (D-28).
-    fn flush(&mut self) {
-        self.journal_error = match self.project.flush_journal() {
-            Ok(_) => None,
-            Err(error) => {
-                tracing::warn!("autosave journal write failed: {error}");
-                Some((AutosaveReason::of(&error), error.to_string()))
-            }
-        };
-    }
-
-    fn path(&self) -> Option<&Path> {
-        self.project.location().map(|(path, _)| path)
-    }
-}
+use crate::ipc::{AutosaveReason, CommandError, DocumentInfo};
+use open::{OpenProject, same_file};
+pub use payload::{
+    Autosave, CloseRequested, ExportSnapshot, OpenNotice, ProjectLoaded, ProjectPatched,
+    ProjectSnapshot, ProjectStatus, ProjectStatusChanged, RecognitionTarget, SnapshotState,
+};
 
 /// The project state of the app window. See the module docs.
 #[derive(Debug)]
@@ -407,59 +169,10 @@ impl AppSession {
             .unwrap_or_else(|| "project".to_owned())
     }
 
-    /// What an export job needs: a copy of the project, its last change time and, if
-    /// `with_drawing`, the drawing file of the current revision.
-    pub fn export_snapshot(&self, with_drawing: bool) -> Result<ExportSnapshot, CommandError> {
-        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
-        let drawing = if with_drawing {
-            Some(
-                open.project
-                    .current_drawing()
-                    .ok_or_else(|| CommandError::Project {
-                        reason: ProjectReason::MissingDrawing,
-                        message: "the drawing of the current revision is missing".to_owned(),
-                    })?
-                    .to_vec(),
-            )
-        } else {
-            None
-        };
-        Ok(ExportSnapshot {
-            project: open.project.project().clone(),
-            modified: open.project.modified(),
-            drawing,
-            state: SnapshotState {
-                session: self.session,
-                revision: open.revision,
-            },
-        })
-    }
-
     /// Fixes today's date of [`Self::issue_defaults`]; `None` restores the real one.
     /// For tests and scripted runs.
     pub fn set_fixed_local_date(&mut self, date: Option<&str>) {
         self.env.set_fixed_local_date(date);
-    }
-
-    /// Records a report written from the snapshot taken at `state` as issued (D-23, M3
-    /// decision 17): locks the numbering if it is not locked yet, stores `printed` (the report
-    /// info the file shows, see `dimo_export::plan`) and adds the [`dimo_core::IssuedReport`],
-    /// all as one undo step (`dimo_export::record_command`). Returns `None` and changes nothing
-    /// if the project changed since the snapshot, because the file then no longer shows it.
-    pub fn record_issued_report(
-        &mut self,
-        state: SnapshotState,
-        printed: &ReportInfo,
-        format: ExportFormat,
-        output_sha256: Sha256Hex,
-    ) -> Result<Option<ProjectPatched>, CommandError> {
-        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
-        if self.session != state.session || open.revision != state.revision {
-            return Ok(None);
-        }
-        let command =
-            dimo_export::record_command(open.project.project(), printed, format, output_sha256)?;
-        self.execute(command).map(Some)
     }
 
     fn owner(&mut self) -> LockOwner {
@@ -737,117 +450,12 @@ impl AppSession {
             status: open.status(),
         })
     }
-
-    /// The journal file of the open project, if one is open.
-    pub fn journal_path(&self) -> Option<PathBuf> {
-        self.open
-            .as_ref()
-            .and_then(|o| o.project.journal_path().map(Path::to_path_buf))
-    }
-
-    /// The open project, for tests and dev tools.
-    pub fn project(&self) -> Option<&Project> {
-        self.open.as_ref().map(|o| o.project.project())
-    }
-
-    /// What recognition needs for `sheet` of the current drawing revision (T2.6): the drawing
-    /// in the tile service, the page, the unit and the project settings. Reads only.
-    pub fn recognition_target(
-        &self,
-        sheet: dimo_core::SheetId,
-    ) -> Result<RecognitionTarget, CommandError> {
-        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
-        let project = open.project.project();
-        let found = project
-            .current_revision()
-            .and_then(|r| r.sheets.iter().find(|s| s.id == sheet))
-            .ok_or_else(|| CommandError::Rejected {
-                reason: RejectReason::UnknownSheet,
-                message: format!("sheet {sheet} is not a sheet of the current drawing"),
-            })?;
-        Ok(RecognitionTarget {
-            drawing: open.hash,
-            page: usize::try_from(found.index).unwrap_or(usize::MAX),
-            unit: found.unit,
-            settings: project.settings.clone(),
-            custom_tables: Self::custom_tables_of(&open.project),
-        })
-    }
-
-    /// The custom tolerance tables the settings of `project` list, as (id, file text).
-    fn custom_tables_of(project: &ProjectSession) -> Vec<(String, String)> {
-        project
-            .project()
-            .settings
-            .tolerance
-            .custom_tables
-            .iter()
-            .filter_map(|t| {
-                let bytes = project.table(&t.sha256)?;
-                Some((
-                    t.table.id.clone(),
-                    String::from_utf8_lossy(bytes).into_owned(),
-                ))
-            })
-            .collect()
-    }
-
-    /// The custom tolerance tables of the open project as (id, file text) (T2.8).
-    pub fn custom_tables(&self) -> Result<Vec<(String, String)>, CommandError> {
-        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
-        Ok(Self::custom_tables_of(&open.project))
-    }
-
-    /// Change history of one characteristic, oldest first (FR-CHR-10).
-    pub fn characteristic_history(
-        &self,
-        id: dimo_core::CharId,
-    ) -> Result<Vec<dimo_core::HistoryEntry>, CommandError> {
-        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
-        Ok(open.project.characteristic_history(id))
-    }
-
-    /// Characteristics of the open project whose limits or result type changed after the last
-    /// issued report (M3 decision 16).
-    pub fn changed_since_issued_report(&self) -> Result<Vec<dimo_core::CharId>, CommandError> {
-        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
-        Ok(open.project.changed_since_issued_report())
-    }
-
-    /// Keeps a custom tolerance table file in the open project (M2 decision 4) and returns its
-    /// hash. Validate it first; it is journaled with the first command whose settings list it.
-    pub fn insert_table(&mut self, bytes: Vec<u8>) -> Result<Sha256Hex, CommandError> {
-        let open = self.open.as_mut().ok_or(CommandError::NoProject)?;
-        Ok(open.project.insert_table(bytes))
-    }
-}
-
-/// What recognition reads from the open project for one sheet (T2.6).
-#[derive(Debug, Clone, PartialEq)]
-pub struct RecognitionTarget {
-    /// Content hash of the drawing, its key in the tile service.
-    pub drawing: Sha256Hex,
-    /// Zero based page of the sheet in the drawing.
-    pub page: usize,
-    /// Unit of the sheet (D-20).
-    pub unit: dimo_core::Unit,
-    /// Project settings, for the tolerance engine.
-    pub settings: dimo_core::ProjectSettings,
-    /// Custom tolerance tables stored in the project as (id, file text) (M2 decision 4).
-    pub custom_tables: Vec<(String, String)>,
-}
-
-/// True if both paths name the same existing file or folder.
-fn same_file(a: &Path, b: &Path) -> bool {
-    match (a.canonicalize(), b.canonicalize()) {
-        (Ok(a), Ok(b)) => a == b,
-        _ => a == b,
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dimo_io::project::OpenReport;
 
     #[test]
     fn notice_only_when_there_is_something_to_tell() {
