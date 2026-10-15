@@ -1,12 +1,15 @@
 /**
  * Helpers of the project and report details panel (T3.4). The values live in the project and
  * change only through Rust commands; Rust validates every value. The side panel and File > Info
- * (T3.16) share the edit helpers below. Each command carries only the changed field, and Rust
+ * (T3.16) share the edit helpers below, built on `commitField` (MF F8): after the command the
+ * field shows what the project holds, Rust's trimmed text or the old value when Rust refused
+ * (the reason appears in the project messages). Each command carries only the changed field, and Rust
  * applies it to the project as it is when the command runs, so two fast edits of two fields
  * both survive (MF F4).
  */
 
 import type { Command, Project, ProjectInfo, ReportInfo, RevisionId } from "$lib/ipc/bindings";
+import { commitField } from "$lib/ui/fields";
 
 /** The calendar date of `date` in the local time zone as `YYYY-MM-DD` (the report date form). */
 export function localDate(date: Date): string {
@@ -22,34 +25,16 @@ interface DetailsStore {
   execute(command: Command): Promise<unknown>;
 }
 
-/**
- * Sends a changed field. Afterwards the input shows what the project holds (`read`): Rust's
- * trimmed text, or the old value when Rust refused (the reason appears in the project
- * messages).
- */
-async function send(
-  input: HTMLInputElement | HTMLTextAreaElement,
-  read: () => string | undefined,
-  run: () => Promise<unknown>,
-): Promise<void> {
-  if (input.value === read()) {
-    return;
-  }
-  await run();
-  input.value = read() ?? "";
-}
-
 /** Sends a changed part field with `update_project_info` (one undo step). */
 export function editProjectInfo(
   store: DetailsStore,
   input: HTMLInputElement,
   field: keyof ProjectInfo,
 ): Promise<void> {
-  const value = input.value;
-  return send(
+  return commitField(
     input,
     () => store.project?.info[field],
-    () => store.execute({ type: "update_project_info", values: [{ field, value }] }),
+    (value) => store.execute({ type: "update_project_info", values: [{ field, value }] }),
   );
 }
 
@@ -59,11 +44,10 @@ export function editReportInfo(
   input: HTMLInputElement | HTMLTextAreaElement,
   field: keyof ReportInfo,
 ): Promise<void> {
-  const value = input.value;
-  return send(
+  return commitField(
     input,
     () => store.project?.report_info[field],
-    () => store.execute({ type: "update_report_info", values: [{ field, value }] }),
+    (value) => store.execute({ type: "update_report_info", values: [{ field, value }] }),
   );
 }
 
@@ -76,11 +60,10 @@ export function editRevisionLabel(
   input: HTMLInputElement,
   id: RevisionId,
 ): Promise<void> {
-  const label = input.value;
-  return send(
+  return commitField(
     input,
     () => store.project?.revisions.find((r) => r.id === id)?.label,
-    () => store.execute({ type: "update_revision_label", revision: id, label }),
+    (label) => store.execute({ type: "update_revision_label", revision: id, label }),
   );
 }
 

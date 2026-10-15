@@ -51,6 +51,9 @@ if [[ -f apps/desktop/package.json ]]; then
   step "npm licenses"
   node scripts/check-npm-licenses.mjs
   if [[ $FAST -eq 0 ]]; then
+    # MF F8: the production bundle holds no code of the development tools.
+    step "release bundle without dev code"
+    node scripts/check-release-bundle.mjs
     step "frontend test"
     pnpm -C apps/desktop test
   fi

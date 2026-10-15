@@ -28,8 +28,7 @@ import { getLocale } from "$lib/i18n";
 import type { Rect } from "$lib/viewport/view-math";
 import { projectStore, type ProjectStore } from "./project.svelte";
 import { selection, type SelectionStore } from "./selection.svelte";
-
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The recognition commands the store calls. The generated `commands` in the app. */
 export interface RecognitionCommands {

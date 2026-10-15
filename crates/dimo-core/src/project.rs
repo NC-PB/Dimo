@@ -17,6 +17,17 @@ use crate::number::DisplayNumber;
 use crate::report::{IssuedReport, ReportInfo};
 use crate::sheet::{DrawingRevision, Sha256Hex, Sheet};
 
+/// The answer of [`Project::delete_check`]: the results that go with deleted characteristics.
+/// Deleting characteristics with results asks the user first (M3 decision 16, FR-MEA-01).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct DeleteCheck {
+    /// Number of results of the characteristics.
+    pub results: u32,
+    /// Whether the deletion needs the user's confirmation.
+    pub needs_confirmation: bool,
+}
+
 /// Descriptive data of the inspected part. Empty text means not set.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -453,6 +464,22 @@ impl Project {
     /// Results of one characteristic, in sample order.
     pub fn results_of(&self, id: CharId) -> impl Iterator<Item = &MeasurementResult> {
         self.results.iter().filter(move |r| r.characteristic == id)
+    }
+
+    /// What deleting the characteristics `ids` would remove besides them (M3 decision 16):
+    /// their results. Unknown IDs count nothing.
+    pub fn delete_check(&self, ids: &[CharId]) -> DeleteCheck {
+        let ids: BTreeSet<CharId> = ids.iter().copied().collect();
+        let results = self
+            .results
+            .iter()
+            .filter(|r| ids.contains(&r.characteristic))
+            .count();
+        let results = u32::try_from(results).unwrap_or(u32::MAX);
+        DeleteCheck {
+            results,
+            needs_confirmation: results > 0,
+        }
     }
 
     /// Checks the rules commands keep for samples and results, for a project read from a file

@@ -78,9 +78,11 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             tolerance::general_tolerance_candidates,
             tolerance::apply_general_tolerance,
             tolerance::set_shorter_leg,
+            tolerance::shorter_leg_unit,
             tolerance::import_tolerance_table,
             measurement::measurement_state,
             measurement::changed_since_issued_report,
+            measurement::delete_check,
             settings::app_settings,
             settings::set_app_settings,
             dev::dev_startup,
@@ -101,6 +103,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         .constant("MAX_TILE_ZOOM", MAX_ZOOM)
         // The balloon layout rule shared by the viewport and the ballooned PDF (D-24).
         .constant("BALLOON_METRICS", dimo_core::BALLOON_METRICS)
+        // Largest number of blank result columns of a check sheet (M3 decision 12).
+        .constant("MAX_BLANK_COLUMNS", dimo_report::MAX_BLANK_COLUMNS)
 }
 
 /// Writes the TypeScript bindings of `builder` to `path`.

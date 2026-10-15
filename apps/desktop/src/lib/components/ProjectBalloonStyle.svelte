@@ -5,6 +5,7 @@
    * Drawing tab (M3 decision 21, T3.16). Each change is one undoable
    * `set_default_balloon_style` command.
    */
+  import { fieldClass } from "$lib/ui/fields";
   import { COLORS, OUTLINES_MM, SHAPES, SIZES_MM, shapeLabel } from "$lib/balloon-style-options";
   import ShapeIcon from "$lib/components/ShapeIcon.svelte";
   import { m } from "$lib/i18n";
@@ -30,7 +31,7 @@
     }));
   }
 
-  const fieldClass = "min-h-8 rounded border border-border-strong bg-surface px-2 py-1 text-text";
+  const inputClass = fieldClass();
   const optionClass =
     "flex min-h-8 items-center gap-1 rounded border border-border px-2 py-1 text-xs text-text hover:bg-hover aria-pressed:border-accent aria-pressed:ring-2 aria-pressed:ring-accent";
 </script>
@@ -59,7 +60,7 @@
     <label class="flex flex-wrap items-center gap-2">
       <span class="w-32">{m.balloon_size()}</span>
       <select
-        class={fieldClass}
+        class={inputClass}
         value={String(style.size_mm)}
         onchange={(e) => {
           setStyle({ size_mm: Number(e.currentTarget.value) });
@@ -77,7 +78,7 @@
     <label class="flex flex-wrap items-center gap-2">
       <span class="w-32">{m.balloon_outline()}</span>
       <select
-        class={fieldClass}
+        class={inputClass}
         value={String(style.outline_mm)}
         onchange={(e) => {
           setStyle({ outline_mm: Number(e.currentTarget.value) });

@@ -10,7 +10,6 @@
   import StartScreen from "$lib/components/StartScreen.svelte";
   import UnsavedChangesDialog from "$lib/components/UnsavedChangesDialog.svelte";
   import Viewport from "$lib/components/Viewport.svelte";
-  import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { m } from "$lib/i18n";
   import { icons } from "$lib/icons";
   import MeasureView from "$lib/measure/MeasureView.svelte";
@@ -90,7 +89,10 @@
         });
         return;
       }
-      if (DEV_TOOLS_ENABLED) {
+      // Development builds only: the dev tools are loaded here and nowhere else at startup,
+      // so production bundles hold none of their code (T0.8, MF F8).
+      if (import.meta.env.DEV) {
+        const { devTools } = await import("$lib/dev/dev-tools.svelte");
         await devTools.startup(projectStore, documentStore, viewport);
       }
     })();

@@ -16,9 +16,7 @@ import {
 import { asCommandError } from "$lib/errors";
 import { exportStore } from "$lib/stores/export.svelte";
 import { settingsStore } from "$lib/stores/settings.svelte";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** What the store needs from Rust, replaceable in tests. */
 export interface ReportViewApi {

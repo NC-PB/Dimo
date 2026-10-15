@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { MAX_BLANK_COLUMNS } from "$lib/ipc/bindings";
   import { LOCALE_NAMES, m } from "$lib/i18n";
   import type { ReportFormat, Language } from "$lib/ipc/bindings";
   import { exportStore } from "$lib/stores/export.svelte";
-  import { settingsStore } from "$lib/stores/settings.svelte";
+  import { settingsStore, blankColumns, MIN_BLANK_COLUMNS } from "$lib/stores/settings.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS, fieldTitle } from "$lib/ui/fields";
   import Ribbon from "./Ribbon.svelte";
 
   /**
@@ -13,9 +14,6 @@
    * area below shows the preview of what Save copy writes, Print opens it in the PDF viewer
    * (T3.19). Blank result columns apply to a check sheet of a project without parts.
    */
-  /** Bounds of the blank check sheet columns (M3 decision 12); Rust refuses others. */
-  const MIN_BLANK = 1;
-  const MAX_BLANK = 10;
   const FORMATS: readonly { value: ReportFormat; label: () => string }[] = [
     { value: "pdf", label: () => m.export_format_pdf() },
     { value: "xlsx", label: () => m.export_format_xlsx() },
@@ -52,10 +50,10 @@
 
 {#snippet options()}
   <div class="flex gap-2">
-    <label class={LABEL_CLASS} title={m.field_report_format_desc()}>
+    <label class={RIBBON_LABEL_CLASS} title={m.field_report_format_desc()}>
       {m.export_format()}
       <select
-        class="{FIELD_CLASS} min-w-32"
+        class="{RIBBON_FIELD_CLASS} min-w-32"
         data-field="report-format"
         value={format}
         onchange={(e) => {
@@ -70,10 +68,10 @@
         {/each}
       </select>
     </label>
-    <label class={LABEL_CLASS} title={m.field_report_language_desc()}>
+    <label class={RIBBON_LABEL_CLASS} title={m.field_report_language_desc()}>
       {m.export_language()}
       <select
-        class="{FIELD_CLASS} min-w-28"
+        class="{RIBBON_FIELD_CLASS} min-w-28"
         data-field="report-language"
         value={prefs.language}
         onchange={(e) => {
@@ -89,22 +87,20 @@
       </select>
     </label>
   </div>
-  <label class={LABEL_CLASS} title={fieldTitle(m.export_blank_columns_hint(), blankReason)}>
+  <label class={RIBBON_LABEL_CLASS} title={fieldTitle(m.export_blank_columns_hint(), blankReason)}>
     {m.export_blank_columns()}
     <input
       type="number"
-      min={MIN_BLANK}
-      max={MAX_BLANK}
+      min={MIN_BLANK_COLUMNS}
+      max={MAX_BLANK_COLUMNS}
       step="1"
-      class="{FIELD_CLASS} w-16"
+      class="{RIBBON_FIELD_CLASS} w-16"
       data-field="blank-columns"
       disabled={blankReason !== null}
       value={prefs.blank_columns}
       onchange={(e) => {
-        const text = e.currentTarget.value.trim();
-        const value = Math.round(Number(text));
-        if (text !== "" && Number.isFinite(value)) {
-          const blank_columns = Math.min(MAX_BLANK, Math.max(MIN_BLANK, value));
+        const blank_columns = blankColumns(e.currentTarget.value);
+        if (blank_columns !== null) {
           void settingsStore.update({ export: { ...prefs, blank_columns } });
         }
         e.currentTarget.value = String(prefs.blank_columns);

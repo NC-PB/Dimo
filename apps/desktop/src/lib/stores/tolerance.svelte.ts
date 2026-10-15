@@ -12,7 +12,6 @@
 import {
   commands,
   type CharId,
-  type Characteristic,
   type Command,
   type CommandError,
   type DecimalPlaceRule,
@@ -24,18 +23,16 @@ import {
   type Project,
   type ProjectPatched,
   type Reinterpreted,
-  type SheetId,
   type TableClass,
   type TableImport,
   type TableImportReason,
+  type Unit,
   type ToleranceField,
   type ToleranceSettings,
   type ToleranceTableInfo,
 } from "$lib/ipc/bindings";
 import { asCommandError, projectStore } from "./project.svelte";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The tolerance commands. The generated `commands` in the app, fakes in tests. */
 export interface ToleranceApi {
@@ -45,19 +42,9 @@ export interface ToleranceApi {
   reinterpretCharacteristics(ids: CharId[]): Promise<Result<Reinterpreted>>;
   importToleranceTable(): Promise<Result<TableImport>>;
   setShorterLeg(id: CharId, leg: string | null): Promise<Result<LegSet>>;
+  shorterLegUnit(id: CharId): Promise<Result<Unit>>;
   generalToleranceCandidates(): Promise<Result<CharId[]>>;
   applyGeneralTolerance(): Promise<Result<Reinterpreted>>;
-}
-
-/**
- * The sheet a characteristic sits on: the sheet of its first balloon, else of its first source
- * region (D-20: the unit of that sheet applies). `null` if it has neither. Used only to label
- * the leg field with the unit Rust parses a new leg in.
- */
-export function sheetOf(project: Project, c: Characteristic): SheetId | null {
-  return (
-    project.balloons.find((b) => b.characteristic === c.id)?.sheet ?? c.sources[0]?.sheet ?? null
-  );
 }
 
 /** What the store needs of the project: its state, the command path and patch results. */
@@ -354,6 +341,14 @@ export class ToleranceStore {
   /** The change history of a characteristic, oldest first (FR-CHR-10). */
   async history(id: CharId): Promise<Result<HistoryEntry[]>> {
     return call(() => this.#api.characteristicHistory(id));
+  }
+
+  /**
+   * The unit Rust reads a newly typed shorter leg of `id` in: the unit of the characteristic's
+   * sheet (T2.9a, D-20). Which sheet that is, is Rust's rule (MF F8).
+   */
+  async legUnit(id: CharId): Promise<Result<Unit>> {
+    return call(() => this.#api.shorterLegUnit(id));
   }
 
   dismiss(): void {

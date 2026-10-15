@@ -9,7 +9,7 @@
 
 use std::path::Path;
 
-use dimo_core::{CharId, Command, HistoryEntry, TableRef};
+use dimo_core::{CharId, Command, HistoryEntry, TableRef, Unit};
 use dimo_detect::ToleranceEngine;
 use dimo_tolerance::{
     ContextError, ExplainValues, TableKind, ToleranceContext, import_custom_table,
@@ -432,6 +432,24 @@ pub async fn set_shorter_leg(
         Ok(result)
     })
     .await
+}
+
+/// The unit a shorter leg typed for characteristic `id` is read in (T2.9a, D-20): the unit of
+/// the sheet of its first balloon, else of its first source region, mm without either. The
+/// detail panel labels the leg field with it (rule 2, MF F8).
+#[tauri::command]
+#[specta::specta]
+pub async fn shorter_leg_unit(app: AppHandle, id: CharId) -> Result<Unit, CommandError> {
+    with_session(app, move |_, session| leg_unit(session, id)).await
+}
+
+/// The unit of [`shorter_leg_unit`] in the project open in `session`.
+pub fn leg_unit(session: &AppSession, id: CharId) -> Result<Unit, CommandError> {
+    let project = session.project().ok_or(CommandError::NoProject)?;
+    let c = project
+        .characteristic(id)
+        .ok_or_else(|| unknown_characteristic(id))?;
+    Ok(dimo_detect::sheet_unit(project, c))
 }
 
 /// Lets the user pick a custom tolerance table file and imports it (FR-TOL-07). Rust reads and

@@ -10,9 +10,7 @@ import {
   type Verdict,
 } from "$lib/ipc/bindings";
 import { frozenSet, indexMap } from "$lib/sets";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The queries the store calls. The generated `commands` in the app, fakes in tests. */
 export interface MeasurementCommands {

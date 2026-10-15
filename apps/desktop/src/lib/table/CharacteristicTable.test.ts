@@ -1,50 +1,17 @@
 // @vitest-environment happy-dom
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Command, CommandError, NumberingPreview, ProjectPatched } from "$lib/ipc/bindings";
-import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
+import type { CommandError, NumberingPreview } from "$lib/ipc/bindings";
+import { characteristic, emptyProject, loaded } from "$lib/stores/fixtures";
 import { numberingStore } from "$lib/stores/numbering.svelte";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import CharacteristicTable from "./CharacteristicTable.svelte";
+import { fakeProjectApi, stubGridLayout } from "$lib/test/fakes";
 
 /** Height of the scroll area the tests pretend to have, in CSS px. */
 const VIEW_HEIGHT = 560;
 const ROW_HEIGHT = 28;
-
-type Reply = { status: "ok"; data: ProjectPatched } | { status: "error"; error: CommandError };
-
-/** Records the commands the table sends; answers with an empty patch unless told otherwise. */
-function fakeRust() {
-  const commands: Command[] = [];
-  let reply: (command: Command) => Reply = () => ({
-    status: "ok",
-    data: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
-  });
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      commands.push(command);
-      return Promise.resolve(reply(command));
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
-  return {
-    api,
-    commands,
-    answer(next: (command: Command) => Reply) {
-      reply = next;
-    },
-  };
-}
 
 /** A project with `count` characteristics `c1`..`cN`, numbered in placement order. */
 function projectWith(count: number, locked = false) {
@@ -73,23 +40,7 @@ let component: ReturnType<typeof mount> | null = null;
 
 beforeEach(() => {
   // happy-dom does no layout: give the scroll area a size so the virtualizer has a window.
-  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    return this.getAttribute("role") === "grid" ? VIEW_HEIGHT : 0;
-  });
-  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(1200);
-  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    return this.getAttribute("role") === "grid" ? VIEW_HEIGHT : 0;
-  });
-  vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    // Header plus one row per characteristic, as laid out by the browser.
-    return Number(this.getAttribute("aria-rowcount") ?? 0) * ROW_HEIGHT;
-  });
+  stubGridLayout({ height: VIEW_HEIGHT, width: 1200, rowHeight: ROW_HEIGHT });
   target = document.createElement("div");
   document.body.appendChild(target);
 });
@@ -104,7 +55,7 @@ afterEach(() => {
 });
 
 async function render(count: number, locked = false) {
-  const rust = fakeRust();
+  const rust = fakeProjectApi();
   const project = new ProjectStore(rust.api);
   project.load(loaded(1, projectWith(count, locked)));
   const selected = new SelectionStore();
@@ -432,7 +383,7 @@ describe("characteristic table (T1.7)", () => {
 
 describe("rule column (T2.8)", () => {
   it("shows the rule with the draft and no tolerance markers", async () => {
-    const rust = fakeRust();
+    const rust = fakeProjectApi();
     const project = new ProjectStore(rust.api);
     const data = projectWith(2);
     const [first, second] = data.characteristics;

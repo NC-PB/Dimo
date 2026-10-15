@@ -75,7 +75,7 @@ pub use number::DisplayNumber;
 pub use numbering::{NumberedCharacteristic, NumberingPreview};
 pub use patch::{Change, Patch};
 pub use project::{
-    CustomTable, DecimalPlaceRule, InsertPolicy, LockReason, MultiInstance, Numbering,
+    CustomTable, DecimalPlaceRule, DeleteCheck, InsertPolicy, LockReason, MultiInstance, Numbering,
     NumberingLock, NumberingSettings, NumberingStrategy, Project, ProjectInfo, ProjectInfoField,
     ProjectSettings, TableClass, ToleranceField, ToleranceSettings, UnitRounding,
 };

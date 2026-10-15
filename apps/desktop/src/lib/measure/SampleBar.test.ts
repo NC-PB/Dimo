@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Command, Sample } from "$lib/ipc/bindings";
-import { emptyProject, loaded, status } from "$lib/stores/fixtures";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import type { Sample } from "$lib/ipc/bindings";
+import { emptyProject, loaded } from "$lib/stores/fixtures";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import { PartsStore } from "./parts.svelte";
 import SampleBar from "./SampleBar.svelte";
+import { fakeProjectApi } from "$lib/test/fakes";
 
 function sample(n: number): Sample {
   return {
@@ -35,26 +36,10 @@ afterEach(() => {
 });
 
 async function render(activeSample: string | null) {
-  const commands: Command[] = [];
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      commands.push(command);
-      return Promise.resolve({
-        status: "ok",
-        data: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
-      });
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
+  const rust = fakeProjectApi();
+  const api = rust.api;
+  const commands = rust.commands;
+
   const data = emptyProject();
   data.samples = [1, 2, 3].map(sample);
   data.results = [

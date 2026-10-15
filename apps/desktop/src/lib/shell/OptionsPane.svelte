@@ -6,6 +6,8 @@
    * 15) and the export defaults (D-32, D-33, M3 decision 12). Project settings live on the
    * Drawing tab and in File > Info.
    */
+  import { MAX_BLANK_COLUMNS } from "$lib/ipc/bindings";
+  import { fieldClass } from "$lib/ui/fields";
   import ErrorDetails from "$lib/components/ErrorDetails.svelte";
   import {
     LOCALE_NAMES,
@@ -23,7 +25,12 @@
     Theme,
   } from "$lib/ipc/bindings";
   import { baseLocale, extractLocaleFromNavigator } from "$lib/paraglide/runtime.js";
-  import { settingsStore as appSettings, type SettingsStore } from "$lib/stores/settings.svelte";
+  import {
+    settingsStore as appSettings,
+    type SettingsStore,
+    blankColumns,
+    MIN_BLANK_COLUMNS,
+  } from "$lib/stores/settings.svelte";
 
   interface Props {
     settingsStore?: SettingsStore;
@@ -48,9 +55,6 @@
     { value: "pdf", label: () => m.export_format_pdf() },
     { value: "xlsx", label: () => m.export_format_xlsx() },
   ];
-  /** Bounds of the blank check sheet columns (M3 decision 12); Rust clamps them too. */
-  const MIN_BLANK = 1;
-  const MAX_BLANK = 10;
 
   const settings = $derived(settingsStore.current);
   const prefs = $derived(settings.export);
@@ -61,14 +65,13 @@
   }
 
   function setBlankColumns(text: string): void {
-    const value = Number(text);
-    if (Number.isInteger(value)) {
-      setPrefs({ blank_columns: Math.min(MAX_BLANK, Math.max(MIN_BLANK, value)) });
+    const value = blankColumns(text);
+    if (value !== null) {
+      setPrefs({ blank_columns: value });
     }
   }
 
-  const fieldClass =
-    "min-h-8 w-full max-w-72 rounded-md border border-border-strong bg-surface px-2 py-1 text-text";
+  const inputClass = fieldClass("w-full max-w-72");
   const boxClass = "flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm";
   const gridClass =
     "grid grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)] items-center gap-x-3 gap-y-2";
@@ -95,7 +98,7 @@
       <label for="options-theme" class="text-text-muted">{m.theme_label()}</label>
       <select
         id="options-theme"
-        class={fieldClass}
+        class={inputClass}
         value={settings.theme}
         onchange={(e) => {
           const theme = THEMES.find((t) => t === e.currentTarget.value);
@@ -112,7 +115,7 @@
       <div class="flex flex-col gap-1">
         <select
           id="options-language"
-          class={fieldClass}
+          class={inputClass}
           aria-describedby="options-language-hint"
           value={chosenLocale}
           onchange={(e) => {
@@ -137,7 +140,7 @@
       <div class="flex flex-col gap-1">
         <input
           id="options-user"
-          class={fieldClass}
+          class={inputClass}
           type="text"
           autocomplete="off"
           spellcheck="false"
@@ -154,7 +157,7 @@
       <div class="flex flex-col gap-1">
         <input
           id="options-company"
-          class={fieldClass}
+          class={inputClass}
           type="text"
           autocomplete="off"
           spellcheck="false"
@@ -176,7 +179,7 @@
       <label for="options-report-language" class="text-text-muted">{m.export_language()}</label>
       <select
         id="options-report-language"
-        class={fieldClass}
+        class={inputClass}
         value={prefs.language}
         onchange={(e) => {
           const value = REPORT_LANGUAGES.find((l) => l.value === e.currentTarget.value)?.value;
@@ -193,7 +196,7 @@
       >
       <select
         id="options-check-sheet"
-        class={fieldClass}
+        class={inputClass}
         value={prefs.check_sheet_format}
         onchange={(e) => {
           const value = FORMATS.find((f) => f.value === e.currentTarget.value)?.value;
@@ -211,7 +214,7 @@
       >
       <select
         id="options-report"
-        class={fieldClass}
+        class={inputClass}
         value={prefs.inspection_report_format}
         onchange={(e) => {
           const value = FORMATS.find((f) => f.value === e.currentTarget.value)?.value;
@@ -228,9 +231,9 @@
       <input
         id="options-blank"
         type="number"
-        class="{fieldClass} max-w-24 font-mono"
-        min={MIN_BLANK}
-        max={MAX_BLANK}
+        class="{inputClass} max-w-24 font-mono"
+        min={MIN_BLANK_COLUMNS}
+        max={MAX_BLANK_COLUMNS}
         step="1"
         value={prefs.blank_columns}
         onchange={(e) => {
@@ -241,7 +244,7 @@
       <label for="options-pdf" class="text-text-muted">{m.export_pdf_balloons()}</label>
       <select
         id="options-pdf"
-        class={fieldClass}
+        class={inputClass}
         value={prefs.pdf_balloons}
         onchange={(e) => {
           const value = PDF_MODES.find((p) => p.value === e.currentTarget.value)?.value;

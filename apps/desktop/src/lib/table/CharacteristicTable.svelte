@@ -7,11 +7,11 @@
     tableFeatures,
   } from "@tanstack/svelte-table";
   import { untrack } from "svelte";
-  import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import ToleranceBadges from "$lib/components/ToleranceBadges.svelte";
   import { m } from "$lib/i18n";
   import type { CharId, Characteristic, Command, CommandError } from "$lib/ipc/bindings";
   import { isMacPlatform, matchShortcut } from "$lib/shortcuts";
+  import { keyboard } from "$lib/stores/keyboard.svelte";
   import { numberingStore } from "$lib/stores/numbering.svelte";
   import { projectStore, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection, type SelectionStore } from "$lib/stores/selection.svelte";
@@ -90,14 +90,24 @@
     if (element === null) {
       return;
     }
-    if (DEV_TOOLS_ENABLED) {
-      devTools.tableScroller = element;
+    // Development builds: the scroll check of the dev tools scrolls this element (T1.7).
+    if (import.meta.env.DEV) {
+      void import("$lib/dev/dev-tools.svelte").then(({ devTools }) => {
+        devTools.tableScroller = element;
+      });
     }
     const detach = virtualizer.attach(element);
+    // Its keys are the `table` scope: while it has the focus the window runs only app keys.
+    const unregister = keyboard.register({ scope: "table", element: () => element });
     return () => {
       detach();
-      if (DEV_TOOLS_ENABLED && devTools.tableScroller === element) {
-        devTools.tableScroller = null;
+      unregister();
+      if (import.meta.env.DEV) {
+        void import("$lib/dev/dev-tools.svelte").then(({ devTools }) => {
+          if (devTools.tableScroller === element) {
+            devTools.tableScroller = null;
+          }
+        });
       }
     };
   });

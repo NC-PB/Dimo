@@ -5,8 +5,7 @@ import type { RecentProject } from "$lib/ipc/bindings";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { RecentStore } from "$lib/stores/recent.svelte";
 import RecentProjects from "./RecentProjects.svelte";
-
-const ok = <T>(data: T) => Promise.resolve({ status: "ok" as const, data });
+import { ok } from "$lib/test/fakes";
 
 function entry(name: string, exists = true): RecentProject {
   return { path: `/work/${name}`, name, folder: "/work", exists };

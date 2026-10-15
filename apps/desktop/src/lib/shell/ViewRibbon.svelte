@@ -3,7 +3,7 @@
   import type { Theme } from "$lib/ipc/bindings";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS } from "$lib/ui/fields";
   import Ribbon from "./Ribbon.svelte";
 
   /**
@@ -25,10 +25,10 @@
 {/snippet}
 
 {#snippet look()}
-  <label class={LABEL_CLASS} title={m.field_theme_desc()}>
+  <label class={RIBBON_LABEL_CLASS} title={m.field_theme_desc()}>
     {m.theme_label()}
     <select
-      class="{FIELD_CLASS} min-w-40"
+      class="{RIBBON_FIELD_CLASS} min-w-40"
       data-field="theme"
       value={settingsStore.current.theme}
       onchange={(e) => {

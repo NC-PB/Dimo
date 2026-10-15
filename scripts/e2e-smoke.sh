@@ -167,6 +167,16 @@ run_app() {
   fi
 }
 
+# The dev server must never reload the page during the run: a reload ends a running UI script.
+# DIMO_E2E bundles the dependencies up front (vite.config.ts); this makes a reload visible.
+check_no_reload() {
+  if grep -q "reloading" "$WORK/vite.log"; then
+    fail "the dev server reloaded the page: $(grep -m1 reloading "$WORK/vite.log")"
+  else
+    pass "the dev server never reloaded the page"
+  fi
+}
+
 # report <name> <label>: the last "report" line of that label from the terminal output.
 report() { { grep "ui: $2:" "$WORK/$1.log" || true; } | tail -1 | sed 's/^.*ui: //'; }
 
@@ -505,6 +515,9 @@ expect "errors: non-PDF drawing refused in German" "yes" \
   "$(yesno grep -q 'Die Datei ist keine PDF-Zeichnung' <<<"$drawing_alerts")"
 expect "errors: no English error text in the German messages" "no" \
   "$(yesno grep -qiE '\.toml|\.txt|cannot|expected|not a PDF|error|failed' <<<"$table_alerts $drawing_alerts")"
+
+step "dev server"
+check_no_reload
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

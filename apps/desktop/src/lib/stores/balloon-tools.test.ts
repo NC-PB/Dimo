@@ -9,34 +9,15 @@ import {
   typesCharacter,
   type TypedKey,
 } from "./balloon-tools.svelte";
-import { addChanges, characteristic, loaded } from "./fixtures";
-
-/** Two balloons (a, b) with results: two for a, one for b. */
-function withResults() {
-  const setup = twoBalloons();
-  const data = setup.project.project;
-  if (data === null) {
-    throw new Error("no project");
-  }
-  const result = (sample: string, characteristic: string) => ({
-    sample,
-    characteristic,
-    value: { type: "variable" as const, value: "1" },
-    source: { type: "manual" as const },
-    comment: "",
-  });
-  setup.project.load(
-    loaded(1, { ...data, results: [result("s1", "a"), result("s2", "a"), result("s1", "b")] }),
-    true,
-  );
-  return setup;
-}
+import { addChanges, characteristic } from "./fixtures";
 
 describe("deleting characteristics with results (T3.9, M3 decision 16)", () => {
-  it("asks first and counts only the results of the selected characteristics", async () => {
-    const { api, selection, tools } = withResults();
+  it("asks first with the count Rust reports for the selection", async () => {
+    const { api, selection, tools } = twoBalloons();
+    api.deleteResults = 2;
     selection.select(["a"]);
     await tools.deleteSelection();
+    expect(api.checkedDeletes).toEqual([["a"]]);
     expect(api.commands).toEqual([]);
     expect(tools.pendingDelete).toEqual({ ids: ["a"], results: 2 });
     await tools.confirmDelete();
@@ -45,7 +26,8 @@ describe("deleting characteristics with results (T3.9, M3 decision 16)", () => {
   });
 
   it("deletes nothing when the question is cancelled", async () => {
-    const { api, selection, tools } = withResults();
+    const { api, selection, tools } = twoBalloons();
+    api.deleteResults = 3;
     selection.select(["a", "b"]);
     await tools.deleteSelection();
     expect(tools.pendingDelete?.results).toBe(3);
@@ -54,12 +36,21 @@ describe("deleting characteristics with results (T3.9, M3 decision 16)", () => {
     expect(tools.pendingDelete).toBeNull();
   });
 
-  it("deletes characteristics without results at once", async () => {
+  it("deletes at once when Rust needs no confirmation", async () => {
     const { api, selection, tools } = twoBalloons();
     selection.select(["a"]);
     await tools.deleteSelection();
     expect(api.commands).toEqual([{ type: "delete_characteristics", ids: ["a"] }]);
     expect(tools.pendingDelete).toBeNull();
+  });
+
+  it("deletes nothing and shows the error when the check fails", async () => {
+    const { api, project, selection, tools } = twoBalloons();
+    api.deleteCheck = () => Promise.resolve({ status: "error", error: { kind: "no_project" } });
+    selection.select(["a"]);
+    await tools.deleteSelection();
+    expect(api.commands).toEqual([]);
+    expect(project.error).toEqual({ kind: "no_project" });
   });
 });
 

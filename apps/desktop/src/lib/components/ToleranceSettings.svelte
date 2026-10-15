@@ -9,6 +9,7 @@
    * `update_tolerance_settings` for drawing rule and rounding, `add_decimal_rule` and
    * `remove_decimal_rule` for decimal place rules (MF F4).
    */
+  import { fieldClass } from "$lib/ui/fields";
   import { m, tableImportText } from "$lib/i18n";
   import ErrorDetails from "./ErrorDetails.svelte";
   import type { DecimalPlaceRule, TableClass, ToleranceTableInfo } from "$lib/ipc/bindings";
@@ -100,7 +101,7 @@
     void tolerance.removeDecimalRule(count);
   }
 
-  const fieldClass = "min-h-8 rounded border border-border-strong bg-surface px-2 py-1 text-text";
+  const inputClass = fieldClass();
   const buttonClass =
     "min-h-8 rounded border border-border px-2 py-1 text-xs hover:bg-hover disabled:opacity-50";
 </script>
@@ -114,7 +115,7 @@
       <label class="flex flex-wrap items-center gap-2">
         <span class="w-40">{m.tolerance_drawing_rule()}</span>
         <select
-          class={fieldClass}
+          class={inputClass}
           data-setting="drawing_rule"
           value={choice?.table.id ?? NONE}
           onchange={(e) => {
@@ -133,7 +134,7 @@
         <label class="flex items-center gap-2">
           <span>{m.tolerance_class()}</span>
           <select
-            class={fieldClass}
+            class={inputClass}
             data-setting="drawing_rule_class"
             value={choice.class}
             onchange={(e) => {
@@ -211,7 +212,7 @@
           <label class="flex items-center gap-2">
             <span>{m.tolerance_value()}</span>
             <input
-              class="{fieldClass} w-24 font-mono tabular-nums"
+              class="{inputClass} w-24 font-mono tabular-nums"
               type="text"
               spellcheck="false"
               value={rule.tolerance}
@@ -240,7 +241,7 @@
         <label class="flex items-center gap-2">
           <span class="w-40">{m.tolerance_places()}</span>
           <input
-            class="{fieldClass} w-16 font-mono tabular-nums"
+            class="{inputClass} w-16 font-mono tabular-nums"
             type="text"
             inputmode="numeric"
             bind:value={newPlaces}
@@ -249,7 +250,7 @@
         <label class="flex items-center gap-2">
           <span>{m.tolerance_value()}</span>
           <input
-            class="{fieldClass} w-24 font-mono tabular-nums"
+            class="{inputClass} w-24 font-mono tabular-nums"
             type="text"
             spellcheck="false"
             bind:value={newTolerance}
@@ -265,7 +266,7 @@
         <label class="flex flex-wrap items-center gap-2">
           <span class="w-40">{row.label}</span>
           <input
-            class="{fieldClass} w-16 font-mono tabular-nums"
+            class="{inputClass} w-16 font-mono tabular-nums"
             type="text"
             inputmode="numeric"
             value={String(settings.unit_rounding[row.key])}

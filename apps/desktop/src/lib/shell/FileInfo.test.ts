@@ -7,15 +7,13 @@ import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ProjectBalloonStyle from "$lib/components/ProjectBalloonStyle.svelte";
 import ToleranceSettings from "$lib/components/ToleranceSettings.svelte";
-import type { Command, MeasurementState } from "$lib/ipc/bindings";
+import type { MeasurementState } from "$lib/ipc/bindings";
 import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { MeasurementStore } from "$lib/stores/measurement.svelte";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
-import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
+import { ProjectStore } from "$lib/stores/project.svelte";
+import { ToleranceStore } from "$lib/stores/tolerance.svelte";
 import FileInfo from "./FileInfo.svelte";
-
-const ok = <T>(data: T) => Promise.resolve({ status: "ok" as const, data });
-const unused = () => Promise.reject(new Error("not used"));
+import { fakeProjectApi, fakeToleranceApi, ok } from "$lib/test/fakes";
 
 const MEASURED: MeasurementState = {
   rows: [],
@@ -39,28 +37,15 @@ const MEASURED: MeasurementState = {
 };
 
 function setup() {
-  const sent: Command[] = [];
-  const api: ProjectCommands = {
-    projectState: unused,
-    newProject: () => ok(true),
-    openProject: () => ok(true),
-    saveProject: () => ok(true),
-    saveProjectAs: () => ok(true),
-    confirmClose: () => ok(null),
-    closeProject: () => ok(null),
-    openRecentProject: () => ok(true),
-    execute: (command) => {
-      sent.push(command);
-      return ok({ session: 1, revision: 0, patch: { changes: [] }, status: status() });
-    },
-    undo: unused,
-    redo: unused,
-  };
+  const rust = fakeProjectApi();
+  const api = rust.api;
+  const sent = rust.commands;
+
   const project = new ProjectStore(api);
   const p = emptyProject();
   p.characteristics = [characteristic("c1", 1), { ...characteristic("c2", 2), inspect: false }];
   project.load(loaded(1, p));
-  const toleranceApi: ToleranceApi = {
+  const toleranceApi = fakeToleranceApi({
     toleranceTables: () =>
       ok([
         {
@@ -73,12 +58,9 @@ function setup() {
       ]),
     explainCharacteristic: () => ok(null),
     characteristicHistory: () => ok([]),
-    reinterpretCharacteristics: unused,
     importToleranceTable: () => ok({ result: "cancelled" }),
-    setShorterLeg: unused,
     generalToleranceCandidates: () => ok([]),
-    applyGeneralTolerance: unused,
-  };
+  });
   const tolerance = new ToleranceStore(toleranceApi, project);
   const measurement = new MeasurementStore({
     measurementState: () => ok(MEASURED),

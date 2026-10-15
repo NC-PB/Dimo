@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
-import type { CharId, Command, ProjectPatched, ToleranceTableInfo } from "$lib/ipc/bindings";
+import type { CharId, ToleranceTableInfo } from "$lib/ipc/bindings";
 import type { Tool } from "$lib/stores/balloon-tools.svelte";
-import { emptyProject, loaded, status } from "$lib/stores/fixtures";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { emptyProject, loaded } from "$lib/stores/fixtures";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import { SetupStore } from "$lib/stores/setup.svelte";
-import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
+import { ToleranceStore } from "$lib/stores/tolerance.svelte";
 import SetupPane from "./SetupPane.svelte";
+import { fakeProjectApi, fakeToleranceApi } from "$lib/test/fakes";
 
 const ISO_2768_1: ToleranceTableInfo = {
   table: { id: "iso-2768-1", version: 1 },
@@ -19,45 +20,19 @@ const ISO_2768_1: ToleranceTableInfo = {
 
 /** A project store over a fake Rust that records every command and answers with no change. */
 function stores(options: { created: boolean; candidates?: CharId[] } = { created: true }) {
-  const sent: Command[] = [];
   const asked: string[] = [];
-  const patched = (): ProjectPatched => ({
-    session: 1,
-    revision: 0,
-    patch: { changes: [] },
-    status: status(),
-  });
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      sent.push(command);
-      return Promise.resolve({ status: "ok", data: patched() });
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
+  const rust = fakeProjectApi();
+  const api = rust.api;
+  const sent = rust.commands;
+
   const project = new ProjectStore(api);
-  const unused = () => Promise.reject(new Error("not used"));
-  const toleranceApi: ToleranceApi = {
+  const toleranceApi = fakeToleranceApi({
     toleranceTables: () => Promise.resolve({ status: "ok", data: [ISO_2768_1] }),
-    explainCharacteristic: unused,
-    characteristicHistory: unused,
-    reinterpretCharacteristics: unused,
-    importToleranceTable: unused,
-    setShorterLeg: unused,
     generalToleranceCandidates: () => {
       asked.push("candidates");
       return Promise.resolve({ status: "ok", data: options.candidates ?? [] });
     },
-    applyGeneralTolerance: unused,
-  };
+  });
   const tolerance = new ToleranceStore(toleranceApi, project);
   const tools: Tool[] = [];
   const shown: string[] = [];

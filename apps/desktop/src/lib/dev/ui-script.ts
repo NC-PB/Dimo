@@ -55,8 +55,14 @@
  *   for example error messages, so a test can check their language (MF F3). Collapsed
  *   "Details" are not rendered, so their diagnostic text is not part of it.
  * - `until`: waits until the text of a report contains this text, for example `"\"P5\""`
- *   once the fifth typed value is stored, at most 10 s; then the step fails. Use it instead of
+ *   once the fifth typed value is stored, at most 20 s; then the step fails. Use it instead of
  *   a fixed `wait` where the next step needs a change that Rust has applied.
+ *
+ * Steps wait for what they act on instead of a fixed time (MF F8): `type` for a text field with
+ * the focus, `button`, `select`, `fill`, `check`, `row`, `cell` and `balloon` for their target,
+ * `select` also for the option. A target that does not come fails the step with a reason, so a
+ * slow first run (cold caches right after a build, a loaded machine) waits longer instead of
+ * typing into nothing and failing later with a wrong result.
  */
 
 import { commands, type ExportFormat } from "$lib/ipc/bindings";
@@ -123,12 +129,17 @@ const DRAG_STEPS = 6;
  * mix.
  */
 const SCRIPT_POINTER_ID = 41;
-/** Longest wait for a text field to take the focus before a `type` step. */
-const FIELD_WAIT_MS = 3000;
+/**
+ * Longest wait for a text field to take the focus before a `type` step. The field opens after
+ * Rust added the characteristic; the first command after a build can take seconds (MF F8).
+ */
+const FIELD_WAIT_MS = 15000;
+/** Longest wait for the target of a step (button, field, row, cell, balloon) to appear. */
+const TARGET_WAIT_MS = 10000;
 /** Longest wait for Rust to read a dragged box before the next step. */
-const BOX_WAIT_MS = 10000;
+const BOX_WAIT_MS = 20000;
 /** Longest wait of an `until` step. */
-const UNTIL_WAIT_MS = 10000;
+const UNTIL_WAIT_MS = 20000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -136,6 +147,27 @@ function sleep(ms: number): Promise<void> {
 
 function log(message: string): Promise<void> {
   return commands.devLog(message).catch(() => undefined);
+}
+
+/**
+ * Waits until `find` returns something (polled every 20 ms) and returns it; throws `what` after
+ * `ms`. The step then fails with that reason in the terminal output.
+ */
+async function waitFor<T>(
+  find: () => T | null | undefined,
+  what: string,
+  ms = TARGET_WAIT_MS,
+): Promise<T> {
+  for (let waited = 0; ; waited += 20) {
+    const found = find();
+    if (found !== null && found !== undefined) {
+      return found;
+    }
+    if (waited >= ms) {
+      throw new Error(`${what} not found within ${String(ms)} ms`);
+    }
+    await sleep(20);
+  }
 }
 
 function surface(): HTMLElement | null {
@@ -177,6 +209,7 @@ function pointer(type: string, at: Point, m: Mods, buttons: number): void {
 }
 
 async function press(from: Pair, to: Pair, m: Mods & Pause): Promise<void> {
+  await waitFor(surface, "the drawing surface");
   const a = client(from);
   const b = client(to);
   pointer("pointerdown", a, m, 1);
@@ -191,9 +224,7 @@ async function press(from: Pair, to: Pair, m: Mods & Pause): Promise<void> {
   }
   // A dragged box is read by Rust before the card opens (box select, T2.6); the release starts
   // that read synchronously. Wait for it, so the next step sees the card on a slow machine.
-  for (let waited = 0; boxSelect.busy && waited < BOX_WAIT_MS; waited += 20) {
-    await sleep(20);
-  }
+  await waitFor(() => (boxSelect.busy ? null : true), "the end of the box read", BOX_WAIT_MS);
   await sleep(STEP_PAUSE_MS);
 }
 
@@ -357,17 +388,13 @@ async function run(step: UiStep): Promise<void> {
   } else if ("type" in step) {
     // The field opens after the command came back from Rust; wait for it instead of typing
     // into nothing on a slow machine.
-    for (let waited = 0; waited < FIELD_WAIT_MS; waited += 20) {
-      if (document.activeElement instanceof HTMLInputElement) {
-        break;
-      }
-      await sleep(20);
-    }
-    const field = document.activeElement;
-    if (field instanceof HTMLInputElement) {
-      field.value = step.type;
-      field.dispatchEvent(new Event("input", { bubbles: true }));
-    }
+    const field = await waitFor(
+      () => (document.activeElement instanceof HTMLInputElement ? document.activeElement : null),
+      "a text field with the focus",
+      FIELD_WAIT_MS,
+    );
+    field.value = step.type;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
     await sleep(STEP_PAUSE_MS);
   } else if ("keys" in step) {
     await typeKeys(step.keys);
@@ -375,33 +402,43 @@ async function run(step: UiStep): Promise<void> {
   } else if ("button" in step) {
     // Icon only buttons of the title bar are found by their accessible name (T3.15), the cards
     // of the start screen by the title they are labelled by (T3.17).
-    const buttons = [...document.querySelectorAll<HTMLElement>("button")];
     const labelledBy = (b: HTMLElement): string | undefined => {
       const id = b.getAttribute("aria-labelledby");
       return id === null ? undefined : document.getElementById(id)?.textContent.trim();
     };
-    const button =
-      buttons.find((b) => b.textContent.trim() === step.button) ??
-      buttons.find((b) => b.getAttribute("aria-label") === step.button) ??
-      buttons.find((b) => labelledBy(b) === step.button) ??
-      buttons.find((b) => b.title === step.button);
-    button?.click();
+    const button = await waitFor(() => {
+      const buttons = [...document.querySelectorAll<HTMLElement>("button")];
+      return (
+        buttons.find((b) => b.textContent.trim() === step.button) ??
+        buttons.find((b) => b.getAttribute("aria-label") === step.button) ??
+        buttons.find((b) => labelledBy(b) === step.button) ??
+        buttons.find((b) => b.title === step.button)
+      );
+    }, `button "${step.button}"`);
+    button.click();
     await sleep(STEP_PAUSE_MS);
   } else if ("balloon" in step) {
-    const b = projectStore.project?.balloons.find(
-      (x) => projectStore.characteristicById.get(x.characteristic)?.number === String(step.balloon),
+    const b = await waitFor(
+      () =>
+        projectStore.project?.balloons.find(
+          (x) =>
+            projectStore.characteristicById.get(x.characteristic)?.number === String(step.balloon),
+        ),
+      `balloon ${String(step.balloon)}`,
     );
-    if (b) {
-      const at: Pair = [b.position.x ?? 0, b.position.y ?? 0];
-      await press(at, at, step);
-    }
+    const at: Pair = [b.position.x ?? 0, b.position.y ?? 0];
+    await press(at, at, step);
   } else if ("row" in step) {
     // Rows are in number order: number n is row index n + 1 (the header is row 1).
-    const cell = document.querySelector<HTMLElement>(
-      `[role="row"][aria-rowindex="${String(step.row + 1)}"] [data-col="2"]`,
+    const cell = await waitFor(
+      () =>
+        document.querySelector<HTMLElement>(
+          `[role="row"][aria-rowindex="${String(step.row + 1)}"] [data-col="2"]`,
+        ),
+      `table row ${String(step.row)}`,
     );
-    const box = cell?.getBoundingClientRect();
-    cell?.dispatchEvent(
+    const box = cell.getBoundingClientRect();
+    cell.dispatchEvent(
       new PointerEvent("pointerdown", {
         bubbles: true,
         cancelable: true,
@@ -410,8 +447,8 @@ async function run(step: UiStep): Promise<void> {
         isPrimary: true,
         button: 0,
         buttons: 1,
-        clientX: (box?.left ?? 0) + 4,
-        clientY: (box?.top ?? 0) + 4,
+        clientX: box.left + 4,
+        clientY: box.top + 4,
         ...modifiers(step),
       }),
     );
@@ -421,16 +458,24 @@ async function run(step: UiStep): Promise<void> {
     await sleep(STEP_PAUSE_MS);
   } else if ("cell" in step) {
     const [row, col] = step.cell;
-    const grid = [...document.querySelectorAll<HTMLElement>('[role="grid"]')].find(
-      (g) => g.offsetParent !== null && g.querySelector("[data-verdict]") !== null,
+    const grid = await waitFor(
+      () =>
+        [...document.querySelectorAll<HTMLElement>('[role="grid"]')].find(
+          (g) => g.offsetParent !== null && g.querySelector("[data-verdict]") !== null,
+        ),
+      "the measurement grid",
     );
-    const cell = grid?.querySelector<HTMLElement>(
-      `[data-row="${String(row - 1)}"] [data-col="${String(col - 1)}"]`,
+    const cell = await waitFor(
+      () =>
+        grid.querySelector<HTMLElement>(
+          `[data-row="${String(row - 1)}"] [data-col="${String(col - 1)}"]`,
+        ),
+      `grid cell ${String(row)}, ${String(col)}`,
     );
-    cell?.dispatchEvent(
+    cell.dispatchEvent(
       new PointerEvent("pointerdown", { bubbles: true, cancelable: true, button: 0, buttons: 1 }),
     );
-    grid?.focus({ preventScroll: true });
+    grid.focus({ preventScroll: true });
     await sleep(STEP_PAUSE_MS);
   } else if ("paste" in step) {
     const target = document.activeElement ?? document.body;
@@ -466,37 +511,43 @@ async function run(step: UiStep): Promise<void> {
     }
     await sleep(STEP_PAUSE_MS);
   } else if ("select" in step) {
-    const field =
-      labelledField<HTMLSelectElement>(step.select[0], "select") ??
-      [...document.querySelectorAll("select")].find((f) =>
-        (f.getAttribute("aria-label") ?? "").startsWith(step.select[0]),
-      );
-    if (field) {
-      field.value = step.select[1];
-      field.dispatchEvent(new Event("change", { bubbles: true }));
-    }
+    // The options may come from Rust after the field (the tolerance tables): wait for both.
+    const [label, value] = step.select;
+    const field = await waitFor(() => {
+      const select =
+        labelledField<HTMLSelectElement>(label, "select") ??
+        [...document.querySelectorAll("select")].find((f) =>
+          (f.getAttribute("aria-label") ?? "").startsWith(label),
+        );
+      return select && [...select.options].some((o) => o.value === value) ? select : null;
+    }, `choice "${label}" with option "${value}"`);
+    field.value = value;
+    field.dispatchEvent(new Event("change", { bubbles: true }));
     await sleep(STEP_PAUSE_MS);
   } else if ("reveal" in step) {
     labelled(step.reveal)?.scrollIntoView({ block: "center" });
     await sleep(STEP_PAUSE_MS);
   } else if ("fill" in step) {
-    const field = labelledField<HTMLInputElement | HTMLTextAreaElement>(
-      step.fill[0],
-      "input[type=text], input[type=number], input[type=date], textarea",
+    const field = await waitFor(
+      () =>
+        labelledField<HTMLInputElement | HTMLTextAreaElement>(
+          step.fill[0],
+          "input[type=text], input[type=number], input[type=date], textarea",
+        ),
+      `field "${step.fill[0]}"`,
     );
-    if (field) {
-      field.focus({ preventScroll: true });
-      field.value = step.fill[1];
-      field.dispatchEvent(new Event("input", { bubbles: true }));
-      field.dispatchEvent(new Event("change", { bubbles: true }));
-    }
+    field.focus({ preventScroll: true });
+    field.value = step.fill[1];
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    field.dispatchEvent(new Event("change", { bubbles: true }));
     await sleep(STEP_PAUSE_MS);
   } else if ("check" in step) {
-    const box = labelledField<HTMLInputElement>(
-      step.check[0],
-      "input[type=checkbox], input[type=radio]",
+    const box = await waitFor(
+      () =>
+        labelledField<HTMLInputElement>(step.check[0], "input[type=checkbox], input[type=radio]"),
+      `check box "${step.check[0]}"`,
     );
-    if (box && box.checked !== step.check[1]) {
+    if (box.checked !== step.check[1]) {
       box.click();
     }
     await sleep(STEP_PAUSE_MS);

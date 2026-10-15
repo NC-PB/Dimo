@@ -7,6 +7,10 @@ import { defineConfig } from "vitest/config";
 // DIMO_E2E=1 (scripts/e2e-smoke.sh): no file watching and no hot reload. A reload ends a running
 // UI script, which plays once per process, so a check or test run that recompiles the messages
 // in the same checkout used to stall the smoke test (T3.20).
+// It also bundles the dependencies anew from a full scan at every start (MF F8). With a cache
+// from older code, Vite found new imports (icons) only when the app loaded them, bundled again
+// and reloaded the page: "optimized dependencies changed. reloading" in the first smoke run
+// after a change, later runs passed.
 const e2e = process.env["DIMO_E2E"] === "1";
 
 export default defineConfig(({ mode }) => ({
@@ -27,6 +31,7 @@ export default defineConfig(({ mode }) => ({
     ...(mode === "test" ? { conditions: ["browser"] } : {}),
   },
   clearScreen: false,
+  optimizeDeps: { force: e2e },
   server: {
     port: 1420,
     strictPort: true,

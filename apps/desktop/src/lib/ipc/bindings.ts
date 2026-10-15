@@ -168,6 +168,12 @@ export const commands = {
 	 */
 	setShorterLeg: (id: CharId, leg: string | null) => typedError<LegSet, CommandError>(__TAURI_INVOKE("set_shorter_leg", { id, leg })),
 	/**
+	 *  The unit a shorter leg typed for characteristic `id` is read in (T2.9a, D-20): the unit of
+	 *  the sheet of its first balloon, else of its first source region, mm without either. The
+	 *  detail panel labels the leg field with it (rule 2, MF F8).
+	 */
+	shorterLegUnit: (id: CharId) => typedError<Unit, CommandError>(__TAURI_INVOKE("shorter_leg_unit", { id })),
+	/**
 	 *  Lets the user pick a custom tolerance table file and imports it (FR-TOL-07). Rust reads and
 	 *  checks the file; a refused file is reported with its line where known.
 	 */
@@ -184,6 +190,11 @@ export const commands = {
 	 *  them with a hint. Computed from the audit log in Rust (rule 2).
 	 */
 	changedSinceIssuedReport: () => typedError<CharId[], CommandError>(__TAURI_INVOKE("changed_since_issued_report")),
+	/**
+	 *  The results that deleting the characteristics `ids` would remove (M3 decision 16): the
+	 *  frontend asks before such a deletion and shows the count (rule 2, MF F8).
+	 */
+	deleteCheck: (ids: CharId[]) => typedError<DeleteCheck, CommandError>(__TAURI_INVOKE("delete_check", { ids })),
 	/**  The settings of the user and the operating system user name. */
 	appSettings: () => __TAURI_INVOKE<SettingsView>("app_settings"),
 	/**
@@ -220,6 +231,8 @@ export const events = {
 
 /* Constants */
 export const BALLOON_METRICS = {"box_padding_share":0.25,"circle_text_share":0.78,"digit_em":0.6,"flag_min_width_share":1.5,"flag_point_share":0.5,"font_share":0.5,"narrow_em":0.3,"units_per_mm":2.834645669291339} as const;
+
+export const MAX_BLANK_COLUMNS = 10 as const;
 
 export const MAX_TILE_ZOOM = 5 as const;
 
@@ -1096,6 +1109,17 @@ export type DecimalPlaceRule = {
 	places: number,
 	/**  Symmetric tolerance, positive. */
 	tolerance: string,
+};
+
+/**
+ *  The answer of [`Project::delete_check`]: the results that go with deleted characteristics.
+ *  Deleting characteristics with results asks the user first (M3 decision 16, FR-MEA-01).
+ */
+export type DeleteCheck = {
+	/**  Number of results of the characteristics. */
+	results: number,
+	/**  Whether the deletion needs the user's confirmation. */
+	needs_confirmation: boolean,
 };
 
 /**

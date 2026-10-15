@@ -11,6 +11,7 @@ import type {
   BalloonStyleOverride,
   CharId,
   Command,
+  DeleteCheck,
   FieldValue,
   LegInput,
   OrientedBox,
@@ -18,6 +19,8 @@ import type {
   SheetId,
 } from "$lib/ipc/bindings";
 import { commands } from "$lib/ipc/bindings";
+import type { Result } from "$lib/ipc/result";
+import { asCommandError } from "$lib/errors";
 import { frozenSet } from "$lib/sets";
 import { UNITS_PER_MM, groupMoves, type Placement } from "$lib/viewport/balloons";
 import { screenToSheet, type Rect, type ViewTransform } from "$lib/viewport/view-math";
@@ -73,6 +76,14 @@ export function typesCharacter(event: TypedKey): boolean {
   return [...event.key].length === 1 && !event.ctrlKey && !event.metaKey;
 }
 
+/**
+ * Rust's check before characteristics are deleted (`delete_check`, M3 decision 16): how many
+ * results go with them and whether to ask. The generated command in the app, a fake in tests.
+ */
+export interface DeleteCheckApi {
+  deleteCheck(ids: CharId[]): Promise<Result<DeleteCheck>>;
+}
+
 /** Who takes over keys typed ahead: the pending placement, the editor of a characteristic, the card. */
 type AheadTarget = { kind: "pending" } | { kind: "editor"; id: CharId } | { kind: "card" };
 
@@ -109,6 +120,7 @@ export class BalloonToolsStore {
   readonly #sheet: () => SheetId | undefined;
   readonly #boxSelect: BoxSelectStore | null;
   readonly #recognition: Pick<RecognitionCommands, "readCalloutText"> | null;
+  readonly #deletion: DeleteCheckApi;
   /** Keys typed while a placement is pending, until the editor or card takes them. */
   #ahead: { typed: TypedAhead; target: AheadTarget } | null = null;
 
@@ -118,6 +130,7 @@ export class BalloonToolsStore {
    * @param sheet ID of the sheet shown in the viewport
    * @param box box select of the place tool (T2.6); without it a dragged box places a balloon
    * @param recognition reads typed values (M2 decision 5); without it they are text only
+   * @param deletion asks Rust whether a deletion takes results with it
    */
   constructor(
     project: ProjectStore,
@@ -125,12 +138,14 @@ export class BalloonToolsStore {
     sheet: () => SheetId | undefined,
     box: BoxSelectStore | null = null,
     recognition: Pick<RecognitionCommands, "readCalloutText"> | null = null,
+    deletion: DeleteCheckApi = commands,
   ) {
     this.#project = project;
     this.#selection = chosen;
     this.#sheet = sheet;
     this.#boxSelect = box;
     this.#recognition = recognition;
+    this.#deletion = deletion;
   }
 
   /** Balloons on the sheet in the viewport, in drawing order. */
@@ -361,19 +376,30 @@ export class BalloonToolsStore {
   }
 
   /**
-   * Deletes the selected characteristics with their balloons (FR-BAL-12). When any of them has
-   * results, the deletion waits in {@link pendingDelete} until {@link confirmDelete} (M3
-   * decision 16); the results go with the characteristics and undo brings them back.
+   * Deletes the selected characteristics with their balloons (FR-BAL-12). When Rust says the
+   * deletion takes results with it, it waits in {@link pendingDelete} until
+   * {@link confirmDelete} (M3 decision 16); the results go with the characteristics and undo
+   * brings them back. The count comes from Rust (rule 2).
    */
   async deleteSelection(): Promise<void> {
     const ids = [...this.#selection.ids];
     if (ids.length === 0) {
       return;
     }
-    const results = this.#project.project?.results ?? [];
-    const count = results.filter((r) => this.#selection.ids.has(r.characteristic)).length;
-    if (count > 0) {
-      this.pendingDelete = { ids, results: count };
+    let check: DeleteCheck;
+    try {
+      const result = await this.#deletion.deleteCheck(ids);
+      if (result.status === "error") {
+        this.#project.error = result.error;
+        return;
+      }
+      check = result.data;
+    } catch (e) {
+      this.#project.error = asCommandError(e);
+      return;
+    }
+    if (check.needs_confirmation) {
+      this.pendingDelete = { ids, results: check.results };
       return;
     }
     await this.#delete(ids);
@@ -457,5 +483,6 @@ export const balloonTools = new BalloonToolsStore(
   selection,
   () => projectStore.sheets[documentStore.sheet]?.id,
   boxSelect,
+  commands,
   commands,
 );

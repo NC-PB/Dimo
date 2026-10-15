@@ -12,9 +12,7 @@ import {
   type Project,
 } from "$lib/ipc/bindings";
 import { asCommandError, projectStore } from "./project.svelte";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The preview command. The generated `commands` in the app, a fake in tests. */
 export interface NumberingApi {

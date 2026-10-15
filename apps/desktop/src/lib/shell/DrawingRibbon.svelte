@@ -13,7 +13,7 @@
   } from "$lib/sheet-properties";
   import { view } from "$lib/stores/view.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS, fieldTitle } from "$lib/ui/fields";
   import GeneralToleranceField from "./GeneralToleranceField.svelte";
   import Ribbon from "./Ribbon.svelte";
 
@@ -53,10 +53,10 @@
   <CommandButton id="rotate_left" size="large" />
   <CommandButton id="rotate_right" size="large" />
   <div class="flex flex-col gap-1">
-    <label class={LABEL_CLASS} title={fieldTitle(m.field_unit_desc(), reason)}>
+    <label class={RIBBON_LABEL_CLASS} title={fieldTitle(m.field_unit_desc(), reason)}>
       {m.sheet_unit()}
       <select
-        class="{FIELD_CLASS} min-w-24"
+        class="{RIBBON_FIELD_CLASS} min-w-24"
         data-field="unit"
         disabled={sheet === undefined}
         value={sheet?.unit ?? ""}
@@ -72,10 +72,10 @@
         {/each}
       </select>
     </label>
-    <label class={LABEL_CLASS} title={fieldTitle(m.field_scale_desc(), reason)}>
+    <label class={RIBBON_LABEL_CLASS} title={fieldTitle(m.field_scale_desc(), reason)}>
       {m.sheet_scale()}
       <select
-        class="{FIELD_CLASS} min-w-24"
+        class="{RIBBON_FIELD_CLASS} min-w-24"
         data-field="scale"
         disabled={sheet === undefined}
         value={sheet ? scaleText(sheet.scale) : ""}

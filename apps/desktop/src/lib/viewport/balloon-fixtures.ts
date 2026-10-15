@@ -4,8 +4,9 @@
  */
 
 import type {
+  CharId,
   Command,
-  CommandError,
+  DeleteCheck,
   Patch,
   ProjectLoaded,
   ProjectPatched,
@@ -21,8 +22,8 @@ import {
 } from "$lib/stores/fixtures";
 import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
+import type { Result } from "$lib/ipc/result";
 
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
 const ok = <T>(data: T): Promise<Result<T>> => Promise.resolve({ status: "ok", data });
 
 /** Records commands and answers each with the patch the test prepared in `reply`. */
@@ -40,6 +41,16 @@ export class FakeCommands implements ProjectCommands {
   openRecentProject = () => ok(true);
   undo = () => ok(this.#patched());
   redo = () => ok(this.#patched());
+  /** Results Rust reports for any deletion (`delete_check`). */
+  deleteResults = 0;
+  checkedDeletes: CharId[][] = [];
+  deleteCheck = (ids: CharId[]) => {
+    this.checkedDeletes.push(ids);
+    return ok<DeleteCheck>({
+      results: this.deleteResults,
+      needs_confirmation: this.deleteResults > 0,
+    });
+  };
   execute = (command: Command) => {
     this.commands.push(command);
     return ok(this.#patched());
@@ -66,6 +77,6 @@ export function twoBalloons() {
   ];
   project.load(loaded(1, p));
   const selection = new SelectionStore();
-  const tools = new BalloonToolsStore(project, selection, () => SHEET_ID);
+  const tools = new BalloonToolsStore(project, selection, () => SHEET_ID, null, null, api);
   return { api, project, selection, tools };
 }

@@ -9,6 +9,7 @@ import {
   disabledReason,
   runCommand,
 } from "./commands.svelte";
+import { m } from "./i18n";
 import { locales, overwriteGetLocale } from "./paraglide/runtime.js";
 import { SHORTCUTS } from "./shortcuts";
 import { balloonTools } from "./stores/balloon-tools.svelte";
@@ -65,17 +66,19 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
     expect(commandKeys("save", true)).toBe("⌘S");
     expect(commandKeys("save", false)).toBe("Ctrl+S");
     expect(commandKeys("renumber", true)).toBe("");
-    expect(commandTooltip("place_tool", false).split("\n")[0]).toBe("Place balloon (B)");
+    expect(commandTooltip("place_tool", false).split("\n")[0]).toBe(
+      `${command("place_tool").label()} (B)`,
+    );
   });
 
   it("keeps commands visible but disabled with a reason without a project", () => {
-    expect(disabledReason("save")).toBe("Open or start a project first.");
-    expect(disabledReason("place_tool")).toBe("Open or start a project first.");
+    expect(disabledReason("save")).toBe(m.reason_no_project());
+    expect(disabledReason("place_tool")).toBe(m.reason_no_project());
     expect(disabledReason("new_project")).toBeNull();
     expect(commandTooltip("save", true).split("\n")).toEqual([
-      "Save (⌘S)",
-      "Saves the project in its file.",
-      "Open or start a project first.",
+      `${command("save").label()} (⌘S)`,
+      command("save").description(),
+      m.reason_no_project(),
     ]);
     expect(runCommand("place_tool")).toBe(false);
     expect(balloonTools.tool).toBe("select");
@@ -84,10 +87,10 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
   it("explains the selection and undo state once a project is open", () => {
     openProject();
     expect(disabledReason("save")).toBeNull();
-    expect(disabledReason("undo")).toBe("Nothing to undo.");
-    expect(disabledReason("delete_selection")).toBe("Select a balloon first.");
-    expect(disabledReason("update_limits")).toBe("Select a balloon first.");
-    expect(disabledReason("move_part_left")).toBe("Click a cell of a part in the grid first.");
+    expect(disabledReason("undo")).toBe(m.reason_nothing_to_undo());
+    expect(disabledReason("delete_selection")).toBe(m.reason_no_selection());
+    expect(disabledReason("update_limits")).toBe(m.reason_no_selection());
+    expect(disabledReason("move_part_left")).toBe(m.reason_no_part());
     selection.select(["a"]);
     expect(disabledReason("delete_selection")).toBeNull();
     expect(commandTooltip("delete_selection", false).split("\n")).toHaveLength(2);
@@ -107,7 +110,7 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
     openProject();
     expect(disabledReason("zoom_in")).toBeNull();
     view.setTab("measure");
-    expect(disabledReason("zoom_in")).toBe("Only while the drawing is shown.");
+    expect(disabledReason("zoom_in")).toBe(m.reason_not_drawing());
   });
 
   it("opens and closes the cheat sheet with help", () => {
@@ -126,7 +129,7 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
   });
 
   it("opens and closes the setup pane with Set up drawing (T3.17)", () => {
-    expect(disabledReason("setup_checklist")).toBe("Open or start a project first.");
+    expect(disabledReason("setup_checklist")).toBe(m.reason_no_project());
     openProject();
     view.setTab("report");
     expect(setupStore.visible).toBe(false);
@@ -139,11 +142,11 @@ describe("command registry (ADR 0007, M3 decisions 26 and 27)", () => {
   });
 
   it("enables Print with a project, shows the Report tab and waits while printing (T3.19)", async () => {
-    expect(disabledReason("print")).toBe("Open or start a project first.");
+    expect(disabledReason("print")).toBe(m.reason_no_project());
     openProject();
     expect(disabledReason("print")).toBeNull();
     reportView.print = { state: "running" };
-    expect(disabledReason("print")).toBe("The report is being opened for printing.");
+    expect(disabledReason("print")).toBe(m.reason_print_running());
     reportView.print = { state: "idle" };
     view.setTab("file");
     expect(runCommand("print")).toBe(true);
