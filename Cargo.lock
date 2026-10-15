@@ -1130,6 +1130,7 @@ dependencies = [
  "chrono",
  "dimo-core",
  "dimo-detect",
+ "dimo-export",
  "dimo-io",
  "dimo-pdf",
  "dimo-report",
@@ -1158,6 +1159,19 @@ dependencies = [
  "dimo-pdf",
  "dimo-tolerance",
  "rust_decimal",
+]
+
+[[package]]
+name = "dimo-export"
+version = "0.0.0"
+dependencies = [
+ "dimo-core",
+ "dimo-io",
+ "dimo-pdf",
+ "dimo-report",
+ "serde",
+ "specta",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1218,6 +1232,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "specta",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
  "tracing",

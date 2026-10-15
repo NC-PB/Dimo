@@ -14,9 +14,10 @@ tauri-build.workspace = true
 [dependencies]
 dimo-core = { workspace = true, features = ["specta"] }
 dimo-detect.workspace = true
+dimo-export = { workspace = true, features = ["specta"] }
 dimo-io.workspace = true
 dimo-pdf.workspace = true
-dimo-report.workspace = true
+dimo-report = { workspace = true, features = ["specta"] }
 dimo-tolerance.workspace = true
 # Today's date in the time zone of the computer, for the report date (T3.9). Already in the
 # lock file through the PDF crates; only the clock feature is added here.

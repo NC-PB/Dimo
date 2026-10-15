@@ -1,0 +1,25 @@
+[package]
+name = "dimo-export"
+description = "Export registry of Dimo: formats, the export plan and one render function for app and CLI."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+# `specta::Type` on the IPC facing types (export formats). Enabled by the desktop shell.
+specta = ["dep:specta"]
+
+[dependencies]
+dimo-core.workspace = true
+dimo-io.workspace = true
+dimo-pdf.workspace = true
+dimo-report.workspace = true
+serde.workspace = true
+specta = { workspace = true, optional = true }
+thiserror.workspace = true
+
+[lints]
+workspace = true

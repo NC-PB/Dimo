@@ -26,6 +26,7 @@
 use std::path::{Path, PathBuf};
 
 use dimo_core::{Command, Environment, Patch, Project, ProjectInfo, ReportInfo, Sha256Hex};
+use dimo_export::{ExportFormat, Source};
 use dimo_io::autosave;
 use dimo_io::lock::{LockOwner, ProjectLock};
 use dimo_io::project::{
@@ -33,6 +34,7 @@ use dimo_io::project::{
     open_drawing,
 };
 use dimo_pdf::tiles::TileService;
+use dimo_report::issue::IssueDefaults;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri_specta::Event;
@@ -183,6 +185,17 @@ pub struct ExportSnapshot {
     pub state: SnapshotState,
 }
 
+impl ExportSnapshot {
+    /// What the export renders from (`dimo_export::render`).
+    pub fn source(&self) -> Source<'_> {
+        Source {
+            project: &self.project,
+            modified: &self.modified,
+            drawing: self.drawing.as_deref(),
+        }
+    }
+}
+
 /// Where in the history of the app session a snapshot was taken.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SnapshotState {
@@ -308,14 +321,14 @@ impl AppSession {
         name.trim().clone_into(&mut self.company_name);
     }
 
-    /// The report info a new project starts with (M3 decision 15): the company name of the app
-    /// settings and the audit user (D-27) as inspector. Part of the initial state, so it is no
-    /// undo step and does not mark the project modified. Opened projects are left alone.
-    fn initial_report_info(&self) -> ReportInfo {
-        ReportInfo {
+    /// What report issuing fills in (M3 decision 15, T3.9): the company name of the app
+    /// settings, the audit user (D-27) as inspector and today's local date. The rules that use
+    /// them are in `dimo_report::issue`.
+    pub fn issue_defaults(&self) -> IssueDefaults {
+        IssueDefaults {
             company_name: self.company_name.clone(),
-            inspected_by: self.env.user_name(),
-            ..ReportInfo::default()
+            inspector: self.env.user_name(),
+            today: self.env.local_date(),
         }
     }
 
@@ -433,52 +446,25 @@ impl AppSession {
         self.env.set_fixed_local_date(date);
     }
 
-    /// `info` with an empty company name taken from the app settings and an empty "inspected
-    /// by" taken from the audit user (D-27) and an empty report date set to today, as an issued
-    /// report export fills them (M3 decisions 15 and 17, T3.9). Fields that are set stay as they
-    /// are.
-    pub fn issued_report_info(&self, info: &ReportInfo) -> ReportInfo {
-        let mut filled = info.clone();
-        if filled.company_name.trim().is_empty() {
-            filled.company_name.clone_from(&self.company_name);
-        }
-        if filled.inspected_by.trim().is_empty() {
-            filled.inspected_by = self.env.user_name();
-        }
-        if filled.report_date.trim().is_empty() {
-            filled.report_date = self.env.local_date();
-        }
-        filled
-    }
-
     /// Records a report written from the snapshot taken at `state` as issued (D-23, M3
-    /// decision 17): locks the numbering if it is not locked yet, stores `info` (the report
-    /// info as printed, see [`Self::issued_report_info`]) and adds the [`dimo_core::IssuedReport`],
-    /// all as one undo step. Returns `None` and changes nothing if the project changed since
-    /// the snapshot, because the file then no longer shows the project.
+    /// decision 17): locks the numbering if it is not locked yet, stores `printed` (the report
+    /// info the file shows, see `dimo_export::plan`) and adds the [`dimo_core::IssuedReport`],
+    /// all as one undo step (`dimo_export::record_command`). Returns `None` and changes nothing
+    /// if the project changed since the snapshot, because the file then no longer shows it.
     pub fn record_issued_report(
         &mut self,
         state: SnapshotState,
-        info: &ReportInfo,
-        report: Command,
+        printed: &ReportInfo,
+        format: ExportFormat,
+        output_sha256: Sha256Hex,
     ) -> Result<Option<ProjectPatched>, CommandError> {
         let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
         if self.session != state.session || open.revision != state.revision {
             return Ok(None);
         }
-        let project = open.project.project();
-        let mut commands = Vec::new();
-        if !project.is_numbering_locked() {
-            commands.push(Command::LockNumbering {
-                reason: dimo_core::LockReason::IssuedReport,
-            });
-        }
-        let values = project.report_info.changes_to(info);
-        if !values.is_empty() {
-            commands.push(Command::UpdateReportInfo { values });
-        }
-        commands.push(report);
-        self.execute(Command::Batch { commands }).map(Some)
+        let command =
+            dimo_export::record_command(open.project.project(), printed, format, output_sha256)?;
+        self.execute(command).map(Some)
     }
 
     fn owner(&mut self) -> LockOwner {
@@ -513,7 +499,8 @@ impl AppSession {
         });
         let options = NewProject {
             info: ProjectInfo::default(),
-            report_info: self.initial_report_info(),
+            // M3 decision 15: part of the initial state, so no undo step and not modified.
+            report_info: dimo_report::issue::initial_report_info(&self.issue_defaults()),
             autosave,
         };
         let created = create_from_drawing_file(path, tiles, options, &mut self.env)?;

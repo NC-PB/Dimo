@@ -20,6 +20,7 @@ dimo-vision = { path = "crates/dimo-vision" }
 dimo-detect = { path = "crates/dimo-detect" }
 dimo-io = { path = "crates/dimo-io" }
 dimo-report = { path = "crates/dimo-report" }
+dimo-export = { path = "crates/dimo-export" }
 
 # External crates, exact versions (AGENTS.md rule 10)
 # Dates for PDF annotations (T1.2). Already in the tree through pdfium-render, whose
