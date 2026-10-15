@@ -31,6 +31,22 @@ export const DEV_TOOLS_ENABLED = import.meta.env.DEV;
  */
 const TABLE_CHECK = DEV_TOOLS_ENABLED && import.meta.env.VITE_DIMO_DEV_TABLE_CHECK === "1";
 
+/** Longest wait for the first tiles of an opened drawing before a UI script starts. */
+const FIRST_TILES_WAIT_MS = 20000;
+
+/**
+ * Resolves once a tile of the drawing is shown, or after `ms`. Right after a build the first
+ * render is slow (PDFium start, empty tile cache, a loaded machine), MF F8.
+ */
+async function firstTiles(ms: number): Promise<void> {
+  for (let waited = 0; waited < ms; waited += 50) {
+    if (document.querySelector("img.tile.loaded") !== null) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
 /** Balloon count of NFR-PERF-02. */
 export const DEFAULT_BALLOON_COUNT = 500;
 
@@ -121,6 +137,9 @@ export class DevToolsStore {
       await commands
         .devLog(`script queued, page ${document.visibilityState}`)
         .catch(() => undefined);
+      if (opened) {
+        await firstTiles(FIRST_TILES_WAIT_MS);
+      }
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await runUiScript(startup.ui_script);
     }

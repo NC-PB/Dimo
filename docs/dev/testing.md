@@ -13,7 +13,8 @@
 | Project file migrations | one fixture per schema version in folder mode, never changed after release; new one with `DIMO_WRITE_FIXTURE=1 cargo test -p dimo-io --test migrations` | `dimo-io/tests/fixtures/v<n>/` |
 | Box select (M2 exit criterion) | box select with the tolerance engine on every truth region of the corpus and of synth seeds 1 to 40, per callout category; fails below 99 percent of the common callouts, limits required (angles under a general tolerance read with the shorter leg of the truth, as typed on the card). Report: `cargo run -p dimo-cli -- eval box-select` | `dimo-detect/src/evaluation.rs`, `dimo-detect/tests/box_select_corpus.rs`, `dimo-cli/tests/box_select_evaluation.rs`, run by `check.sh` in CI |
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
-| Frontend units | Vitest | `apps/desktop/src/**/*.test.ts` |
+| Frontend units | Vitest; fakes of the Rust commands from `src/lib/test/fakes.ts` | `apps/desktop/src/**/*.test.ts` |
+| Release bundle | `scripts/check-release-bundle.mjs` builds the production frontend and fails if it holds code of `src/lib/dev` (run by `check.sh`) | `scripts/` |
 | End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` to `m3` |
 | User guide shortcut reference | vitest compares the generated tables in `docs/user/<lang>/shortcuts.md` with `shortcuts.ts` and the message files; a mismatch prints the tables to paste | `apps/desktop/src/lib/shortcuts-docs.test.ts` |
 | Timing bounds | `#[ignore]` tests named `perf_*` (measurement state 20 ms, box select 50 ms, XLSX report 5 s), never in the default run; `scripts/perf-tests.sh` runs them one at a time, CI job `perf-tests` on macOS (informative, shared runners vary) | `src-tauri/tests/measurement.rs`, `src-tauri/tests/recognition.rs`, `dimo-report/tests/xlsx.rs` |
@@ -32,6 +33,11 @@
 - Tests must not need the network. PDFium is loaded from `vendor/pdfium/`; tests that need it
   are skipped with a clear message if it is missing, and CI always provides it. With `CI=true` or
   `DIMO_REQUIRE_PDFIUM=1` a missing library fails these tests instead of skipping them.
+- Frontend tests fake Rust with `src/lib/test/fakes.ts` (project, tolerance, numbering and
+  measurement commands, a layout stub for happy-dom) and take the result type from
+  `$lib/ipc/result`. They find elements by `data-*` attributes (`data-command`, `data-tab`,
+  `data-answer`, `data-testid`) and compare texts with the message functions (`m.save()`), not
+  with English words, so a reworded label does not break them.
 - Corpus based tests reference drawings by file name and verify the SHA-256 from `PROVENANCE.md`.
 - Ground truth files `corpus/truth/*.truth.json` are validated against `docs/schema/truth.schema.json`
   and checked for consistency (`dimo_core::truth`). Expected limits come from the drawing and the
@@ -100,6 +106,22 @@ drawing gestures ignore the real mouse, and the script prints how many real poin
 9. Start screen and setup pane (`start-setup.json`): no project at startup, the start screen card
    creates one, the setup pane sets general tolerance, unit, scale, part number and customer, and
    Start ballooning switches on Place balloon; checked from the saved project.
+
+10. Error messages in German (`errors.json`): a broken company table and a text file as new
+    drawing are refused with German texts.
+
+The last check makes sure the dev server never reloaded the page during the run.
+
+The first run after a build used to fail now and then while later runs passed (MF F8). Two
+causes, both fixed: Vite reused a dependency cache from older code, found new imports only when
+the app loaded them and reloaded the page (`optimized dependencies changed. reloading` in
+`vite.log`), which ends a running UI script; the dev server of the smoke test now bundles the
+dependencies from a full scan at every start (`optimizeDeps.force` with `DIMO_E2E=1`). And the UI
+script gave a value field three seconds to open and then typed into nothing; the first commands
+after a build (PDFium start, empty tile cache) and a machine busy with parallel builds take
+longer. Steps now wait for their target (field, button, option, row, cell) for up to 10 to 20
+seconds and fail with the reason when it does not come, and a script starts only once the first
+tiles of the drawing are shown.
 
 Work happens in a temporary folder below the target directory with its own `DIMO_DEV_HOME`, so
 your settings and your own unsaved work are untouched. The language is forced to English because
