@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { CommandError, DocumentInfo, ReportChecks, ReportView } from "$lib/ipc/bindings";
+import type { DocumentInfo, ReportChecks, ReportView } from "$lib/ipc/bindings";
 import { previewTiles } from "./preview";
 import { ReportViewStore, type ReportViewApi } from "./report-view.svelte";
+import type { Result } from "$lib/ipc/result";
 
 const VIEW: ReportView = { kind: "inspection_report", language: "en", blank_columns: 3 };
 
@@ -19,8 +20,6 @@ const CHECKS: ReportChecks = {
 function doc(name: string): DocumentInfo {
   return { doc: name, name: `${name}.pdf`, sheets: [{ width: 842, height: 595 }] };
 }
-
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
 
 function fake() {
   const asked: ReportView[] = [];

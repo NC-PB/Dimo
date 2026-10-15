@@ -23,9 +23,7 @@ import {
 } from "$lib/ipc/bindings";
 import { asCommandError } from "$lib/errors";
 import { settingsStore } from "./settings.svelte";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The drawing and list exports, one card each. */
 export const EXPORT_FORMATS: readonly ExportFormat[] = ["ballooned_pdf", "csv", "xlsx"];

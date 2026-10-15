@@ -33,9 +33,7 @@ import {
   type ToleranceTableInfo,
 } from "$lib/ipc/bindings";
 import { asCommandError, projectStore } from "./project.svelte";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The tolerance commands. The generated `commands` in the app, fakes in tests. */
 export interface ToleranceApi {

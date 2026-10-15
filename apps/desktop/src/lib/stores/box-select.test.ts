@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import ProposalCard from "$lib/components/ProposalCard.svelte";
 import type {
   BalloonPlacement,
-  CommandError,
   Language,
   LegInput,
   OrientedBox,
@@ -20,8 +19,8 @@ import { BoxSelectStore, withReading, type RecognitionCommands } from "./box-sel
 import { SHEET_ID, characteristic, emptyProject, loaded } from "./fixtures";
 import { ProjectStore } from "./project.svelte";
 import { SelectionStore } from "./selection.svelte";
+import type { Result } from "$lib/ipc/result";
 
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
 const ok = <T>(data: T): Promise<Result<T>> => Promise.resolve({ status: "ok", data });
 
 const RECT = { x: 550, y: 145, width: 90, height: 28 };

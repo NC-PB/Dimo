@@ -19,9 +19,7 @@ import { asCommandError } from "$lib/errors";
 import { documentStore } from "./document.svelte";
 import { PatchMismatch, applyChanges, balloonsBySheet, characteristicsById } from "./patch";
 import { unsavedPrompt } from "./prompt.svelte";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 /** The project commands the store calls. The generated `commands` in the app, fakes in tests. */
 export interface ProjectCommands {

@@ -13,9 +13,7 @@ import {
 import { asCommandError } from "$lib/errors";
 import { getLocale, isLocale, localStorageKey, setLocale } from "$lib/paraglide/runtime.js";
 import { themeController } from "$lib/theme/theme";
-
-/** Result shape of the generated command functions. */
-type Result<T> = { status: "ok"; data: T } | { status: "error"; error: CommandError };
+import type { Result } from "$lib/ipc/result";
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: "system",
