@@ -157,7 +157,7 @@ Acceptance:
   accepts only the GitHub release page prefix (used by the update check in R.9).
 
 Acceptance:
-- [ ] A forced journal write failure appears in the log file
+- [x] A forced journal write failure appears in the log file
 - [ ] `export.rs` and `session.rs` below about 500 lines each
 
 ### F8 Frontend foundation
