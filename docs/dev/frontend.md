@@ -11,7 +11,12 @@ Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no S
 - Interactive gestures (drag, box select) update local view state optimistically and send one
   command on release.
 - Viewport: tiles via `dimo://tile/...`, one SVG overlay in sheet space with a single transform.
-  Do not render per element transforms for pan and zoom.
+  Do not render per element transforms for pan and zoom. `SheetCanvas.svelte` shows one page:
+  it takes a `ViewportStore` and a tile source (`{ doc, page, size }`), draws the tiles, wheel
+  and pinch zoom to the cursor, fits a page shown for the first time (unless `onFirstShow` sets
+  the view) and renders the `overlay` snippet with the view transform of the tiles.
+  `Viewport.svelte` is a canvas plus the balloon layer, the sheet overlay and the gestures; the
+  image editor (R.20) gets its own canvas and store with a handle overlay.
 - Tables: TanStack Table plus TanStack Virtual. Never render all rows.
 - UI primitives: Bits UI. Styling: Tailwind 4 with design tokens in one theme file, light and dark (D-51).
 - Colors (M3 decision 24): `bg`, `surface`, `sunken`, `hover`, `border`, `border-strong`, `text`,
@@ -26,6 +31,24 @@ Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no S
 - Text: every user visible string goes through Paraglide messages, English and German (FR-SET-04).
 - Shortcuts: keys defined in one file (`shortcuts.ts`), shown in the `?` cheat sheet (D-52); commands
   name their shortcut from the registry (`commands.svelte.ts`). Every action reachable by keyboard.
+  Each shortcut has a scope: `app` (anywhere), `drawing`, `table`, `grid`, and `imageEditor` and
+  `review` for later areas. An area registers its scope with `keyboard.register` while it is
+  shown (`drawing`) or for its element (`table` and `grid` count only while they have the focus
+  and handle their keys themselves; the window then runs only `app` keys). `focusOnly` keys
+  (arrows, Enter, Delete) need their area or nothing focused. `stores/keyboard.svelte.ts`
+  decides which shortcut a key triggers, `Shortcuts.svelte` runs it.
+- Dialogs: every modal dialog is an `AppDialog` (title, description, content, close button and
+  `actions`; `alert` for a question that needs an answer). While any is open it counts itself in
+  `keyboard.modals` and no window shortcut acts. A new dialog never adds its own key checks.
+- Fields and buttons: classes from `lib/ui/fields.ts` (`fieldClass("w-full")`,
+  `buttonClass.primary`). A field whose change goes to Rust uses `commitField(input, stored,
+  send)`: it sends only a changed value and then shows what the project holds (Rust's trimmed
+  text, or the old value when Rust refused).
+- Development tools (`lib/dev/`: UI script, dev panel, dummy balloons, frame time checks) are
+  loaded only as `if (import.meta.env.DEV) await import(...)` or
+  `import.meta.env.DEV ? import(...) : null`, never with a static import from app code, so
+  production bundles hold none of them. `scripts/check-release-bundle.mjs` (run by `check.sh`)
+  fails if they do.
 - Pass/fail and status always use shape plus color, never color alone (NFR-UX-05, D-24).
 - Accessibility: semantic elements, labels on controls, focus visible.
 
@@ -68,7 +91,8 @@ the table only makes the row active.
 The viewport follows a selection of exactly one characteristic (`viewport/reveal.ts`): it shows
 the balloon's sheet and centers the balloon when it is out of view or on another sheet. Group
 selections never move the view. While the table has focus, single key window shortcuts (R, V,
-B, S, zoom, PageUp) are ignored (`worksInTable` in `shortcuts.ts`); Cmd/Ctrl shortcuts still work.
+B, S, zoom, PageUp) are ignored (the table registers the `table` scope, see Rules); Cmd/Ctrl
+shortcuts still work.
 
 The table (`src/lib/table/`) uses TanStack Table for the column and row model and
 `@tanstack/virtual-core` (wrapped in `virtual.svelte.ts`) with one fixed row height. Cells send
@@ -98,8 +122,8 @@ The shell follows [ADR 0007](../adr/0007-office-style-shell.md) (`src/lib/shell/
 report, view) and the work area it shows (`current`: drawing, review, measure, export, file);
 Home and Drawing both show the drawing, the View tab keeps the area that was shown. The
 drawing stays mounted (hidden) while another area is shown, so tiles, zoom and table scroll are
-kept; drawing shortcuts act only while it is shown (`anyView` in `shortcuts.ts` marks the
-others). Hiding the table or the side panel (View tab) hides them with CSS, they stay mounted.
+kept; drawing shortcuts act only while it is shown (the viewport registers the `drawing`
+scope with `shown`, `app` shortcuts act everywhere). Hiding the table or the side panel (View tab) hides them with CSS, they stay mounted.
 
 Commands (T3.15, decision 27): `src/lib/commands.svelte.ts` defines every ribbon and title bar
 command once: label, icon (`src/lib/icons.ts`, Lucide, one import per icon), the shortcut action
