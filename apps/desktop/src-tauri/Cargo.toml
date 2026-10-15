@@ -36,6 +36,10 @@ tracing.workspace = true
 # core gets them through `Environment` (rule 11).
 uuid = { workspace = true, features = ["v4"] }
 
+# The only `unsafe` in the project: ShellExecuteW in src/opener/windows.rs (owner decision 2026-10-15).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+
 [dev-dependencies]
 # MF F2: the CLI export renders byte identical to the app (tests/cli_export.rs).
 dimo-cli = { path = "../../../crates/dimo-cli" }
