@@ -119,6 +119,7 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
   it against `collect_commands!` in `lib.rs` (a conflict in that macro is also keep both).
 - **Scratchpad per agent.** The session scratchpad is shared by all agents; give each agent its own
   subfolder for logs (an F5 `check.log` was overwritten by another agent).
+- **Check CI after every push.** Windows CI was red for two days unnoticed while local checks (macOS) passed. `cargo test` stops at the first failing test binary, so one Windows failure can hide others; use `gh run list` / `gh run view --log-failed` after each push.
 - **Intermittent:** the three `dimo-io` export snapshot tests failed once in a full local check and
   never again in 8 runs. Watch CI.
 
