@@ -7,6 +7,7 @@
    * Edits go through undoable commands (`update_project_info`,
    * `update_report_info`, `update_revision_label`); counts come from Rust (`measurement_state`).
    */
+  import { fieldClass } from "$lib/ui/fields";
   import type { ProjectInfo, ReportInfo, ReportKind, TableClass } from "$lib/ipc/bindings";
   import { m } from "$lib/i18n";
   import {
@@ -115,8 +116,7 @@
     "grid grid-cols-[minmax(7rem,10rem)_minmax(0,1fr)] items-center gap-x-3 gap-y-2";
   const narrowGridClass =
     "grid grid-cols-[minmax(6rem,8rem)_minmax(0,1fr)] items-center gap-x-3 gap-y-2";
-  const fieldClass =
-    "min-h-8 w-full rounded-md border border-border-strong bg-surface px-2 py-1 text-text";
+  const inputClass = fieldClass("w-full");
   const linkClass = "text-sm font-medium text-accent-strong underline-offset-2 hover:underline";
   const statClass =
     "flex items-center justify-between gap-3 border-b border-border py-1.5 last:border-b-0";
@@ -144,7 +144,7 @@
               <input
                 id="{uid}-{field}"
                 type="text"
-                class={fieldClass}
+                class={inputClass}
                 autocomplete="off"
                 value={project.info[field]}
                 onchange={(e) => void editProjectInfo(projectStore, e.currentTarget, field)}
@@ -212,7 +212,7 @@
             <input
               id="{uid}-revision"
               type="text"
-              class={fieldClass}
+              class={inputClass}
               autocomplete="off"
               value={revision.label}
               onchange={(e) => void editRevisionLabel(projectStore, e.currentTarget, revision.id)}
@@ -295,7 +295,7 @@
               <input
                 id="{uid}-{field}"
                 type="text"
-                class={fieldClass}
+                class={inputClass}
                 autocomplete="off"
                 value={project.report_info[field]}
                 onchange={(e) => void editReportInfo(projectStore, e.currentTarget, field)}
@@ -306,7 +306,7 @@
               <input
                 id="{uid}-report-date"
                 type="date"
-                class="{fieldClass} min-w-36 flex-1"
+                class="{inputClass} min-w-36 flex-1"
                 value={project.report_info.report_date}
                 onchange={(e) => void editReportInfo(projectStore, e.currentTarget, "report_date")}
               />
@@ -326,7 +326,7 @@
             >
             <textarea
               id="{uid}-remarks"
-              class={fieldClass}
+              class={inputClass}
               rows="3"
               value={project.report_info.remarks}
               onchange={(e) => void editReportInfo(projectStore, e.currentTarget, "remarks")}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fieldClass } from "$lib/ui/fields";
   import { m } from "$lib/i18n";
   import {
     commands,
@@ -196,8 +197,7 @@
 
   const buttonClass =
     "min-h-8 rounded-md border border-border-strong px-2.5 text-[13px] text-text hover:bg-hover aria-pressed:border-accent aria-pressed:bg-accent-soft";
-  const fieldClass =
-    "min-h-8 min-w-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-[13px] text-text";
+  const inputClass = fieldClass("min-w-0 text-[13px]");
 </script>
 
 {#if part === "zones"}
@@ -212,7 +212,7 @@
             min="1"
             max={MAX_DIVISIONS}
             step="1"
-            class={fieldClass}
+            class={inputClass}
             value={grid.column_labels.length}
             onchange={(e) => {
               onCount(e, "columns");
@@ -226,7 +226,7 @@
             min="1"
             max={MAX_DIVISIONS}
             step="1"
-            class={fieldClass}
+            class={inputClass}
             value={grid.row_labels.length}
             onchange={(e) => {
               onCount(e, "rows");
@@ -238,7 +238,7 @@
         <label class="flex flex-col gap-0.5 text-xs text-text-muted">
           {axis === "columns" ? m.zones_column_scheme() : m.zones_row_scheme()}
           <select
-            class={fieldClass}
+            class={inputClass}
             value={schemeValue(axis)}
             onchange={(e) => {
               onScheme(e, axis);
@@ -256,7 +256,7 @@
           {axis === "columns" ? m.zones_column_labels() : m.zones_row_labels()}
           <input
             type="text"
-            class={fieldClass}
+            class={inputClass}
             value={labelsText(labelsOf(grid, axis))}
             onchange={(e) => {
               onLabels(e, axis);
@@ -310,7 +310,7 @@
           <li class="flex items-center gap-1.5">
             <input
               type="text"
-              class="{fieldClass} min-w-0 flex-1"
+              class="{inputClass} min-w-0 flex-1"
               aria-label={m.views_label({ number: String(index + 1) })}
               placeholder={m.views_unnamed({ number: String(index + 1) })}
               value={view.label}

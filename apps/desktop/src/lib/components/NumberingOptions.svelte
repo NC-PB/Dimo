@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fieldClass } from "$lib/ui/fields";
   import { m } from "$lib/i18n";
   import type { InsertPolicy, MultiInstance } from "$lib/ipc/bindings";
   import {
@@ -39,8 +40,7 @@
   }
 
   const labelClass = "flex flex-col gap-1 text-sm text-text-muted";
-  const fieldClass =
-    "min-h-8 rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-text";
+  const inputClass = fieldClass("text-sm");
 </script>
 
 {#if settings}
@@ -51,7 +51,7 @@
     <label class={labelClass}>
       {m.numbering_multi_instance()}
       <select
-        class={fieldClass}
+        class={inputClass}
         value={settings.multi_instance}
         onchange={(e) => {
           void numberingStore.setSettings({
@@ -67,7 +67,7 @@
     <label class={labelClass}>
       {m.numbering_insert_policy()}
       <select
-        class={fieldClass}
+        class={inputClass}
         value={settings.insert_when_locked}
         onchange={(e) => {
           void numberingStore.setSettings({

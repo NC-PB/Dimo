@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fieldClass } from "$lib/ui/fields";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import JobStatus from "$lib/components/JobStatus.svelte";
   import { LOCALE_NAMES, m } from "$lib/i18n";
@@ -65,8 +66,7 @@
   }
 
   const boxClass = "flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm";
-  const fieldClass =
-    "min-h-8 rounded-md border border-border-strong bg-surface px-2 py-1 text-text";
+  const inputClass = fieldClass();
   const buttonClass =
     "min-h-10 shrink-0 rounded-lg bg-accent-strong px-4 text-accent-ink hover:opacity-90 disabled:opacity-40";
   const linkClass = "text-sm font-medium text-accent-strong underline-offset-2 hover:underline";
@@ -111,7 +111,7 @@
       <label class="flex flex-wrap items-center gap-2">
         <span class="w-48">{m.export_language()}</span>
         <select
-          class={fieldClass}
+          class={inputClass}
           aria-describedby="export-language-hint"
           value={prefs.language}
           onchange={(e) => {

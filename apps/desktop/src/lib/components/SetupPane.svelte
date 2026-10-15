@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fieldClass } from "$lib/ui/fields";
   import { m } from "$lib/i18n";
   import type { Scale, TableClass, ToleranceTableInfo, Unit } from "$lib/ipc/bindings";
   import { SCALE_PRESETS, SHEET_UNITS, presetFor, scaleText } from "$lib/sheet-properties";
@@ -131,8 +132,7 @@
     }
   }
 
-  const fieldClass =
-    "min-h-8 rounded-md border border-border-strong bg-surface px-2 text-[13px] text-text";
+  const inputClass = fieldClass("text-[13px]");
   const stepNumber =
     "flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-strong font-heading text-xs font-bold text-accent-ink";
 </script>
@@ -197,7 +197,7 @@
           <label class="flex flex-col gap-0.5 text-xs text-text-muted">
             {m.sheet_unit()}
             <select
-              class={fieldClass}
+              class={inputClass}
               value={unit}
               onchange={(e) => {
                 unit = SHEET_UNITS.find((u) => u === e.currentTarget.value) ?? unit;
@@ -211,7 +211,7 @@
           <label class="flex flex-col gap-0.5 text-xs text-text-muted">
             {m.sheet_scale()}
             <select
-              class={fieldClass}
+              class={inputClass}
               value={scale}
               onchange={(e) => {
                 scale = e.currentTarget.value;
@@ -241,11 +241,11 @@
         <div class="flex flex-wrap gap-2">
           <label class="flex min-w-0 flex-1 flex-col gap-0.5 text-xs text-text-muted">
             {m.field_part_number()}
-            <input class={fieldClass} type="text" bind:value={partNumber} />
+            <input class={inputClass} type="text" bind:value={partNumber} />
           </label>
           <label class="flex min-w-0 flex-1 flex-col gap-0.5 text-xs text-text-muted">
             {m.field_customer()}
-            <input class={fieldClass} type="text" bind:value={customer} />
+            <input class={inputClass} type="text" bind:value={customer} />
           </label>
         </div>
       </div>

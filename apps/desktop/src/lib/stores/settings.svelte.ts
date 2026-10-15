@@ -5,6 +5,7 @@
  */
 
 import {
+  MAX_BLANK_COLUMNS,
   commands,
   type AppSettings,
   type CommandError,
@@ -29,6 +30,22 @@ export const DEFAULT_SETTINGS: AppSettings = {
     open_after_export: false,
   },
 };
+
+/** Fewest blank result columns of a check sheet (M3 decision 12); the most come from Rust. */
+export const MIN_BLANK_COLUMNS = 1;
+
+/**
+ * Typed text as a number of blank result columns of a check sheet, rounded and kept within
+ * 1 to `MAX_BLANK_COLUMNS` (Rust's bound); `null` when the text is no number (MF F8).
+ */
+export function blankColumns(text: string): number | null {
+  const trimmed = text.trim();
+  const value = Math.round(Number(trimmed));
+  if (trimmed === "" || !Number.isFinite(value)) {
+    return null;
+  }
+  return Math.min(MAX_BLANK_COLUMNS, Math.max(MIN_BLANK_COLUMNS, value));
+}
 
 /** The commands the store needs, replaceable in tests. */
 export interface SettingsApi {

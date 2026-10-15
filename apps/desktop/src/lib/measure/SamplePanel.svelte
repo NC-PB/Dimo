@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { commitField, fieldClass } from "$lib/ui/fields";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import { m } from "$lib/i18n";
   import type { SampleId } from "$lib/ipc/bindings";
@@ -42,29 +43,32 @@
 
   async function edit(event: Event & { currentTarget: HTMLInputElement }, field: Field) {
     const current = sample;
-    const input = event.currentTarget;
-    if (current === undefined || input.value === current[field]) {
+    if (current === undefined) {
       return;
     }
     // Only this field: Rust applies it to the part as it is then, so a fast edit of another
     // field of the same part is not overwritten with its old value (T3.18, MF F4).
-    const patch = await project.execute({
-      type: "update_sample",
-      sample: current.id,
-      values: [{ field, value: input.value }],
-    });
-    if (patch === undefined) {
-      const error = project.error;
-      project.dismissError();
-      notice = error === null ? null : refusalDetail(error);
-    } else {
-      notice = null;
-    }
-    input.value = project.project?.samples.find((s) => s.id === current.id)?.[field] ?? "";
+    await commitField(
+      event.currentTarget,
+      () => project.project?.samples.find((s) => s.id === current.id)?.[field],
+      async (value) => {
+        const patch = await project.execute({
+          type: "update_sample",
+          sample: current.id,
+          values: [{ field, value }],
+        });
+        if (patch === undefined) {
+          const error = project.error;
+          project.dismissError();
+          notice = error === null ? null : refusalDetail(error);
+        } else {
+          notice = null;
+        }
+      },
+    );
   }
 
-  const fieldClass =
-    "min-h-8 w-full min-w-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-text";
+  const inputClass = fieldClass("w-full min-w-0 text-sm");
   const pillClass =
     "inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-sm font-semibold";
 </script>
@@ -83,7 +87,7 @@
         <input
           id="{uid}-serial"
           type="text"
-          class={fieldClass}
+          class={inputClass}
           autocomplete="off"
           value={sample.serial}
           onchange={(e) => void edit(e, "serial")}
@@ -92,7 +96,7 @@
         <input
           id="{uid}-date"
           type="date"
-          class={fieldClass}
+          class={inputClass}
           value={sample.date}
           onchange={(e) => void edit(e, "date")}
         />
@@ -101,7 +105,7 @@
           <input
             id="{uid}-{field}"
             type="text"
-            class={fieldClass}
+            class={inputClass}
             autocomplete="off"
             value={sample[field]}
             onchange={(e) => void edit(e, field)}

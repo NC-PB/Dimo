@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import type { AppSettings, SettingsView } from "$lib/ipc/bindings";
-import { DEFAULT_SETTINGS, SettingsStore, type SettingsApi } from "./settings.svelte";
+import { MAX_BLANK_COLUMNS, type AppSettings, type SettingsView } from "$lib/ipc/bindings";
+import { DEFAULT_SETTINGS, SettingsStore, blankColumns, type SettingsApi } from "./settings.svelte";
 
 function view(settings: AppSettings): SettingsView {
   return { settings, os_user_name: "anna" };
@@ -62,5 +62,16 @@ describe("settings store (T1.9)", () => {
     expect(await store.update({ theme: "dark" })).toBe(false);
     expect(store.current.theme).toBe("dark");
     expect(store.error).toEqual({ kind: "io", reason: "permission_denied", message: "read only" });
+  });
+});
+
+describe("blank check sheet columns (M3 decision 12, MF F8)", () => {
+  it("reads typed text, rounds it and keeps it within Rust's bounds", () => {
+    expect(blankColumns(" 4 ")).toBe(4);
+    expect(blankColumns("2.6")).toBe(3);
+    expect(blankColumns("0")).toBe(1);
+    expect(blankColumns("99")).toBe(MAX_BLANK_COLUMNS);
+    expect(blankColumns("")).toBeNull();
+    expect(blankColumns("x")).toBeNull();
   });
 });

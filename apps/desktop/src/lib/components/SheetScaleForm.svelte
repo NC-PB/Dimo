@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fieldClass } from "$lib/ui/fields";
   import { m } from "$lib/i18n";
   import type { Patch, Scale, Sheet } from "$lib/ipc/bindings";
   import { parseScalePart, setShownScalePart, shownSheet } from "$lib/sheet-properties";
@@ -36,8 +37,7 @@
     }
   }
 
-  const fieldClass =
-    "min-h-8 w-24 rounded-md border border-border-strong bg-surface px-2 py-1 text-right font-mono text-sm text-text";
+  const inputClass = fieldClass("w-24 text-right font-mono text-sm");
   const labelClass = "flex flex-col gap-1 text-sm text-text-muted";
 </script>
 
@@ -50,7 +50,7 @@
           type="number"
           min="1"
           step="1"
-          class={fieldClass}
+          class={inputClass}
           aria-invalid={invalid}
           value={sheet.scale.drawing}
           onchange={(e) => {
@@ -65,7 +65,7 @@
           type="number"
           min="1"
           step="1"
-          class={fieldClass}
+          class={inputClass}
           aria-invalid={invalid}
           value={sheet.scale.actual}
           onchange={(e) => {
