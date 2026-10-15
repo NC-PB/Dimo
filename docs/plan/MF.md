@@ -141,8 +141,8 @@ Acceptance:
   of `recognition.rs`.
 
 Acceptance:
-- [ ] One report date rule; preview, Save copy, Print and issued export use it (test)
-- [ ] The CLI exports a check sheet and an inspection report byte identical to the app (test)
+- [x] One report date rule; preview, Save copy, Print and issued export use it (test)
+- [x] The CLI exports a check sheet and an inspection report byte identical to the app (test)
 
 ### F7 Logging and shared shell helpers
 
@@ -158,7 +158,7 @@ Acceptance:
 
 Acceptance:
 - [x] A forced journal write failure appears in the log file
-- [ ] `export.rs` and `session.rs` below about 500 lines each
+- [x] `export.rs` and `session.rs` below about 500 lines each
 
 ### F8 Frontend foundation
 
