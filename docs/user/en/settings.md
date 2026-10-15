@@ -99,3 +99,15 @@ Mono and the Lucide icons) with its copyright notice and full license text. The 
 the app, so they show without an internet connection. License texts are shown in their original
 English. The licenses of the other open source libraries Dimo is built with are in the file
 `THIRD_PARTY_LICENSES` that comes with every release.
+
+## Log file
+
+Dimo writes messages such as warnings and errors (for example a failed autosave or export, or a
+settings file that cannot be read) and the version it started with to a log file on your computer.
+It holds messages and file paths, not the content of drawings or projects, and nothing is sent
+anywhere. When it reaches 1 MB it is renamed to `dimo.log.1` and a new file starts. If you report
+a problem, the log helps to find the cause:
+
+- macOS: `~/Library/Logs/io.github.nc-pb.dimo/dimo.log`
+- Windows: `%LOCALAPPDATA%\io.github.nc-pb.dimo\logs\dimo.log`
+- Linux: `~/.local/share/io.github.nc-pb.dimo/logs/dimo.log`
