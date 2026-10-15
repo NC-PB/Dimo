@@ -573,6 +573,12 @@ impl Job<'_> {
 
     /// Records the written report as issued (M3 decision 17).
     fn record(&self, info: &ReportInfo, output_sha256: Sha256Hex) -> IssuedRecord {
+        // Loads the template reference before the session lock; the record reuses it.
+        if let Err(error) = dimo_export::bundled_template_ref() {
+            return IssuedRecord::Refused {
+                error: error.into(),
+            };
+        }
         let state = self.app.state::<SessionState>();
         let mut session = state.lock();
         match session.record_issued_report(

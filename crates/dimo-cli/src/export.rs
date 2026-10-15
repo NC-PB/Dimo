@@ -2,7 +2,9 @@
 //! ([`dimo_export::plan`] and [`dimo_export::render`], MF F2), so the same project, options and
 //! report date give byte identical files (FR-EXP-11).
 //!
-//! The command never changes the project file. A report prints the stored report date; a project
+//! The command never changes the project file or its journal: it reads the saved file only
+//! (no journal recovery, no lock), so a project open in the app keeps its crash journal (D-28).
+//! Unsaved changes of an open project are not exported. A report prints the stored report date; a project
 //! without one needs the date passed in (`--date`), which the app would store at its first report
 //! export (T3.9). The tool reads no clock for it, so a scripted run stays reproducible.
 
@@ -10,7 +12,7 @@ use std::path::Path;
 
 use dimo_core::Language;
 use dimo_export::{ExportError, ExportFormat, RenderOptions, Source};
-use dimo_io::project::{ProjectError, ProjectSession};
+use dimo_io::project::{ProjectError, ProjectFile};
 use dimo_pdf::PdfEngine;
 use dimo_report::issue::{IssueDefaults, report_date};
 
@@ -20,6 +22,9 @@ pub enum CliExportError {
     /// The project file could not be opened.
     #[error("cannot open the project: {0}")]
     Open(#[from] ProjectError),
+    /// The date given is not a calendar date `YYYY-MM-DD`.
+    #[error("invalid date {0:?}, expected YYYY-MM-DD")]
+    InvalidDate(String),
     /// A report of a project without a report date, and no date was given.
     #[error("the project has no report date; pass --date YYYY-MM-DD")]
     NoReportDate,
@@ -74,8 +79,13 @@ pub fn export_project(
     today: Option<&str>,
     pdf: Option<&PdfEngine>,
 ) -> Result<Vec<u8>, CliExportError> {
-    let (session, _) = ProjectSession::open(path)?;
-    let mut project = session.project().clone();
+    if let Some(date) = today
+        && (date.is_empty() || !dimo_core::measurement::is_date_or_empty(date))
+    {
+        return Err(CliExportError::InvalidDate(date.to_owned()));
+    }
+    let file = ProjectFile::load(path)?.file;
+    let mut project = file.project.clone();
     let defaults = IssueDefaults {
         today: today.unwrap_or_default().to_owned(),
         ..IssueDefaults::default()
@@ -89,11 +99,22 @@ pub fn export_project(
     }
     dimo_export::plan(&project, options.format, false, &defaults).apply(&mut project);
     let drawing = if options.format.needs_drawing() {
-        Some(session.current_drawing().ok_or(CliExportError::NoDrawing)?)
+        let revision = project
+            .current_revision()
+            .ok_or(CliExportError::NoDrawing)?;
+        Some(
+            file.drawing(&revision.sha256)
+                .ok_or(CliExportError::NoDrawing)?,
+        )
     } else {
         None
     };
-    let modified = session.modified();
+    // The time of the last saved change, as `ProjectSession::modified` gives it for a project
+    // opened without a journal.
+    let modified = file
+        .audit
+        .last()
+        .map_or_else(|| file.created.clone(), |e| e.timestamp.clone());
     let source = Source {
         project: &project,
         modified: &modified,

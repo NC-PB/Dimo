@@ -185,6 +185,17 @@ pub fn report_template() -> Result<TemplateSet, ExportError> {
     TemplateSet::bundled(REPORT_TEMPLATE).map_err(ExportError::Template)
 }
 
+/// The reference of the bundled template set, as an issued report records it. Loaded once per
+/// process, so callers can fetch it before they take a lock.
+pub fn bundled_template_ref() -> Result<TemplateRef, ExportError> {
+    static BUNDLED: std::sync::OnceLock<TemplateRef> = std::sync::OnceLock::new();
+    if let Some(found) = BUNDLED.get() {
+        return Ok(found.clone());
+    }
+    let found = template_ref(&report_template()?);
+    Ok(BUNDLED.get_or_init(|| found).clone())
+}
+
 /// The reference of a template set, as an issued report records it.
 pub fn template_ref(template: &TemplateSet) -> TemplateRef {
     TemplateRef {

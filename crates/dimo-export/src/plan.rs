@@ -18,7 +18,7 @@ use dimo_report::issue::{
     IssueDefaults, IssuedFile, date_to_store, issue_command, issued_info, printed_info,
 };
 
-use crate::{ExportError, ExportFormat, report_template, template_ref};
+use crate::{ExportError, ExportFormat, bundled_template_ref};
 
 /// What an export does around its render (see the module docs).
 #[derive(Debug, Clone, PartialEq)]
@@ -87,7 +87,7 @@ pub fn record_command(
     let file = IssuedFile {
         kind,
         format: file_format,
-        template: template_ref(&report_template()?),
+        template: bundled_template_ref()?,
         output_sha256,
     };
     Ok(issue_command(project, printed, file))

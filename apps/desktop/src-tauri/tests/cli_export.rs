@@ -14,7 +14,7 @@ use std::sync::atomic::AtomicBool;
 
 use dimo_cli::export::{CliExportError, export_project};
 use dimo_core::{Command, FieldValue, Language, Point, ResultEntry};
-use dimo_desktop::export::{ExportFormat, ExportRequest, run_steps, take_snapshot};
+use dimo_desktop::export::{ExportFormat, ExportRequest, render, run_steps, take_snapshot};
 use dimo_desktop::session::AppSession;
 use dimo_desktop::settings::PdfBalloons;
 use dimo_pdf::tiles::{TileConfig, TileService};
@@ -135,6 +135,20 @@ fn cli_exports_reports_byte_identical_to_the_app() {
         export_project(&project, options, None, None),
         Err(CliExportError::NoReportDate)
     ));
+    for bad in ["", "13.10.2026", "2026-13-01"] {
+        assert!(
+            matches!(
+                export_project(&project, options, Some(bad), None),
+                Err(CliExportError::InvalidDate(_))
+            ),
+            "{bad}"
+        );
+    }
+
+    // The CLI reads the saved file only: the app's journal and every other file stay as they are.
+    let files = folder(dir.path());
+    export_project(&project, options, Some(TODAY), None).unwrap();
+    assert_eq!(folder(dir.path()), files, "the CLI changed files");
 
     for format in [
         ExportFormat::CheckSheetPdf,
@@ -164,4 +178,29 @@ fn cli_exports_reports_byte_identical_to_the_app() {
         assert_eq!(cli, app, "{format:?}");
         assert_eq!(other_day, app, "a stored date wins");
     }
+
+    // The ballooned PDF with dated annotations: the date is the last saved change in both.
+    let engine = tiles.engine().unwrap();
+    let request = ExportRequest {
+        pdf_balloons: PdfBalloons::Annotations,
+        ..request(ExportFormat::BalloonedPdf)
+    };
+    let start = take_snapshot(&mut session, request).unwrap();
+    let app = render(&start.snapshot, &request, Some(engine)).unwrap();
+    let cli = export_project(&project, request.render_options(), None, Some(engine)).unwrap();
+    assert_eq!(cli, app);
+}
+
+/// Name and content of every file in `dir`, sorted by name.
+fn folder(dir: &Path) -> Vec<(String, Vec<u8>)> {
+    let mut files: Vec<_> = std::fs::read_dir(dir)
+        .unwrap()
+        .map(|e| {
+            let e = e.unwrap();
+            let bytes = std::fs::read(e.path()).unwrap_or_default();
+            (e.file_name().to_string_lossy().into_owned(), bytes)
+        })
+        .collect();
+    files.sort();
+    files
 }

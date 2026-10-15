@@ -5,7 +5,9 @@ Headless command line tool for Dimo.
 ## Export
 
 Exports a saved project through the same code as the desktop app, so the files are byte
-identical to the app's exports of the same project. The project file is never changed.
+identical to the app's exports of the same project. It reads the saved file only: the project
+file and its autosave journal are never changed, and unsaved changes of a project open in the app
+are not exported.
 
 ```sh
 cargo run -p dimo-cli -- export part.dimo --format inspection-report-pdf --language de -o report.pdf

@@ -435,12 +435,7 @@ impl AppSession {
         })
     }
 
-    /// Today's date in the time zone of the computer, `YYYY-MM-DD` (T3.9).
-    pub fn local_date(&self) -> String {
-        self.env.local_date()
-    }
-
-    /// Fixes the local date that [`Self::local_date`] returns; `None` restores the real one.
+    /// Fixes today's date of [`Self::issue_defaults`]; `None` restores the real one.
     /// For tests and scripted runs.
     pub fn set_fixed_local_date(&mut self, date: Option<&str>) {
         self.env.set_fixed_local_date(date);
