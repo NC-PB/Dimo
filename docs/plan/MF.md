@@ -11,7 +11,7 @@ the smoke test pass unchanged in meaning; exports byte identical to before for t
 adding an image drawing source, a first run dialog and a new command each need only the documented
 touch points (checklists in `docs/dev/rust.md` and `docs/dev/frontend.md`).
 
-Status: **planned 2026-10-14, no code until the owner says so.**
+Status: **done 2026-10-15** (started 2026-10-14 by the owner). Open items carried forward: Windows opener through the system API (owner decision on `unsafe`), `ProjectSession::document_mut()` still public, `executeWith` left for numbering settings and default balloon style, tests partly still matching English text.
 
 Rules that matter most here: rule 2 (Rust owns the document), rule 4 (one coordinate system),
 rule 5 (exact decimals), rule 6 (generated IPC types), rule 11 (determinism), NFR-REL-03 (schema
@@ -180,9 +180,9 @@ Acceptance:
   come from Rust instead of TypeScript (rule 2 drift).
 
 Acceptance:
-- [ ] Opening any dialog blocks drawing shortcuts (test)
-- [ ] `SheetCanvas` renders a sheet without the balloon layer (component test)
-- [ ] Release bundle contains no dev script code (CI check)
+- [x] Opening any dialog blocks drawing shortcuts (test)
+- [x] `SheetCanvas` renders a sheet without the balloon layer (component test)
+- [x] Release bundle contains no dev script code (CI check)
 
 ---
 
