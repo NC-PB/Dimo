@@ -54,6 +54,8 @@ pub enum RejectReason {
     InvalidResult,
     /// The result type cannot change while results of the other type exist (M3 decision 4).
     ResultTypeConflict,
+    /// A custom tolerance table of the settings is not stored in the project (M2 decision 4).
+    MissingTable,
     /// Undo without history.
     NothingToUndo,
     /// Redo without history.
@@ -88,6 +90,7 @@ impl CommandError {
             Self::InvalidDate(_) => R::InvalidDate,
             Self::InvalidResult { .. } => R::InvalidResult,
             Self::ResultTypeConflict(_) => R::ResultTypeConflict,
+            Self::MissingTable(_) => R::MissingTable,
             Self::NothingToUndo => R::NothingToUndo,
             Self::NothingToRedo => R::NothingToRedo,
             Self::Change(_) => R::Internal,
@@ -109,6 +112,10 @@ mod tests {
         assert_eq!(
             CommandError::NotAnImage(RevisionId::from_uuid(uuid::Uuid::nil())).reject_reason(),
             RejectReason::NotAnImage
+        );
+        assert_eq!(
+            CommandError::MissingTable("shop".to_owned()).reject_reason(),
+            RejectReason::MissingTable
         );
         assert_eq!(
             CommandError::Field(FieldError::ZeroQuantity).reject_reason(),

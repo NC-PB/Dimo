@@ -484,8 +484,17 @@ fn session_finds_custom_tables_without_a_file() {
         session.missing_table(&command).as_deref(),
         Some("shop-table")
     );
+    // MF F2: the session refuses such a command with its own reason.
+    let mut env = dimo_core::FixedEnvironment::new();
+    assert_eq!(
+        session.execute(command.clone(), &mut env).err(),
+        Some(dimo_core::CommandError::MissingTable(
+            "shop-table".to_owned()
+        ))
+    );
     session.insert_table(common::TABLE.to_vec());
     assert_eq!(session.missing_table(&command), None);
+    assert!(session.execute(command, &mut env).is_ok());
 }
 
 #[test]

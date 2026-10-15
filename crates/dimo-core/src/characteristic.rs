@@ -116,7 +116,25 @@ impl Length {
         let value = crate::decimal::parse_decimal(&text)?;
         (value > Decimal::ZERO).then_some(Self { value, unit })
     }
+
+    /// A length typed into an optional field such as the shorter leg of an angle (T2.9a), in
+    /// `unit` (the sheet unit): empty or blank text is no length, any other text must parse
+    /// with [`Self::parse`].
+    pub fn parse_optional(text: &str, unit: Unit) -> Result<Option<Self>, InvalidLength> {
+        let text = text.trim();
+        if text.is_empty() {
+            return Ok(None);
+        }
+        Self::parse(text, unit)
+            .map(Some)
+            .ok_or_else(|| InvalidLength(text.to_owned()))
+    }
 }
+
+/// Text typed as a length that is not a positive number in a length unit.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("{0:?} is not a positive number")]
+pub struct InvalidLength(pub String);
 
 /// Which rule produced the limits of a characteristic (data model `ToleranceDerivation`,
 /// precedence FR-TOL-01).
@@ -617,6 +635,25 @@ mod tests {
             unit: Unit::Deg,
         };
         assert_eq!(deg.to_mm(), None);
+    }
+
+    /// MF F2: the empty rule of optional length fields such as the shorter leg (T2.9a).
+    #[test]
+    fn optional_lengths_are_empty_or_positive() {
+        assert_eq!(Length::parse_optional("", Unit::Mm), Ok(None));
+        assert_eq!(Length::parse_optional("  ", Unit::In), Ok(None));
+        assert_eq!(
+            Length::parse_optional(" 40 ", Unit::Mm),
+            Ok(Length::parse("40", Unit::Mm))
+        );
+        for bad in ["0", "-1", "x", "40"] {
+            let unit = if bad == "40" { Unit::Deg } else { Unit::Mm };
+            assert_eq!(
+                Length::parse_optional(bad, unit),
+                Err(InvalidLength(bad.to_owned())),
+                "{bad}"
+            );
+        }
     }
 
     #[test]
