@@ -1,20 +1,17 @@
 // @vitest-environment happy-dom
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
-import type { CharId, Command, Project } from "$lib/ipc/bindings";
+import type { CharId, Project } from "$lib/ipc/bindings";
 import { PaneFolds } from "$lib/pane/folds.svelte";
 import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
 import { NumberingStore, type NumberingApi } from "$lib/stores/numbering.svelte";
-import {
-  ProjectStore,
-  projectStore as appProject,
-  type ProjectCommands,
-} from "$lib/stores/project.svelte";
+import { ProjectStore, projectStore as appProject } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import { sheetRegions } from "$lib/stores/sheet-regions.svelte";
-import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
+import { ToleranceStore } from "$lib/stores/tolerance.svelte";
 import { ViewStore, view as appView } from "$lib/stores/view.svelte";
 import PropertiesPane from "./PropertiesPane.svelte";
+import { fakeProjectApi, fakeToleranceApi } from "$lib/test/fakes";
 
 function projectOf(): Project {
   const project = emptyProject();
@@ -28,28 +25,12 @@ function projectOf(): Project {
 }
 
 function setup() {
-  const commands: Command[] = [];
   const reinterpreted: CharId[][] = [];
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf()) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      commands.push(command);
-      return Promise.resolve({
-        status: "ok",
-        data: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
-      });
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
-  const toleranceApi: ToleranceApi = {
+  const rust = fakeProjectApi({ state: loaded(1, projectOf()) });
+  const api = rust.api;
+  const commands = rust.commands;
+
+  const toleranceApi = fakeToleranceApi({
     toleranceTables: () => Promise.resolve({ status: "ok", data: [] }),
     explainCharacteristic: (id) => Promise.resolve({ status: "ok", data: `explained ${id}` }),
     characteristicHistory: () => Promise.resolve({ status: "ok", data: [] }),
@@ -66,10 +47,8 @@ function setup() {
       });
     },
     importToleranceTable: () => Promise.resolve({ status: "ok", data: { result: "cancelled" } }),
-    setShorterLeg: () => Promise.reject(new Error("not used")),
     generalToleranceCandidates: () => Promise.resolve({ status: "ok", data: [] }),
-    applyGeneralTolerance: () => Promise.reject(new Error("not used")),
-  };
+  });
   const numberingApi: NumberingApi = {
     previewNumbering: (strategy) =>
       Promise.resolve({

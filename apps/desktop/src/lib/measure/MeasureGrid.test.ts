@@ -2,60 +2,24 @@
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
-  Command,
-  CommandError,
   LimitPosition,
   MeasurementResult,
   MeasurementState,
-  ProjectPatched,
   ResultType,
   RowState,
   Sample,
   Verdict,
 } from "$lib/ipc/bindings";
-import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
+import { characteristic, emptyProject, loaded } from "$lib/stores/fixtures";
 import { MeasurementStore } from "$lib/stores/measurement.svelte";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
 import MeasureGrid from "./MeasureGrid.svelte";
 import { measureUi } from "./measure-ui.svelte";
+import { fakeProjectApi, stubGridLayout } from "$lib/test/fakes";
 
 const VIEW_HEIGHT = 560;
 const ROW_HEIGHT = 28;
-
-type Reply = { status: "ok"; data: ProjectPatched } | { status: "error"; error: CommandError };
-
-/** Records the commands the grid sends; answers with an empty patch unless told otherwise. */
-function fakeRust() {
-  const commands: Command[] = [];
-  let reply: (command: Command) => Reply = () => ({
-    status: "ok",
-    data: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
-  });
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      commands.push(command);
-      return Promise.resolve(reply(command));
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
-  return {
-    api,
-    commands,
-    answer(next: (command: Command) => Reply) {
-      reply = next;
-    },
-  };
-}
 
 function sample(n: number): Sample {
   return {
@@ -138,23 +102,8 @@ let target: HTMLElement;
 let component: ReturnType<typeof mount> | null = null;
 
 beforeEach(() => {
-  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    return this.getAttribute("role") === "grid" ? VIEW_HEIGHT : 0;
-  });
-  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(1400);
-  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    return this.getAttribute("role") === "grid" ? VIEW_HEIGHT : 0;
-  });
-  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(1400);
-  vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    return Number(this.getAttribute("aria-rowcount") ?? 0) * ROW_HEIGHT;
-  });
+  // happy-dom does no layout: give the scroll area a size so the virtualizer has a window.
+  stubGridLayout({ height: VIEW_HEIGHT, width: 1400, rowHeight: ROW_HEIGHT });
   target = document.createElement("div");
   document.body.appendChild(target);
 });
@@ -169,7 +118,7 @@ afterEach(() => {
 });
 
 async function render() {
-  const rust = fakeRust();
+  const rust = fakeProjectApi();
   const { project: data, state } = setup();
   const project = new ProjectStore(rust.api);
   project.load(loaded(1, data));
@@ -436,7 +385,7 @@ describe("measure grid empty states (T3.17)", () => {
   });
 
   async function renderEmpty(change: (data: ReturnType<typeof setup>) => void) {
-    const rust = fakeRust();
+    const rust = fakeProjectApi();
     const data = setup();
     change(data);
     const project = new ProjectStore(rust.api);

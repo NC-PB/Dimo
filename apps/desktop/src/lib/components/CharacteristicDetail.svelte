@@ -7,6 +7,7 @@
    * (FR-CHR-10). Every edit is one undoable Rust command (`update_fields`, `set_result_type`);
    * Rust reads and validates the values (rule 5), the field then shows what the project holds.
    */
+  import { fieldClass } from "$lib/ui/fields";
   import {
     changeSourceLabel,
     commandErrorMessage,
@@ -17,7 +18,7 @@
     ruleLabel,
     unitLabel,
   } from "$lib/i18n";
-  import type { CharId, FieldValue, HistoryEntry, ResultType } from "$lib/ipc/bindings";
+  import type { CharId, FieldValue, HistoryEntry, ResultType, Unit } from "$lib/ipc/bindings";
   import { resultTypeLabel } from "$lib/measure/labels";
   import PaneSection from "$lib/pane/PaneSection.svelte";
   import { icons } from "$lib/icons";
@@ -25,7 +26,6 @@
   import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
   import { selection as appSelection, type SelectionStore } from "$lib/stores/selection.svelte";
   import {
-    sheetOf,
     toleranceStore as appTolerance,
     type ToleranceStore,
   } from "$lib/stores/tolerance.svelte";
@@ -172,13 +172,25 @@
     }
   }
 
-  /** Unit of the characteristic's sheet (D-20): Rust reads a newly typed leg in it (T2.9a). */
-  const sheetUnit = $derived.by(() => {
-    if (c === null || project.project === null) {
-      return null;
+  /**
+   * Unit of the characteristic's sheet (D-20): Rust reads a newly typed leg in it (T2.9a). Rust
+   * says which sheet that is (MF F8); asked again after every change, as a balloon can move.
+   */
+  let sheetUnit = $state<Unit | null>(null);
+  let unitSeq = 0;
+  $effect(() => {
+    const shown = c;
+    void project.revision;
+    const seq = ++unitSeq;
+    if (shown === null) {
+      sheetUnit = null;
+      return;
     }
-    const sheet = sheetOf(project.project, c);
-    return project.sheets.find((s) => s.id === sheet)?.unit ?? null;
+    void tolerance.legUnit(shown.id).then((result) => {
+      if (seq === unitSeq) {
+        sheetUnit = result.status === "ok" ? result.data : null;
+      }
+    });
   });
   /** A stored leg in another unit than the sheet's, shown beside the field instead of in it. */
   const legElsewhere = $derived(
@@ -208,8 +220,7 @@
   const gridClass =
     "grid grid-cols-[minmax(5.5rem,auto)_minmax(0,1fr)] items-center gap-x-2 gap-y-1.5";
   const keyClass = "text-sm text-text-muted";
-  const fieldClass =
-    "min-h-8 w-full min-w-0 rounded-md border border-border-strong bg-surface px-2 py-1 text-sm text-text";
+  const inputClass = fieldClass("w-full min-w-0 text-sm");
 </script>
 
 {#if c}
@@ -224,7 +235,7 @@
             type="text"
             autocomplete="off"
             spellcheck="false"
-            class={fieldClass}
+            class={inputClass}
             data-field="requirement_text"
             value={c.requirement_text}
             onchange={(e) => void edit(e.currentTarget, id, "requirement_text")}
@@ -232,7 +243,7 @@
           <label class={keyClass} for="{uid}-kind">{m.col_kind()}</label>
           <select
             id="{uid}-kind"
-            class={fieldClass}
+            class={inputClass}
             data-field="kind"
             value={c.kind}
             onchange={(e) => void edit(e.currentTarget, id, "kind")}
@@ -247,7 +258,7 @@
             type="text"
             inputmode="numeric"
             autocomplete="off"
-            class="{fieldClass} max-w-24 text-right font-mono"
+            class="{inputClass} max-w-24 text-right font-mono"
             data-field="quantity"
             value={String(c.quantity)}
             onchange={(e) => void edit(e.currentTarget, id, "quantity")}
@@ -378,7 +389,7 @@
           <label class={keyClass} for="{uid}-result-type">{m.field_result_type()}</label>
           <select
             id="{uid}-result-type"
-            class={fieldClass}
+            class={inputClass}
             data-field="result_type"
             value={c.result_type}
             onchange={(e) => void setResultType(e.currentTarget)}
@@ -392,7 +403,7 @@
             id="{uid}-method"
             type="text"
             autocomplete="off"
-            class={fieldClass}
+            class={inputClass}
             data-field="inspection_method"
             value={c.inspection.method}
             onchange={(e) => void edit(e.currentTarget, id, "inspection_method")}
@@ -402,7 +413,7 @@
             id="{uid}-gauge"
             type="text"
             autocomplete="off"
-            class={fieldClass}
+            class={inputClass}
             data-field="gauge"
             value={c.inspection.gauge}
             onchange={(e) => void edit(e.currentTarget, id, "gauge")}

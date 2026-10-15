@@ -6,21 +6,23 @@ import type {
   CommandError,
   LegOutcome,
   CharId,
-  Command,
   HistoryEntry,
   Project,
   ProjectPatched,
   TableImport,
   ToleranceDerivation,
+  Unit,
 } from "$lib/ipc/bindings";
 import { balloon, characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import { SelectionStore } from "$lib/stores/selection.svelte";
-import { ToleranceStore, type ToleranceApi } from "$lib/stores/tolerance.svelte";
+import { ToleranceStore } from "$lib/stores/tolerance.svelte";
 import CharacteristicDetail from "./CharacteristicDetail.svelte";
 import GeneralToleranceField from "$lib/shell/GeneralToleranceField.svelte";
 import GeneralToleranceOffer from "./GeneralToleranceOffer.svelte";
 import ToleranceSettings from "./ToleranceSettings.svelte";
+import { fakeProjectApi, fakeToleranceApi } from "$lib/test/fakes";
+import { m, unitLabel } from "$lib/i18n";
 
 const DRAFT_GENERAL: ToleranceDerivation = {
   rule: {
@@ -118,36 +120,22 @@ const HISTORY: HistoryEntry[] = [
 ];
 
 function setup(importResult: TableImport = { result: "cancelled" }) {
-  const commands: Command[] = [];
   const reinterpreted: CharId[][] = [];
   const legs: [CharId, string | null][] = [];
   const leg: { refuse: boolean; outcome: LegOutcome } = { refuse: false, outcome: "interpreted" };
+  /** The unit Rust reads a typed leg in (`shorter_leg_unit`), and who asked for it. */
+  const legUnit: { unit: Unit; asked: CharId[] } = { unit: "mm", asked: [] };
   /** What the fake Rust lists for the general tolerance offer, and how often it applied it. */
   const general: { candidates: CharId[]; asked: number; applied: number } = {
     candidates: ["c2"],
     asked: 0,
     applied: 0,
   };
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf()) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      commands.push(command);
-      return Promise.resolve({
-        status: "ok",
-        data: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
-      });
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
-  const toleranceApi: ToleranceApi = {
+  const rust = fakeProjectApi({ state: loaded(1, projectOf()) });
+  const api = rust.api;
+  const commands = rust.commands;
+
+  const toleranceApi = fakeToleranceApi({
     toleranceTables: () =>
       Promise.resolve({
         status: "ok",
@@ -192,6 +180,10 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
           : { status: "ok", data: { patched: patched(), outcome: leg.outcome } },
       );
     },
+    shorterLegUnit: (id) => {
+      legUnit.asked.push(id);
+      return Promise.resolve({ status: "ok", data: legUnit.unit });
+    },
     generalToleranceCandidates: () => {
       general.asked += 1;
       return Promise.resolve({ status: "ok", data: general.candidates });
@@ -208,12 +200,22 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
         },
       });
     },
-  };
+  });
   const projectStore = new ProjectStore(api);
   projectStore.load(loaded(1, projectOf()));
   const selection = new SelectionStore();
   const tolerance = new ToleranceStore(toleranceApi, projectStore);
-  return { projectStore, selection, tolerance, commands, reinterpreted, legs, leg, general };
+  return {
+    projectStore,
+    selection,
+    tolerance,
+    commands,
+    reinterpreted,
+    legs,
+    leg,
+    legUnit,
+    general,
+  };
 }
 
 let component: ReturnType<typeof mount> | null = null;
@@ -409,7 +411,17 @@ describe("shorter leg of an angle (T2.9a)", () => {
     stores.selection.select(["c5"]);
     await settle();
     expect(legInput()?.value).toBe("");
-    expect(target.textContent).toContain("Shorter leg (mm)");
+    expect(target.textContent).toContain(m.shorter_leg_label({ unit: unitLabel("mm") }));
+  });
+
+  it("labels the field with the unit Rust names for the characteristic (D-20, MF F8)", async () => {
+    const stores = setup();
+    stores.legUnit.unit = "in";
+    stores.selection.select(["c5"]);
+    render(stores);
+    await settle();
+    expect(stores.legUnit.asked).toContain("c5");
+    expect(target.textContent).toContain(m.shorter_leg_label({ unit: unitLabel("in") }));
   });
 
   it("sends the typed leg to Rust, which reads and stores it as one undo step", async () => {

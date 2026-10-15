@@ -65,32 +65,15 @@ function replaceSheet(project: Project, sheet: Sheet): Project {
   return { ...project, revisions };
 }
 
-/**
- * Results in the order Rust keeps them: by sample order, then by characteristic placement order
- * (M3 decision 1). A copy of Rust's order, so the store equals the project Rust holds.
- */
-function sortResults(project: Project): Project {
-  if (project.results.length === 0) {
-    return project;
-  }
-  const samples = new Map(project.samples.map((s, i) => [s.id, i]));
-  const chars = new Map(project.characteristics.map((c, i) => [c.id, i]));
-  const key = (r: MeasurementResult): [number, number] => [
-    samples.get(r.sample) ?? Infinity,
-    chars.get(r.characteristic) ?? Infinity,
-  ];
-  const results = [...project.results].sort((a, b) => {
-    const [as, ac] = key(a);
-    const [bs, bc] = key(b);
-    return as - bs || ac - bc;
-  });
-  return results.every((r, i) => r === project.results[i]) ? project : { ...project, results };
-}
-
 function sameCell(result: MeasurementResult, cell: ResultCell): boolean {
   return result.sample === cell.sample && result.characteristic === cell.characteristic;
 }
 
+/**
+ * Sets, changes or clears the result of one cell. Results are found by their cell; the store
+ * never sorts them. Their order is Rust's rule (sample order, then placement order, M3
+ * decision 1) and arrives with every full state; nothing in the frontend depends on it (MF F8).
+ */
 function changeResult(
   project: Project,
   cell: ResultCell,
@@ -107,7 +90,7 @@ function changeResult(
   if (index >= 0) {
     return { ...project, results: project.results.map((r, i) => (i === index ? after : r)) };
   }
-  return sortResults({ ...project, results: [...project.results, after] });
+  return { ...project, results: [...project.results, after] };
 }
 
 function applyChange(project: Project, change: Change): Project {
@@ -137,10 +120,7 @@ function applyChange(project: Project, change: Change): Project {
     case "balloon_changed":
       return { ...project, balloons: replaceById(project.balloons, change.after) };
     case "order_changed":
-      return sortResults({
-        ...project,
-        characteristics: reorder(project.characteristics, change.after),
-      });
+      return { ...project, characteristics: reorder(project.characteristics, change.after) };
     case "sheet_changed":
       return replaceSheet(project, change.after);
     case "numbering_changed":
@@ -156,7 +136,7 @@ function applyChange(project: Project, change: Change): Project {
     case "sample_changed":
       return { ...project, samples: replaceById(project.samples, change.after) };
     case "sample_order_changed":
-      return sortResults({ ...project, samples: reorder(project.samples, change.after) });
+      return { ...project, samples: reorder(project.samples, change.after) };
     case "result_changed":
       return changeResult(project, change.cell, change.before, change.after);
     case "report_info_changed":

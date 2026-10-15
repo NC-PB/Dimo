@@ -5,14 +5,12 @@
  */
 import { flushSync, mount, unmount } from "svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Command, MeasurementState } from "$lib/ipc/bindings";
-import { emptyProject, loaded, status } from "$lib/stores/fixtures";
+import type { MeasurementState } from "$lib/ipc/bindings";
+import { emptyProject, loaded } from "$lib/stores/fixtures";
 import { MeasurementStore } from "$lib/stores/measurement.svelte";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import SamplePanel from "./SamplePanel.svelte";
-
-const ok = <T>(data: T) => Promise.resolve({ status: "ok" as const, data });
-const unused = () => Promise.reject(new Error("not used"));
+import { fakeProjectApi, ok } from "$lib/test/fakes";
 
 const STATE: MeasurementState = {
   rows: [],
@@ -37,23 +35,10 @@ afterEach(() => {
 });
 
 async function render() {
-  const sent: Command[] = [];
-  const api: ProjectCommands = {
-    projectState: unused,
-    newProject: () => ok(true),
-    openProject: () => ok(true),
-    saveProject: () => ok(true),
-    saveProjectAs: () => ok(true),
-    confirmClose: () => ok(null),
-    closeProject: () => ok(null),
-    openRecentProject: () => ok(true),
-    execute: (command) => {
-      sent.push(command);
-      return ok({ session: 1, revision: 0, patch: { changes: [] }, status: status() });
-    },
-    undo: unused,
-    redo: unused,
-  };
+  const rust = fakeProjectApi();
+  const api = rust.api;
+  const sent = rust.commands;
+
   const project = new ProjectStore(api);
   const p = emptyProject();
   p.samples = [

@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Command, NumberingStrategy, Project } from "$lib/ipc/bindings";
-import { characteristic, emptyProject, loaded, status } from "$lib/stores/fixtures";
+import type { NumberingStrategy, Project } from "$lib/ipc/bindings";
+import { characteristic, emptyProject, loaded } from "$lib/stores/fixtures";
 import { NumberingStore, type NumberingApi } from "$lib/stores/numbering.svelte";
-import { ProjectStore, type ProjectCommands } from "$lib/stores/project.svelte";
+import { ProjectStore } from "$lib/stores/project.svelte";
 import NumberingOptions from "./NumberingOptions.svelte";
+import { fakeProjectApi } from "$lib/test/fakes";
 
 function projectOf(locked: boolean): Project {
   const project = emptyProject();
@@ -26,27 +27,11 @@ function projectOf(locked: boolean): Project {
 
 /** Stores over a fake Rust that records commands and preview requests. */
 function setup(locked = false) {
-  const commands: Command[] = [];
   const previews: NumberingStrategy[] = [];
-  const api: ProjectCommands = {
-    projectState: () => Promise.resolve({ status: "ok", data: loaded(1, projectOf(locked)) }),
-    newProject: () => Promise.resolve({ status: "ok", data: true }),
-    openProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProject: () => Promise.resolve({ status: "ok", data: true }),
-    saveProjectAs: () => Promise.resolve({ status: "ok", data: true }),
-    confirmClose: () => Promise.resolve({ status: "ok", data: null }),
-    closeProject: () => Promise.resolve({ status: "ok", data: null }),
-    openRecentProject: () => Promise.resolve({ status: "ok", data: true }),
-    execute: (command) => {
-      commands.push(command);
-      return Promise.resolve({
-        status: "ok",
-        data: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
-      });
-    },
-    undo: () => Promise.reject(new Error("not used")),
-    redo: () => Promise.reject(new Error("not used")),
-  };
+  const rust = fakeProjectApi({ state: loaded(1, projectOf(locked)) });
+  const api = rust.api;
+  const commands = rust.commands;
+
   const preview: NumberingApi = {
     previewNumbering: (strategy) => {
       previews.push(strategy);

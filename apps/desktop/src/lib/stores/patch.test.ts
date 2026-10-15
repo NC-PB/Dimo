@@ -113,7 +113,7 @@ describe("applying patches of samples, results and report data (T3.1)", () => {
     after: r,
   });
 
-  it("keeps results in sample order, then placement order, as Rust does", () => {
+  it("finds results by cell and leaves their order to Rust (MF F8)", () => {
     const project = applyChanges(emptyProject(), [
       ...addChanges("c1", 1, 0),
       ...addChanges("c2", 2, 1),
@@ -125,13 +125,14 @@ describe("applying patches of samples, results and report data (T3.1)", () => {
       set(result("s1", "c1", "4.0")),
     ]);
     const cells = (p: typeof project) => p.results.map((r) => `${r.sample}/${r.characteristic}`);
-    expect(cells(project)).toEqual(["s1/c1", "s1/c2", "s2/c1", "s2/c2"]);
+    // New results are added; the store never sorts them (Rust's order comes with a full state).
+    expect(cells(project)).toEqual(["s2/c2", "s1/c2", "s2/c1", "s1/c1"]);
 
     const moved = applyChanges(project, [
       { type: "sample_order_changed", before: ["s1", "s2"], after: ["s2", "s1"] },
       { type: "order_changed", before: ["c1", "c2"], after: ["c2", "c1"] },
     ]);
-    expect(cells(moved)).toEqual(["s2/c2", "s2/c1", "s1/c2", "s1/c1"]);
+    expect(moved.results).toBe(project.results);
 
     const changed = result("s1", "c1", "4.00");
     const next = applyChanges(project, [
@@ -149,8 +150,8 @@ describe("applying patches of samples, results and report data (T3.1)", () => {
       },
       { type: "sample_changed", before: sample("s2", "2"), after: sample("s2", "SN-2") },
     ]);
-    expect(next.results[0]).toBe(changed);
-    expect(cells(next)).toEqual(["s1/c1", "s1/c2", "s2/c1"]);
+    expect(next.results[2]).toBe(changed);
+    expect(cells(next)).toEqual(["s1/c2", "s2/c1", "s1/c1"]);
     expect(next.samples[1]?.serial).toBe("SN-2");
     expect(() => applyChanges(next, [set(result("s1", "c1", "5"))])).toThrow(PatchMismatch);
     const removed = applyChanges(next, [
