@@ -97,6 +97,17 @@ jobs:
       - name: Run checks
         run: ./scripts/check.sh
 
+      # A golden file test writes the produced file to target/golden-mismatch/ when it differs
+      # (docs/dev/testing.md), so a difference on one platform can be inspected.
+      - name: Upload golden file mismatches
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (2026-04-10)
+        with:
+          name: golden-mismatch-${{ matrix.os }}
+          path: target/golden-mismatch/
+          if-no-files-found: ignore
+          retention-days: 14
+
   # MF F9: the timing assertions (20 ms, 50 ms, 5 s) are ignored `perf_*` tests outside the
   # default test run. They run here on one platform, macOS as on the owner's machine. Shared
   # runners have noisy neighbours and vary in speed, so a miss is informative only: the job is

@@ -41,6 +41,9 @@ pub enum ExportError {
     /// The XLSX writer failed.
     #[error("cannot write XLSX: {0}")]
     Xlsx(#[from] rust_xlsxwriter::XlsxError),
+    /// The XLSX container could not be made platform independent.
+    #[error("cannot write XLSX: {0}")]
+    Zip(#[from] dimo_core::zip_host::ZipHostError),
 }
 
 /// A data output of a project (architecture 05).

@@ -38,6 +38,7 @@ pub mod report;
 pub mod sheet;
 pub mod source;
 pub mod truth;
+pub mod zip_host;
 pub mod zones;
 
 pub use balloon::{

@@ -239,13 +239,116 @@ fn golden_path(name: &str) -> std::path::PathBuf {
         .join(name)
 }
 
-/// FR-EXP-11, rule 11: the exports equal files written at an earlier time on another run, so
-/// they depend on neither the clock nor the process. Byte for byte, also the ZIP container of
-/// the XLSX files. Regenerate after an intended change with
-/// `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` and review the diff.
+/// Where a produced file that differs from its golden file is written. CI uploads this
+/// directory as an artifact when a job fails, so a mismatch on one platform can be inspected.
+fn mismatch_path(name: &str) -> std::path::PathBuf {
+    golden_path(name)
+        .ancestors()
+        .nth(5)
+        .expect("workspace root above crates/dimo-io/tests/golden/<name>")
+        .join("target/golden-mismatch/dimo-io")
+        .join(name)
+}
+
+/// First difference between two XLSX files: entry list and order, then per entry the stored
+/// metadata (host system, flags, compression, time, attributes) and the content. Falls back to
+/// the first differing byte when the entries and their content are equal.
+fn zip_difference(expected: &[u8], actual: &[u8]) -> String {
+    use dimo_core::zip_host::entry_metadata;
+    let (Ok(want), Ok(got)) = (entry_metadata(expected), entry_metadata(actual)) else {
+        return "one of the files is not a readable ZIP archive".into();
+    };
+    let names = |meta: &[dimo_core::zip_host::EntryMetadata]| {
+        meta.iter().map(|m| m.name.clone()).collect::<Vec<_>>()
+    };
+    if names(&want) != names(&got) {
+        return format!(
+            "entry names or order differ: expected {:?}, got {:?}",
+            names(&want),
+            names(&got)
+        );
+    }
+    let mut want_zip = entries(expected);
+    let mut got_zip = entries(actual);
+    for (w, g) in want.iter().zip(&got) {
+        let mut fields = Vec::new();
+        if w.host() != g.host() {
+            fields.push(format!("host system {} != {}", w.host(), g.host()));
+        }
+        if w.version_made_by != g.version_made_by {
+            fields.push(format!(
+                "version made by {:#06x} != {:#06x}",
+                w.version_made_by, g.version_made_by
+            ));
+        }
+        if w.flags != g.flags {
+            fields.push(format!("flags {:#06x} != {:#06x}", w.flags, g.flags));
+        }
+        if w.method != g.method {
+            fields.push(format!("compression {} != {}", w.method, g.method));
+        }
+        if w.dos_time_date != g.dos_time_date {
+            fields.push(format!(
+                "time/date {:?} != {:?}",
+                w.dos_time_date, g.dos_time_date
+            ));
+        }
+        if w.external_attributes != g.external_attributes {
+            fields.push(format!(
+                "external attributes {:#010x} != {:#010x}",
+                w.external_attributes, g.external_attributes
+            ));
+        }
+        let content = |zip: &mut zip::ZipArchive<std::io::Cursor<&[u8]>>| {
+            let mut file = zip.by_name(&w.name).unwrap();
+            let compressed = file.compressed_size();
+            let mut data = Vec::new();
+            file.read_to_end(&mut data).unwrap();
+            (data, compressed)
+        };
+        let (want_data, want_compressed) = content(&mut want_zip);
+        let (got_data, got_compressed) = content(&mut got_zip);
+        if want_data != got_data {
+            fields.push(format!(
+                "uncompressed content differs ({} vs {} bytes)",
+                want_data.len(),
+                got_data.len()
+            ));
+        } else if want_compressed != got_compressed {
+            fields.push(format!(
+                "same content, compressed size {want_compressed} != {got_compressed}"
+            ));
+        }
+        if !fields.is_empty() {
+            return format!(
+                "first differing entry {}: {} (expected != got)",
+                w.name,
+                fields.join(", ")
+            );
+        }
+    }
+    let at = expected
+        .iter()
+        .zip(actual)
+        .position(|(a, b)| a != b)
+        .unwrap_or(expected.len().min(actual.len()));
+    format!(
+        "entries and content equal; first differing byte at offset {at} (lengths {} and {})",
+        expected.len(),
+        actual.len()
+    )
+}
+
+/// FR-EXP-11, NFR-PORT-03, rule 11: the exports equal files written at an earlier time on
+/// another run and platform, so they depend on neither the clock, the process nor the
+/// operating system. Byte for byte, also the ZIP container of the XLSX files. Regenerate after
+/// an intended change with `DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list` and
+/// review the diff. On a mismatch the produced file is written to
+/// `target/golden-mismatch/dimo-io/`.
 #[test]
 fn exports_match_the_golden_files() {
     let update = std::env::var_os("DIMO_UPDATE_GOLDEN").is_some();
+    let mut failures = Vec::new();
     for &(name, xlsx, language) in GOLDEN {
         let exporter: &dyn Exporter = if xlsx {
             &XlsxListExporter
@@ -259,11 +362,65 @@ fn exports_match_the_golden_files() {
             std::fs::write(&path, &bytes).unwrap();
         }
         let committed = std::fs::read(&path).expect("golden file in tests/golden");
-        assert!(
-            committed == bytes,
-            "{name} differs from tests/golden/{name}. If the change is intended, regenerate with \
-             DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list"
-        );
+        if committed == bytes {
+            continue;
+        }
+        let out = mismatch_path(name);
+        std::fs::create_dir_all(out.parent().unwrap()).unwrap();
+        std::fs::write(&out, &bytes).unwrap();
+        let detail = if xlsx {
+            zip_difference(&committed, &bytes)
+        } else {
+            let line = committed
+                .split(|&b| b == b'\n')
+                .zip(bytes.split(|&b| b == b'\n'))
+                .position(|(a, b)| a != b)
+                .map_or_else(|| "line count".to_owned(), |i| format!("line {}", i + 1));
+            format!("first difference at {line}")
+        };
+        failures.push(format!(
+            "{name} differs from tests/golden/{name}: {detail}. Produced file: {}",
+            out.display()
+        ));
+    }
+    assert!(
+        failures.is_empty(),
+        "{}\nIf the change is intended, regenerate with \
+         DIMO_UPDATE_GOLDEN=1 cargo test -p dimo-io --test export_list",
+        failures.join("\n")
+    );
+}
+
+/// FR-EXP-11, NFR-PORT-03: the ZIP metadata of the XLSX list does not depend on the platform
+/// the test runs on: host Unix, Unix mode 0o100600 without DOS attribute bits, fixed time and
+/// the entry order of the golden file.
+#[test]
+fn xlsx_zip_metadata_is_platform_independent() {
+    for (name, language) in [
+        ("list_en.xlsx", Language::En),
+        ("list_de.xlsx", Language::De),
+    ] {
+        let bytes = export(&XlsxListExporter, &project(), language);
+        let meta = dimo_core::zip_host::entry_metadata(&bytes).unwrap();
+        let golden =
+            dimo_core::zip_host::entry_metadata(&std::fs::read(golden_path(name)).unwrap())
+                .unwrap();
+        let order = |m: &[dimo_core::zip_host::EntryMetadata]| {
+            m.iter().map(|e| e.name.clone()).collect::<Vec<_>>()
+        };
+        assert_eq!(order(&meta), order(&golden), "{name}: entry order");
+        for entry in &meta {
+            assert_eq!(entry.host(), 3, "{name} {}: host Unix", entry.name);
+            assert_eq!(
+                entry.external_attributes,
+                0o100_600 << 16,
+                "{name} {}: Unix mode, no DOS bits",
+                entry.name
+            );
+            // 1980-01-01 00:00:00 in DOS format.
+            assert_eq!(entry.dos_time_date, (0, 0x21), "{name} {}", entry.name);
+            assert_eq!(entry.method, 8, "{name} {}: deflate", entry.name);
+        }
     }
 }
 

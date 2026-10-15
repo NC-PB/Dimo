@@ -519,7 +519,9 @@ impl From<dimo_io::export::ExportError> for CommandError {
         use dimo_io::export::ExportError;
         let reason = match &error {
             ExportError::Io(source) => ExportReason::of_io(source),
-            ExportError::Csv(_) | ExportError::Xlsx(_) => ExportReason::ListFailed,
+            ExportError::Csv(_) | ExportError::Xlsx(_) | ExportError::Zip(_) => {
+                ExportReason::ListFailed
+            }
         };
         Self::export(reason, error)
     }

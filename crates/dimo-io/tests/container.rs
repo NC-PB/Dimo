@@ -229,6 +229,30 @@ fn container_layout_is_fixed() {
     }
 }
 
+/// NFR-PORT-03, FR-EXP-11: the stored entry metadata does not depend on the platform the test
+/// runs on. The writer sets host Unix and mode 0o644 itself, so the `zip` crate adds neither
+/// its DOS default nor DOS attribute bits on Windows.
+#[test]
+fn container_zip_metadata_is_platform_independent() {
+    let bytes = common::sample().to_zip().unwrap();
+    let meta = dimo_core::zip_host::entry_metadata(&bytes).unwrap();
+    assert_eq!(meta.len(), 5);
+    for entry in &meta {
+        assert_eq!(entry.host(), 3, "{}: host Unix", entry.name);
+        assert_eq!(
+            entry.external_attributes,
+            0o100_644 << 16,
+            "{}: Unix mode, no DOS bits",
+            entry.name
+        );
+        assert_eq!(entry.method, 0, "{}: stored", entry.name);
+        assert_eq!(entry.flags, 0, "{}: no data descriptor", entry.name);
+    }
+    let mut unix = bytes.clone();
+    dimo_core::zip_host::set_unix_host(&mut unix).unwrap();
+    assert_eq!(unix, bytes, "already what a Unix build writes");
+}
+
 #[test]
 fn drawings_are_stored_byte_identical() {
     let file = common::sample();

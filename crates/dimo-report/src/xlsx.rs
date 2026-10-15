@@ -242,7 +242,10 @@ impl<'a> Builder<'a> {
 
         self.print_setup(sheet, title, first_head, data_start - 1)?;
         sheet.set_freeze_panes(0, 2)?;
-        Ok(workbook.save_to_buffer()?)
+        let mut bytes = workbook.save_to_buffer()?;
+        // FR-EXP-11, NFR-PORT-03: the ZIP host system would otherwise depend on the platform.
+        dimo_core::zip_host::set_unix_host(&mut bytes).map_err(ReportError::from)?;
+        Ok(bytes)
     }
 
     /// Title and header block; returns the next free row.
