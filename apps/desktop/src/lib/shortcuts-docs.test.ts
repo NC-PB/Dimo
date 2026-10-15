@@ -20,8 +20,8 @@ const pages = import.meta.glob<string>("../../../../docs/user/*/shortcuts.md", {
 
 /** Shortcut groups of the reference, in page order. */
 const GROUPS = {
-  anywhere: (s: Shortcut) => (s.scope ?? "global") === "global" && s.anyView === true,
-  drawing: (s: Shortcut) => (s.scope ?? "global") === "global" && s.anyView !== true,
+  anywhere: (s: Shortcut) => s.scope === "app",
+  drawing: (s: Shortcut) => s.scope === "drawing",
   table: (s: Shortcut) => s.scope === "table",
   measure: (s: Shortcut) => s.scope === "grid",
 } as const;

@@ -77,12 +77,22 @@ export type ShortcutAction =
   | "grid_paste";
 
 /**
- * Where a shortcut acts. `global` shortcuts are handled by the window (`Shortcuts.svelte`),
- * `table` shortcuts only while the characteristic table has focus (T1.7). Keys used in both
- * scopes (arrows, Enter, Escape, Cmd+A) act on the table while it has focus; the window then
- * leaves them alone. `grid` shortcuts act while the measurement grid has focus (T3.5).
+ * Where a shortcut acts (MF F8). An area of the window registers its scope while it is shown or
+ * focused (`stores/keyboard.svelte.ts`); the window handler (`Shortcuts.svelte`) then runs the
+ * shortcuts of the active scopes:
+ *
+ * - `app`: in every area (project, tabs, undo, the cheat sheet).
+ * - `drawing`: while the drawing is shown.
+ * - `table`, `grid`: while the characteristic table (T1.7) or the measurement grid (T3.5) has
+ *   the focus. These areas handle their keys themselves; the window then runs only `app` keys.
+ * - `imageEditor`, `review`: reserved for the image editor (R.20) and the review view.
+ *
+ * No shortcut acts while a dialog is open (`AppDialog` counts them).
  */
-export type ShortcutScope = "global" | "table" | "grid";
+export type ShortcutScope = "app" | "drawing" | "table" | "grid" | "imageEditor" | "review";
+
+/** Scopes whose area handles its own keys while it has the focus. */
+export const FOCUS_SCOPES: readonly ShortcutScope[] = ["table", "grid"];
 
 /**
  * One key combination. `key` is compared with `KeyboardEvent.key` (letters case insensitive).
@@ -101,26 +111,27 @@ export interface Shortcut {
   action: ShortcutAction;
   /** The first combination is the one shown in the UI. */
   keys: readonly KeyCombo[];
-  /** Arrow keys and similar act only when the drawing or nothing else has focus. */
-  viewportOnly?: boolean;
+  /** Where the shortcut acts. */
+  scope: ShortcutScope;
+  /**
+   * Acts only while its area itself or nothing has the focus. Arrow keys, Enter and Delete
+   * belong to a focused button, list or pane otherwise.
+   */
+  focusOnly?: boolean;
   /** In a text field the key keeps its text editing meaning (undo typing, not the project). */
   textEditing?: boolean;
-  /** Where the shortcut acts; `global` when not given. */
-  scope?: ShortcutScope;
-  /** Also acts outside the drawing view (export, settings). */
-  anyView?: boolean;
 }
 
 export const SHORTCUTS: readonly Shortcut[] = [
-  { action: "new_project", keys: [{ key: "n", mod: true }], anyView: true },
-  { action: "open_project", keys: [{ key: "o", mod: true }], anyView: true },
-  { action: "save_project", keys: [{ key: "s", mod: true, shift: false }], anyView: true },
-  { action: "save_project_as", keys: [{ key: "s", mod: true, shift: true }], anyView: true },
+  { action: "new_project", keys: [{ key: "n", mod: true }], scope: "app" },
+  { action: "open_project", keys: [{ key: "o", mod: true }], scope: "app" },
+  { action: "save_project", keys: [{ key: "s", mod: true, shift: false }], scope: "app" },
+  { action: "save_project_as", keys: [{ key: "s", mod: true, shift: true }], scope: "app" },
   {
     action: "undo",
     keys: [{ key: "z", mod: true, shift: false }],
     textEditing: true,
-    anyView: true,
+    scope: "app",
   },
   {
     action: "redo",
@@ -129,42 +140,78 @@ export const SHORTCUTS: readonly Shortcut[] = [
       { key: "y", mod: true, shift: false },
     ],
     textEditing: true,
-    anyView: true,
+    scope: "app",
   },
   // Tabs (ADR 0007): drawing (Home), review, measure, report, and File > Options.
-  { action: "show_drawing", keys: [{ key: "1", mod: true }], anyView: true },
-  { action: "show_review", keys: [{ key: "2", mod: true }], anyView: true },
-  { action: "show_measure", keys: [{ key: "3", mod: true }], anyView: true },
-  { action: "show_export", keys: [{ key: "e", mod: true }], anyView: true },
-  { action: "show_options", keys: [{ key: ",", mod: true }], anyView: true },
-  { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }] },
-  { action: "zoom_out", keys: [{ key: "-" }, { key: "_" }] },
-  { action: "fit", keys: [{ key: "0" }] },
+  { action: "show_drawing", keys: [{ key: "1", mod: true }], scope: "app" },
+  { action: "show_review", keys: [{ key: "2", mod: true }], scope: "app" },
+  { action: "show_measure", keys: [{ key: "3", mod: true }], scope: "app" },
+  { action: "show_export", keys: [{ key: "e", mod: true }], scope: "app" },
+  { action: "show_options", keys: [{ key: ",", mod: true }], scope: "app" },
+  { action: "zoom_in", keys: [{ key: "+" }, { key: "=" }], scope: "drawing" },
+  { action: "zoom_out", keys: [{ key: "-" }, { key: "_" }], scope: "drawing" },
+  { action: "fit", keys: [{ key: "0" }], scope: "drawing" },
   // Shift tells the direction, so the keys work on every keyboard layout (FR-DOC-05).
-  { action: "rotate_right", keys: [{ key: "r", shift: false }] },
-  { action: "rotate_left", keys: [{ key: "r", shift: true }] },
-  { action: "pan_left", keys: [{ key: "ArrowLeft", shift: false }], viewportOnly: true },
-  { action: "pan_right", keys: [{ key: "ArrowRight", shift: false }], viewportOnly: true },
-  { action: "pan_up", keys: [{ key: "ArrowUp", shift: false }], viewportOnly: true },
-  { action: "pan_down", keys: [{ key: "ArrowDown", shift: false }], viewportOnly: true },
-  { action: "previous_sheet", keys: [{ key: "PageUp" }] },
-  { action: "next_sheet", keys: [{ key: "PageDown" }] },
-  { action: "nudge_left", keys: [{ key: "ArrowLeft", shift: true }], viewportOnly: true },
-  { action: "nudge_right", keys: [{ key: "ArrowRight", shift: true }], viewportOnly: true },
-  { action: "nudge_up", keys: [{ key: "ArrowUp", shift: true }], viewportOnly: true },
-  { action: "nudge_down", keys: [{ key: "ArrowDown", shift: true }], viewportOnly: true },
-  { action: "select_tool", keys: [{ key: "v" }] },
-  { action: "place_tool", keys: [{ key: "b" }] },
-  { action: "edit_value", keys: [{ key: "Enter" }], viewportOnly: true },
-  { action: "select_all", keys: [{ key: "a", mod: true }], textEditing: true },
+  { action: "rotate_right", keys: [{ key: "r", shift: false }], scope: "drawing" },
+  { action: "rotate_left", keys: [{ key: "r", shift: true }], scope: "drawing" },
+  {
+    action: "pan_left",
+    keys: [{ key: "ArrowLeft", shift: false }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  {
+    action: "pan_right",
+    keys: [{ key: "ArrowRight", shift: false }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  { action: "pan_up", keys: [{ key: "ArrowUp", shift: false }], scope: "drawing", focusOnly: true },
+  {
+    action: "pan_down",
+    keys: [{ key: "ArrowDown", shift: false }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  { action: "previous_sheet", keys: [{ key: "PageUp" }], scope: "drawing" },
+  { action: "next_sheet", keys: [{ key: "PageDown" }], scope: "drawing" },
+  {
+    action: "nudge_left",
+    keys: [{ key: "ArrowLeft", shift: true }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  {
+    action: "nudge_right",
+    keys: [{ key: "ArrowRight", shift: true }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  {
+    action: "nudge_up",
+    keys: [{ key: "ArrowUp", shift: true }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  {
+    action: "nudge_down",
+    keys: [{ key: "ArrowDown", shift: true }],
+    scope: "drawing",
+    focusOnly: true,
+  },
+  { action: "select_tool", keys: [{ key: "v" }], scope: "drawing" },
+  { action: "place_tool", keys: [{ key: "b" }], scope: "drawing" },
+  { action: "edit_value", keys: [{ key: "Enter" }], scope: "drawing", focusOnly: true },
+  { action: "select_all", keys: [{ key: "a", mod: true }], scope: "drawing", textEditing: true },
   {
     action: "delete_selection",
     keys: [{ key: "Delete" }, { key: "Backspace" }],
-    viewportOnly: true,
+    scope: "drawing",
+    focusOnly: true,
   },
-  { action: "restyle", keys: [{ key: "s", shift: false }] },
-  { action: "cancel", keys: [{ key: "Escape" }] },
-  { action: "show_shortcuts", keys: [{ key: "?" }], anyView: true },
+  { action: "restyle", keys: [{ key: "s", shift: false }], scope: "drawing" },
+  { action: "cancel", keys: [{ key: "Escape" }], scope: "drawing" },
+  { action: "show_shortcuts", keys: [{ key: "?" }], scope: "app" },
   // Characteristic table (T1.7), active while the table has focus.
   { action: "table_up", keys: [{ key: "ArrowUp", shift: false }], scope: "table" },
   { action: "table_down", keys: [{ key: "ArrowDown", shift: false }], scope: "table" },
@@ -264,28 +311,20 @@ function matches(combo: KeyCombo, input: KeyInput, mac: boolean): boolean {
     : input.key === combo.key;
 }
 
-/** The shortcut of `scope` a key press triggers, or `null`. */
+/** Scopes of the window while the drawing is shown and nothing special has the focus. */
+const WINDOW_SCOPES: readonly ShortcutScope[] = ["app", "drawing"];
+
+/** The shortcut of one of `scopes` a key press triggers, or `null`. */
 export function matchShortcut(
   input: KeyInput,
   mac: boolean = isMacPlatform(),
-  scope: ShortcutScope = "global",
+  scopes: ShortcutScope | readonly ShortcutScope[] = WINDOW_SCOPES,
 ): Shortcut | null {
+  const active: readonly ShortcutScope[] = typeof scopes === "string" ? [scopes] : scopes;
   return (
     SHORTCUTS.find(
-      (s) => (s.scope ?? "global") === scope && s.keys.some((combo) => matches(combo, input, mac)),
+      (s) => active.includes(s.scope) && s.keys.some((combo) => matches(combo, input, mac)),
     ) ?? null
-  );
-}
-
-/**
- * Whether a window shortcut also acts while the characteristic table has focus: Cmd/Ctrl
- * combinations (save, undo) and the cheat sheet. Single keys (R, V, B, S, zoom, PageUp) belong
- * to the table there, so typing in a row never turns the sheet or switches the tool.
- */
-export function worksInTable(shortcut: Shortcut): boolean {
-  return (
-    (shortcut.scope ?? "global") === "global" &&
-    (shortcut.action === "show_shortcuts" || shortcut.keys.every((k) => k.mod === true))
   );
 }
 

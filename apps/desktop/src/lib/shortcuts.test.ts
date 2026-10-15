@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SHORTCUTS, formatCombo, matchShortcut, shortcutKeys, worksInTable } from "./shortcuts";
+import { FOCUS_SCOPES, SHORTCUTS, formatCombo, matchShortcut, shortcutKeys } from "./shortcuts";
 
 const key = (
   k: string,
@@ -18,11 +18,15 @@ describe("shortcut map (D-52)", () => {
     expect(new Set(actions).size).toBe(actions.length);
   });
 
-  it("never assigns one key combination to two actions", () => {
+  it("never assigns one key combination to two actions that can act together", () => {
+    // Window scopes (app, drawing, image editor, review) can be active at once; a focus scope
+    // (table, grid) replaces them while its area has the focus.
+    const group = (s: (typeof SHORTCUTS)[number]) =>
+      FOCUS_SCOPES.includes(s.scope) ? s.scope : "window";
     const combos = SHORTCUTS.flatMap((s) =>
       s.keys.map(
         (k) =>
-          `${s.scope ?? "global"}:${k.mod ? "mod+" : ""}${k.alt ? "alt+" : ""}${k.shift === undefined ? "" : `shift=${String(k.shift)}+`}${k.key.toLowerCase()}`,
+          `${group(s)}:${k.mod ? "mod+" : ""}${k.alt ? "alt+" : ""}${k.shift === undefined ? "" : `shift=${String(k.shift)}+`}${k.key.toLowerCase()}`,
       ),
     );
     expect(new Set(combos).size).toBe(combos.length);
@@ -108,23 +112,24 @@ describe("shortcut map (D-52)", () => {
     expect(matchShortcut(key("a", { ctrl: true }), false, "table")?.action).toBe(
       "table_select_all",
     );
-    expect(matchShortcut(key("Enter"), true)?.viewportOnly).toBe(true);
+    expect(matchShortcut(key("Enter"), true)?.focusOnly).toBe(true);
     expect(matchShortcut(key("Enter"), true, "table")?.action).toBe("table_edit");
     expect(matchShortcut(key("+"), true, "table")).toBeNull();
   });
 
-  it("lets only Cmd/Ctrl shortcuts and the cheat sheet act from the table", () => {
-    const action = (k: ReturnType<typeof key>) => {
-      const shortcut = matchShortcut(k, true);
-      return shortcut !== null && worksInTable(shortcut);
-    };
-    expect(action(key("s", { meta: true }))).toBe(true);
-    expect(action(key("z", { meta: true }))).toBe(true);
-    expect(action(key("?", { shift: true }))).toBe(true);
-    for (const single of ["r", "v", "b", "s", "+", "0", "PageDown", "Escape", "Delete"]) {
-      expect(action(key(single))).toBe(false);
+  it("gives every shortcut a scope and keeps app keys to Cmd/Ctrl and the cheat sheet", () => {
+    // App keys also act from the table and the grid, so they must never be a plain letter
+    // there (MF F8; was worksInTable).
+    for (const s of SHORTCUTS.filter((x) => x.scope === "app")) {
+      const plain = s.keys.some((k) => k.mod !== true);
+      expect(!plain || s.action === "show_shortcuts", s.action).toBe(true);
     }
-    expect(action(key("r", { shift: true }))).toBe(false);
+    expect(matchShortcut(key("s", { meta: true }), true, "app")?.action).toBe("save_project");
+    expect(matchShortcut(key("?", { shift: true }), true, "app")?.action).toBe("show_shortcuts");
+    for (const single of ["r", "v", "b", "s", "+", "0", "PageDown", "Escape", "Delete"]) {
+      expect(matchShortcut(key(single), true, "app"), single).toBeNull();
+    }
+    expect(matchShortcut(key("r"), true, ["app", "drawing"])?.action).toBe("rotate_right");
   });
 
   it("formats Alt and Shift without a modifier", () => {

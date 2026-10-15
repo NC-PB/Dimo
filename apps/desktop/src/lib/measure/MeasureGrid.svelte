@@ -3,7 +3,6 @@
   import { untrack } from "svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import ToleranceBadges from "$lib/components/ToleranceBadges.svelte";
-  import { DEV_TOOLS_ENABLED, devTools } from "$lib/dev/dev-tools.svelte";
   import { m, unitLabel } from "$lib/i18n";
   import type {
     CharId,
@@ -16,6 +15,7 @@
     Sample,
     SampleId,
   } from "$lib/ipc/bindings";
+  import { keyboard } from "$lib/stores/keyboard.svelte";
   import { isMacPlatform, matchShortcut } from "$lib/shortcuts";
   import { measurementStore, type MeasurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore, type ProjectStore } from "$lib/stores/project.svelte";
@@ -303,11 +303,12 @@
 
   /** Dev builds: time from a commit to the first frame with Rust's new verdicts. */
   function timeCommit(start: number) {
-    if (!DEV_TOOLS_ENABLED) {
+    if (!import.meta.env.DEV) {
       return;
     }
     const before = measurement.state;
     void (async () => {
+      const { devTools } = await import("$lib/dev/dev-tools.svelte");
       for (let i = 0; i < 500 && measurement.state === before; i++) {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
@@ -315,6 +316,14 @@
       devTools.commitTimes.push(performance.now() - start);
     })();
   }
+
+  // The grid's keys are the `grid` scope: while it has the focus the window runs only app keys.
+  $effect(() => {
+    const element = grid;
+    if (element !== null) {
+      return keyboard.register({ scope: "grid", element: () => element });
+    }
+  });
 
   /**
    * Sets one cell from text and reports a refusal. The active cell has already moved on, so a
@@ -570,7 +579,7 @@
     if (shortcut === null) {
       // A printable character starts editing the active cell with that character. Either way
       // it must not reach the window shortcuts, except the cheat sheet (D-52).
-      if (matchShortcut(event)?.action === "show_shortcuts") {
+      if (matchShortcut(event, isMacPlatform(), "app")?.action === "show_shortcuts") {
         return;
       }
       if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {

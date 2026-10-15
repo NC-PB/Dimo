@@ -1,10 +1,8 @@
 <script lang="ts">
   import CharacteristicDetail from "$lib/components/CharacteristicDetail.svelte";
-  import DevPanel from "$lib/components/DevPanel.svelte";
   import ProjectSummary from "$lib/components/ProjectSummary.svelte";
   import SelectionSummary from "$lib/components/SelectionSummary.svelte";
   import ZonesAndViews from "$lib/components/ZonesAndViews.svelte";
-  import { DEV_TOOLS_ENABLED } from "$lib/dev/dev-tools.svelte";
   import { commandErrorMessage, m, strategyHint } from "$lib/i18n";
   import Pane from "$lib/pane/Pane.svelte";
   import PaneSection from "$lib/pane/PaneSection.svelte";
@@ -105,6 +103,9 @@
       view.showSidePanel = false;
     }
   }
+
+  /** The developer panel (T0.8), loaded only in development builds (MF F8). */
+  const devPanel = import.meta.env.DEV ? import("$lib/dev/DevPanel.svelte") : null;
 </script>
 
 <Pane
@@ -150,9 +151,11 @@
     <ProjectSummary {project} {tolerance} />
   {/if}
 
-  {#if DEV_TOOLS_ENABLED}
-    <div class="px-3.5 py-2 text-text-muted">
-      <DevPanel />
-    </div>
+  {#if devPanel !== null}
+    {#await devPanel then { default: DevPanel }}
+      <div class="px-3.5 py-2 text-text-muted">
+        <DevPanel />
+      </div>
+    {/await}
   {/if}
 </Pane>
