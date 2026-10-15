@@ -106,8 +106,8 @@ Acceptance:
   add and remove as their own commands. Shares schema 4 with F1 (audit entries migrated).
 
 Acceptance:
-- [ ] Two fast edits of different fields both survive without `executeWith` (test)
-- [ ] No frontend code builds a whole project info, report info, sheet or sample object to send
+- [x] Two fast edits of different fields both survive without `executeWith` (test)
+- [x] No frontend code builds a whole project info, report info, sheet or sample object to send
 
 ### F3 Structured errors
 
