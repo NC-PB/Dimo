@@ -27,7 +27,7 @@
 //! cancelled export never leaves a half written file.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -43,7 +43,9 @@ use specta::Type;
 use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_specta::Event;
 
+use crate::dialogs::{self, DevOverride, Filter};
 use crate::ipc::{CommandError, ExportReason, InternalReason, JobId, JobProgress, tile_service};
+pub(crate) use crate::opener::{open_with_system, open_written_file};
 use crate::project::{SessionState, emit, emit_patched, with_session};
 use crate::session::{AppSession, ExportSnapshot, ProjectPatched};
 use crate::settings::PdfBalloons;
@@ -115,11 +117,21 @@ impl ExportFormat {
         format!("{stem}_{suffix}.{}", self.extension())
     }
 
-    fn filter_name(self) -> &'static str {
-        match self.extension() {
-            "pdf" => "PDF",
-            "csv" => "CSV",
-            _ => "Excel",
+    /// File type filter of the save dialog.
+    pub const fn filter(self) -> Filter {
+        match self {
+            Self::BalloonedPdf | Self::CheckSheetPdf | Self::InspectionReportPdf => Filter {
+                name: "PDF",
+                extensions: &["pdf"],
+            },
+            Self::Csv => Filter {
+                name: "CSV",
+                extensions: &["csv"],
+            },
+            Self::Xlsx | Self::CheckSheetXlsx | Self::InspectionReportXlsx => Filter {
+                name: "Excel",
+                extensions: &["xlsx"],
+            },
         }
     }
 }
@@ -404,116 +416,16 @@ pub fn run_steps(
     Ok(dimo_io::project::sha256(&bytes))
 }
 
-/// Writes `bytes` to `path` through a temporary file in the same directory.
+/// Writes `bytes` to `path` through a unique temporary file in the same directory
+/// ([`crate::fsio::write_atomic`]), so a failed or cancelled export never leaves half a file.
 pub fn write_file(path: &Path, bytes: &[u8]) -> Result<(), CommandError> {
-    let name = path.file_name().ok_or_else(|| {
-        CommandError::export(
+    if path.file_name().is_none() {
+        return Err(CommandError::export(
             ExportReason::InvalidFileName,
             format_args!("{} is not a file name", path.display()),
-        )
-    })?;
-    let mut temporary_name = std::ffi::OsString::from(".");
-    temporary_name.push(name);
-    temporary_name.push(".part");
-    let temporary = path.with_file_name(temporary_name);
-    let result = std::fs::write(&temporary, bytes).and_then(|()| std::fs::rename(&temporary, path));
-    if let Err(error) = result {
-        let _ = std::fs::remove_file(&temporary);
-        return Err(CommandError::export_io(path, &error));
-    }
-    Ok(())
-}
-
-/// Opens the file `path` that an export job just wrote, through `opener`. Refused if the
-/// extension is not the one of `format`: the user can type any file name in the save dialog, and
-/// a file of another type (a script, say) must never be started from here.
-pub(crate) fn open_written_file(
-    path: &Path,
-    format: ExportFormat,
-    opener: impl FnOnce(&Path) -> std::io::Result<()>,
-) -> Result<(), CommandError> {
-    let matches = path
-        .extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case(format.extension()));
-    if !matches {
-        return Err(CommandError::export(
-            ExportReason::WrongExtension,
-            format_args!(
-                "not opened: {} is not a .{} file",
-                path.display(),
-                format.extension()
-            ),
         ));
     }
-    opener(path).map_err(|e| {
-        CommandError::export(
-            ExportReason::OpenFailed,
-            format_args!("cannot open {}: {e}", path.display()),
-        )
-    })
-}
-
-/// The process that opens `path` with the default application of the operating system. The path
-/// is one argument, never part of a shell string. It must be absolute, so it cannot be read as
-/// an option.
-fn open_command(path: &Path) -> std::io::Result<std::process::Command> {
-    let path = std::path::absolute(path)?;
-    let mut command;
-    if cfg!(target_os = "macos") {
-        command = std::process::Command::new("open");
-        command.arg(&path);
-    } else if cfg!(target_os = "windows") {
-        // `start` is a command of cmd.exe. Rust quotes an argument only if it has a space, so the
-        // path is quoted by hand and passed raw: inside double quotes `& | < > ^ ( )` are plain
-        // characters to cmd.
-        let quoted = windows_start_argument(&path)?;
-        command = std::process::Command::new("cmd");
-        command.args(["/C", "start", ""]);
-        #[cfg(windows)]
-        std::os::windows::process::CommandExt::raw_arg(&mut command, quoted);
-        #[cfg(not(windows))]
-        command.arg(quoted);
-    } else {
-        command = std::process::Command::new("xdg-open");
-        command.arg(&path);
-    }
-    Ok(command)
-}
-
-/// The path as the quoted argument of `cmd /C start "" <path>`. Inside double quotes cmd treats
-/// most operators as text, but `%` is still expanded and `"` would end the quote, so a path
-/// with either is refused. Not Windows specific code, so every platform tests it.
-fn windows_start_argument(path: &Path) -> std::io::Result<String> {
-    let text = path.to_string_lossy();
-    if text.contains(['%', '"', '\n', '\r', '\0']) {
-        return Err(std::io::Error::other(
-            "the file name contains %, a double quote or a line break",
-        ));
-    }
-    Ok(format!("\"{text}\""))
-}
-
-/// Starts the default application for `path` and does not wait for it.
-pub(crate) fn open_with_system(path: &Path) -> std::io::Result<()> {
-    let mut child = open_command(path)?
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()?;
-    // Reap the launcher (`open`, `xdg-open`) without blocking the job thread for long; the
-    // application itself keeps running.
-    std::thread::spawn(move || {
-        let _ = child.wait();
-    });
-    Ok(())
-}
-
-/// `path` with the extension of `format` if it has none.
-fn with_extension(mut path: PathBuf, format: ExportFormat) -> PathBuf {
-    if path.extension().is_none() {
-        path.set_extension(format.extension());
-    }
-    path
+    crate::fsio::write_atomic(path, bytes).map_err(|e| CommandError::export_io(path, &e))
 }
 
 /// The warnings of [`ReportWarnings`] for report `kind` of `project`; `limits_changed` from
@@ -658,22 +570,11 @@ pub async fn export_project(
         }
         _ => None,
     };
-    let path = if let Some(dir) = crate::dev::dev_export_dir() {
-        let _ = std::fs::create_dir_all(&dir);
-        dir.join(&suggested)
-    } else {
-        let picked = rfd::AsyncFileDialog::new()
-            .add_filter(format.filter_name(), &[format.extension()])
-            .set_file_name(&suggested)
-            .set_parent(&window)
-            .save_file()
-            .await;
-        let Some(file) = picked else {
-            return Ok(None);
-        };
-        file.path().to_path_buf()
+    let Some(path) =
+        dialogs::save_file(&window, format.filter(), &suggested, DevOverride::ExportDir).await
+    else {
+        return Ok(None);
     };
-    let path = with_extension(path, format);
     let ExportStart {
         snapshot,
         issued,
@@ -746,7 +647,13 @@ impl Job<'_> {
                 let open_error = self
                     .request
                     .open_after
-                    .then(|| open_written_file(self.path, self.request.format, open_with_system))
+                    .then(|| {
+                        open_written_file(
+                            self.path,
+                            self.request.format.extension(),
+                            open_with_system,
+                        )
+                    })
                     .and_then(Result::err);
                 progress(1.0, "done");
                 JobOutcome::Done {
@@ -815,82 +722,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn open_after_export_opens_only_files_of_the_exported_type() {
-        let mut opened = Vec::new();
-        let ok = open_written_file(
-            Path::new("/tmp/part_check-sheet.PDF"),
-            ExportFormat::CheckSheetPdf,
-            |p| {
-                opened.push(p.to_path_buf());
-                Ok(())
-            },
-        );
-        assert!(ok.is_ok());
-        assert_eq!(opened, [PathBuf::from("/tmp/part_check-sheet.PDF")]);
-        for (name, format) in [
-            ("/tmp/run.bat", ExportFormat::CheckSheetPdf),
-            ("/tmp/noextension", ExportFormat::Csv),
-            ("/tmp/list.xlsx", ExportFormat::Csv),
-        ] {
-            let refused = open_written_file(Path::new(name), format, |_| {
-                panic!("{name} must not be opened")
-            });
-            assert!(
-                matches!(
-                    refused,
-                    Err(CommandError::Export {
-                        reason: ExportReason::WrongExtension,
-                        ..
-                    })
-                ),
-                "{name}"
-            );
-        }
-        let failed = open_written_file(Path::new("/tmp/a.csv"), ExportFormat::Csv, |_| {
-            Err(std::io::Error::other("no application"))
-        });
-        assert!(
-            matches!(&failed, Err(CommandError::Export { reason: ExportReason::OpenFailed, message }) if message.contains("no application")),
-            "{failed:?}"
-        );
-    }
-
-    #[test]
-    fn windows_start_argument_is_quoted_and_refuses_expansion() {
-        let quoted = windows_start_argument(Path::new(r"C:\Temp\a&calc (1) ^b.pdf")).unwrap();
-        assert_eq!(quoted, "\"C:\\Temp\\a&calc (1) ^b.pdf\"");
-        for bad in ["a%PATH%.pdf", "a\"b.pdf", "a\nb.pdf"] {
-            assert!(windows_start_argument(Path::new(bad)).is_err(), "{bad}");
-        }
-    }
-
-    #[test]
-    fn open_command_passes_the_path_as_one_argument() {
-        let path = Path::new("/tmp/a b; touch x & c.pdf");
-        let command = open_command(path).unwrap();
-        let args: Vec<_> = command.get_args().collect();
-        let last = args.last().unwrap();
-        assert_eq!(
-            std::path::Path::new(last),
-            std::path::absolute(path).unwrap()
-        );
-        if cfg!(target_os = "macos") {
-            assert_eq!(command.get_program(), "open");
-            assert_eq!(args.len(), 1);
-        } else if cfg!(target_os = "windows") {
-            assert_eq!(command.get_program(), "cmd");
-            assert_eq!(args.len(), 4);
-        } else {
-            assert_eq!(command.get_program(), "xdg-open");
-            assert_eq!(args.len(), 1);
-        }
-        // A relative path becomes absolute, so it cannot look like an option.
-        let relative = open_command(Path::new("-n.pdf")).unwrap();
-        let arg = relative.get_args().last().unwrap().to_owned();
-        assert!(Path::new(&arg).is_absolute());
-    }
-
-    #[test]
     fn file_names_follow_the_project() {
         assert_eq!(
             ExportFormat::BalloonedPdf.file_name("part"),
@@ -920,14 +751,6 @@ mod tests {
             ExportFormat::InspectionReportXlsx.file_name("part"),
             "part_inspection-report.xlsx"
         );
-        assert_eq!(
-            with_extension(PathBuf::from("/tmp/x"), ExportFormat::Csv),
-            PathBuf::from("/tmp/x.csv")
-        );
-        assert_eq!(
-            with_extension(PathBuf::from("/tmp/x.txt"), ExportFormat::Csv),
-            PathBuf::from("/tmp/x.txt")
-        );
     }
 
     #[test]
@@ -939,8 +762,19 @@ mod tests {
             }
         }
         assert_eq!(ExportFormat::Csv.report(), None);
-        assert_eq!(ExportFormat::InspectionReportXlsx.filter_name(), "Excel");
-        assert_eq!(ExportFormat::CheckSheetPdf.filter_name(), "PDF");
+        for format in [
+            ExportFormat::BalloonedPdf,
+            ExportFormat::Csv,
+            ExportFormat::Xlsx,
+            ExportFormat::CheckSheetPdf,
+            ExportFormat::CheckSheetXlsx,
+            ExportFormat::InspectionReportPdf,
+            ExportFormat::InspectionReportXlsx,
+        ] {
+            assert_eq!(format.filter().extensions, [format.extension()]);
+        }
+        assert_eq!(ExportFormat::InspectionReportXlsx.filter().name, "Excel");
+        assert_eq!(ExportFormat::CheckSheetPdf.filter().name, "PDF");
     }
 
     #[test]

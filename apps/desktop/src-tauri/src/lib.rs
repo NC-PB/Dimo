@@ -4,12 +4,15 @@
 //! invoke handler and the generated TypeScript bindings, so both always agree (NFR-MNT-03).
 
 pub mod dev;
+pub mod dialogs;
 pub mod env;
 pub mod error;
 pub mod export;
+pub mod fsio;
 pub mod ipc;
 pub mod measurement;
 pub mod numbering;
+pub mod opener;
 pub mod project;
 pub mod recent;
 pub mod recognition;
