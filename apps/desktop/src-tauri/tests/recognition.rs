@@ -14,7 +14,7 @@ use dimo_core::characteristic::{FieldValue, Origin, ToleranceRule};
 use dimo_core::geometry::{OrientedBox, Point, Size};
 use dimo_core::proposal::BalloonPlacement;
 use dimo_core::{Command, Environment as _, SheetId};
-use dimo_desktop::ipc::CommandError;
+use dimo_desktop::ipc::{ArgumentReason, CommandError, RejectReason};
 use dimo_desktop::recognition::{InterpreterNote, parse_shorter_leg, propose, read_typed};
 use dimo_desktop::session::AppSession;
 use dimo_pdf::tiles::{TileConfig, TileService};
@@ -142,7 +142,10 @@ fn box_select_accept_undo_redo() {
     };
     assert!(matches!(
         propose(&tiles, &target, sheet, flat, PLACEMENT, Language::En),
-        Err(CommandError::InvalidArgument { .. })
+        Err(CommandError::InvalidArgument {
+            reason: ArgumentReason::Region,
+            ..
+        })
     ));
 }
 
@@ -202,7 +205,10 @@ fn typed_text_reads_like_box_select() {
     let other = SheetId::from_uuid(dimo_core::FixedEnvironment::new().new_uuid());
     assert!(matches!(
         session.recognition_target(other),
-        Err(CommandError::InvalidArgument { .. })
+        Err(CommandError::Rejected {
+            reason: RejectReason::UnknownSheet,
+            ..
+        })
     ));
 }
 
@@ -292,7 +298,10 @@ fn shorter_leg_gives_angle_limits() {
         assert!(
             matches!(
                 parse_shorter_leg(Some(bad), Unit::Mm),
-                Err(CommandError::InvalidArgument { .. })
+                Err(CommandError::InvalidArgument {
+                    reason: ArgumentReason::ShorterLeg,
+                    ..
+                })
             ),
             "{bad}"
         );

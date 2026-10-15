@@ -1,0 +1,16 @@
+[
+  { "mark": "errors flow start" },
+  { "show": "tab:drawing" },
+  { "wait": 300 },
+  { "button": "Firmentabellen" },
+  { "wait": 400 },
+  { "button": "Tabelle importieren…" },
+  { "wait": 1000 },
+  { "alerts": "table refused" },
+  { "key": "Escape" },
+  { "wait": 300 },
+  { "key": "n", "mod": true },
+  { "wait": 1500 },
+  { "alerts": "drawing refused" },
+  { "report": "final" }
+]

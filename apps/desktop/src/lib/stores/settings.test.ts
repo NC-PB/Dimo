@@ -53,10 +53,14 @@ describe("settings store (T1.9)", () => {
   it("keeps the change for this run and reports a failed write", async () => {
     const store = new SettingsStore({
       get: () => Promise.resolve(view(DEFAULT_SETTINGS)),
-      set: () => Promise.resolve({ status: "error", error: { kind: "io", message: "read only" } }),
+      set: () =>
+        Promise.resolve({
+          status: "error",
+          error: { kind: "io", reason: "permission_denied", message: "read only" },
+        }),
     });
     expect(await store.update({ theme: "dark" })).toBe(false);
     expect(store.current.theme).toBe("dark");
-    expect(store.error).toEqual({ kind: "io", message: "read only" });
+    expect(store.error).toEqual({ kind: "io", reason: "permission_denied", message: "read only" });
   });
 });

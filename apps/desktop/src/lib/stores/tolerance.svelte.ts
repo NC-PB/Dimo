@@ -25,6 +25,7 @@ import {
   type SheetId,
   type TableClass,
   type TableImport,
+  type TableImportReason,
   type ToleranceSettings,
   type ToleranceTableInfo,
 } from "$lib/ipc/bindings";
@@ -66,10 +67,11 @@ export interface ToleranceProject {
   applyPatched(event: ProjectPatched): void;
 }
 
-/** A refused table file: Rust's message and the line, if known. */
+/** A refused table file: the reason, the line if known, and Rust's diagnostic message. */
 export interface ImportRefusal {
-  message: string;
+  reason: TableImportReason;
   line: number | null;
+  message: string;
 }
 
 async function call<T>(action: () => Promise<Result<T>>): Promise<Result<T>> {
@@ -250,7 +252,11 @@ export class ToleranceStore {
         case "invalid":
           this.imported = null;
           this.importUnchanged = false;
-          this.importRefusal = { message: outcome.message, line: outcome.line };
+          this.importRefusal = {
+            reason: outcome.reason,
+            line: outcome.line,
+            message: outcome.message,
+          };
           break;
         case "imported":
           this.importRefusal = null;

@@ -5,6 +5,7 @@
 
 pub mod dev;
 pub mod env;
+pub mod error;
 pub mod export;
 pub mod ipc;
 pub mod measurement;

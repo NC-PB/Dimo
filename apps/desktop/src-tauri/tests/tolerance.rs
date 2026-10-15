@@ -13,7 +13,7 @@ use dimo_core::{
     ChangeSource, CharId, Command, DerivationRule, FieldValue, Point, TableClass, TableRef,
     ToleranceDerivation,
 };
-use dimo_desktop::ipc::CommandError;
+use dimo_desktop::ipc::{ArgumentReason, CommandError, TableImportReason};
 use dimo_desktop::session::AppSession;
 use dimo_desktop::tolerance::{self, TableImport, TableUse};
 use dimo_pdf::tiles::{TileConfig, TileService};
@@ -276,12 +276,16 @@ fn custom_table_import_survives_a_crash() {
         session
             .create_from_drawing(&tiles, &drawing(), false)
             .unwrap();
-        let TableImport::Invalid { message, line } =
-            tolerance::import(&mut session, &broken).unwrap()
+        let TableImport::Invalid {
+            reason,
+            line,
+            message,
+        } = tolerance::import(&mut session, &broken).unwrap()
         else {
             panic!("the broken table was imported");
         };
         assert_eq!(line, Some(6), "{message}");
+        assert_eq!(reason, TableImportReason::Syntax, "{message}");
         assert!(message.contains("broken.toml"), "{message}");
         assert!(!session.has_unsaved_changes());
 
@@ -425,7 +429,10 @@ fn shorter_leg_keeps_its_unit_when_the_sheet_unit_changes() {
     // Text that is not a positive number is refused.
     assert!(matches!(
         tolerance::apply_shorter_leg(&mut session, id, Some("abc")),
-        Err(CommandError::InvalidArgument { .. })
+        Err(CommandError::InvalidArgument {
+            reason: ArgumentReason::ShorterLeg,
+            ..
+        })
     ));
     // Hand entered limits stay; only the leg changes.
     session

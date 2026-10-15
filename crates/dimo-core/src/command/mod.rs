@@ -12,6 +12,7 @@ mod balloons;
 mod characteristics;
 mod measurement;
 mod numbering;
+mod reject;
 mod reports;
 mod settings;
 mod sheets;
@@ -38,6 +39,8 @@ use crate::proposal::{BalloonPlacement, Proposal};
 use crate::report::{ReportFormat, ReportInfo, ReportKind, TemplateRef};
 use crate::sheet::{Rotation, Scale, Sha256Hex, SheetView, ZoneGrid};
 use crate::source::ImageEdit;
+
+pub use reject::RejectReason;
 
 /// New position of one balloon.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]

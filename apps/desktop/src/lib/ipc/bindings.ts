@@ -56,9 +56,9 @@ export const commands = {
 	removeRecentProject: (path: string) => typedError<RecentProject[], CommandError>(__TAURI_INVOKE("remove_recent_project", { path })),
 	/**
 	 *  Opens a project of the recent list without a file dialog. `path` must be an entry of the
-	 *  list exactly as [`recent_projects`] returned it; other paths are refused. `discard` as for
-	 *  `open_project`. A file that no longer exists is refused with `io` and stays on the list, so
-	 *  the user sees it greyed and can remove it.
+	 *  list exactly as [`recent_projects`] returned it; other paths are refused with `recent`
+	 *  `not_listed`. `discard` as for `open_project`. A file that no longer exists is refused with
+	 *  `recent` `missing` and stays on the list, so the user sees it greyed and can remove it.
 	 */
 	openRecentProject: (path: string, discard: boolean) => typedError<boolean, CommandError>(__TAURI_INVOKE("open_recent_project", { path, discard })),
 	/**
@@ -255,6 +255,22 @@ export type AppSettings = {
 	export: ExportPreferences,
 };
 
+/**  Which argument of a command is malformed. */
+export type ArgumentReason = 
+/**  The shorter leg is not a positive number (T2.9a). */
+"shorter_leg" | 
+/**  A box needs a finite position and a size above zero. */
+"region" | 
+/**  A document id is not a content hash. */
+"document_id" | 
+/**
+ *  Tauri could not read the arguments of the call (set by the frontend, which receives
+ *  that error as plain text).
+ */
+"unreadable" | 
+/**  Any other malformed request, for example a dev script. */
+"request";
+
 /**  Result of a go/no go or visual check (FR-MEA-06). */
 export type AttributeValue = 
 /**  The requirement is met. */
@@ -273,8 +289,21 @@ export type Autosave =
  *  place for a journal. The timer retries.
  */
 { state: "failed"; 
-/**  Why, for the user and for bug reports. */
+/**  Why, for the frontend to translate. */
+reason: AutosaveReason; 
+/**  Diagnostic text for the "Details" line and bug reports. */
 message: string };
+
+/**  Why the autosave journal is not written (NFR-REL-01). */
+export type AutosaveReason = 
+/**  There is no autosave folder and the project was never saved. */
+"no_folder" | 
+/**  The disk is full. */
+"disk_full" | 
+/**  The user may not write the autosave folder or the project folder. */
+"permission_denied" | 
+/**  Writing failed for another reason. */
+"write_failed";
 
 /**
  *  Label scheme of one axis: the kind and whether it counts from the far end (numbers right to
@@ -954,22 +983,24 @@ output_sha256: Sha256Hex } |
 /**  Commands in order. */
 commands: Command[] };
 
-/**  Error of a command: a machine readable kind and a message for logs and bug reports. */
+/**  Error of a command: a machine readable kind (and reason) and a diagnostic message. */
 export type CommandError = 
-/**  The PDFium library could not be loaded at startup; no drawing can be opened. */
-{ kind: "pdfium_unavailable"; 
-/**  Why loading failed. */
-message: string } | 
-/**  A file could not be read. */
+/**  A file or folder could not be read or written. */
 { kind: "io"; 
-/**  The operating system error. */
+/**  Why, as far as the operating system tells. */
+reason: IoReason; 
+/**  The operating system error with the path. */
 message: string } | 
-/**  The file is not a PDF that PDFium can open. */
+/**  The drawing file cannot be opened. */
 { kind: "invalid_document"; 
-/**  The PDFium error. */
+/**  Why. */
+reason: DocumentReason; 
+/**  The reader error. */
 message: string } | 
 /**  An argument is malformed, for example a document id that is not a content hash. */
 { kind: "invalid_argument"; 
+/**  Which argument. */
+reason: ArgumentReason; 
 /**  What is wrong. */
 message: string } | 
 /**  The action needs an open project. */
@@ -986,12 +1017,16 @@ user: string | null } |
 found: number; 
 /**  Highest schema version this build reads. */
 supported: number } | 
-/**  The project file could not be read or written. */
+/**  The project file could not be read or used. */
 { kind: "project"; 
+/**  Why. */
+reason: ProjectReason; 
 /**  What went wrong. */
 message: string } | 
-/**  An export could not be produced or written; no file was left behind. */
+/**  An export could not be produced, written or opened; no file was left behind. */
 { kind: "export"; 
+/**  Why. */
+reason: ExportReason; 
 /**  What went wrong. */
 message: string } | 
 /**  The document command was refused; the project is unchanged. */
@@ -999,6 +1034,22 @@ message: string } |
 /**  Machine readable reason, for the frontend to translate. */
 reason: RejectReason; 
 /**  Why, in English, for logs and bug reports. */
+message: string } | 
+/**  An entry of the recent projects list cannot be opened. */
+{ kind: "recent"; 
+/**  Why. */
+reason: RecentReason; 
+/**  The entry. */
+message: string } | 
+/**  A background task stopped before it answered (it panicked or was cancelled). */
+{ kind: "task_failed"; 
+/**  The join error. */
+message: string } | 
+/**  Something inside the app is broken: a bundled resource, the window, or a bug. */
+{ kind: "internal"; 
+/**  What broke. */
+reason: InternalReason; 
+/**  What went wrong. */
 message: string };
 
 /**
@@ -1126,6 +1177,19 @@ export type DocumentInfo = {
 	sheets: SheetInfo[],
 };
 
+/**  Why a drawing file cannot be opened. */
+export type DocumentReason = 
+/**  The file is neither a PDF nor an image. */
+"not_a_pdf" | 
+/**  The file is an image; images become drawings with release 0.1 (R.19). */
+"image_not_supported" | 
+/**  The PDF reader cannot read the file: damaged, password protected or unusual. */
+"damaged" | 
+/**  The file is larger than the limit for drawings. */
+"too_large" | 
+/**  The PDF component (PDFium) is not loaded, so no PDF can be opened. */
+"no_pdf_engine";
+
 /**  One imported drawing file (data model `DrawingRevision`, FR-DOC-07). */
 export type DrawingRevision = {
 	/**  Stable ID. */
@@ -1207,6 +1271,31 @@ export type ExportPreferences = {
 	/**  Open the written file with the system default application after a successful export. */
 	open_after_export: boolean,
 };
+
+/**  Why an export failed. */
+export type ExportReason = 
+/**  Another program has the target file open (Windows), or it is busy. */
+"target_locked" | 
+/**  The user may not write the target folder or file. */
+"permission_denied" | 
+/**  The disk is full. */
+"disk_full" | 
+/**  Writing the file failed for another reason, for example a missing folder. */
+"write_failed" | 
+/**  The target is not a file name. */
+"invalid_file_name" | 
+/**  The ballooned PDF needs the PDF component (PDFium), which is not loaded. */
+"no_pdf_engine" | 
+/**  The PDF component could not write the ballooned PDF. */
+"pdf_failed" | 
+/**  The report could not be built or rendered. */
+"report_failed" | 
+/**  The characteristic list (CSV, Excel) could not be written. */
+"list_failed" | 
+/**  The written file was not opened: its extension is not the one of the format. */
+"wrong_extension" | 
+/**  The written file could not be opened with the default application. */
+"open_failed";
 
 /**  An export the user asked for. */
 export type ExportRequest = {
@@ -1397,12 +1486,36 @@ export type Inspection = {
 	frequency: string,
 };
 
+/**  What inside the app is broken. */
+export type InternalReason = 
+/**  The tolerance tables shipped with the app cannot be loaded. */
+"shipped_tables" | 
+/**  The report template shipped with the app cannot be loaded. */
+"report_template" | 
+/**  The window refused an action, for example closing. */
+"window" | 
+/**  An inconsistency that should never happen. */
+"bug";
+
 /**  Something the tolerance engine could not decide, shown with a proposal, never stored. */
 export type InterpreterNote = 
 /**  An angle whose shorter leg is unknown, so angular general tolerances cannot apply. */
 "shorter_leg_unknown" | 
 /**  A fit pair such as `H7/g6` names two features; no limits. */
 "fit_pair";
+
+/**  Why a file could not be read or written, as far as the operating system tells. */
+export type IoReason = 
+/**  The file or folder does not exist. */
+"not_found" | 
+/**  The user may not read or write it, or the drive is read only. */
+"permission_denied" | 
+/**  Another program has the file open and locked it (Windows), or it is busy. */
+"target_locked" | 
+/**  The disk or the user's quota is full. */
+"disk_full" | 
+/**  Any other operating system error. */
+"other";
 
 /**  What happened to the "issued" record of a report exported as issued (M3 decision 17). */
 export type IssuedRecord = 
@@ -1891,6 +2004,25 @@ export type ProjectPatched = {
 	status: ProjectStatus,
 };
 
+/**  Why a project file cannot be read or used. */
+export type ProjectReason = 
+/**  The file is no Dimo project. */
+"not_a_project" | 
+/**  The container or one of its entries is damaged or unsafe. */
+"damaged_container" | 
+/**  The project is larger than the read limits. */
+"too_large" | 
+/**  Converting the project from an older format failed. */
+"migration_failed" | 
+/**  The drawing file of a revision is not in the project. */
+"missing_drawing" | 
+/**  A company table the settings name is not in the project. */
+"missing_table" | 
+/**  A company table in the project was changed outside Dimo. */
+"changed_table" | 
+/**  The project was never saved, so it has no file yet. */
+"no_file";
+
 /**  Project wide settings. */
 export type ProjectSettings = {
 	/**  Default balloon style (D-24). */
@@ -2029,6 +2161,13 @@ export type RecentProject = {
 	exists: boolean,
 };
 
+/**  Why an entry of the recent projects list cannot be opened. */
+export type RecentReason = 
+/**  The path is not on the list; only listed paths are opened. */
+"not_listed" | 
+/**  The file no longer exists. It stays on the list until the user removes it. */
+"missing";
+
 /**  Axis aligned rectangle in sheet space, for example a drawing frame or a view (M2 decision 1). */
 export type Rect = {
 	/**  Top left corner. */
@@ -2050,8 +2189,8 @@ export type Reinterpreted = {
 };
 
 /**
- *  Why a document command was refused: the variants of [`dimo_core::CommandError`] the user can
- *  run into, without their details.
+ *  Why a document command was refused: the variants of [`CommandError`] the user can run into,
+ *  without their details. [`CommandError::reject_reason`] is the one mapping.
  */
 export type RejectReason = 
 /**  A characteristic of the command does not exist. */
@@ -2494,10 +2633,34 @@ patched: ProjectPatched } |
 table: TableRef } | 
 /**  The file was refused; the project is unchanged. */
 { result: "invalid"; 
-/**  What is wrong, in English, naming the file. */
-message: string; 
+/**  Why, for the frontend to translate. */
+reason: TableImportReason; 
 /**  Line of the file, counted from 1, if the error has one. */
-line: number | null };
+line: number | null; 
+/**  What is wrong, in English, naming the file: diagnostic text for the "Details" line. */
+message: string };
+
+/**  Why a company table file was refused at import (FR-TOL-07). */
+export type TableImportReason = 
+/**  The file is larger than 16 MiB. */
+"too_large" | 
+/**  The file cannot be read. */
+"unreadable" | 
+/**  The file is not UTF-8 text. */
+"not_text" | 
+/**  The file is not valid TOML or does not match the table format. */
+"syntax" | 
+/**  The file matches the format but breaks a rule of tables (values, rows, header). */
+"invalid_content" | 
+/**  The table is not of kind `custom`. */
+"not_company_table" | 
+/**  The table id is the id of a shipped table. */
+"duplicate_id" | 
+/**
+ *  The table does not fit the tolerance settings of the project, for example a class they
+ *  use is missing.
+ */
+"settings_conflict";
 
 /**  A value read from a range table: which table, part, column and row (FR-TOL-02, FR-TOL-07). */
 export type TableLookup = {

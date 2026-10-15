@@ -1,9 +1,6 @@
 import { commandErrorMessage, getLocale, m, rejectReasonText } from "$lib/i18n";
 import type { CommandError, NumberingLock } from "$lib/ipc/bindings";
 
-/** Prefix Tauri puts before the error of a command argument Rust could not read. */
-const ARGUMENT_ERROR = /^invalid args `[^`]*` for command `[^`]*`: /;
-
 /** What the refused change was, for errors Rust reports only as an argument it could not read. */
 export interface RefusalContext {
   /** The kind of value that was typed: an exact decimal or a quantity. */
@@ -20,36 +17,28 @@ export function isNumberingLocked(error: CommandError): boolean {
 /**
  * Why Rust refused a change, as shown next to the cell or the moved rows, in the UI language.
  *
- * - Refused commands carry a machine readable `reason`; known ones are translated, the others
- *   show Rust's English message.
+ * - Refused commands carry a machine readable `reason`, translated here.
  * - Values Rust cannot read (for example `1,5` as a decimal, or `1.5` as a quantity) come back
- *   as the argument error of the `execute` call, without a kind. The typed value's kind
- *   (`context.input`) tells which text applies; without it, Rust's own text is shown with the
- *   Tauri prefix dropped.
+ *   as an argument error with the reason `unreadable` (see `asCommandError`). The typed value's
+ *   kind (`context.input`) tells which text applies.
+ * - Everything else is translated by `commandErrorMessage`. Rust's English text is never shown.
  */
 export function refusalDetail(error: CommandError, context: RefusalContext = {}): string {
-  switch (error.kind) {
-    case "rejected":
-      if (isNumberingLocked(error) && context.lock) {
-        return lockExplanation(context.lock);
-      }
-      return rejectReasonText(error.reason) ?? error.message;
-    case "invalid_argument": {
-      if (ARGUMENT_ERROR.test(error.message)) {
-        if (context.input === "decimal") {
-          return m.refusal_invalid_decimal();
-        }
-        if (context.input === "quantity") {
-          return m.refusal_invalid_quantity();
-        }
-      }
-      return error.message.replace(ARGUMENT_ERROR, "");
+  if (error.kind === "rejected") {
+    if (isNumberingLocked(error) && context.lock) {
+      return lockExplanation(context.lock);
     }
-    case "io":
-      return error.message;
-    default:
-      return commandErrorMessage(error);
+    return rejectReasonText(error.reason);
   }
+  if (error.kind === "invalid_argument" && error.reason === "unreadable") {
+    if (context.input === "decimal") {
+      return m.refusal_invalid_decimal();
+    }
+    if (context.input === "quantity") {
+      return m.refusal_invalid_quantity();
+    }
+  }
+  return commandErrorMessage(error);
 }
 
 /** Why characteristics cannot be moved while numbering is locked (D-23). */

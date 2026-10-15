@@ -48,7 +48,7 @@ pub use characteristic::{
     Characteristic, CharacteristicKind, CharacteristicStatus, Classification, FieldError,
     FieldValue, Inspection, Length, Origin, SourceRegion, TextSource, ToleranceRule, Unit,
 };
-pub use command::{BalloonMove, Command, CommandError};
+pub use command::{BalloonMove, Command, CommandError, RejectReason};
 pub use derivation::{
     DerivationHint, DerivationRule, RangeBound, SizeRange, TableLookup, TableRef,
     ToleranceDerivation, UnitConversion,

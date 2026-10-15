@@ -51,6 +51,9 @@
  *   that starts with this text.
  * - `wait`: milliseconds; `mark` and `report` write a line (report: balloons, selection, tool
  *   and limits).
+ * - `alerts`: writes a line with the rendered text of every visible alert (`role="alert"`),
+ *   for example error messages, so a test can check their language (MF F3). Collapsed
+ *   "Details" are not rendered, so their diagnostic text is not part of it.
  * - `until`: waits until the text of a report contains this text, for example `"\"P5\""`
  *   once the fifth typed value is stored, at most 10 s; then the step fails. Use it instead of
  *   a fixed `wait` where the next step needs a change that Rust has applied.
@@ -105,6 +108,7 @@ export type UiStep =
   | { wait: number }
   | { until: string }
   | { mark: string }
+  | { alerts: string }
   | { report: string };
 
 const STEP_PAUSE_MS = 120;
@@ -509,6 +513,12 @@ async function run(step: UiStep): Promise<void> {
     }
   } else if ("mark" in step) {
     await log(`mark ${step.mark}`);
+  } else if ("alerts" in step) {
+    const texts = [...document.querySelectorAll<HTMLElement>('[role="alert"]')]
+      .filter((e) => e.offsetParent !== null)
+      .map((e) => e.innerText.replace(/\s+/g, " ").trim())
+      .filter((t) => t !== "");
+    await log(`${step.alerts}: alerts [${texts.join(" | ")}]`);
   } else {
     await log(report(step.report));
   }

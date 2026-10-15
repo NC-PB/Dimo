@@ -15,6 +15,7 @@ import {
   type ProjectStatusChanged,
   type Sheet,
 } from "$lib/ipc/bindings";
+import { asCommandError } from "$lib/errors";
 import { documentStore } from "./document.svelte";
 import { PatchMismatch, applyChanges, balloonsBySheet, characteristicsById } from "./patch";
 import { unsavedPrompt } from "./prompt.svelte";
@@ -55,17 +56,7 @@ export type UnsavedChoice = "save" | "discard" | "cancel";
 
 const NO_BALLOONS: readonly Balloon[] = [];
 
-/**
- * The error of a failed command as a `CommandError`. Tauri reports arguments Rust could not read,
- * for example a malformed decimal string in `update_fields`, as plain text rather than as the
- * command's error type; such text becomes an `invalid_argument` error.
- */
-export function asCommandError(error: unknown): CommandError {
-  if (typeof error === "object" && error !== null && "kind" in error) {
-    return error as CommandError;
-  }
-  return { kind: "invalid_argument", message: String(error) };
-}
+export { asCommandError };
 
 /**
  * The open project as the frontend sees it (T1.5). Rust owns the document (ADR 0001): this store
@@ -272,7 +263,7 @@ export class ProjectStore {
       this.error = null;
       return result.data;
     } catch (e) {
-      this.error = { kind: "io", message: String(e) };
+      this.error = asCommandError(e);
       return undefined;
     }
   }

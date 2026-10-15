@@ -27,6 +27,8 @@
 #   9. Start screen and setup pane (T3.17): without a project the start screen card creates the
 #      project (DIMO_DEV_NEW_DRAWING replaces the file dialog), the setup pane sets general
 #      tolerance, unit, scale, part number and customer, and Start ballooning turns on placing.
+#  10. Error messages (MF F3): in the German UI a broken company table and a text file as new
+#      drawing are refused; the messages are German, without Rust's English text.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -483,6 +485,26 @@ if [[ -s "$SET" ]]; then
 else
   fail "missing or empty: $SET"
 fi
+
+step "10. error messages in German (MF F3)"
+# German UI. A company table that is no TOML and a "new project" from a text file are refused;
+# the messages must be the German translations of the error reasons, with Rust's English text
+# only in the collapsed Details (not rendered, so not part of the alert text).
+mkdir -p "$WORK/home10/config"
+echo '{"locale":"de"}' >"$WORK/home10/config/settings.json"
+printf 'this is = = not a table\n' >"$WORK/broken.toml"
+printf 'plain text, not a drawing\n' >"$WORK/notes.txt"
+run_app errors "$SCRIPTS/errors.json" term home10 \
+  DIMO_DEV_OPEN="$DRAWING" DIMO_DEV_IMPORT_TABLE="$WORK/broken.toml" \
+  DIMO_DEV_NEW_DRAWING="$WORK/notes.txt"
+table_alerts=$(report errors "table refused")
+drawing_alerts=$(report errors "drawing refused")
+expect "errors: refused table in German with its reason" "yes" \
+  "$(yesno grep -q 'Tabelle abgelehnt.*Die Datei entspricht nicht dem Tabellenformat' <<<"$table_alerts")"
+expect "errors: non-PDF drawing refused in German" "yes" \
+  "$(yesno grep -q 'Die Datei ist keine PDF-Zeichnung' <<<"$drawing_alerts")"
+expect "errors: no English error text in the German messages" "no" \
+  "$(yesno grep -qiE '\.toml|\.txt|cannot|expected|not a PDF|error|failed' <<<"$table_alerts $drawing_alerts")"
 
 step "result"
 if [[ $FAILED -eq 0 ]]; then

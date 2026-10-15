@@ -15,6 +15,11 @@ use tauri_specta::Event;
 
 use crate::tiles::TileState;
 
+pub use crate::error::{
+    ArgumentReason, AutosaveReason, CommandError, DocumentReason, ExportReason, InternalReason,
+    IoReason, ProjectReason, RecentReason, RejectReason, TableImportReason,
+};
+
 /// Cargo profile the running binary was built with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -74,214 +79,6 @@ pub struct JobProgress {
     pub fraction: f64,
     /// Short description of the current step, shown next to the progress bar.
     pub message: String,
-}
-
-/// Error of a command: a machine readable kind and a message for logs and bug reports.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type, thiserror::Error)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum CommandError {
-    /// The PDFium library could not be loaded at startup; no drawing can be opened.
-    #[error("PDFium unavailable: {message}")]
-    PdfiumUnavailable {
-        /// Why loading failed.
-        message: String,
-    },
-    /// A file could not be read.
-    #[error("cannot read file: {message}")]
-    Io {
-        /// The operating system error.
-        message: String,
-    },
-    /// The file is not a PDF that PDFium can open.
-    #[error("cannot open document: {message}")]
-    InvalidDocument {
-        /// The PDFium error.
-        message: String,
-    },
-    /// An argument is malformed, for example a document id that is not a content hash.
-    #[error("invalid argument: {message}")]
-    InvalidArgument {
-        /// What is wrong.
-        message: String,
-    },
-    /// The action needs an open project.
-    #[error("no project is open")]
-    NoProject,
-    /// The open project has unsaved changes and the caller did not allow discarding them.
-    #[error("the project has unsaved changes")]
-    UnsavedChanges,
-    /// Another Dimo instance has the project open.
-    #[error("the project is open in another Dimo instance")]
-    InUse {
-        /// User name of the other instance, if known.
-        user: Option<String>,
-    },
-    /// The project was written by a newer Dimo (NFR-REL-04). The file is left untouched.
-    #[error("written by a newer version (schema {found}, supported {supported})")]
-    NewerVersion {
-        /// Schema version in the file.
-        found: u32,
-        /// Highest schema version this build reads.
-        supported: u32,
-    },
-    /// The project file could not be read or written.
-    #[error("project file: {message}")]
-    Project {
-        /// What went wrong.
-        message: String,
-    },
-    /// An export could not be produced or written; no file was left behind.
-    #[error("export failed: {message}")]
-    Export {
-        /// What went wrong.
-        message: String,
-    },
-    /// The document command was refused; the project is unchanged.
-    #[error("command refused: {message}")]
-    Rejected {
-        /// Machine readable reason, for the frontend to translate.
-        reason: RejectReason,
-        /// Why, in English, for logs and bug reports.
-        message: String,
-    },
-}
-
-/// Why a document command was refused: the variants of [`dimo_core::CommandError`] the user can
-/// run into, without their details.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "snake_case")]
-pub enum RejectReason {
-    /// A characteristic of the command does not exist.
-    UnknownCharacteristic,
-    /// A balloon of the command does not exist.
-    UnknownBalloon,
-    /// A sheet of the command does not exist.
-    UnknownSheet,
-    /// The command would change locked numbers (D-23).
-    NumberingLocked,
-    /// A position or region is not valid.
-    InvalidGeometry,
-    /// A balloon style size is not valid.
-    InvalidStyle,
-    /// A sheet unit, scale, zone grid or view is not valid.
-    InvalidSheetSetting,
-    /// Project settings break their rules, e.g. tolerance or numbering settings.
-    InvalidProjectSetting,
-    /// Characteristics cannot be moved before one of themselves.
-    InvalidMoveTarget,
-    /// Quantity 0.
-    ZeroQuantity,
-    /// A sample of the command does not exist.
-    UnknownSample,
-    /// A drawing revision of the command does not exist.
-    UnknownRevision,
-    /// The drawing revision is a PDF, so it has no image edit settings (MF F1).
-    NotAnImage,
-    /// Image edit settings are out of range (MF F1).
-    InvalidImageEdit,
-    /// A sample serial is empty (M3 decision 6).
-    EmptySerial,
-    /// Another sample has this serial (M3 decision 6).
-    DuplicateSerial,
-    /// A project holds at most 500 samples (M3 decision 6).
-    TooManySamples,
-    /// Samples are added 1 to 100 at once (M3 decision 6).
-    InvalidSampleCount,
-    /// A date is neither empty nor `YYYY-MM-DD`.
-    InvalidDate,
-    /// A typed result does not fit the result type of its characteristic (M3 decisions 7, 8).
-    InvalidResult,
-    /// The result type cannot change while results of the other type exist (M3 decision 4).
-    ResultTypeConflict,
-    /// Undo without history.
-    NothingToUndo,
-    /// Redo without history.
-    NothingToRedo,
-    /// Internal inconsistency; a bug.
-    Internal,
-}
-
-impl From<&dimo_core::CommandError> for RejectReason {
-    fn from(error: &dimo_core::CommandError) -> Self {
-        use dimo_core::CommandError as E;
-        use dimo_core::{FieldError, SerialError};
-        match error {
-            E::UnknownCharacteristic(_) => Self::UnknownCharacteristic,
-            E::UnknownBalloon(_) => Self::UnknownBalloon,
-            E::UnknownSheet(_) => Self::UnknownSheet,
-            E::NumberingLocked => Self::NumberingLocked,
-            E::InvalidGeometry(_) => Self::InvalidGeometry,
-            E::InvalidStyle => Self::InvalidStyle,
-            E::InvalidSheetSetting(_) => Self::InvalidSheetSetting,
-            E::InvalidProjectSetting(_) => Self::InvalidProjectSetting,
-            E::InvalidMoveTarget => Self::InvalidMoveTarget,
-            E::Field(FieldError::ZeroQuantity) => Self::ZeroQuantity,
-            E::UnknownSample(_) => Self::UnknownSample,
-            E::UnknownRevision(_) => Self::UnknownRevision,
-            E::NotAnImage(_) => Self::NotAnImage,
-            E::InvalidImageEdit(_) => Self::InvalidImageEdit,
-            E::Serial(SerialError::Empty) => Self::EmptySerial,
-            E::Serial(SerialError::Duplicate(_)) => Self::DuplicateSerial,
-            E::TooManySamples => Self::TooManySamples,
-            E::InvalidSampleCount => Self::InvalidSampleCount,
-            E::InvalidDate(_) => Self::InvalidDate,
-            E::InvalidResult { .. } => Self::InvalidResult,
-            E::ResultTypeConflict(_) => Self::ResultTypeConflict,
-            E::NothingToUndo => Self::NothingToUndo,
-            E::NothingToRedo => Self::NothingToRedo,
-            E::Change(_) => Self::Internal,
-        }
-    }
-}
-
-impl From<dimo_io::project::ProjectError> for CommandError {
-    fn from(error: dimo_io::project::ProjectError) -> Self {
-        use dimo_io::project::ProjectError;
-        match error {
-            ProjectError::InUse { holder } => Self::InUse {
-                user: holder.map(|h| h.user),
-            },
-            ProjectError::NewerVersion { found, supported } => {
-                Self::NewerVersion { found, supported }
-            }
-            other => Self::Project {
-                message: other.to_string(),
-            },
-        }
-    }
-}
-
-impl From<dimo_core::CommandError> for CommandError {
-    fn from(error: dimo_core::CommandError) -> Self {
-        Self::Rejected {
-            reason: RejectReason::from(&error),
-            message: error.to_string(),
-        }
-    }
-}
-
-impl From<dimo_io::project::CreateError> for CommandError {
-    fn from(error: dimo_io::project::CreateError) -> Self {
-        use dimo_io::project::CreateError;
-        match error {
-            CreateError::Read { .. } => Self::Io {
-                message: error.to_string(),
-            },
-            CreateError::Project(error) => error.into(),
-            CreateError::Open(error) => error.into(),
-            CreateError::UnknownType | CreateError::ImageNotSupported(_) => Self::InvalidDocument {
-                message: error.to_string(),
-            },
-        }
-    }
-}
-
-impl From<dimo_pdf::PdfError> for CommandError {
-    fn from(error: dimo_pdf::PdfError) -> Self {
-        Self::InvalidDocument {
-            message: error.to_string(),
-        }
-    }
 }
 
 /// Size of one sheet in sheet units (PDF user units, 1/72 inch).
@@ -386,8 +183,11 @@ impl From<TileRange> for tiles::TileRange {
 }
 
 fn parse_doc(doc: &str) -> Result<Sha256Hex, CommandError> {
-    Sha256Hex::from_hex(doc).ok_or_else(|| CommandError::InvalidArgument {
-        message: format!("document id {doc:?} is not a 64 digit hex content hash"),
+    Sha256Hex::from_hex(doc).ok_or_else(|| {
+        CommandError::argument(
+            ArgumentReason::DocumentId,
+            format_args!("document id {doc:?} is not a 64 digit hex content hash"),
+        )
     })
 }
 
@@ -402,14 +202,23 @@ pub fn app_info(tiles: State<'_, TileState>) -> AppInfo {
     AppInfo::current(tiles.service().is_ok())
 }
 
-/// The tile service, or [`CommandError::PdfiumUnavailable`].
+/// The tile service, or [`CommandError::InvalidDocument`] with
+/// [`DocumentReason::NoPdfEngine`].
 pub(crate) fn tile_service(tiles: &TileState) -> Result<Arc<TileService>, CommandError> {
     tiles
         .service()
         .map(Arc::clone)
-        .map_err(|message| CommandError::PdfiumUnavailable {
-            message: message.to_owned(),
-        })
+        .map_err(CommandError::no_pdf_engine)
+}
+
+/// Runs `work` on the blocking pool. A task that panics or is cancelled answers with
+/// [`CommandError::TaskFailed`].
+pub(crate) async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> Result<T, CommandError> + Send + 'static,
+) -> Result<T, CommandError> {
+    tauri::async_runtime::spawn_blocking(work)
+        .await
+        .map_err(CommandError::task_failed)?
 }
 
 /// Declares the tiles of a document the viewport still wants. Queued tile requests outside
@@ -451,42 +260,15 @@ mod tests {
     }
 
     #[test]
-    fn refused_commands_carry_a_machine_readable_reason() {
-        let locked = CommandError::from(dimo_core::CommandError::NumberingLocked);
-        assert_eq!(
-            locked,
-            CommandError::Rejected {
-                reason: RejectReason::NumberingLocked,
-                message: "numbering is locked".to_owned(),
-            }
+    fn a_panicking_blocking_task_is_task_failed() {
+        let ok = tauri::async_runtime::block_on(blocking(|| Ok(7)));
+        assert_eq!(ok, Ok(7));
+        let failed: Result<(), CommandError> =
+            tauri::async_runtime::block_on(blocking(|| panic!("boom")));
+        assert!(
+            matches!(failed, Err(CommandError::TaskFailed { .. })),
+            "{failed:?}"
         );
-        let json = serde_json::to_value(&locked).unwrap();
-        assert_eq!(json["kind"], "rejected");
-        assert_eq!(json["reason"], "numbering_locked");
-        let pdf = CommandError::from(dimo_core::CommandError::NotAnImage(
-            dimo_core::RevisionId::from_uuid(uuid::Uuid::nil()),
-        ));
-        assert!(matches!(
-            pdf,
-            CommandError::Rejected {
-                reason: RejectReason::NotAnImage,
-                ..
-            }
-        ));
-        assert_eq!(
-            serde_json::to_value(&pdf).unwrap()["reason"],
-            "not_an_image"
-        );
-        let zero = CommandError::from(dimo_core::CommandError::Field(
-            dimo_core::FieldError::ZeroQuantity,
-        ));
-        assert!(matches!(
-            zero,
-            CommandError::Rejected {
-                reason: RejectReason::ZeroQuantity,
-                ..
-            }
-        ));
     }
 
     #[test]
@@ -508,7 +290,10 @@ mod tests {
         };
         assert!(matches!(
             bad.key(),
-            Err(CommandError::InvalidArgument { .. })
+            Err(CommandError::InvalidArgument {
+                reason: ArgumentReason::DocumentId,
+                ..
+            })
         ));
     }
 

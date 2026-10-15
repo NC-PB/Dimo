@@ -183,6 +183,7 @@ function setup(importResult: TableImport = { result: "cancelled" }) {
       legs.push([id, text]);
       const refused: CommandError = {
         kind: "invalid_argument",
+        reason: "shorter_leg",
         message: "the shorter leg is not a positive number",
       };
       return Promise.resolve(
@@ -547,7 +548,12 @@ describe("tolerance settings (T2.8, T3.16)", () => {
   });
 
   it("shows a refused import with its line", async () => {
-    const stores = setup({ result: "invalid", message: "shop.toml: bad value", line: 6 });
+    const stores = setup({
+      result: "invalid",
+      reason: "invalid_content",
+      line: 6,
+      message: "shop.toml: bad value",
+    });
     renderSettings(stores);
     await settle();
     const button = [...target.querySelectorAll("button")].find((b) =>
@@ -555,8 +561,12 @@ describe("tolerance settings (T2.8, T3.16)", () => {
     );
     button?.click();
     await settle();
-    expect(target.querySelector("[data-testid='import-refusal']")?.textContent).toContain(
-      "line 6: shop.toml: bad value",
+    const refusal = target.querySelector("[data-testid='import-refusal']")?.textContent ?? "";
+    expect(refusal).toContain("line 6: A value or a row breaks the rules for tables.");
+    expect(refusal).not.toContain("shop.toml");
+    // Rust's text is only the diagnostic detail, collapsed under "Details".
+    expect(target.querySelector("[data-testid='error-details']")?.textContent).toContain(
+      "shop.toml: bad value",
     );
   });
 

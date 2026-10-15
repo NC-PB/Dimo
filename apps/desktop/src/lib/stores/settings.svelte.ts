@@ -10,6 +10,7 @@ import {
   type CommandError,
   type SettingsView,
 } from "$lib/ipc/bindings";
+import { asCommandError } from "$lib/errors";
 import { getLocale, isLocale, localStorageKey, setLocale } from "$lib/paraglide/runtime.js";
 import { themeController } from "$lib/theme/theme";
 
@@ -78,7 +79,7 @@ export class SettingsStore {
       this.#show(result.data);
       return true;
     } catch (e) {
-      this.error = { kind: "io", message: String(e) };
+      this.error = asCommandError(e);
       return false;
     }
   }

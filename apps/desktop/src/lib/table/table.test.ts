@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { asCommandError } from "$lib/errors";
 import { characteristic } from "$lib/stores/fixtures";
 import { COLUMNS, NO_UNIT, choiceOptions, displayText, fieldValue, rawText } from "./columns";
 import { isNumberingLocked, lockExplanation, refusalDetail } from "./refusal";
@@ -179,11 +180,9 @@ describe("reorder (T1.7, FR-BAL-06)", () => {
 });
 
 describe("refusals", () => {
+  // Tauri reports arguments Rust could not read as plain text; the store turns it into this.
   const argument = (text: string) =>
-    ({
-      kind: "invalid_argument",
-      message: `invalid args \`command\` for command \`execute\`: ${text}`,
-    }) as const;
+    asCommandError(`invalid args \`command\` for command \`execute\`: ${text}`);
 
   it("translates the reasons Rust gives for a refused command", () => {
     expect(
@@ -202,14 +201,14 @@ describe("refusals", () => {
     ).toBe("Numbering is locked. Characteristics cannot be moved.");
   });
 
-  it("falls back to Rust's text for reasons without a translation", () => {
+  it("translates the internal reason too, never showing Rust's text", () => {
     expect(
       refusalDetail({
         kind: "rejected",
         reason: "internal",
         message: "internal: x",
       }),
-    ).toBe("internal: x");
+    ).toBe("An error occurred inside Dimo.");
   });
 
   it("explains a locked move with the lock when it is known", () => {
@@ -238,14 +237,17 @@ describe("refusals", () => {
     );
   });
 
-  it("shows Rust's own text, without the Tauri prefix, for unknown argument errors", () => {
+  it("translates other argument errors without Rust's text", () => {
     expect(refusalDetail(argument('invalid decimal string "1,5", expected digits'))).toBe(
-      'invalid decimal string "1,5", expected digits',
+      "The value could not be read.",
     );
     // Not a Tauri argument error: never relabelled as a decimal.
     expect(
-      refusalDetail({ kind: "invalid_argument", message: "bad document id" }, { input: "decimal" }),
-    ).toBe("bad document id");
+      refusalDetail(
+        { kind: "invalid_argument", reason: "document_id", message: "bad document id" },
+        { input: "decimal" },
+      ),
+    ).toBe("The drawing is not open.");
   });
 
   it("explains a numbering lock with who and when", () => {

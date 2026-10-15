@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { commandErrorMessage, m } from "$lib/i18n";
+  import { commandErrorMessage, errorDetail, m } from "$lib/i18n";
+  import ErrorDetails from "./ErrorDetails.svelte";
   import type { ExportFormat } from "$lib/ipc/bindings";
   import { exportStore as appExport, type ExportStore } from "$lib/stores/export.svelte";
 
@@ -29,6 +30,7 @@
       <span aria-hidden="true">⚠</span>
       {commandErrorMessage(startError)}
     </p>
+    <ErrorDetails detail={errorDetail(startError)} />
   {:else if job?.state === "running"}
     {@const percent = String(Math.round(job.fraction * 100))}
     <div class="flex items-center gap-2">
@@ -50,6 +52,7 @@
         <span aria-hidden="true">⚠</span>
         {m.export_open_failed({ message: commandErrorMessage(job.openError) })}
       </p>
+      <ErrorDetails detail={errorDetail(job.openError)} />
     {/if}
     {#if job.issued?.state === "recorded"}
       <p class="text-success">
@@ -66,6 +69,7 @@
         <span aria-hidden="true">⚠</span>
         {m.export_issued_refused({ message: commandErrorMessage(job.issued.error) })}
       </p>
+      <ErrorDetails detail={errorDetail(job.issued.error)} />
     {/if}
   {:else if job?.state === "cancelled"}
     <p class="text-text-muted">
@@ -77,5 +81,6 @@
       <span aria-hidden="true">⚠</span>
       {commandErrorMessage(job.error)}
     </p>
+    <ErrorDetails detail={errorDetail(job.error)} />
   {/if}
 </div>

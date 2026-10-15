@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, WebviewWindow};
 
-use crate::ipc::{CommandError, RejectReason};
+use crate::ipc::{CommandError, InternalReason, RejectReason, TableImportReason};
 use crate::project::{emit_patched, with_session};
 use crate::recognition::{parse_shorter_leg, shipped};
 use crate::session::{AppSession, ProjectPatched};
@@ -76,10 +76,12 @@ pub enum TableImport {
     },
     /// The file was refused; the project is unchanged.
     Invalid {
-        /// What is wrong, in English, naming the file.
-        message: String,
+        /// Why, for the frontend to translate.
+        reason: TableImportReason,
         /// Line of the file, counted from 1, if the error has one.
         line: Option<u32>,
+        /// What is wrong, in English, naming the file: diagnostic text for the "Details" line.
+        message: String,
     },
 }
 
@@ -134,9 +136,14 @@ fn count(items: &[CharId]) -> u32 {
 }
 
 fn tables_unavailable() -> CommandError {
-    CommandError::Project {
-        message: "the shipped tolerance tables cannot be loaded".to_owned(),
-    }
+    CommandError::internal(
+        InternalReason::ShippedTables,
+        "the shipped tolerance tables cannot be loaded",
+    )
+}
+
+fn unknown_characteristic(id: CharId) -> CommandError {
+    dimo_core::CommandError::UnknownCharacteristic(id).into()
 }
 
 fn settings_refused(error: &ContextError) -> CommandError {
@@ -200,9 +207,7 @@ pub fn explanation(
     let project = session.project().ok_or(CommandError::NoProject)?;
     let c = project
         .characteristic(id)
-        .ok_or_else(|| CommandError::InvalidArgument {
-            message: format!("unknown characteristic {id}"),
-        })?;
+        .ok_or_else(|| unknown_characteristic(id))?;
     Ok(c.derivation
         .as_ref()
         .map(|d| dimo_tolerance::explain(d, &ExplainValues::from(c), language)))
@@ -268,15 +273,10 @@ pub fn apply_shorter_leg(
     let project = session.project().ok_or(CommandError::NoProject)?;
     let c = project
         .characteristic(id)
-        .ok_or_else(|| CommandError::InvalidArgument {
-            message: format!("unknown characteristic {id}"),
-        })?;
+        .ok_or_else(|| unknown_characteristic(id))?;
     let leg = parse_shorter_leg(leg, dimo_detect::sheet_unit(project, c))?;
-    let change = dimo_detect::set_shorter_leg(project, id, leg, &engine).ok_or_else(|| {
-        CommandError::InvalidArgument {
-            message: format!("unknown characteristic {id}"),
-        }
-    })?;
+    let change = dimo_detect::set_shorter_leg(project, id, leg, &engine)
+        .ok_or_else(|| unknown_characteristic(id))?;
     Ok(LegSet {
         patched: session.execute(change.command)?,
         outcome: change.outcome.into(),
@@ -292,20 +292,32 @@ pub fn import(session: &mut AppSession, path: &Path) -> Result<TableImport, Comm
         || path.display().to_string(),
         |n| n.to_string_lossy().into_owned(),
     );
-    let invalid = |message: String| TableImport::Invalid {
-        message,
+    let invalid = |reason, message: String| TableImport::Invalid {
+        reason,
         line: None,
+        message,
     };
     let too_big = std::fs::metadata(path).is_ok_and(|m| m.len() > MAX_TABLE_BYTES);
     if too_big {
-        return Ok(invalid(format!("{name}: the file is larger than 16 MiB")));
+        return Ok(invalid(
+            TableImportReason::TooLarge,
+            format!("{name}: the file is larger than 16 MiB"),
+        ));
     }
     let bytes = match std::fs::read(path) {
         Ok(bytes) => bytes,
-        Err(error) => return Ok(invalid(format!("{name}: cannot read the file: {error}"))),
+        Err(error) => {
+            return Ok(invalid(
+                TableImportReason::Unreadable,
+                format!("{name}: cannot read the file: {error}"),
+            ));
+        }
     };
     let Ok(text) = std::str::from_utf8(&bytes) else {
-        return Ok(invalid(format!("{name}: the file is not UTF-8 text")));
+        return Ok(invalid(
+            TableImportReason::NotText,
+            format!("{name}: the file is not UTF-8 text"),
+        ));
     };
     let shipped = shipped().ok_or_else(tables_unavailable)?;
     let custom = session.custom_tables()?;
@@ -321,8 +333,9 @@ pub fn import(session: &mut AppSession, path: &Path) -> Result<TableImport, Comm
         Ok(checked) => checked,
         Err(error) => {
             return Ok(TableImport::Invalid {
-                message: error.to_string(),
+                reason: TableImportReason::of(&error),
                 line: error.line(),
+                message: error.to_string(),
             });
         }
     };

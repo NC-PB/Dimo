@@ -238,7 +238,7 @@
     }
     const error = project.error;
     project.dismissError();
-    return error ?? { kind: "invalid_argument", message: "" };
+    return error ?? { kind: "internal", reason: "bug", message: "" };
   }
 
   /** The line shown for a refused change of a value. */

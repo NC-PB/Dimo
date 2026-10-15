@@ -105,14 +105,17 @@ describe("export store (T1.9)", () => {
     rust.beforeAnswer(() => {
       rust.finished({
         id: 3,
-        outcome: { state: "failed", error: { kind: "export", message: "disk full" } },
+        outcome: {
+          state: "failed",
+          error: { kind: "export", reason: "disk_full", message: "disk full" },
+        },
       });
       rust.progress({ id: 3, fraction: 0.8, message: "writing" });
     });
     await store.start("ballooned_pdf");
     expect(store.job("ballooned_pdf")).toEqual({
       state: "failed",
-      error: { kind: "export", message: "disk full" },
+      error: { kind: "export", reason: "disk_full", message: "disk full" },
     });
   });
 
@@ -231,14 +234,14 @@ describe("open after export", () => {
         state: "done",
         file_name: "p.xlsx",
         issued: null,
-        open_error: { kind: "export", message: "no application" },
+        open_error: { kind: "export", reason: "open_failed", message: "no application" },
       },
     });
     expect(store.job("xlsx")).toEqual({
       state: "done",
       fileName: "p.xlsx",
       issued: null,
-      openError: { kind: "export", message: "no application" },
+      openError: { kind: "export", reason: "open_failed", message: "no application" },
     });
   });
 });

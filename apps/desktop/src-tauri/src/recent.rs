@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::{AppHandle, Manager};
 
-use crate::ipc::{CommandError, tile_service};
+use crate::ipc::{CommandError, RecentReason, tile_service};
 use crate::project::SessionState;
 use crate::tiles::TileState;
 
@@ -207,20 +207,16 @@ pub fn remember(app: &AppHandle, path: &Path) {
 /// network drive, which must never block the main thread or the async runtime.
 async fn blocking<T: Send + 'static>(
     app: AppHandle,
-    work: impl FnOnce(&RecentState) -> T + Send + 'static,
+    work: impl FnOnce(&RecentState) -> Result<T, CommandError> + Send + 'static,
 ) -> Result<T, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || work(&app.state::<RecentState>()))
-        .await
-        .map_err(|e| CommandError::Io {
-            message: e.to_string(),
-        })
+    crate::ipc::blocking(move || work(&app.state::<RecentState>())).await
 }
 
 /// The recent projects, most recent first.
 #[tauri::command]
 #[specta::specta]
 pub async fn recent_projects(app: AppHandle) -> Result<Vec<RecentProject>, CommandError> {
-    blocking(app, RecentState::entries).await
+    blocking(app, |state| Ok(state.entries())).await
 }
 
 /// Removes one entry from the list (the file itself is not touched). Returns the new list.
@@ -234,15 +230,15 @@ pub async fn remove_recent_project(
         if let Some(entry) = state.find(&path) {
             state.remove(&entry);
         }
-        state.entries()
+        Ok(state.entries())
     })
     .await
 }
 
 /// Opens a project of the recent list without a file dialog. `path` must be an entry of the
-/// list exactly as [`recent_projects`] returned it; other paths are refused. `discard` as for
-/// `open_project`. A file that no longer exists is refused with `io` and stays on the list, so
-/// the user sees it greyed and can remove it.
+/// list exactly as [`recent_projects`] returned it; other paths are refused with `recent`
+/// `not_listed`. `discard` as for `open_project`. A file that no longer exists is refused with
+/// `recent` `missing` and stays on the list, so the user sees it greyed and can remove it.
 #[tauri::command]
 #[specta::specta]
 pub async fn open_recent_project(
@@ -251,20 +247,20 @@ pub async fn open_recent_project(
     discard: bool,
 ) -> Result<bool, CommandError> {
     let entry = blocking(app.clone(), move |state| {
-        let entry = state
-            .find(&path)
-            .ok_or_else(|| CommandError::InvalidArgument {
-                message: "not a recent project".to_owned(),
-            })?;
+        let entry = state.find(&path).ok_or_else(|| CommandError::Recent {
+            reason: RecentReason::NotListed,
+            message: format!("{path} is not a recent project"),
+        })?;
         if entry.exists() {
             Ok(entry)
         } else {
-            Err(CommandError::Io {
+            Err(CommandError::Recent {
+                reason: RecentReason::Missing,
                 message: format!("{} no longer exists", entry.display()),
             })
         }
     })
-    .await??;
+    .await?;
     if !discard && app.state::<SessionState>().has_unsaved_changes() {
         return Err(CommandError::UnsavedChanges);
     }

@@ -87,3 +87,6 @@ focus the line and press ↑ or ↓. Dimo remembers the height.
 Dimo shows a message above the drawing, for example that the file could not be opened. Only PDF
 files can be used as drawings in this version. If the message says that the PDF component is
 missing, the installation is incomplete; install Dimo again.
+
+Error messages are shown in the language of the app. Below a message, **Details** opens the
+technical text (file path, system error) to add to a bug report.

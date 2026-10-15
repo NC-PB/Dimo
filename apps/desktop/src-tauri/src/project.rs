@@ -20,7 +20,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 use tauri_specta::Event;
 
-use crate::ipc::{CommandError, tile_service};
+use crate::ipc::{CommandError, InternalReason, tile_service};
 use crate::session::{AppSession, CloseRequested, ProjectLoaded, ProjectPatched};
 use crate::tiles::TileState;
 
@@ -98,15 +98,12 @@ pub(crate) async fn with_session<T: Send + 'static>(
     app: AppHandle,
     work: impl FnOnce(&AppHandle, &mut AppSession) -> Result<T, CommandError> + Send + 'static,
 ) -> Result<T, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || {
+    crate::ipc::blocking(move || {
         let state = app.state::<SessionState>();
         let mut session = state.lock();
         work(&app, &mut session)
     })
     .await
-    .map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })?
 }
 
 /// Refuses early, before a file dialog, when unsaved changes would be dropped.
@@ -304,9 +301,9 @@ pub async fn confirm_close(
         Ok(())
     })
     .await?;
-    window.close().map_err(|e| CommandError::Io {
-        message: e.to_string(),
-    })
+    window
+        .close()
+        .map_err(|e| CommandError::internal(InternalReason::Window, e))
 }
 
 /// Executes a document command as one undo step (05 Architecture, principle 1). The result is
