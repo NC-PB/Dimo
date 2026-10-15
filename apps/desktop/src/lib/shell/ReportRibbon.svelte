@@ -5,7 +5,7 @@
   import { exportStore } from "$lib/stores/export.svelte";
   import { settingsStore, blankColumns, MIN_BLANK_COLUMNS } from "$lib/stores/settings.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS, fieldTitle } from "$lib/ui/fields";
   import Ribbon from "./Ribbon.svelte";
 
   /**
@@ -50,10 +50,10 @@
 
 {#snippet options()}
   <div class="flex gap-2">
-    <label class={LABEL_CLASS} title={m.field_report_format_desc()}>
+    <label class={RIBBON_LABEL_CLASS} title={m.field_report_format_desc()}>
       {m.export_format()}
       <select
-        class="{FIELD_CLASS} min-w-32"
+        class="{RIBBON_FIELD_CLASS} min-w-32"
         data-field="report-format"
         value={format}
         onchange={(e) => {
@@ -68,10 +68,10 @@
         {/each}
       </select>
     </label>
-    <label class={LABEL_CLASS} title={m.field_report_language_desc()}>
+    <label class={RIBBON_LABEL_CLASS} title={m.field_report_language_desc()}>
       {m.export_language()}
       <select
-        class="{FIELD_CLASS} min-w-28"
+        class="{RIBBON_FIELD_CLASS} min-w-28"
         data-field="report-language"
         value={prefs.language}
         onchange={(e) => {
@@ -87,14 +87,14 @@
       </select>
     </label>
   </div>
-  <label class={LABEL_CLASS} title={fieldTitle(m.export_blank_columns_hint(), blankReason)}>
+  <label class={RIBBON_LABEL_CLASS} title={fieldTitle(m.export_blank_columns_hint(), blankReason)}>
     {m.export_blank_columns()}
     <input
       type="number"
       min={MIN_BLANK_COLUMNS}
       max={MAX_BLANK_COLUMNS}
       step="1"
-      class="{FIELD_CLASS} w-16"
+      class="{RIBBON_FIELD_CLASS} w-16"
       data-field="blank-columns"
       disabled={blankReason !== null}
       value={prefs.blank_columns}

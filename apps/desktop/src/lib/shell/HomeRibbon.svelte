@@ -5,7 +5,7 @@
   import { STRATEGIES, numberingStore } from "$lib/stores/numbering.svelte";
   import BalloonStyleButton from "./BalloonStyleButton.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS, fieldTitle } from "$lib/ui/fields";
   import GeneralToleranceField from "./GeneralToleranceField.svelte";
   import Ribbon from "./Ribbon.svelte";
 
@@ -34,12 +34,12 @@
   <CommandButton id="renumber" size="large" />
   <div class="flex flex-col gap-1">
     <label
-      class={LABEL_CLASS}
+      class={RIBBON_LABEL_CLASS}
       title={fieldTitle(strategyHint(numberingStore.strategy), orderReason)}
     >
       {m.field_numbering_order()}
       <select
-        class="{FIELD_CLASS} min-w-40"
+        class="{RIBBON_FIELD_CLASS} min-w-40"
         data-field="numbering-order"
         disabled={orderReason !== null}
         value={numberingStore.strategy}

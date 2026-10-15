@@ -41,9 +41,9 @@ Location: `apps/desktop/src`. Svelte 5 with runes, TypeScript strict, Vite, no S
   `actions`; `alert` for a question that needs an answer). While any is open it counts itself in
   `keyboard.modals` and no window shortcut acts. A new dialog never adds its own key checks.
 - Fields and buttons: classes from `lib/ui/fields.ts` (`fieldClass("w-full")`,
-  `buttonClass.primary`). A field whose change goes to Rust uses `commitField(input, stored,
-  send)`: it sends only a changed value and then shows what the project holds (Rust's trimmed
-  text, or the old value when Rust refused).
+  `buttonClass.primary`, `RIBBON_FIELD_CLASS` for ribbon fields). A field whose change goes to
+  Rust uses `commitField(input, stored, send)`: it sends only a changed value and then shows
+  what the project holds (Rust's trimmed text, or the old value when Rust refused).
 - Development tools (`lib/dev/`: UI script, dev panel, dummy balloons, frame time checks) are
   loaded only as `if (import.meta.env.DEV) await import(...)` or
   `import.meta.env.DEV ? import(...) : null`, never with a static import from app code, so
@@ -123,7 +123,8 @@ report, view) and the work area it shows (`current`: drawing, review, measure, e
 Home and Drawing both show the drawing, the View tab keeps the area that was shown. The
 drawing stays mounted (hidden) while another area is shown, so tiles, zoom and table scroll are
 kept; drawing shortcuts act only while it is shown (the viewport registers the `drawing`
-scope with `shown`, `app` shortcuts act everywhere). Hiding the table or the side panel (View tab) hides them with CSS, they stay mounted.
+scope with `shown`, `app` shortcuts act everywhere). Hiding the table or the side panel (View
+tab) hides them with CSS, they stay mounted.
 
 Commands (T3.15, decision 27): `src/lib/commands.svelte.ts` defines every ribbon and title bar
 command once: label, icon (`src/lib/icons.ts`, Lucide, one import per icon), the shortcut action

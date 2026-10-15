@@ -12,6 +12,19 @@ export function fieldClass(extra = ""): string {
   return extra === "" ? FIELD : `${FIELD} ${extra}`;
 }
 
+/**
+ * Fields embedded in the ribbon (T3.15): label above, control at least 32 px, no vertical
+ * padding so selects keep the ribbon height.
+ */
+export const RIBBON_LABEL_CLASS = "flex flex-col gap-0.5 text-xs text-text-muted";
+export const RIBBON_FIELD_CLASS =
+  "min-h-8 rounded-md border border-border-strong bg-surface px-2 text-[13px] text-text disabled:opacity-45";
+
+/** Tooltip of a ribbon field: what it sets and, when disabled, why (decision 27). */
+export function fieldTitle(description: string, reason: string | null): string {
+  return reason === null ? description : `${description}\n${reason}`;
+}
+
 const BUTTON = "min-h-8 rounded-md px-3 py-1 text-sm";
 
 /** Classes of dialog and form buttons: the main action, the others and a destructive one. */

@@ -360,6 +360,36 @@ fn commands_need_a_project() {
         session.characteristic_history(CharId::from_uuid(uuid::Uuid::nil())),
         Err(CommandError::NoProject)
     ));
+    assert_eq!(
+        tolerance::leg_unit(&session, CharId::from_uuid(uuid::Uuid::nil())),
+        Err(CommandError::NoProject)
+    );
+}
+
+/// MF F8: the detail panel labels the shorter leg field with the unit Rust names, the unit of
+/// the characteristic's sheet (D-20), so the frontend never works out which sheet that is.
+#[test]
+fn shorter_leg_unit_follows_the_sheet_of_the_characteristic() {
+    use dimo_core::Unit;
+    let Some(tiles) = service() else { return };
+    let mut session = AppSession::new(None);
+    session
+        .create_from_drawing(&tiles, &drawing(), false)
+        .unwrap();
+    let id = add(&mut session, "30°");
+    assert_eq!(tolerance::leg_unit(&session, id), Ok(Unit::Mm));
+    let sheet = session.project().unwrap().revisions[0].sheets[0].id;
+    session
+        .execute(Command::UpdateSheet {
+            sheet,
+            values: vec![SheetField::Unit(Unit::In)],
+        })
+        .unwrap();
+    assert_eq!(tolerance::leg_unit(&session, id), Ok(Unit::In));
+    assert!(matches!(
+        tolerance::leg_unit(&session, CharId::from_uuid(uuid::Uuid::nil())),
+        Err(e) if e != CommandError::NoProject
+    ));
 }
 
 /// T2.9a: the shorter leg set from the detail panel is parsed in the sheet unit and stored with

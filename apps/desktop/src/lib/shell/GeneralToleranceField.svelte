@@ -11,7 +11,7 @@
     toleranceStore as appTolerance,
     type ToleranceStore,
   } from "$lib/stores/tolerance.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS, fieldTitle } from "$lib/ui/fields";
 
   interface Props {
     /** The tolerance store; the app's by default, a fake in tests. */
@@ -49,7 +49,7 @@
 
 <div class="flex flex-col gap-1">
   <label
-    class={LABEL_CLASS}
+    class={RIBBON_LABEL_CLASS}
     title={fieldTitle(
       m.field_general_tolerance_desc(),
       settings === null ? m.reason_no_project() : null,
@@ -57,7 +57,7 @@
   >
     {m.tolerance_general()}
     <select
-      class="{FIELD_CLASS} min-w-48"
+      class="{RIBBON_FIELD_CLASS} min-w-48"
       data-field="general-tolerance"
       disabled={settings === null}
       {value}

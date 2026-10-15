@@ -106,7 +106,6 @@ drawing gestures ignore the real mouse, and the script prints how many real poin
 9. Start screen and setup pane (`start-setup.json`): no project at startup, the start screen card
    creates one, the setup pane sets general tolerance, unit, scale, part number and customer, and
    Start ballooning switches on Place balloon; checked from the saved project.
-
 10. Error messages in German (`errors.json`): a broken company table and a text file as new
     drawing are refused with German texts.
 

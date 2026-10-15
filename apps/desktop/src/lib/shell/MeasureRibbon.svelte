@@ -8,7 +8,7 @@
   import { measurementStore } from "$lib/stores/measurement.svelte";
   import { projectStore } from "$lib/stores/project.svelte";
   import CommandButton from "./CommandButton.svelte";
-  import { FIELD_CLASS, LABEL_CLASS, fieldTitle } from "./field";
+  import { RIBBON_FIELD_CLASS, RIBBON_LABEL_CLASS, fieldTitle } from "$lib/ui/fields";
   import Ribbon from "./Ribbon.svelte";
 
   /**
@@ -36,13 +36,13 @@
     <CommandButton id="add_parts" size="large" />
   </div>
   <div class="flex flex-col gap-1">
-    <label class={LABEL_CLASS} title={fieldTitle(m.cmd_add_parts_desc(), addReason)}>
+    <label class={RIBBON_LABEL_CLASS} title={fieldTitle(m.cmd_add_parts_desc(), addReason)}>
       {m.samples_add_count()}
       <input
         type="number"
         min="1"
         max="100"
-        class="{FIELD_CLASS} w-16"
+        class="{RIBBON_FIELD_CLASS} w-16"
         data-field="parts-count"
         disabled={addReason !== null}
         bind:value={parts.count}
@@ -70,10 +70,10 @@
 {/snippet}
 
 {#snippet rowGroup()}
-  <label class={LABEL_CLASS} title={fieldTitle(m.field_row_result_desc(), rowReason)}>
+  <label class={RIBBON_LABEL_CLASS} title={fieldTitle(m.field_row_result_desc(), rowReason)}>
     {m.field_row_result()}
     <select
-      class="{FIELD_CLASS} min-w-44"
+      class="{RIBBON_FIELD_CLASS} min-w-44"
       data-field="row-result"
       disabled={row === undefined}
       value={row?.result_type ?? ""}
