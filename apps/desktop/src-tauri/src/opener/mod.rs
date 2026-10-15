@@ -3,8 +3,11 @@
 //! Only two things are ever opened: a file Dimo just wrote, whose extension must be the one of
 //! its format ([`open_written_file`]), and the Dimo release page on GitHub for the update check
 //! ([`open_url`], R.9). The path or URL is one argument of the launcher, never part of a shell
-//! string: `open` on macOS, `xdg-open` on Linux and `cmd /C start` with a quoted argument on
-//! Windows.
+//! string: `open` on macOS, `xdg-open` on Linux and `ShellExecuteW` on Windows (the one module
+//! with `unsafe`, see `windows.rs`).
+
+#[cfg(windows)]
+mod windows;
 
 use std::ffi::OsStr;
 use std::path::Path;
@@ -72,10 +75,19 @@ fn is_release_page(url: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"-._~/".contains(&b))
 }
 
-/// Starts the launcher for `target` (an absolute path or an allowed URL) and reaps it on a
-/// thread, so the caller does not wait; the opened application keeps running.
+/// Starts the default application for `target` (an absolute path or an allowed URL) without
+/// waiting for it. Windows uses `ShellExecuteW` (no shell string); the others a launcher
+/// process, reaped on a thread.
+#[cfg(windows)]
 fn launch(target: &OsStr) -> std::io::Result<()> {
-    let mut child = open_command(target)?
+    windows::shell_open(target)
+}
+
+/// Starts the launcher for `target` and reaps it on a thread, so the caller does not wait; the
+/// opened application keeps running.
+#[cfg(not(windows))]
+fn launch(target: &OsStr) -> std::io::Result<()> {
+    let mut child = open_command(target)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
@@ -86,42 +98,17 @@ fn launch(target: &OsStr) -> std::io::Result<()> {
     Ok(())
 }
 
-/// The process that opens `target` with the default application of the operating system.
-fn open_command(target: &OsStr) -> std::io::Result<std::process::Command> {
-    let mut command;
-    if cfg!(target_os = "macos") {
-        command = std::process::Command::new("open");
-        command.arg(target);
-    } else if cfg!(target_os = "windows") {
-        // `start` is a command of cmd.exe. Rust quotes an argument only if it has a space, so the
-        // target is quoted by hand and passed raw: inside double quotes `& | < > ^ ( )` are plain
-        // characters to cmd. The system call (ShellExecuteW) would avoid cmd, but needs `unsafe`,
-        // which the workspace forbids.
-        let quoted = windows_start_argument(target)?;
-        command = std::process::Command::new("cmd");
-        command.args(["/C", "start", ""]);
-        #[cfg(windows)]
-        std::os::windows::process::CommandExt::raw_arg(&mut command, quoted);
-        #[cfg(not(windows))]
-        command.arg(quoted);
+/// The process that opens `target` with the default application: `open` on macOS, `xdg-open`
+/// elsewhere.
+#[cfg(not(windows))]
+fn open_command(target: &OsStr) -> std::process::Command {
+    let mut command = std::process::Command::new(if cfg!(target_os = "macos") {
+        "open"
     } else {
-        command = std::process::Command::new("xdg-open");
-        command.arg(target);
-    }
-    Ok(command)
-}
-
-/// `target` as the quoted argument of `cmd /C start "" <target>`. Inside double quotes cmd treats
-/// most operators as text, but `%` is still expanded and `"` would end the quote, so a target
-/// with either is refused. Not Windows specific code, so every platform tests it.
-fn windows_start_argument(target: &OsStr) -> std::io::Result<String> {
-    let text = target.to_string_lossy();
-    if text.contains(['%', '"', '\n', '\r', '\0']) {
-        return Err(std::io::Error::other(
-            "the file name contains %, a double quote or a line break",
-        ));
-    }
-    Ok(format!("\"{text}\""))
+        "xdg-open"
+    });
+    command.arg(target);
+    command
 }
 
 #[cfg(test)]
@@ -167,34 +154,19 @@ mod tests {
         );
     }
 
-    #[test]
-    fn windows_start_argument_is_quoted_and_refuses_expansion() {
-        let quoted = windows_start_argument(OsStr::new(r"C:\Temp\a&calc (1) ^b.pdf")).unwrap();
-        assert_eq!(quoted, "\"C:\\Temp\\a&calc (1) ^b.pdf\"");
-        for bad in ["a%PATH%.pdf", "a\"b.pdf", "a\nb.pdf"] {
-            assert!(windows_start_argument(OsStr::new(bad)).is_err(), "{bad}");
-        }
-    }
-
+    #[cfg(not(windows))]
     #[test]
     fn open_command_passes_the_target_as_one_argument() {
         let path = std::path::absolute("/tmp/a b; touch x & c.pdf").unwrap();
-        let command = open_command(path.as_os_str()).unwrap();
+        let command = open_command(path.as_os_str());
         let args: Vec<_> = command.get_args().collect();
-        let last = args.last().unwrap();
-        if cfg!(target_os = "windows") {
-            assert_eq!(command.get_program(), "cmd");
-            assert_eq!(args.len(), 4);
+        assert_eq!(args, [path.as_os_str()]);
+        let launcher = if cfg!(target_os = "macos") {
+            "open"
         } else {
-            assert_eq!(Path::new(last), path);
-            assert_eq!(args.len(), 1);
-            let launcher = if cfg!(target_os = "macos") {
-                "open"
-            } else {
-                "xdg-open"
-            };
-            assert_eq!(command.get_program(), launcher);
-        }
+            "xdg-open"
+        };
+        assert_eq!(command.get_program(), launcher);
     }
 
     #[test]

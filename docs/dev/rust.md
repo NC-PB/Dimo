@@ -32,7 +32,7 @@
   are `null`), so `specta_serde::Format` exports them without separate serialize and deserialize
   types (`dimo-core/tests/ipc_types.rs`).
 - Public items get a doc comment. Reference requirement IDs where they define behavior.
-- `unsafe` is not allowed except in a clearly isolated FFI module with a safety comment.
+- `unsafe` is allowed only in the Windows opener module (`apps/desktop/src-tauri/src/opener/windows.rs`, `ShellExecuteW`), with a safety comment per block. Owner decision 2026-10-15. `crates/dimo-cli/tests/unsafe_guard.rs` fails on `unsafe` anywhere else.
 - Long CPU work: rayon, cancellable via a token checked between units of work.
   Never block the tokio runtime or the Tauri main thread.
 
