@@ -55,11 +55,13 @@ reinterpret_characteristics
 general_tolerance_candidates
 apply_general_tolerance
 set_shorter_leg
+shorter_leg_unit
 import_tolerance_table
 
 # measurement
 measurement_state
 changed_since_issued_report
+delete_check
 
 # settings
 app_settings

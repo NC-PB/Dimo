@@ -745,3 +745,29 @@ fn no_verdict_is_stored() {
         }
     );
 }
+
+/// Deleting characteristics with results asks first (M3 decision 16): Rust counts the results
+/// that would go with them, the frontend only shows the number (rule 2, MF F8).
+#[test]
+fn delete_check_counts_the_results_of_the_characteristics() {
+    let (mut doc, mut env) = doc_with(2);
+    let (c, s) = (chars(&doc), samples(&doc));
+    doc.execute(
+        Command::SetResults {
+            results: vec![
+                entry(s[0], c[0], "10"),
+                entry(s[1], c[0], "10.05"),
+                entry(s[0], c[2], "9.95"),
+            ],
+        },
+        &mut env,
+    )
+    .unwrap();
+    let project = doc.project();
+    let check = project.delete_check(&[c[0], c[1]]);
+    assert_eq!((check.results, check.needs_confirmation), (2, true));
+    let check = project.delete_check(&[c[1]]);
+    assert_eq!((check.results, check.needs_confirmation), (0, false));
+    assert_eq!(project.delete_check(&c).results, 3);
+    assert_eq!(project.delete_check(&[]).results, 0);
+}

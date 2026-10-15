@@ -4,7 +4,7 @@
 //! frontend calls [`measurement_state`] after each patch: verdicts are computed, never stored
 //! (M3 decision 2), and never decided in TypeScript (rule 2).
 
-use dimo_core::{CharId, MeasurementState};
+use dimo_core::{CharId, DeleteCheck, MeasurementState};
 use tauri::AppHandle;
 
 use crate::ipc::CommandError;
@@ -35,4 +35,18 @@ pub fn state_of(session: &AppSession) -> Result<MeasurementState, CommandError> 
 #[specta::specta]
 pub async fn changed_since_issued_report(app: AppHandle) -> Result<Vec<CharId>, CommandError> {
     with_session(app, |_, session| session.changed_since_issued_report()).await
+}
+
+/// The results that deleting the characteristics `ids` would remove (M3 decision 16): the
+/// frontend asks before such a deletion and shows the count (rule 2, MF F8).
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_check(app: AppHandle, ids: Vec<CharId>) -> Result<DeleteCheck, CommandError> {
+    with_session(app, move |_, session| {
+        session
+            .project()
+            .map(|p| p.delete_check(&ids))
+            .ok_or(CommandError::NoProject)
+    })
+    .await
 }
