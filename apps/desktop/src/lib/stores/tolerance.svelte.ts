@@ -27,11 +27,8 @@ import {
   type SheetId,
   type TableClass,
   type TableImport,
-<<<<<<< HEAD
   type TableImportReason,
-=======
   type ToleranceField,
->>>>>>> worktree-agent-a4518e8032180af23
   type ToleranceSettings,
   type ToleranceTableInfo,
 } from "$lib/ipc/bindings";
