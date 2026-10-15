@@ -78,7 +78,8 @@ impl OpenProject {
         self.journal_error = match self.project.flush_journal() {
             Ok(_) => None,
             Err(error) => {
-                tracing::warn!("autosave journal write failed: {error}");
+                // The session target, as before the split, so log searches keep working.
+                tracing::warn!(target: "dimo_desktop::session", "autosave journal write failed: {error}");
                 Some((AutosaveReason::of(&error), error.to_string()))
             }
         };
