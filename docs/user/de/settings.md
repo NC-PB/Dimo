@@ -1,4 +1,4 @@
-# Datei-Seite, Optionen und Über Dimo
+# Datei-Seite, Optionen und Über DimoMark
 
 Der Reiter **Datei** öffnet eine ganze Seite. Links stehen die Befehle für das Projekt und die
 Bereiche der Seite, rechts der Bereich, den du gewählt hast. **Zurück** (oder ein anderer
@@ -12,9 +12,11 @@ Reiter) bringt dich dahin, wo du warst.
 | **Speichern**, **Speichern unter…** | Speichern das Projekt ([Projekte](projects.md)) |
 | **Exportieren** | Öffnet den Reiter **Bericht** ([Exporte](exports.md)) |
 | **Drucken** | Öffnet den im Reiter Bericht gewählten Bericht in deinem PDF-Programm; dort druckst du ihn ([Exporte](exports.md)) |
-| **Projekt schließen** | Schließt das Projekt, Dimo bleibt offen. Bei ungespeicherten Änderungen fragt Dimo zuerst |
-| **Über Dimo** | Version und Lizenzen, siehe unten |
+| **Projekt schließen** | Schließt das Projekt, DimoMark bleibt offen. Bei ungespeicherten Änderungen fragt DimoMark zuerst |
+| **Über DimoMark** | Version und Lizenzen, siehe unten |
 | **Optionen** | Deine persönlichen Einstellungen (⌘,), siehe unten |
+
+Die Version von DimoMark steht unten in der Liste links.
 
 Jede Einstellung hat einen Ort. Einstellungen eines Projekts werden in der Projektdatei
 gespeichert und reisen mit ihr: die Allgemeintoleranz (Reiter Start und Zeichnung), die übrigen
@@ -44,19 +46,19 @@ Ohne offenes Projekt sagt Info das und bietet **Neues Projekt** und **Projekt ö
 
 **Projekt öffnen** auf der Datei-Seite listet die Projekte, die du zuletzt geöffnet oder unter
 einem neuen Namen gespeichert hast, das neueste zuerst, höchstens zehn. Ein Klick öffnet ein
-Projekt; bei ungespeicherten Änderungen fragt Dimo zuerst. Ein Projekt, dessen Datei verschoben,
+Projekt; bei ungespeicherten Änderungen fragt DimoMark zuerst. Ein Projekt, dessen Datei verschoben,
 umbenannt oder auf einem nicht verbundenen Laufwerk ist, erscheint grau und durchgestrichen mit
 „Datei nicht gefunden“. Mit ✕ entfernst du einen Eintrag (die Datei selbst bleibt unberührt).
 
-Dimo merkt sich nur die Pfade der Dateien, in einer kleinen Datei neben den Einstellungen im
-Konfigurationsordner von Dimo deines Benutzerkontos. Nichts verlässt deinen Computer.
+DimoMark merkt sich nur die Pfade der Dateien, in einer kleinen Datei neben den Einstellungen im
+Konfigurationsordner von DimoMark deines Benutzerkontos. Nichts verlässt deinen Computer.
 
 ## Optionen
 
 Öffne **Optionen** unten auf der Datei-Seite oder mit ⌘, (Strg+, unter Windows und Linux).
 Änderungen gelten sofort und bleiben für den nächsten Start erhalten. Diese Einstellungen gehören
 dir, nicht einem Projekt: Sie gelten für jedes Projekt und liegen in einer kleinen
-Einstellungsdatei im Konfigurationsordner von Dimo deines Benutzerkontos.
+Einstellungsdatei im Konfigurationsordner von DimoMark deines Benutzerkontos.
 
 ### Darstellung
 
@@ -77,8 +79,8 @@ Einstellungsdatei im Konfigurationsordner von Dimo deines Benutzerkontos.
 ### Vorgaben für Exporte
 
 Die Sprache der Berichte und Spaltenköpfe, das Dateiformat von Prüfblatt und Prüfbericht, die
-Anzahl leerer Ergebnisspalten, wie das PDF die Ballons trägt und ob Dimo eine Datei nach dem
-Export öffnet. Dimo merkt sich, was du zuletzt im Reiter Bericht gewählt hast; du kannst es
+Anzahl leerer Ergebnisspalten, wie das PDF die Ballons trägt und ob DimoMark eine Datei nach dem
+Export öffnet. DimoMark merkt sich, was du zuletzt im Reiter Bericht gewählt hast; du kannst es
 hier oder dort ändern ([Exporte](exports.md)).
 
 ## Projekteinstellungen im Reiter Zeichnung
@@ -96,18 +98,18 @@ hier oder dort ändern ([Exporte](exports.md)).
 Jede Änderung in diesen Fenstern gilt sofort und ist ein Rückgängig-Schritt. **Schließen**
 schließt das Fenster.
 
-## Über Dimo
+## Über DimoMark
 
-**Über Dimo** zeigt die Version von Dimo, seine Lizenz (Apache License 2.0) und die Datei NOTICE.
-Dazu kommt jede Schrift und jeder Symbolsatz, den Dimo mitbringt (Open Sans, Space Grotesk,
+**Über DimoMark** zeigt die Version von DimoMark, seine Lizenz (Apache License 2.0) und die Datei NOTICE.
+Dazu kommt jede Schrift und jeder Symbolsatz, den DimoMark mitbringt (Open Sans, Space Grotesk,
 JetBrains Mono und die Lucide-Symbole), mit Copyright-Hinweis und vollständigem Lizenztext. Die
 Texte sind Teil der App und erscheinen daher auch ohne Internetverbindung. Lizenztexte stehen im
-englischen Original. Die Lizenzen der übrigen Open-Source-Bibliotheken, mit denen Dimo gebaut ist,
+englischen Original. Die Lizenzen der übrigen Open-Source-Bibliotheken, mit denen DimoMark gebaut ist,
 stehen in der Datei `THIRD_PARTY_LICENSES`, die jeder Version beiliegt.
 
 ## Protokolldatei
 
-Dimo schreibt Meldungen wie Warnungen und Fehler (zum Beispiel eine fehlgeschlagene automatische
+DimoMark schreibt Meldungen wie Warnungen und Fehler (zum Beispiel eine fehlgeschlagene automatische
 Sicherung, einen fehlgeschlagenen Export oder eine unlesbare Einstellungsdatei) und die gestartete
 Version in eine Protokolldatei auf Ihrem Computer. Sie enthält Meldungen und Dateipfade, nicht den
 Inhalt von Zeichnungen oder Projekten, und nichts wird verschickt. Erreicht sie 1 MB, wird sie in
@@ -117,7 +119,7 @@ Inhalt von Zeichnungen oder Projekten, und nichts wird verschickt. Erreicht sie 
 - Windows: `%LOCALAPPDATA%\io.github.nc-pb.dimo\logs\dimo.log`
 - Linux: `~/.local/share/io.github.nc-pb.dimo/logs/dimo.log`
 
-**Diagnose kopieren** in **Über Dimo** legt einen kurzen Text für eine Fehlermeldung in die
-Zwischenablage: die Version von Dimo, das Betriebssystem, deine Optionen und die letzten 200 Zeilen
+**Diagnose kopieren** in **Über DimoMark** legt einen kurzen Text für eine Fehlermeldung in die
+Zwischenablage: die Version von DimoMark, das Betriebssystem, deine Optionen und die letzten 200 Zeilen
 der Protokolldatei. Dein Name, der Firmenname und dein Benutzerordner werden ersetzt (`<user>`,
 `<company>`, `~`). Nichts wird gesendet; füge den Text dort ein, wo du den Fehler meldest.

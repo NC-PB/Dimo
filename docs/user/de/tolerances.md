@@ -1,13 +1,13 @@
 # Toleranzen
 
-Dimo bestimmt für jedes gelesene Maß das obere und das untere Grenzmaß, speichert, welche Regel
+DimoMark bestimmt für jedes gelesene Maß das obere und das untere Grenzmaß, speichert, welche Regel
 sie ergeben hat, und erklärt diese Regel in Worten. Diese Seite beschreibt die Regeln, die
 Toleranzeinstellungen eines Projekts, die Markierungen in der Tabelle und den Änderungsverlauf
 eines Merkmals.
 
 ## Woher die Grenzmaße kommen
 
-Dimo prüft die Regeln in dieser Reihenfolge und nimmt die erste, die Grenzmaße ergibt:
+DimoMark prüft die Regeln in dieser Reihenfolge und nimmt die erste, die Grenzmaße ergibt:
 
 1. **Explizit**: eine Toleranz in der Zeichnung, etwa `±0.1`, `+0.2 -0.1`, zwei Grenzmaße, `MIN`
    oder `MAX`. Eine eingetragene Toleranz gilt immer.
@@ -20,7 +20,7 @@ Dimo prüft die Regeln in dieser Reihenfolge und nimmt die erste, die Grenzmaße
 
 Greift keine Regel, erhält das Merkmal die Regel **Keine Toleranz festgelegt** und keine
 Grenzmaße; prüfe es und trage die Grenzmaße in der Tabelle ein. Grenzmaße, die du selbst
-eingibst oder änderst, erhalten die Regel **Von Hand eingegeben**. Dimo ändert sie nie wieder von
+eingibst oder änderst, erhalten die Regel **Von Hand eingegeben**. DimoMark ändert sie nie wieder von
 sich aus.
 
 Steht bei einer Passung ein Abmaß, das von der Passungstabelle abweicht, gilt das eingetragene
@@ -32,7 +32,7 @@ Die Allgemeintoleranz eines Winkels (ISO 2768-1) hängt von der Länge seines k�
 ab, die nicht in der Zeichnung steht. Gib bei einem Winkel ohne eingetragene Toleranz die Länge
 des kürzeren Schenkels im Feld **Kürzerer Schenkel** ein, auf der Karte der Rahmenauswahl oder
 im Eigenschaftenbereich, Abschnitt **Toleranz**. Das Feld ist in der Einheit des Blatts (mm oder Zoll).
-Dimo setzt dann die Grenzmaße des Winkels, und die Erklärung nennt den Schenkel, seinen Bereich
+DimoMark setzt dann die Grenzmaße des Winkels, und die Erklärung nennt den Schenkel, seinen Bereich
 und die Grenzmaße. Ohne Schenkel erhält der Winkel keine Grenzmaße und einen Hinweis. Der
 Schenkel wird mit seiner Einheit beim Merkmal gespeichert, daher verwenden ihn **Ausgewählte neu
 auswerten** und ein neu eingegebener Anforderungstext weiter, auch wenn sich die Einheit des
@@ -64,9 +64,9 @@ jede Änderung ist ein Rückgängig-Schritt.
   Grenzmaße werden nach innen gerundet, sind also nie weiter als die Tabelle, und die Erklärung
   sagt, dass umgerechnet wurde. Zulässig sind ganze Zahlen von 0 bis 10.
 - **Firmentabellen**: **Tabelle importieren…** liest eine eigene Tabellendatei (TOML, im Format
-  der mitgelieferten Tabellen). Dimo prüft die ganze Datei, bevor sie verwendet wird. Wird sie
-  abgelehnt, steht der Grund da, mit der Zeile der Datei, wo Dimo sie bestimmen kann. Das
-  Dateiformat steht in `data/tolerances/README.md` der Dimo-Quellen, neben den mitgelieferten
+  der mitgelieferten Tabellen). DimoMark prüft die ganze Datei, bevor sie verwendet wird. Wird sie
+  abgelehnt, steht der Grund da, mit der Zeile der Datei, wo DimoMark sie bestimmen kann. Das
+  Dateiformat steht in `data/tolerances/README.md` der DimoMark-Quellen, neben den mitgelieferten
   Tabellen. Eine
   importierte Tabelle wird in das Projekt kopiert, das Projekt braucht die Datei danach nicht
   mehr, und sie bleibt nach einem Absturz erhalten, auch vor dem Speichern. Wird eine Tabelle mit
@@ -75,7 +75,7 @@ jede Änderung ist ein Rückgängig-Schritt.
 
 Eine Änderung der Einstellungen ändert die Grenzmaße der Merkmale, die schon im Projekt sind,
 nicht von selbst. Neue Merkmale, die Rahmenauswahl und eingetippte Werte verwenden die neuen
-Einstellungen. Nach einer Änderung der Allgemeintoleranz bietet Dimo an, die bestehenden Merkmale
+Einstellungen. Nach einer Änderung der Allgemeintoleranz bietet DimoMark an, die bestehenden Merkmale
 anzupassen, für die sie gilt, siehe unten.
 
 ## Anpassen nach einer Änderung der Allgemeintoleranz
@@ -103,7 +103,7 @@ Allgemeintoleranz bei den Merkmalen zu entfernen, die sie noch haben.
 ## Grenzmaße nach einer Änderung aktualisieren
 
 Um andere neue Einstellungen auf bestehende Merkmale anzuwenden, wähle sie aus (in der Tabelle oder in
-der Zeichnung) und wähle **Grenzmaße aktualisieren** im Reiter Start oder im Eigenschaftenbereich. Dimo liest die
+der Zeichnung) und wähle **Grenzmaße aktualisieren** im Reiter Start oder im Eigenschaftenbereich. DimoMark liest die
 Anforderung jedes Merkmals mit den aktuellen Einstellungen neu und setzt Nennmaß, Einheit,
 Abmaße, Grenzmaße, Passung und Regel. Das Ganze ist ein Rückgängig-Schritt.
 
@@ -135,7 +135,7 @@ unterscheiden:
 | **Theor. genau** in eckigem Rahmen | Theoretisch genaues Maß: keine Grenzmaße |
 
 Einige Hinweise zeigt nur die Karte der Rahmenauswahl, sie werden nicht gespeichert: Eine
-Passungspaarung wie `H7/g6` nennt eine Bohrung und eine Welle, darum gibt Dimo keine Grenzmaße
+Passungspaarung wie `H7/g6` nennt eine Bohrung und eine Welle, darum gibt DimoMark keine Grenzmaße
 und bittet dich, beide als zwei Merkmale zu erfassen. Die anderen Hinweise der Tabelle werden beim
 Merkmal gespeichert:
 
@@ -159,7 +159,7 @@ der Tabelle, im Eigenschaftenbereich und auf der Karte der Rahmenauswahl. Der Re
 **Datei** > **Info** zeigen die Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
 Entwurfstabelle mit deiner eigenen Norm, bevor du dich darauf verlässt. Eine Tabelle ist erst
 kein Entwurf mehr, wenn ihre Datei von der Person als geprüft gekennzeichnet ist, die jeden Wert
-verglichen hat; Dimo ändert das nie selbst.
+verglichen hat; DimoMark ändert das nie selbst.
 
 ## Hilfsmaße und theoretisch genaue Maße
 

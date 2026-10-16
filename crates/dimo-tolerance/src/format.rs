@@ -28,7 +28,7 @@ pub const DATE_PATTERN: &str = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
 /// A whole tolerance table file.
 #[derive(Debug, Clone, PartialEq, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
-#[schemars(title = "Dimo tolerance table")]
+#[schemars(title = "DimoMark tolerance table")]
 pub struct TableFile {
     /// Identification, source and verification status of the table.
     pub table: TableHeader,

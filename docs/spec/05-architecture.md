@@ -2,7 +2,7 @@
 
 ## Overview
 
-Dimo is a Tauri 2 desktop application with a **thick Rust core and a thin web frontend**. All domain logic (characteristics, numbering, tolerances, recognition, export) lives in Rust crates that know nothing about the UI. The same crates power a command line tool. The frontend renders state and sends commands.
+DimoMark is a Tauri 2 desktop application with a **thick Rust core and a thin web frontend**. All domain logic (characteristics, numbering, tolerances, recognition, export) lives in Rust crates that know nothing about the UI. The same crates power a command line tool. The frontend renders state and sends commands.
 
 ```mermaid
 flowchart LR

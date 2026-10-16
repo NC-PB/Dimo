@@ -1,0 +1,8 @@
+[
+  { "mark": "newer version start" },
+  { "wait": 500 },
+  { "button": "__NEWER_PROJECT__" },
+  { "wait": 1500 },
+  { "alerts": "newer refused" },
+  { "report": "final" }
+]

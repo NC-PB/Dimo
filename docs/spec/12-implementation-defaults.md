@@ -10,10 +10,10 @@ Decisions that close the remaining gaps, so implementation can proceed without a
 | D-02 | Governance | Single maintainer (owner). Files at repository creation: `LICENSE` (official Apache 2.0 text), `NOTICE`, `CONTRIBUTING.md` (DCO sign-off, clean room policy link), `CODE_OF_CONDUCT.md` (Contributor Covenant), `SECURITY.md` (private reporting via GitHub security advisories). |
 | D-03 | Versioning | Semantic versioning, `0.x` until 1.0. Conventional Commits. Changelog generated from commits. |
 | D-04 | Releases | GitHub Releases host installers and model files. Model files are referenced by checksum in `data/models/manifest.toml`. |
-| D-05 | Updates | No updater. A "Check for update" button asks GitHub Releases only when clicked and shows a link to the release page; nothing is downloaded or installed by Dimo; an organization policy file can hide the button (NFR-SEC-03). See [ADR 0008](../adr/0008-update-check-link-only.md). |
+| D-05 | Updates | No updater. A "Check for update" button asks GitHub Releases only when clicked and shows a link to the release page; nothing is downloaded or installed by DimoMark; an organization policy file can hide the button (NFR-SEC-03). See [ADR 0008](../adr/0008-update-check-link-only.md). |
 | D-06 | Crash reporting | None. Local rotating log files and a "Copy diagnostics" button that copies logs without drawing content. |
 | D-08 | Code signing (Q-08) | **Unsigned for 0.1** on all platforms. macOS builds get an ad-hoc signature (required to run on Apple Silicon), no notarization. The getting started guide explains the Windows SmartScreen warning ("More info", "Run anyway") and the macOS first launch (right click, Open, or allow in Privacy and Security settings). Signing is reconsidered before 1.0. |
-| D-07 | Sustainability (Q-07) | Not relevant for implementation. Dimo is free. An optional sponsor link in the About dialog and on cnc-master.xyz/dimo. Business options can be decided after 0.1. |
+| D-07 | Sustainability (Q-07) | Not relevant for implementation. DimoMark is free. An optional sponsor link in the About dialog and on cnc-master.xyz/dimo. Business options can be decided after 0.1. |
 
 ## Platforms
 
@@ -40,8 +40,8 @@ Decisions that close the remaining gaps, so implementation can proceed without a
 
 | ID | Topic | Decision |
 |---|---|---|
-| D-30 | 0.1 reports | Dimo's own neutral layouts: **check sheet** (characteristic list with empty result columns, for printing) and **inspection report** (results, pass/fail, sample info, signature fields). Both as PDF (Typst) and XLSX. |
-| D-31 | Report forms (Q-05) | First article and initial sample outputs (M6, formerly M7) use **Dimo's own layouts** that carry the same information in a compatible structure. No reproduction of form graphics or text from published standards. Users who need their customer's exact form import it as an XLSX template with placeholders. |
+| D-30 | 0.1 reports | DimoMark's own neutral layouts: **check sheet** (characteristic list with empty result columns, for printing) and **inspection report** (results, pass/fail, sample info, signature fields). Both as PDF (Typst) and XLSX. |
+| D-31 | Report forms (Q-05) | First article and initial sample outputs (M6, formerly M7) use **DimoMark's own layouts** that carry the same information in a compatible structure. No reproduction of form graphics or text from published standards. Users who need their customer's exact form import it as an XLSX template with placeholders. |
 | D-32 | Report language | English and German report templates, chosen per export independent of the UI language. |
 | D-33 | Ballooned PDF | Balloons are written as vector content into a copy of the original PDF. The original file is never modified. Optional: balloons as PDF annotations instead (setting). |
 

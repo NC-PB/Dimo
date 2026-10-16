@@ -33,7 +33,7 @@ You do not have to wait for the field: what you type right after the click goes 
 - Clicking somewhere else also stores what you typed.
 - **Enter** on a selected balloon, or a double click on it, opens the field again.
 
-Dimo reads the typed text like a dimension on the drawing: `Ø30 H7 +0.0203 -0` becomes kind
+DimoMark reads the typed text like a dimension on the drawing: `Ø30 H7 +0.0203 -0` becomes kind
 **Diameter**, nominal `30`, fit `H7`, the deviations and the limits `30.0203` and `30`, with the
 rule **Explicit**. `Ø8 f7` alone gets its limits from the ISO 286 fit table, with the rule **Fit
 table**. Values from a table that is still a draft are marked as such. A dimension without a
@@ -50,17 +50,17 @@ characteristic and use **Update limits** ([Tolerances](tolerances.md)).
 
 ## Box select
 
-On a drawing with PDF text, Dimo reads the text for you.
+On a drawing with PDF text, DimoMark reads the text for you.
 
 1. Press **B** and drag a box around the dimension text, including stacked tolerances.
    Rotated text, for example along a vertical dimension line, works the same way.
-2. A card opens next to the box. It shows what Dimo read: the requirement text, the kind, the
+2. A card opens next to the box. It shows what DimoMark read: the requirement text, the kind, the
    nominal value, the upper and lower limit, the rule that produced them and an explanation of
    the rule. Printed deviations always win; when they differ from the fit table, the
-   explanation says so. Notes point out what Dimo could not decide, for example an angle whose
+   explanation says so. Notes point out what DimoMark could not decide, for example an angle whose
    shorter leg is not entered yet.
 3. Check the values. You can correct the requirement text and the kind, and for an angle type
-   the length of its shorter leg ([Tolerances](tolerances.md)). Dimo reads edited text and the
+   the length of its shorter leg ([Tolerances](tolerances.md)). DimoMark reads edited text and the
    leg again when you leave the field or accept.
 4. Press **Enter** or **Accept**. The balloon appears up and to the right of the box, like a
    placed balloon, with the values of the card. **Escape** or **Discard** closes the card
@@ -80,7 +80,7 @@ On a drawing with PDF text, Dimo reads the text for you.
   balloon.
 - A number in a rectangular frame is read as a basic dimension, a value in parentheses as a
   reference dimension. Both are marked as not inspected.
-- If Dimo cannot read the text as a dimension, the card says so and accepting stores the text
+- If DimoMark cannot read the text as a dimension, the card says so and accepting stores the text
   only. The kind is **Note** if the text has a word of three or more letters, else **Other**.
 - If the box holds no PDF text (a scanned drawing), a balloon is placed and the value field
   opens, as with a click.

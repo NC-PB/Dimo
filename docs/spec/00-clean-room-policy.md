@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Dimo must be designed and implemented independently. This protects contributors and users from copyright and trade secret claims, and it keeps the project focused on solving user problems instead of copying existing tools.
+DimoMark must be designed and implemented independently. This protects contributors and users from copyright and trade secret claims, and it keeps the project focused on solving user problems instead of copying existing tools.
 
 This is an **independent development policy**, a practical version of a clean room process for a small open-source team. A strict two-team clean room (one team writes a specification from studying a product, a second team implements only from that specification) is not needed as long as nobody studies another product's internals in the first place.
 

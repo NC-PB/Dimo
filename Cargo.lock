@@ -1090,7 +1090,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-cli"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "clap",
  "dimo-core",
@@ -1109,7 +1109,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-core"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "boon",
  "proptest",
@@ -1127,7 +1127,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-desktop"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "dimo-cli",
@@ -1156,7 +1156,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-detect"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "dimo-core",
  "dimo-notation",
@@ -1167,7 +1167,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-export"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "dimo-core",
  "dimo-io",
@@ -1180,7 +1180,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-io"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "boon",
  "csv",
@@ -1200,7 +1200,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-notation"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "dimo-core",
  "proptest",
@@ -1211,7 +1211,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-pdf"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "dimo-core",
@@ -1225,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-report"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "boon",
  "dimo-core",
@@ -1248,7 +1248,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-synth"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "boon",
  "clap",
@@ -1261,7 +1261,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-tolerance"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "boon",
  "dimo-core",
@@ -1278,7 +1278,7 @@ dependencies = [
 
 [[package]]
 name = "dimo-vision"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "dirs"

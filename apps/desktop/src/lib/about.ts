@@ -31,10 +31,10 @@ export interface LicensedAsset {
   text: string;
 }
 
-/** The Apache License 2.0 of Dimo itself (`LICENSE`). */
+/** The Apache License 2.0 of DimoMark itself (`LICENSE`). */
 export const DIMO_LICENSE = apache;
 
-/** The `NOTICE` file: copyright of Dimo and the notices of bundled third party components. */
+/** The `NOTICE` file: copyright of DimoMark and the notices of bundled third party components. */
 export const DIMO_NOTICE = notice;
 
 /** Bundled fonts and assets, in the order About lists them. */

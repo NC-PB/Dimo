@@ -384,7 +384,7 @@ pub struct Numbering {
     pub lock: Option<NumberingLock>,
 }
 
-/// A Dimo project (data model `Project`).
+/// A DimoMark project (data model `Project`).
 ///
 /// Change it only through [`Document::execute`](crate::document::Document::execute), so every
 /// change is undoable and audited (ADR 0001, NFR-REL-02).

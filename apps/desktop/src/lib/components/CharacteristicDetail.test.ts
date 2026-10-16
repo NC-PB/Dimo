@@ -596,7 +596,7 @@ describe("tolerance settings (T2.8, T3.16)", () => {
     return [...target.querySelectorAll("button")].find((b) => b.textContent.trim() === text);
   }
 
-  // T3.13, M3 decision 22: after the general tolerance changed, Dimo offers the update.
+  // T3.13, M3 decision 22: after the general tolerance changed, DimoMark offers the update.
   it("offers to update characteristics after the general tolerance changed", async () => {
     const stores = setup();
     stores.general.candidates = ["c1", "c2"];

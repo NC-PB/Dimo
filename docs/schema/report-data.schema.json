@@ -756,6 +756,6 @@
     "signatures",
     "flags"
   ],
-  "title": "Dimo report data",
+  "title": "DimoMark report data",
   "type": "object"
 }

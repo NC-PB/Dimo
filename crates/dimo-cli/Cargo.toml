@@ -1,6 +1,6 @@
 [package]
 name = "dimo-cli"
-description = "Headless command line tool for Dimo."
+description = "Headless command line tool for DimoMark."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

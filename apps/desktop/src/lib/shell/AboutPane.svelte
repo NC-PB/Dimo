@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * File > About (M3 decision 29, T3.16): the Dimo version, its Apache 2.0 license, the NOTICE
+   * File > About (M3 decision 29, T3.16): the DimoMark version, its Apache 2.0 license, the NOTICE
    * file, and for every bundled font and icon set the copyright notice with the full license
    * text. The texts are embedded in the app (`about.ts`), so they show without network. License
    * texts are legal documents and stay in their original English.
@@ -113,7 +113,7 @@
   </div>
 
   <section class={boxClass} aria-labelledby="about-dimo">
-    <h2 id="about-dimo" class="font-heading text-base font-semibold">Dimo</h2>
+    <h2 id="about-dimo" class="font-heading text-base font-semibold">DimoMark</h2>
     {#if info}
       <p data-testid="about-version">
         {m.app_version({ version: info.version })}, {buildProfileLabel(info.build_profile)}

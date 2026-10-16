@@ -111,13 +111,13 @@ describe("start screen (T3.17)", () => {
     expect(open).toHaveBeenCalledOnce();
   });
 
-  it("disables the cards with the reason while Dimo is busy", () => {
+  it("disables the cards with the reason while DimoMark is busy", () => {
     const create = vi.spyOn(projectStore, "newProject").mockResolvedValue(false);
     projectStore.busy = true;
     start();
     const button = card("New project from drawing");
     expect(button.getAttribute("aria-disabled")).toBe("true");
-    expect(button.title).toContain("Dimo is working, wait a moment.");
+    expect(button.title).toContain("DimoMark is working, wait a moment.");
     button.click();
     expect(create).not.toHaveBeenCalled();
   });

@@ -1,6 +1,6 @@
 # Numbering strategies, zones and views
 
-Dimo numbers the balloons in the order of the characteristic table. The group **Numbering** on
+DimoMark numbers the balloons in the order of the characteristic table. The group **Numbering** on
 the **Home** tab puts that order in a pattern: sheet by sheet and zone by zone, view by view, clockwise
 around each view, or by type. You see the new numbers before they change, and applying them is
 one step that ⌘Z takes back.
@@ -8,7 +8,7 @@ one step that ⌘Z takes back.
 ## Zone grid
 
 Most drawing frames are divided into zones, with letters along one edge and numbers along the
-other, for example `B3`. Dimo does not read the frame by itself yet, so you set the grid once per
+other, for example `B3`. DimoMark does not read the frame by itself yet, so you set the grid once per
 sheet: choose **Zone grid** on the **Drawing** tab. The properties pane on the right shows the
 section **Zone grid** until you close it with its ×.
 

@@ -1,7 +1,7 @@
 //! Opening files and the release page with the default application of the operating system.
 //!
-//! Only two things are ever opened: a file Dimo just wrote, whose extension must be the one of
-//! its format ([`open_written_file`]), and the Dimo release page on GitHub for the update check
+//! Only two things are ever opened: a file DimoMark just wrote, whose extension must be the one of
+//! its format ([`open_written_file`]), and the DimoMark release page on GitHub for the update check
 //! ([`open_url`], R.9). The path or URL is one argument of the launcher, never part of a shell
 //! string: `open` on macOS, `xdg-open` on Linux and `ShellExecuteW` on Windows (the one module
 //! with `unsafe`, see `windows.rs`).
@@ -17,7 +17,7 @@ use crate::ipc::{CommandError, ExportReason};
 /// The only web address [`open_url`] opens, and the pages below it.
 pub const RELEASES_URL: &str = "https://github.com/NC-PB/dimo/releases";
 
-/// Opens the file `path` that Dimo just wrote, through `opener`. Refused if its extension is not
+/// Opens the file `path` that DimoMark just wrote, through `opener`. Refused if its extension is not
 /// `extension`: the user can type any file name in the save dialog, and a file of another type
 /// (a script, say) must never be started from here.
 pub(crate) fn open_written_file(
@@ -49,7 +49,7 @@ pub(crate) fn open_with_system(path: &Path) -> std::io::Result<()> {
     launch(std::path::absolute(path)?.as_os_str())
 }
 
-/// Opens `url` in the browser if it is the Dimo release page or a page below it
+/// Opens `url` in the browser if it is the DimoMark release page or a page below it
 /// ([`RELEASES_URL`]); every other address is refused with `InvalidInput` (R.9, ADR 0008).
 pub fn open_url(url: &str) -> std::io::Result<()> {
     if !is_release_page(url) {

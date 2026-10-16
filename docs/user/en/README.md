@@ -1,15 +1,15 @@
-# Dimo user guide
+# DimoMark user guide
 
-Dimo numbers every characteristic of an engineering drawing that has to be inspected with a
+DimoMark numbers every characteristic of an engineering drawing that has to be inspected with a
 balloon, keeps the list of characteristics, takes the values you measured on your parts and
 decides pass or fail. It exports a check sheet, an inspection report, a ballooned PDF and a
 characteristic list. Everything stays on your computer.
 
-This version is for **assisted ballooning**: you drag a box around a dimension and Dimo reads its
-PDF text, or you click a feature and type the value as it is printed. Dimo reads nominal value,
+This version is for **assisted ballooning**: you drag a box around a dimension and DimoMark reads its
+PDF text, or you click a feature and type the value as it is printed. DimoMark reads nominal value,
 fit and written tolerances from the text, works out the limits (written tolerances first, then
 the ISO 286 fit table, then the general tolerance and the rules of the project), explains where
-they come from, and takes care of numbering, the list, saving and the exports. Dimo does not
+they come from, and takes care of numbering, the list, saving and the exports. DimoMark does not
 search the drawing by itself yet. Without a general tolerance in the project, a dimension without
 tolerance is marked "No tolerance defined"; choose one in the **General tolerance** field of the
 **Home** or **Drawing** tab, or enter its limits in the characteristic table.
@@ -41,17 +41,17 @@ on Windows and Linux use Ctrl instead of ⌘ and Alt instead of ⌥.
 
 ### 1. Start a project from a drawing
 
-Start Dimo. Without an open project it shows the start screen: **New project from drawing**,
+Start DimoMark. Without an open project it shows the start screen: **New project from drawing**,
 **Open project**, the five most recent projects and the three steps of the work. Click **New project from drawing** (or press
-⌘N) and pick the PDF of the drawing. Dimo copies the drawing into the project, so the project
+⌘N) and pick the PDF of the drawing. DimoMark copies the drawing into the project, so the project
 does not depend on the original file afterwards, and shows the first sheet fitted into the
 window. A drawing with several sheets (pages) shows one tab per sheet in the status bar at the
 bottom.
 
-The project has no file yet. The title bar says "Untitled"; you save it in step 9, but Dimo already
+The project has no file yet. The title bar says "Untitled"; you save it in step 9, but DimoMark already
 keeps a recoverable copy of everything you do ([Projects](projects.md)).
 
-On the right Dimo opens **Set up this drawing**. Answer it from the title block (step 3) and
+On the right DimoMark opens **Set up this drawing**. Answer it from the title block (step 3) and
 click **Start ballooning**, or click **Skip** and set everything later. If the sheet is sideways,
 turn it with **Rotate left** or **Rotate right** on the **Drawing** tab, as in step 8.
 
@@ -65,7 +65,7 @@ switch sheets. Details: [Looking at a drawing](drawing-view.md).
 ### 3. Choose the general tolerance of the project
 
 Most drawings print a general tolerance in the title block, for example ISO 2768-mK: the small
-letter is the class of ISO 2768-1. Dimo does not read the title block yet, so tell it once in
+letter is the class of ISO 2768-1. DimoMark does not read the title block yet, so tell it once in
 **Set up this drawing**:
 
 1. **General tolerance**: choose **None** or the ISO 2768-1 class of the drawing (f fine,
@@ -79,16 +79,16 @@ step) and switches on **Place balloon**. To change them later, use the **Drawing
 tolerance**, **Unit** and **Scale**, or **Set up drawing**, which opens the same pane again. The
 **General tolerance** field is also on the **Home** tab. From now on a dimension without a tolerance gets its limits from that table. Without a general tolerance
 such a dimension is marked **No tolerance defined** and has no limits. The ISO 2768-1 and ISO 286 tables
-shipped with Dimo are verified. Details:
+shipped with DimoMark are verified. Details:
 [Tolerances](tolerances.md).
 
 ### 4. Place balloons and capture the values
 
 1. Press **B** (the **Place balloon** tool).
-2. Drag a box around the dimension text. A card shows what Dimo read: kind, nominal value,
+2. Drag a box around the dimension text. A card shows what DimoMark read: kind, nominal value,
    limits, the rule the limits come from and an explanation. Press **Enter** to accept it.
    Or click the dimension or note, type the value as printed, for example `Ø8 f7`, and
-   press **Enter**. Dimo reads typed text the same way as a box.
+   press **Enter**. DimoMark reads typed text the same way as a box.
 3. Press **Escape** to discard a card you do not want.
 4. Drag or click the next feature. You can start typing right after the click or the box.
 
@@ -102,7 +102,7 @@ the properties pane on the right ([Tolerances](tolerances.md)).
 The table under the drawing has one row per balloon. The text read or typed is in the
 **Requirement** column, and kind, nominal, fit and printed tolerances are already filled in.
 Complete what the inspection needs: **Kind**, **Nominal**, **Upper dev.** and **Lower dev.**
-(Dimo computes **Upper limit** and **Lower limit**), **Unit**, **Fit**, **Qty**, **Class**, and the
+(DimoMark computes **Upper limit** and **Lower limit**), **Unit**, **Fit**, **Qty**, **Class**, and the
 columns for method, gauge, sampling and frequency. Double click a cell or start typing, confirm
 with Enter, move on with Tab. Clear **Inspect** for reference and basic dimensions that are not
 measured. Numbers are typed with a point, and the digits you type are the digits that are stored
@@ -136,22 +136,22 @@ values. Details: [Sheets](sheets.md).
 
 ### 9. Save
 
-Choose **Save** (⌘S). Because the project has no file yet, Dimo asks for a name and location and
+Choose **Save** (⌘S). Because the project has no file yet, DimoMark asks for a name and location and
 writes one `.dimo` file that contains the drawing, the characteristics, the balloons and the log
 of all changes. From then on ⌘S saves into that file. **Save as** (⇧⌘S) saves under another name.
 
-Between saves, Dimo writes every change to an autosave journal. After a crash or a power cut,
-opening the project again (or starting Dimo, for a project that was never saved) restores the
+Between saves, DimoMark writes every change to an autosave journal. After a crash or a power cut,
+opening the project again (or starting DimoMark, for a project that was never saved) restores the
 work, with a note above the drawing. When you close the window or create or open another
-project with unsaved changes, Dimo asks first. Details: [Projects](projects.md).
+project with unsaved changes, DimoMark asks first. Details: [Projects](projects.md).
 
 ### 10. Enter the results
 
 Open the **Measure** tab (⌘3). Type how many parts you measure under **Number** and choose
 **Add parts**. Click the first cell of a part, type the value, press **Enter**, and carry on down
-the column: Dimo stores the value, moves to the next characteristic and marks the result with ✓
+the column: DimoMark stores the value, moves to the next characteristic and marks the result with ✓
 (pass), ✗ (fail) or ○ (value without limits). For threads and notes press **O** for OK or **N**
-for not OK. A block copied from a spreadsheet pastes with ⌘V. Limits are inclusive, and Dimo
+for not OK. A block copied from a spreadsheet pastes with ⌘V. Limits are inclusive, and DimoMark
 decides pass or fail for you. Details: [Entering results](measuring.md).
 
 ### 11. Export

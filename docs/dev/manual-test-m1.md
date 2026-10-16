@@ -14,7 +14,7 @@ exports. Record the result in the table at the end and put the notes in the pull
    PDF with `cargo run -p dimo-synth -- --stress --seed 1 --sheets 50 --out target/perf`.
 4. Put the files you create in a folder you can delete afterwards.
 
-Write down: date, tester, operating system and version, Dimo version and build, display scale.
+Write down: date, tester, operating system and version, DimoMark version and build, display scale.
 
 ## 1. File dialogs (FR-DOC-07, FR-EXP-01)
 
@@ -39,8 +39,8 @@ Write down: date, tester, operating system and version, Dimo version and build, 
 | 2.1 | Place a balloon, then close the window | A question "Save changes?" with Save, Don't save, Cancel |
 | 2.2 | Choose Cancel | The window stays, nothing is lost |
 | 2.3 | Close again and choose Save | The project is saved (file dialog if it has no file), the window closes |
-| 2.4 | Start Dimo and open the project | The balloon is there |
-| 2.5 | Change something, quit with ⌘Q (Alt+F4 or the menu elsewhere), choose Don't save | Dimo ends; open the project again: the change is gone and there is no recovery note |
+| 2.4 | Start DimoMark and open the project | The balloon is there |
+| 2.5 | Change something, quit with ⌘Q (Alt+F4 or the menu elsewhere), choose Don't save | DimoMark ends; open the project again: the change is gone and there is no recovery note |
 | 2.6 | With unsaved changes choose **New project** or **Open project** | The same question appears before the dialog |
 | 2.7 | Close the window of a project without changes | No question |
 
@@ -48,12 +48,12 @@ Write down: date, tester, operating system and version, Dimo version and build, 
 
 | # | Step | Expected |
 |---|---|---|
-| 3.1 | Open a saved project, place two balloons, force quit Dimo (Activity Monitor, or kill the process) | |
-| 3.2 | Start Dimo and open the project | The two balloons are there; a note says changes were restored |
+| 3.1 | Open a saved project, place two balloons, force quit DimoMark (Activity Monitor, or kill the process) | |
+| 3.2 | Start DimoMark and open the project | The two balloons are there; a note says changes were restored |
 | 3.3 | Create a new project, place two balloons, force quit | |
-| 3.4 | Start Dimo | The unsaved project is restored with the note; saving keeps it |
+| 3.4 | Start DimoMark | The unsaved project is restored with the note; saving keeps it |
 | 3.5 | Look for `<project>.dimo.journal` next to a saved project after saving | The file is gone |
-| 3.6 | Start a second Dimo instance and open a project that the first one has open | A message that the project is open in another window, with the user name |
+| 3.6 | Start a second DimoMark instance and open a project that the first one has open | A message that the project is open in another window, with the user name |
 | 3.7 | Force quit the first instance, then open the project in the second | It opens; the leftover `.lock` file does not block it |
 
 ## 4. Gestures and feel (FR-DOC-05, NFR-PERF-02)
@@ -104,7 +104,7 @@ Write down: date, tester, operating system and version, Dimo version and build, 
 | # | Step | Expected |
 |---|---|---|
 | 7.1 | Switch the theme to dark, light, system | Applies at once; the drawing area, table and dialogs follow; survives a restart |
-| 7.2 | Change the OS theme while Dimo runs with "same as the system" | Dimo follows |
+| 7.2 | Change the OS theme while DimoMark runs with "same as the system" | DimoMark follows |
 | 7.3 | Switch the language with a project open | The window reloads, the project stays, texts are in the new language |
 | 7.4 | Change the user name, change something, save, look in the project's `audit.jsonl` | The new name is in the new entries |
 | 7.5 | Look at every view in both languages | No clipped or English leftover texts in German |

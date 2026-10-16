@@ -1,6 +1,6 @@
 ---
 name: ipc-command
-description: Add a Tauri command, event, channel or custom protocol route end to end in Dimo (core command, src-tauri wrapper, specta bindings, capability, frontend call). Use whenever the frontend needs new data or a new action.
+description: Add a Tauri command, event, channel or custom protocol route end to end in DimoMark (core command, src-tauri wrapper, specta bindings, capability, frontend call). Use whenever the frontend needs new data or a new action.
 ---
 
 # IPC command end to end

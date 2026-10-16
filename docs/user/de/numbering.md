@@ -1,6 +1,6 @@
 # Nummerierungsstrategien, Zonen und Ansichten
 
-Dimo nummeriert die Ballons in der Reihenfolge der Merkmalstabelle. Die Gruppe **Nummerierung**
+DimoMark nummeriert die Ballons in der Reihenfolge der Merkmalstabelle. Die Gruppe **Nummerierung**
 auf dem Reiter **Start** bringt diese Reihenfolge in ein Muster: Blatt für Blatt und Zone für Zone, Ansicht für
 Ansicht, im Uhrzeigersinn um jede Ansicht oder nach Art. Du siehst die neuen Nummern, bevor sie
 sich ändern, und das Anwenden ist ein Schritt, den ⌘Z zurücknimmt.
@@ -8,7 +8,7 @@ sich ändern, und das Anwenden ist ein Schritt, den ⌘Z zurücknimmt.
 ## Zonenraster
 
 Die meisten Zeichnungsrahmen sind in Zonen eingeteilt, mit Buchstaben an einem Rand und Zahlen am
-anderen, zum Beispiel `B3`. Dimo liest den Rahmen noch nicht selbst, darum legst du das Raster
+anderen, zum Beispiel `B3`. DimoMark liest den Rahmen noch nicht selbst, darum legst du das Raster
 einmal je Blatt fest: Wähle **Zonenraster** auf dem Reiter **Zeichnung**. Der
 Eigenschaftenbereich rechts zeigt den Abschnitt **Zonenraster**, bis du ihn mit seinem × schließt.
 

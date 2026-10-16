@@ -1,7 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Placeholder app icon: a balloon with a leader line. -->
-  <rect width="1024" height="1024" rx="200" fill="#1f6feb"/>
-  <line x1="600" y1="600" x2="820" y2="820" stroke="#ffffff" stroke-width="56" stroke-linecap="round"/>
-  <circle cx="440" cy="440" r="250" fill="none" stroke="#ffffff" stroke-width="64"/>
-  <circle cx="440" cy="440" r="70" fill="#ffffff"/>
+  <!-- DimoMark app icon (R.11, concept B "checked dimension"): an orange balloon with a check
+       mark above a dimension line, on a dark navy tile with faint blueprint lines. 100 px margin
+       as the macOS icon grid asks. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e2733"/>
+      <stop offset="1" stop-color="#10151c"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)" stroke="#2c3846" stroke-width="6"/>
+  <g stroke="#79b8ff" stroke-opacity=".22" stroke-width="4">
+    <line x1="100" y1="512" x2="924" y2="512"/>
+    <line x1="512" y1="100" x2="512" y2="924"/>
+    <line x1="100" y1="300" x2="924" y2="300"/>
+    <line x1="100" y1="724" x2="924" y2="724"/>
+    <line x1="300" y1="100" x2="300" y2="924"/>
+    <line x1="724" y1="100" x2="724" y2="924"/>
+  </g>
+  <g transform="translate(152 152) scale(0.703125)">
+    <circle cx="512" cy="380" r="176" fill="none" stroke="#e85d04" stroke-width="60"/>
+    <path d="M432 384 L492 444 L600 324" fill="none" stroke="#ffffff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="200" y1="640" x2="200" y2="840" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+    <line x1="824" y1="640" x2="824" y2="840" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+    <line x1="270" y1="740" x2="754" y2="740" stroke="#ffffff" stroke-width="28"/>
+    <path d="M214 740 L300 696 L300 784 Z" fill="#ffffff"/>
+    <path d="M810 740 L724 696 L724 784 Z" fill="#ffffff"/>
+  </g>
 </svg>

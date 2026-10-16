@@ -19,19 +19,19 @@ wurde.
 **Neues Projekt** und **Projekt öffnen** fragen mit dem Dateidialog des Betriebssystems nach einer
 Datei. Ein Projekt entsteht aus einer PDF-Zeichnung; andere Dateitypen werden nicht angeboten. Ein
 neues Projekt hat bis zum ersten Speichern keine Datei; die Titelleiste zeigt "Unbenannt".
-Beim ersten Speichern fragt Dimo nach einem Dateinamen und hängt `.dimo` an, wenn du es weglässt.
+Beim ersten Speichern fragt DimoMark nach einem Dateinamen und hängt `.dimo` an, wenn du es weglässt.
 Rückgängig ist unbegrenzt, solange das Projekt offen ist; nach erneutem Öffnen beginnt der Verlauf
 neu.
 
-Ohne offenes Projekt zeigt Dimo den Startbildschirm mit **Neues Projekt aus Zeichnung**,
+Ohne offenes Projekt zeigt DimoMark den Startbildschirm mit **Neues Projekt aus Zeichnung**,
 **Projekt öffnen** und den fünf zuletzt geöffneten Projekten; ein Klick auf eines öffnet es. Gleich nach dem Anlegen eines neuen Projekts fragt der Bereich **Zeichnung
 einrichten** nach Allgemeintoleranz, Einheit und Maßstab, Teilenummer und Kunde; **Überspringen**
 schließt ihn, und **Zeichnung einrichten** im Reiter **Zeichnung** öffnet ihn wieder. Geöffnete
 Projekte zeigen ihn nicht. Ansichten und Bereiche ohne Inhalt (keine Merkmale, keine Teile, keine
 Messwerte) sagen, was fehlt, und bieten eine Schaltfläche für den nächsten Schritt.
 
-Hat ein Projekt ungespeicherte Änderungen, fragt Dimo vor dem Anlegen oder Öffnen eines anderen
-Projekts und vor dem Schließen des Fensters oder dem Beenden von Dimo: **Speichern**,
+Hat ein Projekt ungespeicherte Änderungen, fragt DimoMark vor dem Anlegen oder Öffnen eines anderen
+Projekts und vor dem Schließen des Fensters oder dem Beenden von DimoMark: **Speichern**,
 **Nicht speichern** oder **Abbrechen**.
 
 ## Was in einer Projektdatei steht
@@ -40,13 +40,13 @@ Eine `.dimo`-Datei enthält die Zeichnung, wie du sie importiert hast, die Merkm
 die Einstellungen des Projekts (Ballonstil, Toleranzregeln mit den importierten eigenen
 Tabellen, Nummerierungsstrategie), Drehung, Einheit, Maßstab, Zonenraster und Ansichten jedes
 Blatts, die Nummerierungssperre und das Änderungsprotokoll: jede Änderung mit Zeit und dem
-Benutzernamen aus den **Optionen** ([Datei-Seite, Optionen und Über Dimo](settings.md)). Die Datei ist ein ZIP-Archiv, du kannst sie also
-mit jedem ZIP-Programm ansehen, aber nur Dimo sollte sie schreiben.
+Benutzernamen aus den **Optionen** ([Datei-Seite, Optionen und Über DimoMark](settings.md)). Die Datei ist ein ZIP-Archiv, du kannst sie also
+mit jedem ZIP-Programm ansehen, aber nur DimoMark sollte sie schreiben.
 
-Ein Projekt, das eine ältere Dimo-Version gespeichert hat, lässt sich öffnen, und ein Hinweis sagt,
+Ein Projekt, das eine ältere DimoMark-Version gespeichert hat, lässt sich öffnen, und ein Hinweis sagt,
 dass es umgewandelt wurde; beim Speichern wird das aktuelle Format geschrieben. Ein Projekt von
-einer neueren Dimo-Version wird mit einer Meldung abgelehnt, damit nichts verloren geht;
-aktualisiere Dimo, um es zu öffnen.
+einer neueren DimoMark-Version wird mit einer Meldung abgelehnt, damit nichts verloren geht;
+aktualisiere DimoMark, um es zu öffnen.
 
 ## Automatische Sicherung und Wiederherstellung
 
@@ -58,22 +58,22 @@ Warnzeichen, wenn das Journal nicht geschrieben werden konnte.
 
 - Ein gespeichertes Projekt hat sein Journal neben der Datei: `part.dimo.journal`. Beim Speichern
   wird es in die Projektdatei übernommen und gelöscht.
-- Ein noch nie gespeichertes Projekt hat sein Journal im Datenordner von Dimo (unter macOS zum
+- Ein noch nie gespeichertes Projekt hat sein Journal im Datenordner von DimoMark (unter macOS zum
   Beispiel `~/Library/Application Support/io.github.nc-pb.dimo/autosave`).
 
-Endet Dimo oder der Computer unerwartet, gehen höchstens die letzten 30 Sekunden verloren:
+Endet DimoMark oder der Computer unerwartet, gehen höchstens die letzten 30 Sekunden verloren:
 
 - Beim erneuten Öffnen des gespeicherten Projekts werden die Änderungen aus dem Journal
   wiederhergestellt.
-- Ein noch nie gespeichertes Projekt wird beim nächsten Start von Dimo wiederhergestellt.
+- Ein noch nie gespeichertes Projekt wird beim nächsten Start von DimoMark wiederhergestellt.
 
 Ein Hinweis über der Zeichnung sagt, was wiederhergestellt wurde. Speichere das Projekt, um die
 Änderungen zu behalten. Wählst du beim Schließen "Nicht speichern", wird das Journal gelöscht.
 
 ## Ein Fenster pro Projekt
 
-Solange ein Projekt offen ist, legt Dimo daneben eine Sperrdatei an (`part.dimo.lock`). Ein
-zweites Dimo-Fenster, das dasselbe Projekt öffnen will, erhält eine Meldung mit dem Benutzer, der
-es geöffnet hat. Die Sperre endet, wenn Dimo schließt, auch nach einem Absturz; eine
-liegengebliebene Sperrdatei blockiert also nie. Die Sperre gilt nur zwischen Dimo-Fenstern;
+Solange ein Projekt offen ist, legt DimoMark daneben eine Sperrdatei an (`part.dimo.lock`). Ein
+zweites DimoMark-Fenster, das dasselbe Projekt öffnen will, erhält eine Meldung mit dem Benutzer, der
+es geöffnet hat. Die Sperre endet, wenn DimoMark schließt, auch nach einem Absturz; eine
+liegengebliebene Sperrdatei blockiert also nie. Die Sperre gilt nur zwischen DimoMark-Fenstern;
 andere Programme können die Datei weiterhin ändern.

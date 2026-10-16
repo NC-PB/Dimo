@@ -22,13 +22,13 @@ pub enum ProjectError {
     /// The file is no ZIP container or the container is damaged.
     #[error("not a readable project container: {0}")]
     Container(String),
-    /// The manifest does not name the Dimo project format.
-    #[error("not a Dimo project: {0}")]
+    /// The manifest does not name the DimoMark project format.
+    #[error("not a DimoMark project: {0}")]
     NotAProject(String),
-    /// Written by a newer Dimo (NFR-REL-04). The file is left untouched.
+    /// Written by a newer DimoMark (NFR-REL-04). The file is left untouched.
     #[error(
-        "the project was written by a newer version of Dimo (schema version {found}, this \
-         version reads up to {supported}). Update Dimo to open it"
+        "the project was written by a newer version of DimoMark (schema version {found}, this \
+         version reads up to {supported}). Update DimoMark to open it"
     )]
     NewerVersion {
         /// Schema version in the file.
@@ -36,7 +36,7 @@ pub enum ProjectError {
         /// Highest schema version this build reads.
         supported: u32,
     },
-    /// Schema version 0 or another value no Dimo ever wrote.
+    /// Schema version 0 or another value no DimoMark ever wrote.
     #[error("unknown schema version {0}")]
     UnknownVersion(u32),
     /// A required entry is missing.
@@ -117,8 +117,8 @@ pub enum ProjectError {
     /// never saved. Use `save_as`.
     #[error("the project has no file yet")]
     NoPath,
-    /// Another Dimo instance has the project open ([`crate::lock`]).
-    #[error("the project is open in another Dimo instance{}", holder.as_ref().map(|h| format!(" (user {})", h.user)).unwrap_or_default())]
+    /// Another DimoMark instance has the project open ([`crate::lock`]).
+    #[error("the project is open in another DimoMark instance{}", holder.as_ref().map(|h| format!(" (user {})", h.user)).unwrap_or_default())]
     InUse {
         /// Who holds the lock, if the lock file could be read.
         holder: Option<LockOwner>,

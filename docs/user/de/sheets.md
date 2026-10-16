@@ -24,7 +24,7 @@ der Mitte. Die Drehung wird mit dem Projekt gespeichert.
 ## Einheit
 
 Wähle im Feld **Einheit** **Millimeter (mm)** oder **Zoll (in)**. Das ist die Einheit der Maße, die auf dem Blatt
-stehen. Dimo schließt sie nie aus der Blattgröße: Metrische Zeichnungen auf Zollformaten kommen
+stehen. DimoMark schließt sie nie aus der Blattgröße: Metrische Zeichnungen auf Zollformaten kommen
 vor, darum wählst immer du die Einheit. Ein neues Blatt beginnt mit Millimeter. Ein Nennmaß, das
 du ohne Einheit in die Tabelle tippst, erhält die Einheit seines Blatts (Grad bei Winkeln).
 

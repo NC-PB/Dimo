@@ -1,4 +1,4 @@
-//! Headless command line tool for Dimo.
+//! Headless command line tool for DimoMark.
 #![allow(clippy::print_stdout, clippy::print_stderr)] // Binary: prints its report.
 
 use std::path::{Path, PathBuf};
@@ -11,7 +11,7 @@ use dimo_core::Language;
 use dimo_export::{BalloonMode, ExportFormat, RenderOptions};
 use dimo_pdf::PdfEngine;
 
-/// Dimo command line interface.
+/// DimoMark command line interface.
 #[derive(Debug, Parser)]
 #[command(name = "dimo", version, about)]
 struct Cli {

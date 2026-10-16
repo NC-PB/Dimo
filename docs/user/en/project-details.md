@@ -6,7 +6,7 @@ with **Edit in File > Info**, and the Report tab links there when a header field
 of the reports.
 
 Every field is saved when you leave it or press Enter. Each change is one step of undo
-(⌘Z), like every other change of the project. If Dimo refuses a value, the field shows the
+(⌘Z), like every other change of the project. If DimoMark refuses a value, the field shows the
 old value again and a message above the drawing tells why.
 
 ## Part
@@ -22,11 +22,11 @@ old value again and a message above the drawing tells why.
 
 | Field | Meaning |
 |---|---|
-| Revision | Revision label of the drawing, for example `B`. Dimo does not read it from the title block, so type it from the drawing |
+| Revision | Revision label of the drawing, for example `B`. DimoMark does not read it from the title block, so type it from the drawing |
 | Drawing file | File name of the imported drawing (cannot be edited) |
 | SHA-256 | Fingerprint of the drawing file (cannot be edited). **Copy** puts it on the clipboard. The report prints it, so anyone can check that a report belongs to this exact drawing |
 
-The revision label belongs to the drawing in the project. Dimo keeps it with the project and
+The revision label belongs to the drawing in the project. DimoMark keeps it with the project and
 prints it on every report.
 
 ## Report
@@ -44,9 +44,9 @@ prints it on every report.
 of "Inspected by" is the report date; "Approved by" gets no date, you write it by hand. This is
 separate from the inspector of each part, which you set in the properties pane of the Measure
 tab ([Entering results](measuring.md)). If the report date is empty when you export a check sheet or an inspection report,
-Dimo enters today's date first, as one change you can undo ([Exports](exports.md)).
+DimoMark enters today's date first, as one change you can undo ([Exports](exports.md)).
 
-Empty fields stay empty on the report. A new project starts with the company name from **Options** and with the user name of **Options** (or of your system) as inspector. Dimo does not change an existing project when you open it.
+Empty fields stay empty on the report. A new project starts with the company name from **Options** and with the user name of **Options** (or of your system) as inspector. DimoMark does not change an existing project when you open it.
 
 ### Company name
 

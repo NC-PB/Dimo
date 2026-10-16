@@ -18,7 +18,7 @@ A free, open, local-first desktop tool that turns a customer drawing into a veri
 - **free:** no subscription, no license server, no sales call,
 - **complete enough:** ballooned drawing, characteristic list, measurement record and a clean report.
 
-Dimo does not compete for the enterprise customers of large software vendors. Advanced features (customer profiles, revision handling, CLI, interchange formats) exist, but they stay out of the way until needed.
+DimoMark does not compete for the enterprise customers of large software vendors. Advanced features (customer profiles, revision handling, CLI, interchange formats) exist, but they stay out of the way until needed.
 
 ## Target users
 
@@ -47,7 +47,7 @@ Dimo does not compete for the enterprise customers of large software vendors. Ad
 ## Out of scope (1.0)
 
 - Native CAD file reading and 3D model based definition. Considered after 1.0.
-- Statistical process control, nonconformance and CAPA management. Dimo exports data, it is not a full quality management system.
+- Statistical process control, nonconformance and CAPA management. DimoMark exports data, it is not a full quality management system.
 - Cloud hosting and multi-user collaboration servers.
 - Direct CMM program generation.
 

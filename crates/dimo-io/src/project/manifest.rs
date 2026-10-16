@@ -9,7 +9,7 @@ use super::{FORMAT_NAME, SCHEMA_VERSION};
 
 /// Content of `manifest.json`.
 ///
-/// `format` and `schema_version` keep their names and meaning in every version, so any Dimo
+/// `format` and `schema_version` keep their names and meaning in every version, so any DimoMark
 /// can tell whether it may read a file (NFR-REL-04).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -18,7 +18,7 @@ pub struct Manifest {
     pub format: String,
     /// Version of the `project.json` and `audit.jsonl` layout (NFR-REL-03).
     pub schema_version: u32,
-    /// Version of the Dimo build that wrote the file.
+    /// Version of the DimoMark build that wrote the file.
     pub app_version: String,
     /// When the project was created.
     pub created: Timestamp,

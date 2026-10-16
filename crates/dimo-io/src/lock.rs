@@ -1,4 +1,4 @@
-//! Guard against two Dimo instances editing the same project (T1.5).
+//! Guard against two DimoMark instances editing the same project (T1.5).
 //!
 //! While a project is open, the app holds an exclusive operating system lock on a lock file
 //! next to it: `part.dimo` gets `part.dimo.lock`. The file names the holder (user, process,
@@ -12,7 +12,7 @@
 //!
 //! # Limits
 //!
-//! The lock is advisory between Dimo instances, it does not stop other programs. On file
+//! The lock is advisory between DimoMark instances, it does not stop other programs. On file
 //! systems without lock support (some network shares) acquiring succeeds without a guard.
 //! On Windows the lock also blocks reading the file, so the holder is unknown there.
 

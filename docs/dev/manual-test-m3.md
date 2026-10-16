@@ -22,7 +22,7 @@ the **Draft** marker in the grid and an asterisk plus a footnote in the reports;
    that can edit cells to copy a block from (the same one is fine). Note which and its version.
 5. Put the files you create in a folder you can delete afterwards.
 
-Write down: date, tester, operating system and version, Dimo version and build, spreadsheet
+Write down: date, tester, operating system and version, DimoMark version and build, spreadsheet
 program and version, display scale.
 
 ## 0. The test project
@@ -146,7 +146,7 @@ Copy it with ⌘C (Ctrl+C elsewhere).
 
 | # | Step | Expected |
 |---|---|---|
-| 5.1 | Click row 1 of part 4 in Dimo, press **⌘V** (Ctrl+V) | 21 results appear at once. Part 4: ✓ in every cell except row 5 (○); part 5: ✗ in row 6; part 6: ✗ in row 1 |
+| 5.1 | Click row 1 of part 4 in DimoMark, press **⌘V** (Ctrl+V) | 21 results appear at once. Part 4: ✓ in every cell except row 5 (○); part 5: ✗ in row 6; part 6: ✗ in row 1 |
 | 5.2 | The values | `10,05` is stored as `10.05`; the other values read as pasted |
 | 5.3 | Press ⌘Z once | All 21 results disappear in one step |
 | 5.4 | Press ⇧⌘Z | All 21 are back |
@@ -249,7 +249,7 @@ first, so the fill is visible.
 
 | # | Step | Expected |
 |---|---|---|
-| 11.1 | On the **Report** tab choose **Inspection report**, format PDF, and **Issue report** | Before it starts Dimo warns that some limits come from draft tables; **Back** cancels, **Export anyway** continues |
+| 11.1 | On the **Report** tab choose **Inspection report**, format PDF, and **Issue report** | Before it starts DimoMark warns that some limits come from draft tables; **Back** cancels, **Export anyway** continues |
 | 11.2 | After the export | Below the export: recorded as issued, numbering locked |
 | 11.3 | Open the PDF | **Inspected by** shows your user name and the company shows the name from **Options**, as the empty fields were filled for the issued export |
 | 11.4 | Look at **File** > **Info** | The company and inspected by fields now hold these values |
@@ -276,7 +276,7 @@ Start from the issued copy of section 11 (at least one issued report recorded, r
 | 12.7 | Remove the limits of characteristic 3 (clear both limit cells) | The results of row 3 stay and show ○; the type stays **Value**; a triangle appears next to number 3 |
 | 12.8 | With the change of 12.7 still in place, start an inspection report export as issued | The warning says limits or result types changed after the last issued report; choose **Back**, then press ⌘Z until the limits of characteristic 3 and the marks are back |
 | 12.9 | Delete characteristic 1 with **Delete** on the Home tab | No question; its results go with it in the same step. ⌘Z restores the characteristic, its balloon and its results |
-| 12.10 | Delete a part that has results | Dimo asks first, naming the number of results; **Keep** leaves it, **Delete with results** removes it; ⌘Z restores both |
+| 12.10 | Delete a part that has results | DimoMark asks first, naming the number of results; **Keep** leaves it, **Delete with results** removes it; ⌘Z restores both |
 
 ## 13. Cancel (NFR-PERF-06)
 

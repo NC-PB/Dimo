@@ -1,6 +1,6 @@
 # dimo-cli
 
-Headless command line tool for Dimo.
+Headless command line tool for DimoMark.
 
 ## Export
 

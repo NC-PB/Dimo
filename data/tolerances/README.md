@@ -119,7 +119,7 @@ to ZC end at 500 mm.
 ### Custom tables (FR-TOL-07)
 
 A company table uses `kind = "custom"`, any id that is not taken, and `symmetric` parts. Name the
-company document in `source`. Import the file in the tolerance settings ("Import table"); Dimo
+company document in `source`. Import the file in the tolerance settings ("Import table"); DimoMark
 validates it and refuses it with the file name and the line or the part and row of the problem.
 A project that uses a custom table stores a copy, so it opens with the same limits elsewhere.
 

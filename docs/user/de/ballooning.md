@@ -35,7 +35,7 @@ Du musst nicht auf das Feld warten: Was du gleich nach dem Klick tippst, landet 
 - Ein Klick an eine andere Stelle speichert das Getippte ebenfalls.
 - **Enter** auf einem ausgewählten Ballon oder ein Doppelklick darauf öffnet das Feld wieder.
 
-Dimo liest den getippten Text wie ein Maß auf der Zeichnung: `Ø30 H7 +0.0203 -0` ergibt die Art
+DimoMark liest den getippten Text wie ein Maß auf der Zeichnung: `Ø30 H7 +0.0203 -0` ergibt die Art
 **Durchmesser**, das Nennmaß `30`, die Passung `H7`, die Abmaße und die Grenzwerte `30.0203` und
 `30` mit der Regel **Explizit**. Text, der kein Maß ist, etwa ein Hinweis, wird nur als
 Anforderung gespeichert. `Ø8 f7` allein erhält seine Grenzwerte aus der Passungstabelle nach
@@ -44,7 +44,7 @@ werden so markiert. Ein Maß ohne Toleranz erhält seine Grenzwerte aus der Allg
 den Regeln des Projekts; ohne sie erhält es **Keine Toleranz festgelegt**, und du trägst seine
 Grenzwerte in der Tabelle ein ([Toleranzen](tolerances.md), [Merkmalstabelle](characteristics.md)).
 
-Tippst du einen neuen Wert in einen Ballon, der schon einen hat, liest Dimo ihn erneut und ersetzt
+Tippst du einen neuen Wert in einen Ballon, der schon einen hat, liest DimoMark ihn erneut und ersetzt
 Nennmaß, Abmaße, Grenzwerte, Passung und Regel, auch von Hand eingegebene Grenzwerte. Text, der
 nicht als Maß gelesen wird, ändert nur den Anforderungstext; die übrigen Werte bleiben, wie sie
 sind. Auch das Bearbeiten der Zelle **Anforderung** in der Tabelle speichert nur den Text; um ihn
@@ -53,17 +53,17 @@ erneut zu lesen, wähle das Merkmal aus und nimm **Grenzmaße aktualisieren**
 
 ## Rahmenauswahl
 
-Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
+Bei einer Zeichnung mit PDF-Text liest DimoMark den Text für dich.
 
 1. Drücke **B** und ziehe einen Rahmen um den Maßtext, gestapelte Toleranzen eingeschlossen.
    Gedrehter Text, etwa entlang einer senkrechten Maßlinie, geht genauso.
-2. Neben dem Rahmen öffnet sich eine Karte. Sie zeigt, was Dimo gelesen hat: den
+2. Neben dem Rahmen öffnet sich eine Karte. Sie zeigt, was DimoMark gelesen hat: den
    Anforderungstext, die Art, das Nennmaß, die obere und die untere Grenze, die Regel, aus der
    sie stammen, und eine Erklärung dazu. Aufgedruckte Abmaße gelten immer; weichen sie von der
-   Passungstabelle ab, sagt die Erklärung das. Hinweise nennen, was Dimo nicht entscheiden
+   Passungstabelle ab, sagt die Erklärung das. Hinweise nennen, was DimoMark nicht entscheiden
    konnte, etwa einen Winkel, dessen kürzerer Schenkel noch nicht eingegeben ist.
 3. Prüfe die Werte. Den Anforderungstext und die Art kannst du korrigieren, und bei einem Winkel
-   gibst du die Länge seines kürzeren Schenkels ein ([Toleranzen](tolerances.md)). Dimo liest
+   gibst du die Länge seines kürzeren Schenkels ein ([Toleranzen](tolerances.md)). DimoMark liest
    geänderten Text und den Schenkel erneut, wenn du das Feld verlässt oder übernimmst.
 4. Drücke **Enter** oder **Übernehmen**. Der Ballon erscheint rechts oberhalb des Rahmens wie ein
    gesetzter Ballon, mit den Werten der Karte. **Escape** oder **Verwerfen** schließt die Karte,
@@ -83,7 +83,7 @@ Bei einer Zeichnung mit PDF-Text liest Dimo den Text für dich.
   gesetzten Ballon.
 - Eine Zahl in einem rechteckigen Rahmen wird als theoretisch genaues Maß gelesen, ein Wert in
   Klammern als Hilfsmaß. Beide werden als nicht zu prüfen markiert.
-- Kann Dimo den Text nicht als Maß lesen, sagt die Karte das, und Übernehmen speichert nur den
+- Kann DimoMark den Text nicht als Maß lesen, sagt die Karte das, und Übernehmen speichert nur den
   Text. Die Art ist **Hinweis**, wenn der Text ein Wort mit drei oder mehr Buchstaben enthält,
   sonst **Sonstiges**.
 - Enthält der Rahmen keinen PDF-Text (gescannte Zeichnung), wird ein Ballon gesetzt und das

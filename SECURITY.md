@@ -6,7 +6,7 @@ Please report vulnerabilities privately through
 [GitHub security advisories](https://github.com/NC-PB/dimo/security/advisories/new).
 Do not open a public issue.
 
-You can expect a first answer within 14 days. Dimo is maintained by a single person, so fixes are
+You can expect a first answer within 14 days. DimoMark is maintained by a single person, so fixes are
 prioritized by severity.
 
 ## Scope

@@ -342,7 +342,7 @@ pub struct Flags {
 /// The data of one report, serialized as the template's `/data.json`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
 #[schemars(
-    title = "Dimo report data",
+    title = "DimoMark report data",
     description = "Data of a check sheet or inspection \
     report as passed to report templates (/data.json). Every printed value is text."
 )]

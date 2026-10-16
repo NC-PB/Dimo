@@ -33,7 +33,7 @@ Jeder Export braucht ein offenes Projekt, fragt, wo die Datei gespeichert wird, 
 im Hintergrund; du kannst währenddessen weiterarbeiten. Die Datei enthält das Projekt so, wie es
 war, als du die Schaltfläche geklickt hast. Unter dem Export erscheinen ein Fortschrittsbalken
 und danach der Dateiname, oder der Grund, warum der Export fehlschlug. Während ein Bericht
-exportiert wird, hält **Export abbrechen** ihn an; dann wird keine Datei geschrieben. Dimo hält
+exportiert wird, hält **Export abbrechen** ihn an; dann wird keine Datei geschrieben. DimoMark hält
 zwischen den Schritten des Exports an (vorbereiten, erzeugen, schreiben), das Abbrechen kann
 also einen Moment dauern.
 
@@ -51,10 +51,10 @@ Bericht gewählte Format:
 - **Leere Ergebnisspalten** (Reiter Bericht, nur Prüfblatt): wie viele leere Ergebnisspalten
   ein Prüfblatt erhält, wenn das
   Projekt keine Teile hat, 1 bis 10 (Standard 3).
-- **Datei nach dem Export öffnen**: Ist ein Export fertig und die Datei geschrieben, öffnet Dimo
+- **Datei nach dem Export öffnen**: Ist ein Export fertig und die Datei geschrieben, öffnet DimoMark
   sie mit dem Programm, das dein Computer für diesen Dateityp verwendet, zum Beispiel dein
   PDF-Programm für ein Prüfblatt, das du ausdrucken willst. Standardmäßig aus. Es gilt für jeden
-  Export. Dimo öffnet nur die Datei, die es gerade geschrieben hat, und nur wenn
+  Export. DimoMark öffnet nur die Datei, die es gerade geschrieben hat, und nur wenn
   ihr Name noch auf die Endung des Exports lautet (`.pdf`, `.csv` oder `.xlsx`). Ist für den Typ
   kein Programm eingerichtet, wird die Datei trotzdem gespeichert und der Export zeigt einen
   Hinweis.
@@ -127,7 +127,7 @@ markiert, und der Bericht sagt in einer Fußnote, dass diese Grenzmaße aus eine
 stammen und noch nicht verifiziert sind.
 
 Das Datum auf einem Bericht ist das Berichtsdatum des Projekts. Ist es beim Export eines
-Prüfblatts oder eines Prüfberichts leer, trägt Dimo zuerst das heutige Datum (das Datum deines
+Prüfblatts oder eines Prüfberichts leer, trägt DimoMark zuerst das heutige Datum (das Datum deines
 Computers) als Berichtsdatum ein, als eine Änderung, die du mit ⌘Z rückgängig machen kannst,
 und druckt es. Spätere Exporte drucken das gespeicherte Datum, dasselbe Projekt ergibt also an
 jedem Tag dieselben Dateien, Byte für Byte. Für ein anderes Datum trägst du es vor dem Export
@@ -155,11 +155,11 @@ Das Vermerken ist eine Änderung am Projekt. War das Berichtsdatum leer, trägt 
 auch das heutige Datum als Berichtsdatum ein, damit der Bericht es zeigt und spätere Exporte es
 ebenfalls drucken.
 
-⌘Z macht alles auf einmal rückgängig. Unter dem Export bestätigt Dimo „Als ausgegeben
+⌘Z macht alles auf einmal rückgängig. Unter dem Export bestätigt DimoMark „Als ausgegeben
 vermerkt“. Hast du das Projekt während des Exports geändert, wird die Datei geschrieben, aber
 nichts vermerkt, weil die Datei das Projekt nicht mehr zeigt; exportiere dann erneut.
 
-Vor einem Export als ausgegeben warnt Dimo, wenn Grenzmaße aus Entwurfstabellen stammen, wenn
+Vor einem Export als ausgegeben warnt DimoMark, wenn Grenzmaße aus Entwurfstabellen stammen, wenn
 Ergebnisse fehlen oder nicht bewertet sind (Prüfbericht) oder wenn sich Grenzmaße oder
 Ergebnisarten nach dem letzten ausgegebenen Bericht geändert haben
 ([Wenn sich Grenzmaße ändern](measuring.md#wenn-sich-grenzmaße-ändern)). Du kannst trotzdem

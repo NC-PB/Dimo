@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Describe a problem you want Dimo to solve
+about: Describe a problem you want DimoMark to solve
 labels: enhancement
 ---
 

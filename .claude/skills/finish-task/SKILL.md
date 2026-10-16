@@ -1,6 +1,6 @@
 ---
 name: finish-task
-description: Close a Dimo task properly. Runs all checks, reviews the diff against the spec, updates STATUS.md and the milestone file, and creates a signed Conventional Commit. Use when implementation of a task or a coherent step is complete.
+description: Close a DimoMark task properly. Runs all checks, reviews the diff against the spec, updates STATUS.md and the milestone file, and creates a signed Conventional Commit. Use when implementation of a task or a coherent step is complete.
 ---
 
 # Finish task

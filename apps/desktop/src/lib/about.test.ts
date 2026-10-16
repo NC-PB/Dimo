@@ -91,10 +91,10 @@ describe("About licenses (M3 decision 29)", () => {
     expect(lucide?.name).toContain(packageJson.dependencies["@lucide/svelte"]);
   });
 
-  it("includes the Apache 2.0 license and the NOTICE of Dimo", () => {
+  it("includes the Apache 2.0 license and the NOTICE of DimoMark", () => {
     expect(DIMO_LICENSE).toContain("Apache License");
     expect(DIMO_LICENSE).toContain("Version 2.0, January 2004");
-    expect(DIMO_NOTICE).toContain("Dimo");
+    expect(DIMO_NOTICE).toContain("DimoMark");
     expect(DIMO_NOTICE).toContain("SIL Open Font License");
   });
 
@@ -142,16 +142,16 @@ describe("Copy diagnostics (D-06, R.10)", () => {
     let calls = 0;
     const root = mountWith(() => {
       calls += 1;
-      return Promise.resolve({ status: "ok", data: `Dimo diagnostics ${calls}\n` });
+      return Promise.resolve({ status: "ok", data: `DimoMark diagnostics ${calls}\n` });
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
     // WebKit allows the write only inside the click: the text loaded with the pane is written
     // before anything waits for Rust.
     root.querySelector<HTMLButtonElement>('[data-testid="copy-diagnostics"]')?.click();
-    expect(written).toEqual(["Dimo diagnostics 1\n"]);
+    expect(written).toEqual(["DimoMark diagnostics 1\n"]);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(await click(root)).toBe("Diagnostics copied to the clipboard.");
-    expect(written).toEqual(["Dimo diagnostics 1\n", "Dimo diagnostics 2\n"]);
+    expect(written).toEqual(["DimoMark diagnostics 1\n", "DimoMark diagnostics 2\n"]);
   });
 
   it("shows why copying failed", async () => {

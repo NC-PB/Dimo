@@ -2,7 +2,7 @@
 
 | ID | Question | Notes | Needed by |
 |---|---|---|---|
-| Q-01 | ~~Final product name~~ | **Resolved (October 2026):** **Dimo**. Web presence at cnc-master.xyz/dimo, repository under the owner's GitHub account. Trademark search on Swissreg and EUIPO still recommended before 0.1 | done |
+| Q-01 | ~~Final product name~~ | **Resolved (October 2026):** **DimoMark**. Web presence at cnc-master.xyz/dimo, repository under the owner's GitHub account. Trademark search on Swissreg and EUIPO still recommended before 0.1 | done |
 | Q-02 | ~~Final license~~ | **Resolved (October 2026):** Apache 2.0 with DCO. See [ADR 0003](../adr/0003-license-apache-2.md) | done |
 | Q-03 | ~~Patent freedom to operate~~ | **Resolved (October 2026):** reviewed, no conflicts found. See [10](10-licensing.md) | done |
 | Q-04 | ~~Shipping tolerance tables from ISO standards~~ | **Resolved (October 2026):** tables are shipped with the application as data files in `data/tolerances/` | done |

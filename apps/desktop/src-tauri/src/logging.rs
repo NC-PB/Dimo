@@ -11,7 +11,7 @@
 //! The file is capped at [`MAX_LOG_BYTES`]: when it is full it becomes `dimo.log.1` (replacing
 //! the older one) and a new file starts; lines are cut at [`MAX_LINE_BYTES`], so the logs take
 //! at most about twice the cap. Release builds log `info` and above; debug builds also log
-//! `debug` events of the Dimo crates and mirror every line to the terminal. Nothing leaves the
+//! `debug` events of the DimoMark crates and mirror every line to the terminal. Nothing leaves the
 //! computer (rule 9). The lines hold what the code logs: errors, warnings, the start line and
 //! file paths. Code must not log drawing or project content; error texts of libraries (Typst
 //! diagnostics, panics) are logged as they are and are checked again for R.10.
@@ -58,14 +58,14 @@ impl Drop for InEvent {
 pub struct LogLevel {
     /// Most detailed level of every crate.
     pub all: Level,
-    /// Most detailed level of the Dimo crates (targets starting with `dimo`).
+    /// Most detailed level of the DimoMark crates (targets starting with `dimo`).
     pub dimo: Level,
     /// Also write every line to standard error.
     pub mirror: bool,
 }
 
 impl LogLevel {
-    /// `info` in release builds; debug builds add `debug` for the Dimo crates and mirror the
+    /// `info` in release builds; debug builds add `debug` for the DimoMark crates and mirror the
     /// lines to the terminal.
     pub const fn for_build() -> Self {
         if cfg!(debug_assertions) {
@@ -274,7 +274,7 @@ pub fn init(dir: &Path) -> Option<PathBuf> {
         previous(info);
     }));
     tracing::info!(
-        "Dimo {} ({:?}) on {} {}",
+        "DimoMark {} ({:?}) on {} {}",
         env!("CARGO_PKG_VERSION"),
         crate::ipc::BuildProfile::current(),
         std::env::consts::OS,

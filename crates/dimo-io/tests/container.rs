@@ -418,7 +418,7 @@ fn newer_schema_versions_are_refused_and_left_untouched() {
         ),
         "{error}"
     );
-    assert!(error.to_string().contains("newer version of Dimo"));
+    assert!(error.to_string().contains("newer version of DimoMark"));
     assert_eq!(fs::read(&path).unwrap(), bytes);
 }
 

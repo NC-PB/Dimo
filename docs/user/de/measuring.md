@@ -1,7 +1,7 @@
 # Ergebnisse eingeben
 
 Im Reiter **Messen** (⌘3) gibst du ein, was du an den Teilen gemessen hast. Die Zeilen sind
-die zu prüfenden Merkmale, jede Spalte ist ein Teil. Dimo vergleicht jeden Wert mit den
+die zu prüfenden Merkmale, jede Spalte ist ein Teil. DimoMark vergleicht jeden Wert mit den
 Grenzmaßen und markiert ihn als i.O. oder n.i.O. Teile, Ergebnisse und Bewertungen werden im
 Projekt gespeichert und stehen im [Prüfbericht](exports.md).
 
@@ -20,7 +20,7 @@ Projekt- und Berichtsdaten findest du unter **Datei > Info**. Eine Seriennummer 
 Projekt eindeutig sein (Groß- und Kleinschreibung zählt als Unterschied). Seriennummern können
 beliebiger Text sein, zum Beispiel `A-17`. **Nach links** und **Nach rechts** ändern die
 Reihenfolge der Spalten, die auch die Reihenfolge in den Berichten ist. **Teil löschen** löscht
-die Spalte; hat das Teil Ergebnisse, fragt Dimo vorher, weil sie mit gelöscht werden. Jede
+die Spalte; hat das Teil Ergebnisse, fragt DimoMark vorher, weil sie mit gelöscht werden. Jede
 Änderung machst du mit ⌘Z rückgängig. Der Reiter hat auch **Werte einfügen** und **Zelle
 leeren** für die aktive Zelle, **Ergebnis dieser Zeile** für die aktive Zeile, und **Nur fehlende
 Werte** und **Nur n.i.O.**, um weniger Zeilen zu zeigen; die Zeile, in der du bist, bleibt sichtbar.
@@ -40,14 +40,14 @@ Grenze, bleibt die andere Zelle leer.
 | Übersicht | Wie viele Ergebnisse der Zeile i.O., n.i.O., nicht bewertet sind oder fehlen |
 | Teilekopf | Seriennummer des Teils und dieselben Zahlen für dieses Teil |
 
-Die Zeile über der Tabelle zeigt das Gesamtergebnis aller Teile und warum Dimo die letzte Eingabe
+Die Zeile über der Tabelle zeigt das Gesamtergebnis aller Teile und warum DimoMark die letzte Eingabe
 nicht angenommen hat. Die Statusleiste unten zeigt die Summen aller Teile und das Gesamtergebnis.
 
 ## Die Messleiste
 
 Die Leiste über der Tabelle funktioniert wie die Bearbeitungszeile einer Tabellenkalkulation. Sie
 nennt die aktive Zelle (Merkmalsnummer und Teil), zeigt die Anforderung mit ihren Grenzmaßen und der
-Toleranzregel und hat ein Feld **Wert** mit dem Wert der aktiven Zelle. Daneben sagt Dimo das
+Toleranzregel und hat ein Feld **Wert** mit dem Wert der aktiven Zelle. Daneben sagt DimoMark das
 Ergebnis in Worten, zum Beispiel „i.O., auf der unteren Grenze“ oder „n.i.O., über der oberen
 Grenze“.
 
@@ -71,23 +71,23 @@ Die Tabelle ist dafür gemacht, ein Teil von oben nach unten ohne Maus zu messen
 2. Tippe den Wert. Mit dem ersten Zeichen beginnt die Eingabe; Punkt und Komma gehen beide
    (`12.05`, `12,05`), und die getippten Stellen bleiben erhalten (`12.10` bleibt `12.10`). Das
    Minuszeichen darf ein Bindestrich oder das Zeichen `−` sein.
-3. Drücke **Enter**. Dimo speichert den Wert und geht zum nächsten Merkmal.
+3. Drücke **Enter**. DimoMark speichert den Wert und geht zum nächsten Merkmal.
 
 **Shift+Enter** geht stattdessen nach oben, **Tab** und **Shift+Tab** bestätigen und gehen zum
 nächsten oder vorherigen Teil; nach dem letzten Teil führt Tab aus der Tabelle in den Eigenschaftenbereich.
 Die Pfeiltasten bewegen, ohne etwas zu ändern, **F2** bearbeitet den Wert in der Zelle, **Entf**
-löscht ihn und **Escape** bricht die Eingabe ab. Nimmt Dimo einen Wert nicht an (zum Beispiel
+löscht ihn und **Escape** bricht die Eingabe ab. Nimmt DimoMark einen Wert nicht an (zum Beispiel
 Buchstaben in einer Messwertzelle), öffnet sich die Zelle wieder und die Zeile über der Tabelle
-sagt, warum. Dimo speichert den Wert immer genau so, wie du ihn tippst, und rundet nie.
+sagt, warum. DimoMark speichert den Wert immer genau so, wie du ihn tippst, und rundet nie.
 
-Werte gibst du in der Einheit des Merkmals ein, die in der Spalte **Einheit** steht. Dimo rechnet
+Werte gibst du in der Einheit des Merkmals ein, die in der Spalte **Einheit** steht. DimoMark rechnet
 nichts um: tippe Millimeter bei einem Millimetermerkmal, Zoll bei einem Zollmerkmal und Dezimalgrad
 bei einem Winkel (Grad und Minuten werden noch nicht angenommen).
 
 ### i.O. / n.i.O.
 
 Bei einem Merkmal mit der Ergebnisart **i.O. / n.i.O.** drückst du **O** oder **+** für i.O. und
-**N** oder **X** für n.i.O.; Dimo speichert es und geht nach unten. **Leertaste** wechselt
+**N** oder **X** für n.i.O.; DimoMark speichert es und geht nach unten. **Leertaste** wechselt
 zwischen i.O. und n.i.O.
 
 Diese Wörter gehen auch, in beliebiger Schreibweise: `ok`, `o`, `+`, `io`, `i.O.` für i.O. und
@@ -103,7 +103,7 @@ Kopiere einen Bereich von Werten aus einer Tabellenkalkulation oder einem Messpr
 die Zelle, in der der Bereich beginnt, und drücke ⌘V. Die Zeilen des Bereichs gehen die Merkmale
 hinunter, die Spalten über die Teile. Der ganze Bereich ist ein Schritt: ⌘Z entfernt ihn wieder.
 Eine leere Zelle im Bereich löscht das Ergebnis in dieser Zelle. Passt ein Wert nicht, wird nichts
-eingefügt. Reicht der Bereich über das letzte Merkmal oder das letzte Teil hinaus, sagt Dimo das
+eingefügt. Reicht der Bereich über das letzte Merkmal oder das letzte Teil hinaus, sagt DimoMark das
 und fügt nichts ein; füge zuerst Teile hinzu.
 
 ## Markierungen
@@ -122,9 +122,9 @@ Für ein ganzes Teil, eine Zeile oder den Bericht gibt es drei Bewertungen: **n.
 Ergebnis n.i.O. ist, **i.O.**, wenn jedes geprüfte Merkmal i.O. ist, und sonst **offen** (etwas
 fehlt oder ist nicht bewertet, oder es gibt gar keine Ergebnisse).
 
-## So entscheidet Dimo
+## So entscheidet DimoMark
 
-Dimo vergleicht den eingegebenen Wert mit den Grenzmaßen, wie sie jetzt sind. Von der Bewertung
+DimoMark vergleicht den eingegebenen Wert mit den Grenzmaßen, wie sie jetzt sind. Von der Bewertung
 wird nichts gespeichert, sie folgt also immer den aktuellen Grenzmaßen.
 
 - Die Grenzmaße gehören dazu: Ein Wert gleich einem Grenzmaß ist i.O. Der Vergleich ist exakt,
@@ -141,14 +141,14 @@ wird nichts gespeichert, sie folgt also immer den aktuellen Grenzmaßen.
 
 ## Ergebnisart
 
-Dimo wählt die Ergebnisart selbst (**Automatisch**): einen Messwert für Merkmale mit Grenzmaßen,
+DimoMark wählt die Ergebnisart selbst (**Automatisch**): einen Messwert für Merkmale mit Grenzmaßen,
 i.O. / n.i.O. für Gewinde, Hinweise und andere Merkmale ohne Grenzmaße. Ändere sie in der Spalte
 **Ergebnisart** der Tabelle oder in der Detailansicht der Zeichnungsansicht. Das erste Ergebnis
-legt die Art fest: Mit dem ersten Ergebnis eines Merkmals mit **Automatisch** setzt Dimo die Art
+legt die Art fest: Mit dem ersten Ergebnis eines Merkmals mit **Automatisch** setzt DimoMark die Art
 auf Messwert oder i.O. / n.i.O., damit spätere Änderungen der Grenzmaße ein Messwertmerkmal nicht
 zu einem i.O.-/n.i.O.-Merkmal machen. Löschen der Ergebnisse macht das nicht rückgängig.
 
-Dimo wandelt Ergebnisse nie um. Solange ein Merkmal Ergebnisse der einen Art hat, lehnt Dimo die
+DimoMark wandelt Ergebnisse nie um. Solange ein Merkmal Ergebnisse der einen Art hat, lehnt DimoMark die
 Änderung auf die andere Art ab, und es lehnt auch ab, wieder **Automatisch** zu setzen. Die Zeile
 über der Tabelle sagt, dass du zuerst die Ergebnisse löschen sollst. Lösche sie mit **Entf** in
 jeder Zelle und ändere dann die Art.
@@ -159,7 +159,7 @@ Grenzmaße ändern sich, wenn du Nennmaß, ein Abmaß oder ein Grenzmaß bearbei
 neu einliest, die allgemeine Toleranz oder die Regeln des Projekts änderst oder ein Merkmal in der
 Tabelle bearbeitest.
 
-- Die Ergebnisse bleiben. Dimo löscht oder wandelt sie nicht um.
+- Die Ergebnisse bleiben. DimoMark löscht oder wandelt sie nicht um.
 - Die Bewertungen folgen sofort den neuen Grenzmaßen, in der Tabelle und in jedem Bericht, den du
   danach exportierst. Ein Wert, der i.O. war, kann jetzt n.i.O. sein, und umgekehrt.
 - Ein Merkmal, das schon Ergebnisse hat, behält seine Ergebnisart (siehe oben).
@@ -172,6 +172,6 @@ Tabelle bearbeitest.
   Marke verschwindet, wenn die Änderung rückgängig gemacht oder die alten Grenzmaße wieder
   eingegeben werden. Ein Merkmal, das du nach dem letzten ausgegebenen Bericht hinzugefügt hast,
   ist nicht markiert. Vor dem ersten ausgegebenen Bericht ist nichts markiert. Vor dem nächsten
-  Export als ausgegeben warnt Dimo ebenfalls vor solchen Änderungen ([Exporte](exports.md)).
+  Export als ausgegeben warnt DimoMark ebenfalls vor solchen Änderungen ([Exporte](exports.md)).
 - Löschst du ein Merkmal, werden seine Ergebnisse im selben Schritt gelöscht, ohne Rückfrage, und
-  ⌘Z bringt beides zurück. Beim Löschen eines Teils fragt Dimo vorher, wenn es Ergebnisse hat. Dasselbe gilt für Merkmale mit Ergebnissen: Vor dem Löschen sagt Dimo, wie viele Ergebnisse mit verschwinden; ⌘Z holt sie zurück.
+  ⌘Z bringt beides zurück. Beim Löschen eines Teils fragt DimoMark vorher, wenn es Ergebnisse hat. Dasselbe gilt für Merkmale mit Ergebnissen: Vor dem Löschen sagt DimoMark, wie viele Ergebnisse mit verschwinden; ⌘Z holt sie zurück.

@@ -44,13 +44,13 @@ fn build(project: &Project, opts: ExportOptions) -> Result<Vec<u8>, ExportError>
     // Constant properties: no clock, no user name (rule 11). The ZIP entries take their time
     // from the creation date as well.
     let title = if project.info.part_number.is_empty() {
-        "Dimo"
+        "DimoMark"
     } else {
         &project.info.part_number
     };
     let properties = DocProperties::new()
         .set_title(title)
-        .set_author("Dimo")
+        .set_author("DimoMark")
         .set_creation_datetime(&ExcelDateTime::from_ymd(2000, 1, 1)?);
     workbook.set_properties(&properties);
 

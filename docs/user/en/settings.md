@@ -11,9 +11,11 @@ page, on the right the pane you chose. **Back** (or any other tab) returns to wh
 | **Save**, **Save as…** | Save the project ([Projects](projects.md)) |
 | **Export** | Opens the **Report** tab ([Exports](exports.md)) |
 | **Print** | Opens the report chosen on the Report tab in your PDF viewer, where you print it ([Exports](exports.md)) |
-| **Close project** | Closes the project and keeps Dimo open. Dimo asks first if there are unsaved changes |
-| **About Dimo** | Version and licenses, see below |
+| **Close project** | Closes the project and keeps DimoMark open. DimoMark asks first if there are unsaved changes |
+| **About DimoMark** | Version and licenses, see below |
 | **Options** | Your personal settings (⌘,), see below |
+
+The version of DimoMark stands at the bottom of the list on the left.
 
 Settings have one home each. Settings of a project are saved in the project file and travel with
 it: the general tolerance (Home and Drawing tabs), the other tolerance rules and the balloon style
@@ -41,18 +43,18 @@ Without an open project, Info says so and offers **New project** and **Open proj
 ## Recent projects
 
 **Open project** on the File page lists the projects you opened or saved under a new name last,
-newest first, at most ten. One click opens a project; with unsaved changes Dimo asks first. A
+newest first, at most ten. One click opens a project; with unsaved changes DimoMark asks first. A
 project whose file was moved, renamed or is on a drive that is not connected is shown greyed and
 crossed out with "File not found". Remove an entry with ✕ (the file itself is not touched).
 
-Dimo keeps only the paths of the files, in a small file next to the settings in your user's Dimo
+DimoMark keeps only the paths of the files, in a small file next to the settings in your user's DimoMark
 configuration folder. Nothing leaves your computer.
 
 ## Options
 
 Open **Options** at the bottom of the File page or with ⌘, (Ctrl+, on Windows and Linux).
 Changes apply at once and are kept for the next start. These settings belong to you, not to a
-project: they apply to every project and are stored in a small settings file in your user's Dimo
+project: they apply to every project and are stored in a small settings file in your user's DimoMark
 configuration folder.
 
 ### Appearance
@@ -74,7 +76,7 @@ configuration folder.
 
 The language of reports and column headers, the file format of the check sheet and of the
 inspection report, the number of blank result columns, how the PDF carries the balloons, and
-whether Dimo opens a file after exporting it. Dimo remembers what you chose last on the Report
+whether DimoMark opens a file after exporting it. DimoMark remembers what you chose last on the Report
 tab; you can change it here or there ([Exports](exports.md)).
 
 ## Project settings on the Drawing tab
@@ -91,18 +93,18 @@ tab; you can change it here or there ([Exports](exports.md)).
 
 Each change in these windows applies at once and is one step of undo. **Close** closes the window.
 
-## About Dimo
+## About DimoMark
 
-**About Dimo** shows the version of Dimo, its license (Apache License 2.0) and the NOTICE file.
-It also lists every font and icon set that comes with Dimo (Open Sans, Space Grotesk, JetBrains
+**About DimoMark** shows the version of DimoMark, its license (Apache License 2.0) and the NOTICE file.
+It also lists every font and icon set that comes with DimoMark (Open Sans, Space Grotesk, JetBrains
 Mono and the Lucide icons) with its copyright notice and full license text. The texts are part of
 the app, so they show without an internet connection. License texts are shown in their original
-English. The licenses of the other open source libraries Dimo is built with are in the file
+English. The licenses of the other open source libraries DimoMark is built with are in the file
 `THIRD_PARTY_LICENSES` that comes with every release.
 
 ## Log file
 
-Dimo writes messages such as warnings and errors (for example a failed autosave or export, or a
+DimoMark writes messages such as warnings and errors (for example a failed autosave or export, or a
 settings file that cannot be read) and the version it started with to a log file on your computer.
 It holds messages and file paths, not the content of drawings or projects, and nothing is sent
 anywhere. When it reaches 1 MB it is renamed to `dimo.log.1` and a new file starts. If you report
@@ -112,7 +114,7 @@ a problem, the log helps to find the cause:
 - Windows: `%LOCALAPPDATA%\io.github.nc-pb.dimo\logs\dimo.log`
 - Linux: `~/.local/share/io.github.nc-pb.dimo/logs/dimo.log`
 
-**Copy diagnostics** in **About Dimo** puts a short text on the clipboard for a bug report: the
-version of Dimo, the operating system, your options and the last 200 lines of the log file. Your
+**Copy diagnostics** in **About DimoMark** puts a short text on the clipboard for a bug report: the
+version of DimoMark, the operating system, your options and the last 200 lines of the log file. Your
 name, the company name and your home folder are replaced (`<user>`, `<company>`, `~`). Nothing is
 sent; paste the text where you report the problem.

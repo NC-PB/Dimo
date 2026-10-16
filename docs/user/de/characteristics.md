@@ -9,11 +9,11 @@ nutze ↑ und ↓).
 | Spalte | Inhalt |
 |---|---|
 | Nr | Ballonnummer. Ziehe den Griff ⠿, um das Merkmal zu verschieben |
-| Art | Längenmaß, Durchmesser, Radius, Kugelradius, Winkel, Fase, Gewinde, Flachsenkung, Kegelsenkung, Tiefe, Oberflächenbeschaffenheit, geometrische Toleranz, Hinweis, Fahnenhinweis, Werkstoff oder Verfahren, Sonstiges. Ein von dir gesetzter Ballon beginnt mit Sonstiges, bis Dimo seinen Text liest |
+| Art | Längenmaß, Durchmesser, Radius, Kugelradius, Winkel, Fase, Gewinde, Flachsenkung, Kegelsenkung, Tiefe, Oberflächenbeschaffenheit, geometrische Toleranz, Hinweis, Fahnenhinweis, Werkstoff oder Verfahren, Sonstiges. Ein von dir gesetzter Ballon beginnt mit Sonstiges, bis DimoMark seinen Text liest |
 | Anforderung | Der Text wie auf der Zeichnung, per Rahmenauswahl gelesen oder in den Ballon getippt |
 | Nennmaß | Nennwert |
 | Ob. Abmaß, Unt. Abmaß | Abmaße mit Vorzeichen |
-| Obere Grenze, Untere Grenze | Grenzwerte. Dimo berechnet sie aus Nennmaß und Abmaßen; du kannst sie auch eintippen |
+| Obere Grenze, Untere Grenze | Grenzwerte. DimoMark berechnet sie aus Nennmaß und Abmaßen; du kannst sie auch eintippen |
 | Einheit | mm, in, ° oder keine. Ein Nennmaß ohne Einheit erhält die Einheit des Blatts (Grad bei Winkeln) |
 | Passung | Passungsangabe wie `H7` |
 | Regel | Die Regel, die die Grenzwerte ergab, mit Markierungen für Entwurfstabellen, fehlende Toleranz, Hinweise, Hilfsmaße und theoretisch genaue Maße. Nur lesbar; siehe [Toleranzen](tolerances.md) |
@@ -44,17 +44,17 @@ Escape bricht ab, Tab bestätigt und geht zur nächsten Spalte, ↑ und ↓ best
 Zeile darüber oder darunter. Art, Einheit und Klasse öffnen eine Liste. In der Spalte Prüfen
 schaltet die Leertaste das Häkchen um.
 
-Tippe Zahlen mit Punkt als Dezimaltrennzeichen, zum Beispiel `-0.05`. Kann Dimo einen Wert nicht
+Tippe Zahlen mit Punkt als Dezimaltrennzeichen, zum Beispiel `-0.05`. Kann DimoMark einen Wert nicht
 verwenden, bleibt die Zelle offen und die Zeile über der Tabelle sagt warum. Jede Änderung lässt
 sich mit ⌘Z (Strg+Z) rückgängig machen.
 
 ## Grenzwerte
 
-Dimo berechnet die Grenzwerte aus dem Nennmaß und beiden Abmaßen, mit dem Vorzeichen, das du
+DimoMark berechnet die Grenzwerte aus dem Nennmaß und beiden Abmaßen, mit dem Vorzeichen, das du
 getippt hast: Nennmaß `8.0` mit oberem Abmaß `0.02` und unterem Abmaß `-0.05` ergibt die obere
 Grenze `8.02` und die untere Grenze `7.95`. Änderst du das Nennmaß oder ein Abmaß, ziehen die
 Grenzwerte nach. Entfernst du ein Abmaß, verschwinden auch die berechneten Grenzwerte. Einen
-Grenzwert, den du selbst tippst, behält Dimo, und er geht den Abmaßen vor. Alle Zahlen sind exakte
+Grenzwert, den du selbst tippst, behält DimoMark, und er geht den Abmaßen vor. Alle Zahlen sind exakte
 Dezimalzahlen; nichts wird gerundet.
 
 Aus der Zeichnung gelesene Grenzwerte kommen mit ihrer Regel und einer Erklärung im

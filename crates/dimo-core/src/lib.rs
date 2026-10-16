@@ -1,4 +1,4 @@
-//! Domain model of a Dimo project: characteristics, balloons, commands with undo and redo, numbering and validation. Pure logic without IO.
+//! Domain model of a DimoMark project: characteristics, balloons, commands with undo and redo, numbering and validation. Pure logic without IO.
 //!
 //! - [`project::Project`] is the state stored in `project.json`.
 //! - [`document::Document`] wraps a project, executes [`command::Command`]s, keeps unlimited
