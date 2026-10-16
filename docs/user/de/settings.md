@@ -116,3 +116,8 @@ Inhalt von Zeichnungen oder Projekten, und nichts wird verschickt. Erreicht sie 
 - macOS: `~/Library/Logs/io.github.nc-pb.dimo/dimo.log`
 - Windows: `%LOCALAPPDATA%\io.github.nc-pb.dimo\logs\dimo.log`
 - Linux: `~/.local/share/io.github.nc-pb.dimo/logs/dimo.log`
+
+**Diagnose kopieren** in **Über Dimo** legt einen kurzen Text für eine Fehlermeldung in die
+Zwischenablage: die Version von Dimo, das Betriebssystem, deine Optionen und die letzten 200 Zeilen
+der Protokolldatei. Dein Name, der Firmenname und dein Benutzerordner werden ersetzt (`<user>`,
+`<company>`, `~`). Nichts wird gesendet; füge den Text dort ein, wo du den Fehler meldest.

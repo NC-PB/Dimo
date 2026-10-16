@@ -111,3 +111,8 @@ a problem, the log helps to find the cause:
 - macOS: `~/Library/Logs/io.github.nc-pb.dimo/dimo.log`
 - Windows: `%LOCALAPPDATA%\io.github.nc-pb.dimo\logs\dimo.log`
 - Linux: `~/.local/share/io.github.nc-pb.dimo/logs/dimo.log`
+
+**Copy diagnostics** in **About Dimo** puts a short text on the clipboard for a bug report: the
+version of Dimo, the operating system, your options and the last 200 lines of the log file. Your
+name, the company name and your home folder are replaced (`<user>`, `<company>`, `~`). Nothing is
+sent; paste the text where you report the problem.

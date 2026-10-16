@@ -5,11 +5,11 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 ## Current
 
-- **MF Foundation done 2026-10-15** ([plan](MF.md)). Next: release 0.1 ([plan](R01.md))
-- Then release 0.1 ([plan](R01.md), decisions answered, ADR 0008 accepted) together with the open M3 items: T3.21 shop floor user test and T3.11 owner exit run (owner), T3.22 one title bar, T3.23 license list
-- Roadmap after 0.1 merged to three milestones M4 to M6 ([ADR 0009](../adr/0009-roadmap-consolidation.md), proposed)
+- **Release 0.1 started 2026-10-16** ([plan](R01.md)): R.10 Copy diagnostics built. Next: R.11, R.13, T3.22, T3.23, R.9
+- Release 0.1 ([plan](R01.md), decisions answered, ADR 0008 accepted) together with the open M3 items: T3.21 shop floor user test and T3.11 owner exit run (owner), T3.22 one title bar, T3.23 license list
+- Roadmap after 0.1 merged to three milestones M4 to M6 ([ADR 0009](../adr/0009-roadmap-consolidation.md), accepted 2026-10-16); ADR 0010 accepted 2026-10-16
 - M3 built incl. UI rework; M2 implemented, owner exit open; M0 and M1 implemented, owner reviews open
-- Owner, blocking release 0.1: set `verified` in the tolerance tables (D-43; files still `draft`)
+- Tolerance tables ISO 2768-1 and ISO 286 verified by the owner 2026-10-16 (D-43), vector files checked
 
 ## Tasks M0
 
@@ -90,13 +90,21 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 | T3.22 One title bar | todo | Wave 8, owner 2026-10-13 |
 | T3.23 Third party license list | todo | Wave 8, owner 2026-10-13 |
 
+## Tasks 0.1
+
+Plan: [R01.md](R01.md). Only tasks that have started are listed.
+
+| Task | State | Notes |
+|---|---|---|
+| R.4 Tolerance tables verified | done | Owner set `verified` in both tables and `checked_by_owner = true` in both vector files 2026-10-16; release gate passes |
+| R.10 Diagnostics and logs | review | File > About > Copy diagnostics (`diagnostics` command): version, platform, PDF engine, log file, settings with user and company name as set/empty, last 200 log lines; home folder, login, user and company name replaced. Log calls reviewed: paths, I/O errors, counters, Typst diagnostics, no drawing content. Owner: read one copied text from a release build |
+
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
 
 ## Waiting for the owner
 
 | Item | Since |
 |---|---|
-| Tolerance tables to verify against Tabellenbuch (D-43): `data/tolerances/iso-2768-1.toml` (ISO 2768-1:1989 tables 1 to 3: linear 8 ranges 0.5 to 4000 mm f/m/c/v, broken edges 3 ranges, angular by shorter leg in minutes of arc; all range bounds) and `data/tolerances/iso-286.toml` (ISO 286-1:2010, table numbers in `source` to confirm: IT01 to IT18 up to 500 mm, shaft es a to h, shaft ei j, k, m to zc with intermediate steps, hole J6 to J8, K, M, N up to and above IT8, delta IT3 to IT8, M6 special case -9 µm at 250 to 315 mm, rule choices js/JS odd IT, classes not used up to 1 mm, K above IT8 only up to 3 mm). Also both `.test.toml` files (`checked_by_owner`). Update 2026-10-10: `iso-286.toml` (version 2, now up to 3150 mm) was cross-checked by an agent against ISO 286-1/-2:2010, so the owner pass can focus on: ef at 18 to 30 mm (set to -0.028 to mirror EF +0.028; the standard's two tables disagree), N9 above 500 mm (taken from ISO 286-2), H17/H18 kept for 1 to 3 mm, js/JS exact ±IT/2, and the new range above 500 mm. ISO 2768-1 cross-checked by the agent on 2026-10-10: tables 2 and 3 and classes f, m, v of table 1 confirmed; **check class c at 0.5 to 3 mm and over 3 to 6 mm** (drafted ±0.2 and ±0.3; ±0.15 and ±0.2 also circulate), left unchanged | 2026-10-09 |
 | More corpus drawings, especially scans and outlined text (Q-10) | before M4 |
 | Trademark search Swissreg / EUIPO (Q-01) | before 0.1 |
 
@@ -107,6 +115,8 @@ Format: date, decision, reason, who. Decisions that change architecture become A
 
 | Date | Decision | Reason | By |
 |---|---|---|---|
+| 2026-10-16 | Owner verified `iso-2768-1.toml` and `iso-286.toml` (verified_by NC-PB) and accepted ADR 0009 and 0010. The owner wrote `checked_by_owner = true` at the top of both vector files himself; the format now has that flag once per file instead of on each vector (owner decision; the agent only removed the per-vector `false` entries); a verified table needs a checked vector file (test). Test expectations and explanation snapshots follow: results from shipped tables are no longer draft | D-43 | owner, agent |
+| 2026-10-16 | R.10: Copy diagnostics sits in File > About (the shell has no Help menu); the text is English (it goes into bug reports), built in Rust; file names in log lines stay (needed to follow errors), home folder, login and the names of the settings are replaced; a test fails when a settings field is added, so it is checked for personal data | R01 says "in Help", no Help menu since ADR 0007 | R.10, agent |
 | 2026-10-15 | Windows CI green again (run 38737791860, all jobs): zip 8.6 writes the host system per entry from the build platform when none is set, rust_xlsxwriter sets none, so XLSX entries differed by one byte on Windows; `dimo_core::zip_host::set_unix_host` normalizes list and report XLSX after writing (macOS bytes unchanged, goldens kept); the .dimo container already set Unix; metadata tests for all ZIP outputs; golden mismatches name the field and are uploaded as CI artifacts | FR-EXP-11, NFR-PORT-03 | agent, coordinator |
 | 2026-10-15 | Windows CI was red from 2026-10-13 to 2026-10-15 unnoticed (macOS and Ubuntu green): an old cmd opener test, a recent list test with a Unix absolute path (fixed), and now the list XLSX differs from its golden file on Windows, so ZIP based exports are not byte identical across platforms (FR-EXP-11, NFR-PORT-03); agent fixing the root cause for all ZIP outputs and adding CI artifacts for mismatches. Process change: the coordinator checks CI after every push | Missed CI failures | coordinator |
 | 2026-10-15 | Windows opener may use `unsafe` for ShellExecuteW in one isolated module: workspace lint `unsafe_code` goes from forbid to deny, one `#[allow(unsafe_code)]` in the opener, a test refuses `unsafe` anywhere else | Owner decision (F7 follow-up) | owner |

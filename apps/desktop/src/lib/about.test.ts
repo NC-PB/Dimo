@@ -113,3 +113,64 @@ describe("About licenses (M3 decision 29)", () => {
     }
   });
 });
+
+describe("Copy diagnostics (D-06, R.10)", () => {
+  function mountWith(fetchDiagnostics: () => Promise<unknown>): HTMLElement {
+    target = document.createElement("div");
+    document.body.append(target);
+    component = mount(AboutPane, {
+      target,
+      props: { fetchDiagnostics: fetchDiagnostics as never },
+    });
+    flushSync();
+    return target;
+  }
+
+  async function click(root: HTMLElement): Promise<string> {
+    root.querySelector<HTMLButtonElement>('[data-testid="copy-diagnostics"]')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    flushSync();
+    return root.querySelector('[data-testid="diagnostics-status"]')?.textContent?.trim() ?? "";
+  }
+
+  it("puts the text from Rust on the clipboard", async () => {
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: (text: string) => (written.push(text), Promise.resolve()) },
+    });
+    let calls = 0;
+    const root = mountWith(() => {
+      calls += 1;
+      return Promise.resolve({ status: "ok", data: `Dimo diagnostics ${calls}\n` });
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // WebKit allows the write only inside the click: the text loaded with the pane is written
+    // before anything waits for Rust.
+    root.querySelector<HTMLButtonElement>('[data-testid="copy-diagnostics"]')?.click();
+    expect(written).toEqual(["Dimo diagnostics 1\n"]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(await click(root)).toBe("Diagnostics copied to the clipboard.");
+    expect(written).toEqual(["Dimo diagnostics 1\n", "Dimo diagnostics 2\n"]);
+  });
+
+  it("shows why copying failed", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+    });
+    const root = mountWith(() => Promise.resolve({ status: "ok", data: "x" }));
+    expect(await click(root)).toBe(
+      "Could not copy the diagnostics: The clipboard is not available.",
+    );
+    unmount(component as never);
+    component = null;
+    target?.remove();
+    const failed = mountWith(() =>
+      Promise.resolve({ status: "error", error: { kind: "task_failed", message: "boom" } }),
+    );
+    expect(await click(failed)).toBe(
+      "Could not copy the diagnostics: A background task stopped unexpectedly. Try again.",
+    );
+  });
+});

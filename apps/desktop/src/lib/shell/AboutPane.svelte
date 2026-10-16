@@ -4,11 +4,24 @@
    * file, and for every bundled font and icon set the copyright notice with the full license
    * text. The texts are embedded in the app (`about.ts`), so they show without network. License
    * texts are legal documents and stay in their original English.
+   *
+   * "Copy diagnostics" (D-06, R.10) puts the text of the `diagnostics` command on the clipboard
+   * for a bug report. Rust builds the text and leaves out personal data and drawing content.
    */
   import { BUNDLED, DIMO_LICENSE, DIMO_NOTICE } from "$lib/about";
+  import { asCommandError, commandErrorMessage } from "$lib/errors";
   import { buildProfileLabel, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
+  import { commands } from "$lib/ipc/bindings";
+  import type { Result } from "$lib/ipc/result";
   import { appInfo } from "$lib/stores/app-info.svelte";
+
+  interface Props {
+    /** The diagnostics text from Rust; tests pass a fake. */
+    fetchDiagnostics?: () => Promise<Result<string>>;
+  }
+
+  let { fetchDiagnostics = commands.diagnostics }: Props = $props();
 
   const info = $derived(appInfo.current);
 
@@ -26,6 +39,47 @@
     timer = setTimeout(() => {
       copied = null;
     }, 1500);
+  }
+
+  /** Result of the last "Copy diagnostics": copied, or the reason it failed. */
+  let diagnostics = $state<{ ok: true } | { ok: false; reason: string } | null>(null);
+
+  /**
+   * The diagnostics text, loaded when the pane opens. WebKit writes to the clipboard only right
+   * after a click, not after waiting for Rust, so the click copies this text at once and then
+   * loads a newer one for the next click.
+   */
+  let diagnosticsText: Result<string> | null = null;
+
+  async function loadDiagnostics(): Promise<Result<string>> {
+    try {
+      diagnosticsText = await fetchDiagnostics();
+    } catch (error) {
+      diagnosticsText = { status: "error", error: asCommandError(error) };
+    }
+    return diagnosticsText;
+  }
+
+  $effect(() => {
+    void loadDiagnostics();
+  });
+
+  async function copyDiagnostics(): Promise<void> {
+    diagnostics = null;
+    const result = diagnosticsText ?? (await loadDiagnostics());
+    if (result.status === "error") {
+      diagnostics = { ok: false, reason: commandErrorMessage(result.error) };
+      void loadDiagnostics();
+      return;
+    }
+    try {
+      // Called before anything else awaits, so it still counts as part of the click.
+      await navigator.clipboard.writeText(result.data);
+      diagnostics = { ok: true };
+    } catch {
+      diagnostics = { ok: false, reason: m.about_diagnostics_no_clipboard() };
+    }
+    void loadDiagnostics();
   }
 
   const boxClass = "flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-sm";
@@ -68,6 +122,33 @@
     <p class="text-text-muted">{m.about_license()}</p>
     {@render licenseText("dimo", "Apache License 2.0", DIMO_LICENSE)}
     {@render licenseText("notice", "NOTICE", DIMO_NOTICE)}
+  </section>
+
+  <section class={boxClass} aria-labelledby="about-diagnostics">
+    <h2 id="about-diagnostics" class="font-heading text-base font-semibold">
+      {m.about_diagnostics()}
+    </h2>
+    <p class="text-text-muted">{m.about_diagnostics_text()}</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        class="flex min-h-8 items-center gap-1 rounded-md border border-border px-3 py-1 text-sm hover:bg-hover"
+        data-testid="copy-diagnostics"
+        onclick={() => void copyDiagnostics()}
+      >
+        <CopyIcon size={16} strokeWidth={1.75} aria-hidden="true" class="text-text-muted" />
+        {m.about_diagnostics_copy()}
+      </button>
+      {#if diagnostics?.ok === true}
+        <span role="status" class="text-sm" data-testid="diagnostics-status">
+          {m.about_diagnostics_copied()}
+        </span>
+      {:else if diagnostics?.ok === false}
+        <span role="alert" class="text-sm text-danger" data-testid="diagnostics-status">
+          {m.about_diagnostics_failed({ reason: diagnostics.reason })}
+        </span>
+      {/if}
+    </div>
   </section>
 
   <section class="flex flex-col gap-3" aria-labelledby="about-bundled">

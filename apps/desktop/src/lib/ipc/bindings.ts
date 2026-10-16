@@ -203,6 +203,11 @@ export const commands = {
 	 */
 	setAppSettings: (settings: AppSettings) => typedError<SettingsView, CommandError>(__TAURI_INVOKE("set_app_settings", { settings })),
 	/**
+	 *  The diagnostics text for "Copy diagnostics" (D-06, R.10). The frontend puts it on the
+	 *  clipboard.
+	 */
+	diagnostics: () => typedError<string, CommandError>(__TAURI_INVOKE("diagnostics")),
+	/**
 	 *  Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
 	 *  builds: always the empty default.
 	 */

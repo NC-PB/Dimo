@@ -67,6 +67,9 @@ delete_check
 app_settings
 set_app_settings
 
+# diagnostics
+diagnostics
+
 # dev
 dev_startup
 dev_report_frame_times

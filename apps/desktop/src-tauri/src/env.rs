@@ -6,7 +6,7 @@ use dimo_core::{Environment, Timestamp};
 use uuid::Uuid;
 
 /// User name recorded when the operating system does not tell one.
-const UNKNOWN_USER: &str = "unknown";
+pub(crate) const UNKNOWN_USER: &str = "unknown";
 
 /// Random version 4 UUIDs, the system clock in UTC and the audit user name (D-27).
 #[derive(Debug, Clone)]

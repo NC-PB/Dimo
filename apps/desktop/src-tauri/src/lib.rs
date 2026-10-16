@@ -4,6 +4,7 @@
 //! invoke handler and the generated TypeScript bindings, so both always agree (NFR-MNT-03).
 
 pub mod dev;
+pub mod diagnostics;
 pub mod dialogs;
 pub mod env;
 pub mod error;
@@ -85,6 +86,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             measurement::delete_check,
             settings::app_settings,
             settings::set_app_settings,
+            diagnostics::diagnostics,
             dev::dev_startup,
             dev::dev_report_frame_times,
             dev::dev_log
@@ -164,9 +166,9 @@ pub fn run() -> tauri::Result<()> {
         .register_asynchronous_uri_scheme_protocol(tiles::SCHEME, tiles::handle)
         .setup(move |app| {
             // The log file first, so everything after it is logged (D-06).
-            if let Some(dir) = dev::dev_folder("logs", app.path().app_log_dir().ok()) {
-                logging::init(&dir);
-            }
+            let log_file = dev::dev_folder("logs", app.path().app_log_dir().ok())
+                .and_then(|dir| logging::init(&dir));
+            app.manage(diagnostics::LogFile(log_file));
             builder.mount_events(app);
             // Tile cache in the user cache directory, never in the project (07 Data model).
             let cache_dir = dev::dev_folder("cache", app.path().app_cache_dir().ok())
