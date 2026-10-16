@@ -53,7 +53,7 @@ text and its provenance sit in one place.
   rule 10 on the condition the license sets: every copy carries the copyright notice and the
   full license text. Each family has its license as a plain text file next to it
   (`SpaceGrotesk-OFL.txt`, `JetBrainsMono-OFL.txt`), starting with the copyright notice. The
-  About page (M3 decision 29) embeds these files. The fonts are not sold on their own. Dimo does
+  About page (M3 decision 29) embeds these files. The fonts are not sold on their own. DimoMark does
   not modify them: they are byte identical to the source files below, which are the
   distributors' Latin and Latin Extended subsets of the upstream releases. Neither font's
   `name` table names a Reserved Font Name.
@@ -66,14 +66,14 @@ text and its provenance sit in one place.
 - Origin: copied unchanged from the owner's local cnc-master site repository,
   `cnc-master-landing/assets/fonts/space-grotesk-v22-latin_latin-ext-500.woff2` and
   `-700.woff2` (Latin and Latin Extended subset, "v22" is the Google Fonts release of the
-  family). Nothing was downloaded for Dimo.
+  family). Nothing was downloaded for DimoMark.
 - Copyright (name ID 0): "Copyright 2020 The Space Grotesk Project Authors
   (https://github.com/floriankarsten/space-grotesk)". Version (name ID 5): 2.000.
 - License text: the source folder carries no license file. `SpaceGrotesk-OFL.txt` is the
   copyright line from the font file followed by the unchanged SIL OFL 1.1 text, taken from the
   JetBrains Mono license file below (the OFL text is the same for every font). Whether the
   upstream project names a Reserved Font Name could not be checked offline; the font's
-  `name` table carries none, and Dimo uses the font unmodified.
+  `name` table carries none, and DimoMark uses the font unmodified.
 
 ### JetBrains Mono
 

@@ -1,6 +1,6 @@
 # Adding a UI language
 
-Dimo ships English and German and is built so that more UI languages can be added without code
+DimoMark ships English and German and is built so that more UI languages can be added without code
 changes beyond one table entry (FR-SET-04). Every visible string of the app goes through
 [Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) messages.
 
@@ -69,7 +69,7 @@ with "du"; short hints may use the infinitive ("Leer lassen"), never "Sie".
 | More | Mehr | Menu for ribbon groups that do not fit |
 | File, Home, Drawing, Review, Measure, Report, View | Datei, Start, Zeichnung, Überprüfen, Messen, Bericht, Ansicht | Tab names (ADR 0007). "Prüfen" is the Inspect switch, not the Review tab |
 | File page | Seite Datei | The full page of the File tab |
-| Info, Open, Export, Options, About Dimo | Info, Öffnen, Exportieren, Optionen, Über Dimo | Items of the File page |
+| Info, Open, Export, Options, About DimoMark | Info, Öffnen, Exportieren, Optionen, Über DimoMark | Items of the File page |
 | project info | Projektinfo | File > Info, the one home of part, drawing and report data |
 | options | Optionen | Personal settings: theme, language, user name, company name, export defaults |
 | properties pane | Eigenschaftenbereich | Right pane that follows the selection |
@@ -138,7 +138,7 @@ with "du"; short hints may use the infinitive ("Leer lassen"), never "Sie".
 | sampling, frequency | Stichprobe, Häufigkeit | Inspection planning columns, not parts |
 | comment | Kommentar | Of a characteristic or a part |
 | remarks | Bemerkungen | Free text of the report header |
-| proposal | Vorschlag | What Dimo read from a box, before Accept |
+| proposal | Vorschlag | What DimoMark read from a box, before Accept |
 | reference dimension, basic dimension | Hilfsmaß, theoretisch genaues Maß | |
 | history | Verlauf | |
 

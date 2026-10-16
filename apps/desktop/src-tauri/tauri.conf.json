@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Dimo",
+  "productName": "DimoMark",
   "version": "0.1.0",
   "identifier": "io.github.nc-pb.dimo",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Dimo",
+        "title": "DimoMark",
         "width": 1280,
         "height": 800,
         "minWidth": 800,

@@ -58,7 +58,7 @@ view: balloons and their numbers stay upright and exports are not affected.
 ## Properties pane
 
 The pane on the right follows the selection. Its header says what it shows; the × hides the pane
-(**View > Properties** shows it again). Click the heading of a section to fold or unfold it; Dimo
+(**View > Properties** shows it again). Click the heading of a section to fold or unfold it; DimoMark
 remembers which sections you folded.
 
 - **Nothing selected**: a summary of the project (part, drawing, general tolerance, number of
@@ -80,13 +80,13 @@ order on the Home tab.
 ## Table height
 
 Drag the line between the drawing and the table to give one of them more room. With the keyboard,
-focus the line and press ↑ or ↓. Dimo remembers the height.
+focus the line and press ↑ or ↓. DimoMark remembers the height.
 
 ## If a drawing does not open
 
-Dimo shows a message above the drawing, for example that the file could not be opened. Only PDF
+DimoMark shows a message above the drawing, for example that the file could not be opened. Only PDF
 files can be used as drawings in this version. If the message says that the PDF component is
-missing, the installation is incomplete; install Dimo again.
+missing, the installation is incomplete; install DimoMark again.
 
 Error messages are shown in the language of the app. Below a message, **Details** opens the
 technical text (file path, system error) to add to a bug report.

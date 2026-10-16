@@ -12,7 +12,7 @@ use dimo_core::project::CustomTable;
 use crate::error::TableError;
 use crate::table::Table;
 
-/// A table file shipped with Dimo, embedded at compile time.
+/// A table file shipped with DimoMark, embedded at compile time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ShippedTable {
     /// File name in `data/tolerances/`.

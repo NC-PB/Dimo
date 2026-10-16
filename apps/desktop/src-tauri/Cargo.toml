@@ -1,6 +1,6 @@
 [package]
 name = "dimo-desktop"
-description = "Tauri shell of the Dimo desktop app: commands, events, protocols and permissions."
+description = "Tauri shell of the DimoMark desktop app: commands, events, protocols and permissions."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

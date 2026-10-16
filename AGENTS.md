@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Instructions for AI coding agents (Claude Code, Codex, Cursor and others) working on Dimo.
+Instructions for AI coding agents (Claude Code, Codex, Cursor and others) working on DimoMark.
 Humans should read [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
-## What Dimo is
+## What DimoMark is
 
 Open-source, local-first desktop app for **drawing ballooning and inspection planning**.
 It reads engineering drawings (PDF, scans), finds every inspectable characteristic, numbers it

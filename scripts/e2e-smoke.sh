@@ -519,7 +519,7 @@ expect "errors: non-PDF drawing refused in German" "yes" \
 expect "errors: no English error text in the German messages" "no" \
   "$(yesno grep -qiE '\.toml|\.txt|cannot|expected|not a PDF|error|failed' <<<"$table_alerts $drawing_alerts")"
 
-step "11. project from a newer Dimo (NFR-REL-04)"
+step "11. project from a newer DimoMark (NFR-REL-04)"
 # A manifest with schema version 999 is above any supported version; dimo-io checks the
 # manifest before anything else, so the file needs nothing more. The recent list in the
 # settings folder of this run lists it, and the UI script clicks it on the start screen (the
@@ -542,7 +542,7 @@ jq --arg p "$NEWER" 'map(if .button == "__NEWER_PROJECT__" then .button = $p els
   "$SCRIPTS/newer-version.json" >"$WORK/newer-version.json"
 run_app newer "$WORK/newer-version.json" term home11
 expect "newer project: refused with the newer version message" "yes" \
-  "$(yesno grep -q 'written by a newer Dimo version (file format 999, this version reads up to' <<<"$(report newer 'newer refused')")"
+  "$(yesno grep -q 'written by a newer DimoMark version (file format 999, this version reads up to' <<<"$(report newer 'newer refused')")"
 expect "newer project: file left untouched" "$before_sum" "$(cksum <"$NEWER")"
 
 step "dev server"

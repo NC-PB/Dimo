@@ -61,7 +61,7 @@ pub fn text(facts: &Facts, settings: &AppSettings, log: &str) -> String {
     let lines: Vec<&str> = log.lines().collect();
     let start = lines.len().saturating_sub(LOG_LINES);
     let mut out = format!(
-        "Dimo diagnostics\nVersion: {} ({:?})\nPlatform: {}\nPDF engine: {engine}\n\
+        "DimoMark diagnostics\nVersion: {} ({:?})\nPlatform: {}\nPDF engine: {engine}\n\
          Log file: {log_file}\nSettings: {}\n\nLast {} log lines:\n",
         info.version,
         info.build_profile,
@@ -209,7 +209,7 @@ mod tests {
             "",
         );
         assert!(
-            text.starts_with("Dimo diagnostics\nVersion: 0.1.0 (Release)\n"),
+            text.starts_with("DimoMark diagnostics\nVersion: 0.1.0 (Release)\n"),
             "{text}"
         );
         assert!(text.contains("Platform: macos aarch64\n"), "{text}");

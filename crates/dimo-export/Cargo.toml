@@ -1,6 +1,6 @@
 [package]
 name = "dimo-export"
-description = "Export registry of Dimo: formats, the export plan and one render function for app and CLI."
+description = "Export registry of DimoMark: formats, the export plan and one render function for app and CLI."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

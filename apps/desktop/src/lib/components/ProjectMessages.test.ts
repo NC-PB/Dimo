@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 describe("project messages", () => {
-  it("NFR-REL-04: opening a project of a newer Dimo shows the newer version message", async () => {
+  it("NFR-REL-04: opening a project of a newer DimoMark shows the newer version message", async () => {
     const api: ProjectCommands = {
       projectState: () => ok({ session: 1, snapshot: null, notice: null }),
       newProject: unused,
@@ -64,7 +64,7 @@ describe("project messages", () => {
 
     const alert = target.querySelector("[role='alert']");
     expect(alert?.querySelector("[data-testid='project-error']")?.textContent).toBe(
-      "The project was written by a newer Dimo version (file format 99, this version reads up to 4). Update Dimo to open it.",
+      "The project was written by a newer DimoMark version (file format 99, this version reads up to 4). Update DimoMark to open it.",
     );
   });
 });

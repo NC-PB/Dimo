@@ -15,4 +15,4 @@ Can you share a drawing that shows the problem? Only if you have the right to pu
 Otherwise describe the callout text and the sheet kind (vector PDF, scan).
 
 **Environment**
-Dimo version, operating system.
+DimoMark version, operating system.

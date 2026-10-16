@@ -202,7 +202,7 @@ impl<'a> Builder<'a> {
         };
         let properties = DocProperties::new()
             .set_title(doc_title)
-            .set_author("Dimo")
+            .set_author("DimoMark")
             .set_creation_datetime(&ExcelDateTime::from_ymd(2000, 1, 1)?);
         workbook.set_properties(&properties);
 

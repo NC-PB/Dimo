@@ -1,16 +1,16 @@
-# Dimo Benutzerhandbuch
+# DimoMark Benutzerhandbuch
 
-Dimo versieht jedes zu prüfende Merkmal einer technischen Zeichnung mit einem nummerierten
+DimoMark versieht jedes zu prüfende Merkmal einer technischen Zeichnung mit einem nummerierten
 Ballon, führt die Merkmalsliste, nimmt die Werte auf, die du an deinen Teilen gemessen hast, und
 entscheidet über i.O. oder n.i.O. Es exportiert ein Prüfblatt, einen Prüfbericht, ein PDF mit
 Ballons und eine Merkmalsliste. Alles bleibt auf deinem Computer.
 
-Diese Version ist für das **unterstützte Ballonieren**: Du ziehst einen Rahmen um ein Maß und Dimo
+Diese Version ist für das **unterstützte Ballonieren**: Du ziehst einen Rahmen um ein Maß und DimoMark
 liest seinen PDF-Text, oder du klickst ein Merkmal an und tippst den Wert so, wie er aufgedruckt
-ist. Dimo liest Nennmaß, Passung und aufgedruckte Toleranzen aus dem Text, bestimmt die
+ist. DimoMark liest Nennmaß, Passung und aufgedruckte Toleranzen aus dem Text, bestimmt die
 Grenzwerte (zuerst aufgedruckte Toleranzen, dann die Passungstabelle nach ISO 286, dann
 Allgemeintoleranz und Regeln des Projekts), erklärt, woher sie stammen, und übernimmt
-Nummerierung, Liste, Speichern und Exporte. Dimo durchsucht die Zeichnung noch nicht
+Nummerierung, Liste, Speichern und Exporte. DimoMark durchsucht die Zeichnung noch nicht
 selbstständig. Ohne Allgemeintoleranz im Projekt wird ein Maß ohne Toleranz als "Keine Toleranz
 festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Reiters **Start** oder
 **Zeichnung**, oder trage seine Grenzwerte in der Merkmalstabelle ein.
@@ -29,7 +29,7 @@ festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Reiters **St
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
 | [Exporte](exports.md) | Prüfblatt und Prüfbericht, PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen und Berichte |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, Firmentabellen, Erklärungen, Entwurfstabellen, Verlauf |
-| [Datei-Seite, Optionen und Über Dimo](settings.md) | Projektinfo, zuletzt geöffnete Projekte, Optionen (Farbschema, Sprache, Benutzername, Firmenname, Vorgaben für Exporte), Projekteinstellungen im Reiter Zeichnung, Lizenzen |
+| [Datei-Seite, Optionen und Über DimoMark](settings.md) | Projektinfo, zuletzt geöffnete Projekte, Optionen (Farbschema, Sprache, Benutzername, Firmenname, Vorgaben für Exporte), Projekteinstellungen im Reiter Zeichnung, Lizenzen |
 | [Tastenkürzel](shortcuts.md) | Alle Tasten für macOS sowie Windows und Linux |
 
 Drücke in der App jederzeit **?**, um die Tastenkürzel zu sehen.
@@ -43,18 +43,18 @@ und Alt statt ⌥.
 
 ### 1. Ein Projekt aus einer Zeichnung anlegen
 
-Starte Dimo. Ohne offenes Projekt zeigt es den Startbildschirm: **Neues Projekt aus Zeichnung**,
+Starte DimoMark. Ohne offenes Projekt zeigt es den Startbildschirm: **Neues Projekt aus Zeichnung**,
 **Projekt öffnen**, die fünf zuletzt geöffneten Projekte und die drei Schritte der Arbeit. Klicke **Neues Projekt aus Zeichnung** (oder
-drücke ⌘N) und wähle das PDF der Zeichnung. Dimo kopiert die Zeichnung in das Projekt, das
+drücke ⌘N) und wähle das PDF der Zeichnung. DimoMark kopiert die Zeichnung in das Projekt, das
 Projekt hängt danach also nicht mehr von der Originaldatei ab, und zeigt das erste Blatt
 eingepasst ins Fenster. Hat die Zeichnung mehrere Blätter (Seiten), zeigt
 die Statusleiste unten einen Reiter pro Blatt.
 
 Das Projekt hat noch keine Datei. Die Titelleiste zeigt "Unbenannt"; du speicherst es in
-Schritt 9, aber Dimo hält schon jetzt eine wiederherstellbare Kopie von allem, was du tust
+Schritt 9, aber DimoMark hält schon jetzt eine wiederherstellbare Kopie von allem, was du tust
 ([Projekte](projects.md)).
 
-Rechts öffnet Dimo **Zeichnung einrichten**. Beantworte es aus dem Schriftfeld (Schritt 3) und
+Rechts öffnet DimoMark **Zeichnung einrichten**. Beantworte es aus dem Schriftfeld (Schritt 3) und
 klicke **Ballonieren starten**, oder klicke **Überspringen** und stelle alles später ein. Liegt
 das Blatt quer, drehe es mit **Links drehen** oder **Rechts drehen** im Reiter
 **Zeichnung**, wie in Schritt 8.
@@ -70,7 +70,7 @@ gedrückter Leertaste und Ziehen. Bild auf und Bild ab wechseln die Blätter. Ei
 ### 3. Die Allgemeintoleranz des Projekts wählen
 
 Die meisten Zeichnungen geben im Schriftfeld eine Allgemeintoleranz an, zum Beispiel
-ISO 2768-mK: der kleine Buchstabe ist die Klasse nach ISO 2768-1. Dimo liest das Schriftfeld noch
+ISO 2768-mK: der kleine Buchstabe ist die Klasse nach ISO 2768-1. DimoMark liest das Schriftfeld noch
 nicht, du sagst es ihm also einmal in **Zeichnung einrichten**:
 
 1. **Allgemeintoleranz**: wähle **Keine** oder die Klasse nach ISO 2768-1 aus der Zeichnung
@@ -85,16 +85,16 @@ als eigenen Schritt) und schaltet **Ballon setzen** ein. Später änderst du sie
 das denselben Bereich wieder öffnet. Das Feld **Allgemeintoleranz** steht auch im Reiter **Start**.
 Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser
 Tabelle. Ohne Allgemeintoleranz wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat
-keine Grenzwerte. Die mit Dimo gelieferten Tabellen ISO 2768-1 und ISO 286 sind
+keine Grenzwerte. Die mit DimoMark gelieferten Tabellen ISO 2768-1 und ISO 286 sind
 geprüft. Einzelheiten: [Toleranzen](tolerances.md).
 
 ### 4. Ballons setzen und Werte erfassen
 
 1. Drücke **B** (das Werkzeug **Ballon setzen**).
-2. Ziehe einen Rahmen um den Maßtext. Eine Karte zeigt, was Dimo gelesen hat: Art, Nennmaß,
+2. Ziehe einen Rahmen um den Maßtext. Eine Karte zeigt, was DimoMark gelesen hat: Art, Nennmaß,
    Grenzwerte, die Regel, aus der die Grenzwerte stammen, und eine Erklärung. **Enter**
    übernimmt sie. Oder klicke das Maß oder den Hinweis an, tippe den Wert so, wie er aufgedruckt
-   ist, zum Beispiel `Ø8 f7`, und drücke **Enter**. Dimo liest getippten Text wie einen Rahmen.
+   ist, zum Beispiel `Ø8 f7`, und drücke **Enter**. DimoMark liest getippten Text wie einen Rahmen.
 3. **Escape** verwirft eine Karte, die du nicht willst.
 4. Ziehe oder klicke das nächste Merkmal an. Du kannst gleich nach dem Klick oder dem Rahmen
    tippen.
@@ -110,7 +110,7 @@ Erklärung und Verlauf eines Merkmals im Eigenschaftenbereich rechts zu sehen
 Die Tabelle unter der Zeichnung hat eine Zeile pro Ballon. Der gelesene oder getippte Text steht in
 der Spalte **Anforderung**, Art, Nennmaß, Passung und aufgedruckte Toleranzen sind schon
 ausgefüllt. Ergänze, was die Prüfung braucht: **Art**, **Nennmaß**, **Ob. Abmaß** und
-**Unt. Abmaß** (Dimo berechnet **Obere Grenze** und **Untere Grenze**), **Einheit**,
+**Unt. Abmaß** (DimoMark berechnet **Obere Grenze** und **Untere Grenze**), **Einheit**,
 **Passung**, **Anzahl**, **Klasse** sowie die Spalten für Prüfmethode, Prüfmittel, Stichprobe und
 Häufigkeit. Doppelklicke eine Zelle oder beginne zu tippen, bestätige mit Enter, gehe mit Tab
 weiter. Nimm bei Hilfsmaßen und theoretisch genauen Maßen, die nicht gemessen werden, das Häkchen
@@ -137,7 +137,7 @@ von Hand mit **Zonenraster** und **Ansicht zeichnen** im Reiter Zeichnung. Einze
 Wähle Ballons aus und drücke **S**: Form (Kreis, Fahne, Rechteck), Bezugslinie, Größe und Randfarbe.
 Der Stil des ganzen Projekts ist **Ballonstil des Projekts** im Reiter **Zeichnung**. Der Status
 wird neben der Farbe auch über die Form gezeigt. Einzelheiten: [Eine Zeichnung ballonieren](ballooning.md),
-[Datei-Seite, Optionen und Über Dimo](settings.md).
+[Datei-Seite, Optionen und Über DimoMark](settings.md).
 
 ### 8. Drehung, Einheit und Maßstab des Blatts einstellen
 
@@ -147,25 +147,25 @@ eigene Werte. Einzelheiten: [Blätter](sheets.md).
 
 ### 9. Speichern
 
-Wähle **Speichern** (⌘S). Da das Projekt noch keine Datei hat, fragt Dimo nach Name und Ort und
+Wähle **Speichern** (⌘S). Da das Projekt noch keine Datei hat, fragt DimoMark nach Name und Ort und
 schreibt eine `.dimo`-Datei, die die Zeichnung, die Merkmale, die Ballons und das Protokoll aller
 Änderungen enthält. Danach speichert ⌘S in diese Datei. **Speichern unter** (⇧⌘S) speichert unter
 einem anderen Namen.
 
-Zwischen dem Speichern schreibt Dimo jede Änderung in ein Sicherungsjournal. Nach einem Absturz oder
-Stromausfall stellt das erneute Öffnen des Projekts (oder der Start von Dimo, bei einem nie
+Zwischen dem Speichern schreibt DimoMark jede Änderung in ein Sicherungsjournal. Nach einem Absturz oder
+Stromausfall stellt das erneute Öffnen des Projekts (oder der Start von DimoMark, bei einem nie
 gespeicherten Projekt) die Arbeit wieder her, mit einem Hinweis über der Zeichnung. Beim Schließen
 des Fensters oder beim Anlegen oder Öffnen eines anderen Projekts mit ungespeicherten Änderungen
-fragt Dimo zuerst nach. Einzelheiten: [Projekte](projects.md).
+fragt DimoMark zuerst nach. Einzelheiten: [Projekte](projects.md).
 
 ### 10. Die Ergebnisse eingeben
 
 Öffne den Reiter **Messen** (⌘3). Gib unter **Anzahl** ein, wie viele Teile du misst, und wähle
 **Teile hinzufügen**. Klicke auf die erste Zelle eines Teils, tippe den Wert, drücke **Enter** und
-mach in der Spalte nach unten weiter: Dimo speichert den Wert, geht zum nächsten Merkmal und
+mach in der Spalte nach unten weiter: DimoMark speichert den Wert, geht zum nächsten Merkmal und
 markiert das Ergebnis mit ✓ (i.O.), ✗ (n.i.O.) oder ○ (Wert ohne Grenzmaße). Bei Gewinden und
 Hinweisen drückst du **O** für i.O. oder **N** für n.i.O. Ein aus einer Tabellenkalkulation
-kopierter Bereich wird mit ⌘V eingefügt. Die Grenzmaße gehören dazu, und Dimo entscheidet für dich
+kopierter Bereich wird mit ⌘V eingefügt. Die Grenzmaße gehören dazu, und DimoMark entscheidet für dich
 über i.O. oder n.i.O. Einzelheiten: [Ergebnisse eingeben](measuring.md).
 
 ### 11. Exportieren
@@ -199,7 +199,7 @@ wird, den Firmennamen für Berichte und die Vorgaben für Exporte. Die Optionen 
 nächsten Start erhalten und gehören dir, nicht einem Projekt. Das Projekt selbst (Teil,
 Toleranzen, Berichtskopf, Fortschritt) fasst **Datei** > **Info** zusammen, und **Datei** >
 **Projekt öffnen** listet deine zuletzt geöffneten Projekte. Einzelheiten:
-[Datei-Seite, Optionen und Über Dimo](settings.md).
+[Datei-Seite, Optionen und Über DimoMark](settings.md).
 
 ### Wie es weitergeht
 

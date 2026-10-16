@@ -1052,11 +1052,11 @@ message: string } |
 { kind: "no_project" } | 
 /**  The open project has unsaved changes and the caller did not allow discarding them. */
 { kind: "unsaved_changes" } | 
-/**  Another Dimo instance has the project open. */
+/**  Another DimoMark instance has the project open. */
 { kind: "in_use"; 
 /**  User name of the other instance, if known. */
 user: string | null } | 
-/**  The project was written by a newer Dimo (NFR-REL-04). The file is left untouched. */
+/**  The project was written by a newer DimoMark (NFR-REL-04). The file is left untouched. */
 { kind: "newer_version"; 
 /**  Schema version in the file. */
 found: number; 
@@ -1990,7 +1990,7 @@ export type Point = {
 };
 
 /**
- *  A Dimo project (data model `Project`).
+ *  A DimoMark project (data model `Project`).
  * 
  *  Change it only through [`Document::execute`](crate::document::Document::execute), so every
  *  change is undoable and audited (ADR 0001, NFR-REL-02).
@@ -2078,7 +2078,7 @@ export type ProjectPatched = {
 
 /**  Why a project file cannot be read or used. */
 export type ProjectReason = 
-/**  The file is no Dimo project. */
+/**  The file is no DimoMark project. */
 "not_a_project" | 
 /**  The container or one of its entries is damaged or unsafe. */
 "damaged_container" | 
@@ -2090,7 +2090,7 @@ export type ProjectReason =
 "missing_drawing" | 
 /**  A company table the settings name is not in the project. */
 "missing_table" | 
-/**  A company table in the project was changed outside Dimo. */
+/**  A company table in the project was changed outside DimoMark. */
 "changed_table" | 
 /**  The project was never saved, so it has no file yet. */
 "no_file";

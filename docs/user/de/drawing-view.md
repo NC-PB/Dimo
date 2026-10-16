@@ -8,7 +8,7 @@ Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalsta
 - **Titelleiste**: Speichern, Rückgängig und Wiederholen, der Name des Projekts mit "gespeichert"
   oder "nicht gespeichert", der Schalter hell oder dunkel und **Hilfe** (die Liste der
   Tastenkürzel).
-- **Reiter**: **Datei** (Projektinfo, neu, öffnen mit den zuletzt geöffneten Projekten, speichern, speichern unter, schließen, Optionen, über Dimo), **Start**
+- **Reiter**: **Datei** (Projektinfo, neu, öffnen mit den zuletzt geöffneten Projekten, speichern, speichern unter, schließen, Optionen, über DimoMark), **Start**
   (Ballons setzen und bearbeiten, Nummerierung, Allgemeintoleranz), **Zeichnung** (Drehung,
   Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Überprüfen** (in dieser
   Version ein Platzhalter), **Messen** ([Ergebnisse eingeben](measuring.md)), **Bericht**
@@ -54,7 +54,7 @@ Fokus hat.
 Ein PDF mit mehreren Seiten hat ein Blatt pro Seite. Die Statusleiste zeigt einen Reiter pro
 Blatt ("Blatt 2"); ein Klick zeigt es an. Auch **Bild auf** und **Bild ab** wechseln die Blätter.
 Ein Blatt wird beim ersten Anzeigen ins Fenster eingepasst. Wählst du in der
-Tabelle ein Merkmal, dessen Ballon auf einem anderen Blatt liegt, wechselt Dimo zu diesem Blatt und
+Tabelle ein Merkmal, dessen Ballon auf einem anderen Blatt liegt, wechselt DimoMark zu diesem Blatt und
 zeigt den Ballon.
 
 Jedes Blatt hat eigene Drehung, Einheit und einen eigenen Maßstab ([Blätter](sheets.md)). Das Drehen
@@ -65,7 +65,7 @@ betroffen.
 
 Der Bereich rechts folgt der Auswahl. Sein Kopf sagt, was er zeigt; das × blendet ihn aus
 (**Ansicht > Eigenschaften** zeigt ihn wieder). Ein Klick auf die Überschrift eines Abschnitts
-klappt ihn zu oder auf; Dimo merkt sich, welche Abschnitte du zugeklappt hast.
+klappt ihn zu oder auf; DimoMark merkt sich, welche Abschnitte du zugeklappt hast.
 
 - **Nichts ausgewählt**: eine Übersicht des Projekts (Teil, Zeichnung, Allgemeintoleranz, Anzahl
   Merkmale und Blätter) mit **Unter Datei > Info bearbeiten**, wo du diese Werte änderst
@@ -88,13 +88,13 @@ die Reihenfolge der Nummerierung auf dem Reiter Start.
 ## Höhe der Tabelle
 
 Ziehe die Linie zwischen Zeichnung und Tabelle, um einem von beiden mehr Platz zu geben. Mit der
-Tastatur fokussierst du die Linie und drückst ↑ oder ↓. Dimo merkt sich die Höhe.
+Tastatur fokussierst du die Linie und drückst ↑ oder ↓. DimoMark merkt sich die Höhe.
 
 ## Wenn eine Zeichnung sich nicht öffnen lässt
 
-Dimo zeigt über der Zeichnung eine Meldung, zum Beispiel dass die Datei nicht geöffnet werden
+DimoMark zeigt über der Zeichnung eine Meldung, zum Beispiel dass die Datei nicht geöffnet werden
 konnte. Als Zeichnung lassen sich in dieser Version nur PDF-Dateien verwenden. Sagt die Meldung,
-dass die PDF-Komponente fehlt, ist die Installation unvollständig; installiere Dimo erneut.
+dass die PDF-Komponente fehlt, ist die Installation unvollständig; installiere DimoMark erneut.
 
 Fehlermeldungen erscheinen in der Sprache der App. Unter einer Meldung öffnet **Details** den
 technischen Text (Dateipfad, Systemfehler), den du einer Fehlermeldung an die Entwickler beilegen

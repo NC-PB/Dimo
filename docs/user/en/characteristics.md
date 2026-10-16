@@ -8,11 +8,11 @@ Drag the line above the table to change its height (or focus it and use ↑ and 
 | Column | Content |
 |---|---|
 | No | Balloon number. Drag the handle ⠿ to move the characteristic |
-| Kind | Linear, diameter, radius, spherical radius, angle, chamfer, thread, counterbore, countersink, depth, surface texture, geometric tolerance, note, flag note, material or process, other. A balloon you place starts as other until Dimo reads its text |
+| Kind | Linear, diameter, radius, spherical radius, angle, chamfer, thread, counterbore, countersink, depth, surface texture, geometric tolerance, note, flag note, material or process, other. A balloon you place starts as other until DimoMark reads its text |
 | Requirement | The text as it appears on the drawing, read by box select or typed into the balloon |
 | Nominal | Nominal value |
 | Upper dev., Lower dev. | Deviations, with sign |
-| Upper limit, Lower limit | Limits. Dimo works them out from nominal and deviations; you can also type them |
+| Upper limit, Lower limit | Limits. DimoMark works them out from nominal and deviations; you can also type them |
 | Unit | mm, in, ° or none. A nominal without a unit gets the unit of the sheet (degrees for angles) |
 | Fit | Fit designation such as `H7` |
 | Rule | The rule that gave the limits, with markers for draft tables, no tolerance, notes, reference and basic dimensions. Read only; see [Tolerances](tolerances.md) |
@@ -42,13 +42,13 @@ Double click a cell, press Enter or F2, or start typing. Enter confirms, Escape 
 confirms and moves to the next column, ↑ and ↓ confirm and move to the row above or below.
 Kind, unit and class open a list. In the Inspect column Space switches the check box.
 
-Type numbers with a point as decimal separator, for example `-0.05`. If Dimo cannot use a value,
+Type numbers with a point as decimal separator, for example `-0.05`. If DimoMark cannot use a value,
 the cell stays open and the line above the table says why. Every change can be undone with ⌘Z
 (Ctrl+Z).
 
 ## Limits
 
-Dimo works the limits out from the nominal value and both deviations, with the sign you typed:
+DimoMark works the limits out from the nominal value and both deviations, with the sign you typed:
 nominal `8.0` with upper deviation `0.02` and lower deviation `-0.05` gives upper limit `8.02` and
 lower limit `7.95`. When you change the nominal value or a deviation, the limits follow. When you
 remove a deviation, the limits that were worked out go too. A limit you type yourself is kept and

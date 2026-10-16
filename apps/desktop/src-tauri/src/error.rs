@@ -54,13 +54,13 @@ pub enum CommandError {
     /// The open project has unsaved changes and the caller did not allow discarding them.
     #[error("the project has unsaved changes")]
     UnsavedChanges,
-    /// Another Dimo instance has the project open.
-    #[error("the project is open in another Dimo instance")]
+    /// Another DimoMark instance has the project open.
+    #[error("the project is open in another DimoMark instance")]
     InUse {
         /// User name of the other instance, if known.
         user: Option<String>,
     },
-    /// The project was written by a newer Dimo (NFR-REL-04). The file is left untouched.
+    /// The project was written by a newer DimoMark (NFR-REL-04). The file is left untouched.
     #[error("written by a newer version (schema {found}, supported {supported})")]
     NewerVersion {
         /// Schema version in the file.
@@ -188,7 +188,7 @@ pub enum ArgumentReason {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ProjectReason {
-    /// The file is no Dimo project.
+    /// The file is no DimoMark project.
     NotAProject,
     /// The container or one of its entries is damaged or unsafe.
     DamagedContainer,
@@ -200,7 +200,7 @@ pub enum ProjectReason {
     MissingDrawing,
     /// A company table the settings name is not in the project.
     MissingTable,
-    /// A company table in the project was changed outside Dimo.
+    /// A company table in the project was changed outside DimoMark.
     ChangedTable,
     /// The project was never saved, so it has no file yet.
     NoFile,

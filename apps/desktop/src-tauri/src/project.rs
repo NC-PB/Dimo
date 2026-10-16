@@ -33,7 +33,7 @@ const PDF_FILTER: Filter = Filter {
 
 /// File type of the project dialogs.
 const PROJECT_FILTER: Filter = Filter {
-    name: "Dimo",
+    name: "DimoMark",
     extensions: &[EXTENSION],
 };
 

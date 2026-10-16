@@ -49,7 +49,7 @@ the **Draft** marker in this script; that is expected.
 
 5. Put the files you create in a folder you can delete afterwards.
 
-Write down: date, tester, operating system and version, Dimo version and build, display scale.
+Write down: date, tester, operating system and version, DimoMark version and build, display scale.
 
 ## 1. Box select on drawing A (FR-REC-01, FR-REC-02)
 
@@ -155,7 +155,7 @@ placed by box select, so they have no tolerance.
 | 5.9 | Set **Drawing rule (custom table)** to Shop general tolerances, class a, and re-interpret a characteristic without hand entered limits, for example `30` | Limits 30.02 and 29.98, rule **Drawing rule**; with ISO 2768-1 m still set as general tolerance the drawing rule wins |
 | 5.10 | Import a copy of the file in which `version = 1` is changed to `version = one` | The file is refused with its name and "line 6"; the project is unchanged |
 | 5.11 | Import the first file again | It replaces the old table; the settings keep working |
-| 5.12 | After 5.8, with a project that was never saved, force quit Dimo (kill the process), then start Dimo | The unsaved project is restored with a note; the custom table and the setting that uses it are still there |
+| 5.12 | After 5.8, with a project that was never saved, force quit DimoMark (kill the process), then start DimoMark | The unsaved project is restored with a note; the custom table and the setting that uses it are still there |
 | 5.13 | Save, move the `.dimo` file to another computer or folder without the table file, open it | The custom table is part of the project; the limits are the same |
 | 5.14 | Try to import a copy of the file with the id changed to `iso-286` | Refused: shipped tables cannot be replaced |
 

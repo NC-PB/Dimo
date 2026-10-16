@@ -1,6 +1,6 @@
 ---
 name: next-task
-description: Pick up the next open Dimo task from docs/plan/STATUS.md, load the spec it cites, and produce an implementation plan. Use when the user says "continue", "next", "next task" or starts a work session without a specific request.
+description: Pick up the next open DimoMark task from docs/plan/STATUS.md, load the spec it cites, and produce an implementation plan. Use when the user says "continue", "next", "next task" or starts a work session without a specific request.
 ---
 
 # Next task

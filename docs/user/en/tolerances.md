@@ -1,12 +1,12 @@
 # Tolerances
 
-Dimo works out the upper and lower limit of every dimension it reads, records which rule gave
+DimoMark works out the upper and lower limit of every dimension it reads, records which rule gave
 them, and explains that rule in words. This page describes the rules, the tolerance settings of a
 project, the markers in the table, and the change history of a characteristic.
 
 ## Where limits come from
 
-Dimo tries these rules in this order and takes the first one that gives limits:
+DimoMark tries these rules in this order and takes the first one that gives limits:
 
 1. **Explicit**: a tolerance written on the drawing, such as `±0.1`, `+0.2 -0.1`, two limits, `MIN`
    or `MAX`. A written tolerance always wins.
@@ -17,7 +17,7 @@ Dimo tries these rules in this order and takes the first one that gives limits:
 
 If no rule applies, the characteristic gets the rule **No tolerance defined** and no limits; check
 it and type its limits in the table. Limits you type or change yourself get the rule **Entered by
-hand**. Dimo never changes them again on its own.
+hand**. DimoMark never changes them again on its own.
 
 When a fit is written together with deviations that differ from the fit table, the written
 deviations are used and the characteristic gets a note.
@@ -27,7 +27,7 @@ deviations are used and the characteristic gets a note.
 The general tolerance for an angle (ISO 2768-1) depends on the length of its shorter leg, which is
 not written on the drawing. For an angle without a written tolerance, type the length of the
 shorter leg in the field **Shorter leg** on the proposal card or in the properties pane, section
-**Tolerance**. The field is in the unit of the sheet (mm or inch). Dimo then sets the limits of the
+**Tolerance**. The field is in the unit of the sheet (mm or inch). DimoMark then sets the limits of the
 angle, and the explanation names the leg, its range and the limits. Without a leg the angle gets
 no limits and a note. The leg is stored with the characteristic and its unit, so **Update
 limits** and a retyped requirement text keep using it, also after the sheet unit changes.
@@ -57,9 +57,9 @@ undo step.
   wider than the table, and the explanation says that a conversion took place. Whole numbers
   from 0 to 10 are accepted.
 - **Company tables**: **Import table…** reads a table file of your own (TOML, in the format of the
-  tables shipped with Dimo). Dimo checks the whole file before it is used. If it is refused, the
-  reason is shown with the line of the file where Dimo can tell it. The file format is described
-  in `data/tolerances/README.md` of the Dimo sources, next to the tables shipped with Dimo. An
+  tables shipped with DimoMark). DimoMark checks the whole file before it is used. If it is refused, the
+  reason is shown with the line of the file where DimoMark can tell it. The file format is described
+  in `data/tolerances/README.md` of the DimoMark sources, next to the tables shipped with DimoMark. An
   imported table is copied
   into the project, so the project does not need the file afterwards, and it is kept after a
   crash even before you save. Importing a table with the same id again replaces it, and the
@@ -67,7 +67,7 @@ undo step.
 
 Changing the settings does not change the limits of characteristics that are already in the
 project by itself. New characteristics, box select and typed values use the new settings. After a
-change of the general tolerance, Dimo offers to update the existing characteristics it applies
+change of the general tolerance, DimoMark offers to update the existing characteristics it applies
 to, see below.
 
 ## Update after a change of the general tolerance
@@ -95,7 +95,7 @@ have it.
 ## Update limits after a change
 
 To apply other new settings to existing characteristics, select them (in the table or on the drawing)
-and choose **Update limits** on the Home tab or in the properties pane. Dimo reads the requirement text of each
+and choose **Update limits** on the Home tab or in the properties pane. DimoMark reads the requirement text of each
 one again with the current settings and sets nominal, unit, deviations, limits, fit and rule. All
 of it is one step of undo.
 
@@ -126,7 +126,7 @@ Markers next to the rule. Each one has its own shape, so they can be told apart 
 | **Basic** in a square frame | Basic (theoretically exact) dimension: no limits |
 
 Some notes are only shown on the card of a box select and are not stored: a fit pair such as
-`H7/g6` names a hole and a shaft, so Dimo gives no limits and asks you to capture them as two
+`H7/g6` names a hole and a shaft, so DimoMark gives no limits and asks you to capture them as two
 characteristics. The other notes of the table are stored with the characteristic:
 
 - The written deviations differ from the fit table; the written ones are used.
@@ -142,13 +142,13 @@ removed and the characteristic can be read again.
 
 ## Draft tables
 
-The ISO 2768-1 and ISO 286 tables shipped with Dimo are verified: their values were checked
+The ISO 2768-1 and ISO 286 tables shipped with DimoMark are verified: their values were checked
 against the printed standard. A company table you import can be a draft. Limits from a draft
 table work like any other but carry the **Draft** marker in the table, in the properties pane and
 on the box select card.
 The Drawing tab and **File** > **Info** show the marker next to a table that is a draft. Check limits from a draft table
 against your own standard before you rely on them. A table stops being a draft only when its
-file is marked as verified by the person who checked each value; Dimo never changes that itself.
+file is marked as verified by the person who checked each value; DimoMark never changes that itself.
 
 ## Reference and basic dimensions
 

@@ -181,7 +181,7 @@ pub fn render_pdf(
         .and_then(|doc| {
             let options = PdfOptions {
                 ident: Smart::Custom(ident),
-                creator: Smart::Custom(Some("Dimo".into())),
+                creator: Smart::Custom(Some("DimoMark".into())),
                 timestamp,
                 ..PdfOptions::default()
             };

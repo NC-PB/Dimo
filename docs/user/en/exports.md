@@ -31,7 +31,7 @@ Every export needs an open project, asks where to save the file and then runs in
 background; you can keep working meanwhile. The file contains the project as it was when you
 clicked the button. A progress bar and then the saved file name appear below the export, or the
 reason why it failed. While a report export runs, **Cancel export** stops it; no file is
-written then. Dimo stops between the steps of the export (prepare, render, write), so a cancel
+written then. DimoMark stops between the steps of the export (prepare, render, write), so a cancel
 can take a moment to take effect.
 
 The suggested file names follow the project file (or the drawing, for a project that was never
@@ -47,10 +47,10 @@ report:
   show, hide or delete.
 - **Blank result columns** (Report tab, check sheet only): how many empty result columns a check
   sheet gets when the project has no parts, 1 to 10 (default 3).
-- **Open the file after exporting**: when an export has finished and the file is written, Dimo
+- **Open the file after exporting**: when an export has finished and the file is written, DimoMark
   opens it with the program your computer uses for that file type, for example your PDF viewer
   for a check sheet you want to print. Off by default. It applies to every export.
-  Dimo only opens the file it just wrote, and only if its name still ends in the extension of the
+  DimoMark only opens the file it just wrote, and only if its name still ends in the extension of the
   export (`.pdf`, `.csv` or `.xlsx`). If no program is set up for the type, the file is still
   saved and the export shows a notice.
 - **Export as issued** (File > Export; on the Report tab use **Issue report**): locks the
@@ -62,7 +62,7 @@ report:
   at every start. While the numbering is locked the box says so; reports exported as issued are
   still recorded.
 
-Dimo has no unlock button in this version. The lock is a change like any other, so ⌘Z undoes it
+DimoMark has no unlock button in this version. The lock is a change like any other, so ⌘Z undoes it
 as long as it is the last change you made, for example right after the export. Anything you
 change after the export goes on top of it in the history.
 
@@ -114,7 +114,7 @@ Limits from tolerance tables that are still drafts are marked in the rule column
 and the report says in a footnote that these limits are from a draft table and not yet verified.
 
 The date printed on a report is the report date of the project. If it is empty when you export
-a check sheet or an inspection report, Dimo enters today's date (the date of your computer) as
+a check sheet or an inspection report, DimoMark enters today's date (the date of your computer) as
 the report date first, as one change you can undo with ⌘Z, and prints it. Later exports print
 the stored date, so the same project gives the same files, byte for byte, on any day. To use
 another date, enter it under **Report date** in [Project and report details](project-details.md)
@@ -138,11 +138,11 @@ written:
 Recording is a change of the project. If the report date was empty, the same step also stores
 today's date as the report date, so the report shows it and later exports print it as well.
 
-⌘Z undoes all of it at once. Below the export Dimo confirms "Recorded as issued". If you changed
+⌘Z undoes all of it at once. Below the export DimoMark confirms "Recorded as issued". If you changed
 the project while the export ran, the file is written but nothing is recorded, because the file
 no longer shows the project; export again.
 
-Before an issued export Dimo warns when limits come from draft tables, when results are missing
+Before an issued export DimoMark warns when limits come from draft tables, when results are missing
 or not evaluated (inspection report), or when limits or result types changed after the last
 issued report ([When limits change](measuring.md#when-limits-change)). You can export anyway or
 go back. The warnings never prevent the export. Both reports can be issued, as PDF and as Excel;

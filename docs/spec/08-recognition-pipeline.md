@@ -81,7 +81,7 @@ Ra 1.6             → surface texture
 4. General tolerance standard from the title block by size range.
 5. Decimal place rule from the title block.
 
-Explicit deviations on the drawing always win over table values. If they differ from the table for the stated fit (CAD tools sometimes use inch based fit tables and print converted values), Dimo shows an info hint and never corrects the value. If a dimension has no tolerance and the drawing declares no general tolerance, the characteristic is flagged for review as "no tolerance defined" instead of receiving a default.
+Explicit deviations on the drawing always win over table values. If they differ from the table for the stated fit (CAD tools sometimes use inch based fit tables and print converted values), DimoMark shows an info hint and never corrects the value. If a dimension has no tolerance and the drawing declares no general tolerance, the characteristic is flagged for review as "no tolerance defined" instead of receiving a default.
 
 Each result records its derivation and explanation, e.g. *"No tolerance on drawing. ISO 2768-m applies. Nominal 45 mm is in range over 30 up to 120 mm, so ±0.3 mm."*
 

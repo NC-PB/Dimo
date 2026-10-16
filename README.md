@@ -1,6 +1,6 @@
-# Dimo
+# DimoMark
 
-Dimo is an open-source **drawing ballooning and inspection planning** desktop application.
+DimoMark is an open-source **drawing ballooning and inspection planning** desktop application.
 
 It reads engineering drawings (vector PDF, outlined PDF, scanned raster), finds every inspectable characteristic, numbers it with a balloon, interprets its tolerance, and produces the inspection documents a supplier needs: ballooned drawing, characteristic list, first article and initial sample reports, measurement records.
 

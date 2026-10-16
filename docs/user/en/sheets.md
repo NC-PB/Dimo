@@ -24,7 +24,7 @@ it is while the sheet turns. The rotation is saved with the project.
 ## Unit
 
 In the field **Unit** choose **Millimeter (mm)** or **Inch (in)**. This is the unit of the dimensions printed on the
-sheet. Dimo never guesses it from the sheet size: a metric drawing on an inch format is common,
+sheet. DimoMark never guesses it from the sheet size: a metric drawing on an inch format is common,
 so the unit is always your choice. A new sheet starts with millimeter. A nominal value
 you type in the table without a unit gets the unit of its sheet (degrees for angles).
 

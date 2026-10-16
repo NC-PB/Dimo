@@ -610,6 +610,6 @@
     "sheets",
     "characteristics"
   ],
-  "title": "Dimo corpus truth file",
+  "title": "DimoMark corpus truth file",
   "type": "object"
 }

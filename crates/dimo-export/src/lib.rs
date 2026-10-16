@@ -1,4 +1,4 @@
-//! Export registry of Dimo (MF F2): the export formats, one [`render`] function used by the
+//! Export registry of DimoMark (MF F2): the export formats, one [`render`] function used by the
 //! desktop app and the command line tool, and the [`plan`] of an export (what to store before
 //! the snapshot, what the report prints, what to record when it is issued).
 //!

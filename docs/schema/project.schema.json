@@ -2377,7 +2377,7 @@
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "A Dimo project (data model `Project`).\n\nChange it only through [`Document::execute`](crate::document::Document::execute), so every\nchange is undoable and audited (ADR 0001, NFR-REL-02).",
+  "description": "A DimoMark project (data model `Project`).\n\nChange it only through [`Document::execute`](crate::document::Document::execute), so every\nchange is undoable and audited (ADR 0001, NFR-REL-02).",
   "properties": {
     "balloons": {
       "description": "Balloons in placement order.",

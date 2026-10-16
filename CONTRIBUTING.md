@@ -1,6 +1,6 @@
-# Contributing to Dimo
+# Contributing to DimoMark
 
-Thank you for helping. Dimo is maintained by a single maintainer, so small, focused changes are easiest to review.
+Thank you for helping. DimoMark is maintained by a single maintainer, so small, focused changes are easiest to review.
 
 ## Before you start
 

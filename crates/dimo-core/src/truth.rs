@@ -34,7 +34,7 @@ const ID_PATTERN: &str = "^[a-z0-9][a-z0-9_-]*$";
 /// Ground truth for one corpus drawing.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
-#[schemars(title = "Dimo corpus truth file")]
+#[schemars(title = "DimoMark corpus truth file")]
 pub struct TruthFile {
     /// Format version, currently `1`.
     pub format_version: u32,

@@ -21,7 +21,7 @@ Decision: **Apache License 2.0** with DCO. Status: accepted, see [ADR 0003](../a
 
 ## Alternatives
 
-| License | Copyleft | Effect for Dimo | Fit |
+| License | Copyleft | Effect for DimoMark | Fit |
 |---|---|---|---|
 | **MIT** | None | Like Apache without patent grant | Weaker than Apache, no reason to prefer it |
 | **Apache 2.0** | None | Maximum adoption, closed forks allowed | Good default |
@@ -42,10 +42,10 @@ Recommendation: Apache 2.0 with DCO, unless a dual licensing business model is a
 
 Status: **done, no conflicts found** (October 2026).
 
-- The project owner reviewed the patent landscape for automatic drawing ballooning, characteristic extraction and inspection reporting. Nothing relevant to Dimo's approach was found.
+- The project owner reviewed the patent landscape for automatic drawing ballooning, characteristic extraction and inspection reporting. Nothing relevant to DimoMark's approach was found.
 - The closest granted patent found (a 2003 US filing on extracting data from engineering drawings by ballooning and producing first article reports) has expired. Its European counterpart was withdrawn. It also documents that the basic concept was public more than 20 years ago.
 - A marketing claim of a "patented" auto ballooning engine by one vendor could not be linked to any patent document.
-- Dimo targets small machine shops and one person companies, not the enterprise customers of large software vendors.
+- DimoMark targets small machine shops and one person companies, not the enterprise customers of large software vendors.
 
 Ongoing practice: publish the specification and code early in a public repository. Dated public commits act as defensive publication, so the techniques described here cannot be patented by others later.
 

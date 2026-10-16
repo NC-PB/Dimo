@@ -63,7 +63,7 @@ pub const FORMAT_NAME: &str = "dimo-project";
 pub const SCHEMA_VERSION: u32 = 4;
 /// File extension of project files, without the dot.
 pub const EXTENSION: &str = "dimo";
-/// Version of the Dimo build, written to the manifest.
+/// Version of the DimoMark build, written to the manifest.
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Entry name of the manifest.

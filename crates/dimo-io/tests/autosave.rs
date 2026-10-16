@@ -183,7 +183,7 @@ fn second_instance_cannot_lock_an_open_project() {
     if cfg!(unix) {
         assert_eq!(
             error.to_string(),
-            "the project is open in another Dimo instance (user anna)"
+            "the project is open in another DimoMark instance (user anna)"
         );
     }
 }

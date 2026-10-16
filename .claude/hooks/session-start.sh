@@ -2,7 +2,7 @@
 # SessionStart: puts the current status into context so every session starts oriented.
 root="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 cd "$root" || exit 0
-echo "## Dimo session context"
+echo "## DimoMark session context"
 if [[ -f docs/plan/STATUS.md ]]; then
   awk '/^## Current/{p=1} /^## Tasks/{p=0} p' docs/plan/STATUS.md
 fi

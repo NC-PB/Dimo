@@ -1,6 +1,6 @@
 # Report templates
 
-Report template sets for PDF reports (FR-EXP-06, D-30, D-32). Dimo ships one set,
+Report template sets for PDF reports (FR-EXP-06, D-30, D-32). DimoMark ships one set,
 `dimo-default`, embedded into the binary at compile time. Custom template sets (M7) use the same
 folder layout and the same data format.
 
@@ -31,9 +31,9 @@ the set, packages, plugins and the clock are refused (NFR-SEC-05). The report la
 
 Rules for templates (AGENTS.md rules 2 and 5):
 
-- Print the values as they come. Every printed value is already text, formatted by Dimo.
+- Print the values as they come. Every printed value is already text, formatted by DimoMark.
 - Never compute with measured values or limits, never decide pass or fail. Verdicts come from
-  Dimo.
+  DimoMark.
 - Every verdict needs a shape as well as a color, so a black and white print reads correctly
   (NFR-UX-05). Open Sans has no check mark, cross or circle glyphs; `common.typ` draws them.
 - Open Sans has no `⌀` (U+2300); map it to `Ø` with a show rule.
@@ -74,7 +74,7 @@ by the cell fill, so it reads in greyscale.
 
 ## Data format
 
-Dimo writes one JSON object to `/data.json`. Its JSON Schema is
+DimoMark writes one JSON object to `/data.json`. Its JSON Schema is
 [`docs/schema/report-data.schema.json`](../../docs/schema/report-data.schema.json), generated
 from `dimo_report::ReportModel`; a test fails when the two differ. `format_version` is
 increased when a field is removed or changes meaning; added fields keep the version.
