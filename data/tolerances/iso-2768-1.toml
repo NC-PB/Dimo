@@ -11,7 +11,9 @@ edition = "1989"
 kind = "general"
 unit = "mm"
 version = 1
-status = "draft"
+status = "verified"
+verified_by = "NC-PB"
+verified_date = "2026-10-16"
 source = "ISO 2768-1:1989, tables 1, 2 and 3"
 
 # Permissible deviations (plus and minus) for linear dimensions except broken edges.

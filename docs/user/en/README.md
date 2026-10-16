@@ -78,8 +78,8 @@ letter is the class of ISO 2768-1. Dimo does not read the title block yet, so te
 step) and switches on **Place balloon**. To change them later, use the **Drawing** tab: **General
 tolerance**, **Unit** and **Scale**, or **Set up drawing**, which opens the same pane again. The
 **General tolerance** field is also on the **Home** tab. From now on a dimension without a tolerance gets its limits from that table. Without a general tolerance
-such a dimension is marked **No tolerance defined** and has no limits. The tables shipped with Dimo
-carry the marker **Draft** until their values have been verified. Details:
+such a dimension is marked **No tolerance defined** and has no limits. The ISO 2768-1 and ISO 286 tables
+shipped with Dimo are verified. Details:
 [Tolerances](tolerances.md).
 
 ### 4. Place balloons and capture the values

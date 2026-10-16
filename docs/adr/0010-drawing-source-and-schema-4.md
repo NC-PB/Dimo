@@ -1,6 +1,6 @@
 # ADR 0010: Drawing source type and project schema 4
 
-Status: proposed
+Status: accepted
 
 ## Context
 Release 0.1 opens photos and scans as drawings (R01 decisions 7 to 11, FR-DOC-02): JPEG, PNG and

@@ -130,24 +130,27 @@ runs every vector. General tables use `general` vectors, fit tables `fit` vector
 
 ```toml
 table = "iso-2768-1"
+checked_by_owner = false
 general = [
-  { applies_to = "linear", class = "m", size = "30", value = "0.2", derived_by = "agent", checked_by_owner = false },
-  { applies_to = "linear", class = "v", size = "0.5", value = "-", derived_by = "agent", checked_by_owner = false },
+  { applies_to = "linear", class = "m", size = "30", value = "0.2", derived_by = "agent" },
+  { applies_to = "linear", class = "v", size = "0.5", value = "-", derived_by = "agent" },
 ]
 ```
 
 ```toml
 table = "iso-286"
+checked_by_owner = false
 fit = [
-  { fit = "H7", nominal = "30", upper = "0.021", lower = "0", derived_by = "agent", checked_by_owner = false, note = "corpus truth c03" },
+  { fit = "H7", nominal = "30", upper = "0.021", lower = "0", derived_by = "agent", note = "corpus truth c03" },
 ]
 ```
 
 - `value = "-"` (or `upper = "-"`, `lower = "-"`) expects no value (size outside the table or
   no value defined). `upper` and `lower` are deviations in mm. `note` is optional.
 - Vectors cover every range bound: on the bound and just above it.
-- `derived_by = "agent"` marks vectors written by the agent. The owner sets
-  `checked_by_owner = true` per vector after comparing it with the printed table.
+- `derived_by = "agent"` marks vectors written by the agent. `checked_by_owner` holds for the
+  whole file: the owner sets it to `true` after comparing the vectors with the printed table. A
+  table with `status = "verified"` needs `checked_by_owner = true` in its vector file (test).
 
 ## Adding a shipped table
 

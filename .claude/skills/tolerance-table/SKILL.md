@@ -18,7 +18,8 @@ Rules from D-43 and FR-TOL-*:
   Do not copy explanatory text from the standard. Values and structure only.
 - Each table has a test vector file next to it (`<name>.test.toml`) with spot checks:
   input (nominal, class or fit) and expected limits. Add vectors for every range boundary.
-  Mark which vectors you derived and leave `checked_by_owner = false`; the owner flips them.
+  Mark which vectors you derived (`derived_by`) and leave the file's `checked_by_owner = false`;
+  the owner sets it for the whole file.
 - Hint behavior from the corpus: explicit deviations on a drawing always win. A mismatch with the
   table (inch based CAD fit tables) creates an info hint, never a correction.
 

@@ -96,9 +96,9 @@ fn cases() -> Vec<Case> {
         Case { text: "10 MAX", rule: R::Explicit, nominal: "10", upper: Some("10"), upper_dev: Some("0"), ..BASE },
         Case { text: "90.0° +0.0° −0.1°", rule: R::Explicit, unit: Unit::Mm, nominal: "90.0", upper: Some("90.0"), lower: Some("89.9"), upper_dev: Some("0"), lower_dev: Some("-0.1"), ..BASE },
         // Level 2, fit: wins over drawing rule, general and decimal rules.
-        Case { text: "Ø8 f7", rule: R::Fit, nominal: "8", upper: Some("7.987"), lower: Some("7.972"), upper_dev: Some("-0.013"), lower_dev: Some("-0.028"), draft: true, ..BASE },
-        Case { text: "Ø8 f7", cfg: Cfg::DrawingRule, rule: R::Fit, nominal: "8", upper: Some("7.987"), lower: Some("7.972"), upper_dev: Some("-0.013"), lower_dev: Some("-0.028"), draft: true, ..BASE },
-        Case { text: "R15 H7", cfg: Cfg::General, rule: R::Fit, nominal: "15", upper: Some("15.018"), lower: Some("15"), upper_dev: Some("0.018"), lower_dev: Some("0"), draft: true, ..BASE },
+        Case { text: "Ø8 f7", rule: R::Fit, nominal: "8", upper: Some("7.987"), lower: Some("7.972"), upper_dev: Some("-0.013"), lower_dev: Some("-0.028"), draft: false, ..BASE },
+        Case { text: "Ø8 f7", cfg: Cfg::DrawingRule, rule: R::Fit, nominal: "8", upper: Some("7.987"), lower: Some("7.972"), upper_dev: Some("-0.013"), lower_dev: Some("-0.028"), draft: false, ..BASE },
+        Case { text: "R15 H7", cfg: Cfg::General, rule: R::Fit, nominal: "15", upper: Some("15.018"), lower: Some("15"), upper_dev: Some("0.018"), lower_dev: Some("0"), draft: false, ..BASE },
         // A fit that gives no limits stops the search: no general tolerance for it.
         Case { text: "Ø8 H7/g6", cfg: Cfg::General, nominal: "8", hints: &["unknown_fit"], notes: &[Note::FitPair], ..BASE },
         Case { text: "Ø3200 H7", cfg: Cfg::General, nominal: "3200", hints: &["size_outside_table"], ..BASE },
@@ -106,20 +106,20 @@ fn cases() -> Vec<Case> {
         Case { text: "45", cfg: Cfg::DrawingRule, rule: R::DrawingRule, nominal: "45", upper: Some("45.05"), lower: Some("44.95"), upper_dev: Some("0.05"), lower_dev: Some("-0.05"), draft: true, ..BASE },
         Case { text: "45.25", cfg: Cfg::DrawingRule, rule: R::DrawingRule, nominal: "45.25", upper: Some("45.30"), lower: Some("45.20"), upper_dev: Some("0.05"), lower_dev: Some("-0.05"), draft: true, ..BASE },
         // Drawing rule does not cover the size: hint, then the general tolerance.
-        Case { text: "150", cfg: Cfg::DrawingRule, rule: R::General, nominal: "150", upper: Some("150.5"), lower: Some("149.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: true, hints: &["size_outside_table"], ..BASE },
+        Case { text: "150", cfg: Cfg::DrawingRule, rule: R::General, nominal: "150", upper: Some("150.5"), lower: Some("149.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: false, hints: &["size_outside_table"], ..BASE },
         // Drawing rule has no part for radii: general tolerance without a hint.
-        Case { text: "R5", cfg: Cfg::DrawingRule, rule: R::General, nominal: "5", upper: Some("5.5"), lower: Some("4.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: true, ..BASE },
+        Case { text: "R5", cfg: Cfg::DrawingRule, rule: R::General, nominal: "5", upper: Some("5.5"), lower: Some("4.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: false, ..BASE },
         // Level 4, general tolerance by size range, linear, radius, chamfer and angle parts.
-        Case { text: "45", cfg: Cfg::General, rule: R::General, nominal: "45", upper: Some("45.3"), lower: Some("44.7"), upper_dev: Some("0.3"), lower_dev: Some("-0.3"), draft: true, ..BASE },
-        Case { text: "30", cfg: Cfg::General, rule: R::General, nominal: "30", upper: Some("30.2"), lower: Some("29.8"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: true, ..BASE },
-        Case { text: "12.50", cfg: Cfg::GeneralDecimal, rule: R::General, nominal: "12.50", upper: Some("12.70"), lower: Some("12.30"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: true, ..BASE },
-        Case { text: "4X Ø6.6 THRU", cfg: Cfg::General, rule: R::General, nominal: "6.6", upper: Some("6.8"), lower: Some("6.4"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: true, ..BASE },
-        Case { text: "R5", cfg: Cfg::General, rule: R::General, nominal: "5", upper: Some("5.5"), lower: Some("4.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: true, ..BASE },
-        Case { text: "1x45°", cfg: Cfg::General, rule: R::General, nominal: "1", upper: Some("1.2"), lower: Some("0.8"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: true, ..BASE },
+        Case { text: "45", cfg: Cfg::General, rule: R::General, nominal: "45", upper: Some("45.3"), lower: Some("44.7"), upper_dev: Some("0.3"), lower_dev: Some("-0.3"), draft: false, ..BASE },
+        Case { text: "30", cfg: Cfg::General, rule: R::General, nominal: "30", upper: Some("30.2"), lower: Some("29.8"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: false, ..BASE },
+        Case { text: "12.50", cfg: Cfg::GeneralDecimal, rule: R::General, nominal: "12.50", upper: Some("12.70"), lower: Some("12.30"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: false, ..BASE },
+        Case { text: "4X Ø6.6 THRU", cfg: Cfg::General, rule: R::General, nominal: "6.6", upper: Some("6.8"), lower: Some("6.4"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: false, ..BASE },
+        Case { text: "R5", cfg: Cfg::General, rule: R::General, nominal: "5", upper: Some("5.5"), lower: Some("4.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: false, ..BASE },
+        Case { text: "1x45°", cfg: Cfg::General, rule: R::General, nominal: "1", upper: Some("1.2"), lower: Some("0.8"), upper_dev: Some("0.2"), lower_dev: Some("-0.2"), draft: false, ..BASE },
         Case { text: "45", cfg: Cfg::CustomGeneral, rule: R::CustomTable, nominal: "45", upper: Some("45.05"), lower: Some("44.95"), upper_dev: Some("0.05"), lower_dev: Some("-0.05"), draft: true, ..BASE },
-        Case { text: "90°", cfg: Cfg::General, leg: Some("50"), rule: R::General, nominal: "90", upper: Some("90.5"), lower: Some("89.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: true, ..BASE },
+        Case { text: "90°", cfg: Cfg::General, leg: Some("50"), rule: R::General, nominal: "90", upper: Some("90.5"), lower: Some("89.5"), upper_dev: Some("0.5"), lower_dev: Some("-0.5"), draft: false, ..BASE },
         // 20' is not exact in degrees: rounded toward zero to 6 places.
-        Case { text: "90°", cfg: Cfg::General, leg: Some("100"), rule: R::General, nominal: "90", upper: Some("90.333333"), lower: Some("89.666667"), upper_dev: Some("0.333333"), lower_dev: Some("-0.333333"), draft: true, ..BASE },
+        Case { text: "90°", cfg: Cfg::General, leg: Some("100"), rule: R::General, nominal: "90", upper: Some("90.333333"), lower: Some("89.666667"), upper_dev: Some("0.333333"), lower_dev: Some("-0.333333"), draft: false, ..BASE },
         Case { text: "90°", cfg: Cfg::General, nominal: "90", notes: &[Note::ShorterLegUnknown], ..BASE },
         // Outside the general table: hint, then the decimal rule if one matches.
         Case { text: "C0.3", cfg: Cfg::General, nominal: "0.3", hints: &["size_outside_table"], ..BASE },
@@ -140,10 +140,10 @@ fn cases() -> Vec<Case> {
         Case { text: "(42±0.1)", nominal: "42", hints: &["reference_dimension"], ..BASE },
         Case { text: "[25]", cfg: Cfg::General, nominal: "25", hints: &["basic_dimension"], ..BASE },
         // Unit conversion (FR-TOL-09): mm table values on an inch dimension, rounded inward.
-        Case { text: ".250", cfg: Cfg::General, rule: R::General, nominal: "0.250", upper: Some("0.2578"), lower: Some("0.2422"), upper_dev: Some("0.0078"), lower_dev: Some("-0.0078"), draft: true, ..BASE },
+        Case { text: ".250", cfg: Cfg::General, rule: R::General, nominal: "0.250", upper: Some("0.2578"), lower: Some("0.2422"), upper_dev: Some("0.0078"), lower_dev: Some("-0.0078"), draft: false, ..BASE },
         Case { text: "1.000\" ±.005", output: Some(Unit::Mm), rule: R::Explicit, nominal: "25.400", upper: Some("25.527"), lower: Some("25.273"), upper_dev: Some("0.127"), lower_dev: Some("-0.127"), ..BASE },
         Case { text: "50 ±0.1", output: Some(Unit::In), rule: R::Explicit, nominal: "1.9685", upper: Some("1.9724"), lower: Some("1.9646"), upper_dev: Some("0.0039"), lower_dev: Some("-0.0039"), ..BASE },
-        Case { text: "Ø8 f7", unit: Unit::In, output: Some(Unit::Mm), rule: R::Fit, nominal: "203.200", upper: Some("203.150"), lower: Some("203.104"), upper_dev: Some("-0.050"), lower_dev: Some("-0.096"), draft: true, ..BASE },
+        Case { text: "Ø8 f7", unit: Unit::In, output: Some(Unit::Mm), rule: R::Fit, nominal: "203.200", upper: Some("203.150"), lower: Some("203.104"), upper_dev: Some("-0.050"), lower_dev: Some("-0.096"), draft: false, ..BASE },
     ]
 }
 

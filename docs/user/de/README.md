@@ -85,8 +85,8 @@ als eigenen Schritt) und schaltet **Ballon setzen** ein. Später änderst du sie
 das denselben Bereich wieder öffnet. Das Feld **Allgemeintoleranz** steht auch im Reiter **Start**.
 Ein Maß ohne Toleranz erhält seine Grenzwerte danach aus dieser
 Tabelle. Ohne Allgemeintoleranz wird so ein Maß als **Keine Toleranz festgelegt** markiert und hat
-keine Grenzwerte. Die mit Dimo gelieferten Tabellen tragen die Markierung **Entwurf**, bis ihre
-Werte geprüft sind. Einzelheiten: [Toleranzen](tolerances.md).
+keine Grenzwerte. Die mit Dimo gelieferten Tabellen ISO 2768-1 und ISO 286 sind
+geprüft. Einzelheiten: [Toleranzen](tolerances.md).
 
 ### 4. Ballons setzen und Werte erfassen
 

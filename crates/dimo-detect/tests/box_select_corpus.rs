@@ -3,8 +3,8 @@
 //! selected with the real tolerance engine; every characteristic must match. The synthetic
 //! drawings join in `dimo-cli` (only the CLI may depend on the generator).
 //!
-//! The truth of `test_drawing_1` is not yet reviewed by the owner and the tolerance tables are
-//! drafts (D-43), so a pass here means "agrees with the draft truth".
+//! The truth of `test_drawing_1` is not yet reviewed by the owner (the tolerance tables are
+//! verified since 2026-10-16), so a pass here means "agrees with the draft truth".
 //!
 //! Skips without PDFium like the `dimo-pdf` tests, fails instead with `CI=true` or
 //! `DIMO_REQUIRE_PDFIUM=1`.

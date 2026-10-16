@@ -140,7 +140,7 @@ fn reinterpret_after_a_settings_change() {
     let iso = tables.iter().find(|t| t.table.id == "iso-2768-1").unwrap();
     assert_eq!(iso.usage, TableUse::General);
     assert_eq!(iso.classes, ["f", "m", "c", "v"]);
-    assert!(iso.draft);
+    assert!(!iso.draft, "the shipped table is verified");
     assert!(tables.iter().any(|t| t.usage == TableUse::Fit));
 
     session.execute(general("m")).unwrap();

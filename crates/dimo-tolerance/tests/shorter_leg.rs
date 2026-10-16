@@ -1,7 +1,7 @@
 //! Angular general tolerances by the shorter leg (T2.9a, FR-TOL-02, ISO 2768-1 table 3): range
 //! bounds of every row and class, inch legs converted exactly, and legs that cannot apply.
 //!
-//! The expected values are the rows of the draft table `data/tolerances/iso-2768-1.toml`
+//! The expected values are the rows of the table `data/tolerances/iso-2768-1.toml`
 //! (D-43): up to 10 mm, over 10 to 50, over 50 to 120, over 120 to 400, over 400; lower bound
 //! exclusive, upper bound inclusive. Minutes of arc become degrees rounded toward zero to six
 //! places.

@@ -142,9 +142,10 @@ removed and the characteristic can be read again.
 
 ## Draft tables
 
-The tables shipped with Dimo are drafts until their values have been checked against the printed
-standard. Limits from a draft table work like any other but carry the **Draft** marker in the
-table, in the properties pane and on the box select card. A company table you import can be a draft too.
+The ISO 2768-1 and ISO 286 tables shipped with Dimo are verified: their values were checked
+against the printed standard. A company table you import can be a draft. Limits from a draft
+table work like any other but carry the **Draft** marker in the table, in the properties pane and
+on the box select card.
 The Drawing tab and **File** > **Info** show the marker next to a table that is a draft. Check limits from a draft table
 against your own standard before you rely on them. A table stops being a draft only when its
 file is marked as verified by the person who checked each value; Dimo never changes that itself.

@@ -1,8 +1,8 @@
 //! Table driven tests from `data/tolerances/*.test.toml` (D-43, FR-TOL-02, FR-TOL-04).
 //!
 //! Every shipped table has a test vector file and every vector must pass. The vectors were
-//! drafted by the agent (`derived_by = "agent"`); the owner flips `checked_by_owner` after
-//! comparing them with his Tabellenbuch.
+//! drafted by the agent (`derived_by = "agent"`); the owner sets `checked_by_owner` for the whole
+//! file after comparing them with his Tabellenbuch. A verified table needs a checked vector file.
 
 #![allow(clippy::unwrap_used)] // Test crate; rust.md allows unwrap in tests.
 
@@ -19,6 +19,8 @@ use serde::Deserialize;
 #[serde(deny_unknown_fields)]
 struct VectorFile {
     table: String,
+    /// Set by the owner for the whole file (D-43); only read here.
+    checked_by_owner: bool,
     #[serde(default)]
     general: Vec<GeneralVector>,
     #[serde(default)]
@@ -34,7 +36,6 @@ struct GeneralVector {
     /// Expected tolerance, or `-` for no value.
     value: String,
     derived_by: String,
-    checked_by_owner: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,7 +48,6 @@ struct FitVector {
     /// Expected lower deviation in mm, or `-` for no value.
     lower: String,
     derived_by: String,
-    checked_by_owner: bool,
     #[serde(default)]
     note: Option<String>,
 }
@@ -94,6 +94,13 @@ fn every_shipped_table_has_a_vector_file_named_after_it() {
         let file = files.iter().find(|(name, _)| *name == expected);
         let (_, file) = file.unwrap_or_else(|| panic!("missing {expected}"));
         assert_eq!(file.table, table.id());
+        // D-43: a table is verified only together with its checked vectors.
+        if !table.is_draft() {
+            assert!(
+                file.checked_by_owner,
+                "{expected}: the table is verified, so the owner checks its vectors too"
+            );
+        }
     }
     assert_eq!(
         files.len(),
@@ -116,8 +123,6 @@ fn general_vectors_pass() {
                 matches!(v.derived_by.as_str(), "agent" | "owner"),
                 "{name}: derived_by must be agent or owner"
             );
-            // The owner flips this flag; the test only reads it.
-            let _ = v.checked_by_owner;
             let size = parse_decimal(&v.size).unwrap();
             let got = table
                 .general(v.applies_to, &v.class, size)
@@ -149,7 +154,7 @@ fn fit_vectors_pass() {
                 matches!(v.derived_by.as_str(), "agent" | "owner"),
                 "{name}: derived_by must be agent or owner"
             );
-            let _ = (v.checked_by_owner, &v.note);
+            let _ = &v.note;
             let nominal = parse_decimal(&v.nominal).unwrap();
             let got = table.fit_limits(&v.fit, nominal).map_or_else(
                 |_| ("-".to_owned(), "-".to_owned()),

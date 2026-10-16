@@ -1,6 +1,6 @@
 # ADR 0009: Three milestones after release 0.1 instead of six
 
-Status: proposed
+Status: accepted
 
 ## Context
 The roadmap planned six milestones after 0.1: M4 auto detection on vector PDFs, M5 OCR, M6

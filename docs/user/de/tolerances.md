@@ -152,11 +152,10 @@ Regel entfernt, und das Merkmal kann wieder gelesen werden.
 
 ## Entwurfstabellen
 
-Die mitgelieferten Tabellen sind Entwürfe, bis ihre Werte mit der gedruckten Norm verglichen
-wurden. Grenzmaße aus einer Entwurfstabelle funktionieren wie alle anderen, tragen aber die
-Markierung **Entwurf** in der Tabelle, im Eigenschaftenbereich und auf der Karte der
-Rahmenauswahl.
-Auch eine importierte Firmentabelle kann ein Entwurf sein. Der Reiter Zeichnung und
+Die mitgelieferten Tabellen ISO 2768-1 und ISO 286 sind geprüft: ihre Werte wurden mit der
+gedruckten Norm verglichen. Eine importierte Firmentabelle kann ein Entwurf sein. Grenzmaße aus
+einer Entwurfstabelle funktionieren wie alle anderen, tragen aber die Markierung **Entwurf** in
+der Tabelle, im Eigenschaftenbereich und auf der Karte der Rahmenauswahl. Der Reiter Zeichnung und
 **Datei** > **Info** zeigen die Markierung neben einer Tabelle, die ein Entwurf ist. Vergleiche Grenzmaße aus einer
 Entwurfstabelle mit deiner eigenen Norm, bevor du dich darauf verlässt. Eine Tabelle ist erst
 kein Entwurf mehr, wenn ihre Datei von der Person als geprüft gekennzeichnet ist, die jeden Wert

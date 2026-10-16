@@ -131,7 +131,7 @@ fn every_class_spans_its_standard_tolerance() {
                                 l.upper,
                                 l.lower
                             );
-                            assert!(l.draft);
+                            assert!(!l.draft, "the shipped table is verified");
                             assert!(l.range.contains(size));
                         }
                         Err(FitError::Lookup { .. } | FitError::NoDelta { .. }) => {}
