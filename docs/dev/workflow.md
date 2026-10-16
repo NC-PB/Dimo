@@ -43,9 +43,9 @@ Releases are built by `.github/workflows/release.yml` (R.13). It never publishes
 1. Set the version in `Cargo.toml` (`[workspace.package]`), `apps/desktop/src-tauri/tauri.conf.json`
    and `apps/desktop/package.json`. `./scripts/check-version.sh` checks that the three agree.
 2. Commit, push, and wait until CI is green on all three platforms.
-3. Tag and push the tag: `git tag -s v0.1.0 -m "Dimo 0.1.0"`, `git push origin v0.1.0`. A tag with
+3. Tag and push the tag: `git tag -s v0.1.0 -m "DimoMark 0.1.0"`, `git push origin v0.1.0`. A tag with
    a suffix such as `v0.1.0-rc.1` is a pre-release of that version. Its files carry the same names as
-   the final ones (`Dimo_0.1.0_...`; the MSI version must be numeric), only the release tag tells
+   the final ones (`DimoMark_0.1.0_...`; the MSI version must be numeric), only the release tag tells
    them apart.
 4. The workflow checks the release gates (CI green on the tagged commit, tag equals the version,
    tolerance tables verified with

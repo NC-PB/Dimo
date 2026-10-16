@@ -175,22 +175,22 @@ jobs:
               cp target/release/bundle/msi/*.msi dist-release/
               # Portable build: the program with PDFium and the licenses next to it. The resource
               # folder of a Windows program is its own folder, so the app finds pdfium/ there.
-              portable="Dimo_${VERSION}_x64_portable"
+              portable="DimoMark_${VERSION}_x64_portable"
               mkdir -p "$portable"
-              cp target/release/dimo-desktop.exe "$portable/Dimo.exe"
+              cp target/release/dimo-desktop.exe "$portable/DimoMark.exe"
               cp -R apps/desktop/src-tauri/bundle-staging/pdfium "$portable/"
               cp -R apps/desktop/src-tauri/bundle-staging/licenses "$portable/"
               cp LICENSE NOTICE "$portable/"
               # D-11: the portable build needs the WebView2 runtime, which Windows 11 and updated
               # Windows 10 already have.
               printf '%s\r\n' \
-                "Dimo ${VERSION}, portable build for Windows 10 and 11 (x64)" \
+                "DimoMark ${VERSION}, portable build for Windows 10 and 11 (x64)" \
                 "" \
-                "Start Dimo.exe. No installation and no administrator rights are needed." \
-                "Keep the folders pdfium and licenses next to Dimo.exe." \
+                "Start DimoMark.exe. No installation and no administrator rights are needed." \
+                "Keep the folders pdfium and licenses next to DimoMark.exe." \
                 "" \
-                "Dimo needs the Microsoft Edge WebView2 Runtime. Windows 11 and updated Windows 10" \
-                "have it. If Dimo does not start, install the Evergreen WebView2 Runtime from" \
+                "DimoMark needs the Microsoft Edge WebView2 Runtime. Windows 11 and updated Windows 10" \
+                "have it. If DimoMark does not start, install the Evergreen WebView2 Runtime from" \
                 "https://developer.microsoft.com/microsoft-edge/webview2/ or use the MSI installer," \
                 "which installs it when needed." > "$portable/README.txt"
               7z a "dist-release/$portable.zip" "$portable" > /dev/null
@@ -242,5 +242,5 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --draft "${prerelease[@]}" \
-            --title "Dimo ${TAG#v}" \
+            --title "DimoMark ${TAG#v}" \
             --notes "Draft created by the release workflow. Replace with the release notes before publishing."
