@@ -1,7 +1,14 @@
 <script lang="ts">
   import { commandErrorMessage, errorDetail, m, noticeLines } from "$lib/i18n";
   import ErrorDetails from "./ErrorDetails.svelte";
-  import { projectStore } from "$lib/stores/project.svelte";
+  import { projectStore as appProject, type ProjectStore } from "$lib/stores/project.svelte";
+
+  interface Props {
+    /** The project store; the app's by default, a fake in tests. */
+    projectStore?: ProjectStore;
+  }
+
+  let { projectStore = appProject }: Props = $props();
 
   const buttonClass = "shrink-0 rounded px-2 py-0.5 text-xs hover:bg-surface-raised";
 </script>

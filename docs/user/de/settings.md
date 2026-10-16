@@ -16,6 +16,8 @@ Reiter) bringt dich dahin, wo du warst.
 | **Über Dimo** | Version und Lizenzen, siehe unten |
 | **Optionen** | Deine persönlichen Einstellungen (⌘,), siehe unten |
 
+Die Version von Dimo steht unten in der Liste links.
+
 Jede Einstellung hat einen Ort. Einstellungen eines Projekts werden in der Projektdatei
 gespeichert und reisen mit ihr: die Allgemeintoleranz (Reiter Start und Zeichnung), die übrigen
 Toleranzregeln und der Ballonstil (Reiter Zeichnung) sowie die Teil-, Zeichnungs- und

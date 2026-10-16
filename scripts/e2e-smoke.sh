@@ -29,6 +29,9 @@
 #      tolerance, unit, scale, part number and customer, and Start ballooning turns on placing.
 #  10. Error messages (MF F3): in the German UI a broken company table and a text file as new
 #      drawing are refused; the messages are German, without Rust's English text.
+#  11. Newer project (NFR-REL-04): a project whose manifest has a schema version above the
+#      supported one is opened from the recent list on the start screen; the app refuses it with
+#      the newer version message and leaves the file untouched.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -41,7 +44,7 @@
 #   --keep   keep the work folder also when all checks pass (it is always kept on failure)
 #
 # Needs: PDFium (scripts/fetch-pdfium.sh or DIMO_PDFIUM_PATH), pnpm with installed packages, jq,
-# unzip, curl, a free port 1420 (stop `tauri dev` first) and a desktop session.
+# zip, unzip, curl, a free port 1420 (stop `tauri dev` first) and a desktop session.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
@@ -69,7 +72,7 @@ expect() {
   if [[ "$2" == "$3" ]]; then pass "$1"; else fail "$1: expected '$2', got '$3'"; fi
 }
 
-for tool in jq unzip curl pnpm cargo; do
+for tool in jq zip unzip curl pnpm cargo; do
   command -v "$tool" >/dev/null || { echo "$tool is required" >&2; exit 1; }
 done
 if [[ -z "${DIMO_PDFIUM_PATH:-}" ]]; then
@@ -340,8 +343,8 @@ if [[ -s "$TOL" ]]; then
   tjq() { jq -r "$1" <<<"$TJSON"; }
   expect "tolerance: general tolerance stored in the project settings" "iso-2768-1 m" \
     "$(tjq '.settings.tolerance.general | "\(.table.id) \(.class)"')"
-  expect "tolerance: accepted box select has the general limits from a draft table" \
-    "50 50.3 49.7 general true box_select" \
+  expect "tolerance: accepted box select has the general limits from the verified table" \
+    "50 50.3 49.7 general false box_select" \
     "$(tjq '.characteristics[] | select(.requirement_text == "50") | "\(.requirement_text) \(.upper_limit) \(.lower_limit) \(.derivation.rule.rule) \(.derivation.draft) \(.origin)"')"
   expect "tolerance: typed value read again with the new setting" \
     "Ø8 8.2 7.8 general" \
@@ -515,6 +518,32 @@ expect "errors: non-PDF drawing refused in German" "yes" \
   "$(yesno grep -q 'Die Datei ist keine PDF-Zeichnung' <<<"$drawing_alerts")"
 expect "errors: no English error text in the German messages" "no" \
   "$(yesno grep -qiE '\.toml|\.txt|cannot|expected|not a PDF|error|failed' <<<"$table_alerts $drawing_alerts")"
+
+step "11. project from a newer Dimo (NFR-REL-04)"
+# A manifest with schema version 999 is above any supported version; dimo-io checks the
+# manifest before anything else, so the file needs nothing more. The recent list in the
+# settings folder of this run lists it, and the UI script clicks it on the start screen (the
+# button step matches the path in the title attribute).
+NEWER="$WORK/newer.dimo"
+mkdir -p "$WORK/newer" "$WORK/home11/config"
+cat >"$WORK/newer/manifest.json" <<'JSON'
+{
+  "format": "dimo-project",
+  "schema_version": 999,
+  "app_version": "99.0.0",
+  "created": "2030-01-01T00:00:00Z",
+  "modified": "2030-01-01T00:00:00Z"
+}
+JSON
+(cd "$WORK/newer" && zip -q -X "$NEWER" manifest.json)
+jq -n --arg p "$NEWER" '{ projects: [$p] }' >"$WORK/home11/config/recent-projects.json"
+before_sum=$(cksum <"$NEWER")
+jq --arg p "$NEWER" 'map(if .button == "__NEWER_PROJECT__" then .button = $p else . end)' \
+  "$SCRIPTS/newer-version.json" >"$WORK/newer-version.json"
+run_app newer "$WORK/newer-version.json" term home11
+expect "newer project: refused with the newer version message" "yes" \
+  "$(yesno grep -q 'written by a newer Dimo version (file format 999, this version reads up to' <<<"$(report newer 'newer refused')")"
+expect "newer project: file left untouched" "$before_sum" "$(cksum <"$NEWER")"
 
 step "dev server"
 check_no_reload

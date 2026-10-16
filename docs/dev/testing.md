@@ -111,6 +111,11 @@ drawing gestures ignore the real mouse, and the script prints how many real poin
    Start ballooning switches on Place balloon; checked from the saved project.
 10. Error messages in German (`errors.json`): a broken company table and a text file as new
     drawing are refused with German texts.
+11. Project from a newer Dimo (`newer-version.json`, NFR-REL-04): a `.dimo` whose manifest has
+    schema version 999 is listed in `recent-projects.json` of the run's settings folder. The UI
+    script clicks it on the start screen (the `button` step matches the path in the title; the
+    test writes the path into a copy of the script). The alert must show the newer version
+    message, and the file must be unchanged.
 
 The last check makes sure the dev server never reloaded the page during the run.
 

@@ -3,7 +3,8 @@
    * The File page (ADR 0007, mockup "File view", T3.16): a rail on the left with Back, the
    * project commands and the panes Info, Open (with the recent projects), Options and About;
    * the pane on the right. Commands come from the registry, so labels, icons, tooltips and
-   * disabled reasons are the same as on the ribbon and the title bar.
+   * disabled reasons are the same as on the ribbon and the title bar. The app version stands
+   * below the rail (R.11).
    */
   import {
     command,
@@ -16,6 +17,7 @@
   import RecentProjects from "$lib/components/RecentProjects.svelte";
   import { m } from "$lib/i18n";
   import { icons, type Icon } from "$lib/icons";
+  import { appInfo } from "$lib/stores/app-info.svelte";
   import { view, type FilePane } from "$lib/stores/view.svelte";
   import AboutPane from "./AboutPane.svelte";
   import CommandButton from "./CommandButton.svelte";
@@ -107,6 +109,11 @@
     <span class="flex-1"></span>
     {@render railCommand("about")}
     {@render railCommand("options")}
+    {#if appInfo.current}
+      <p class="px-3.5 pt-2 text-xs text-text-muted" data-testid="file-version">
+        {m.app_version({ version: appInfo.current.version })}
+      </p>
+    {/if}
   </nav>
 
   <main class="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-12">

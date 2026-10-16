@@ -3,6 +3,7 @@ import { flushSync, mount, tick, unmount } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
 import { commandForShortcut, runCommand } from "$lib/commands.svelte";
 import type { AppSettings, SettingsView } from "$lib/ipc/bindings";
+import { appInfo } from "$lib/stores/app-info.svelte";
 import { DEFAULT_SETTINGS, SettingsStore } from "$lib/stores/settings.svelte";
 import { view } from "$lib/stores/view.svelte";
 import FilePage from "./FilePage.svelte";
@@ -19,6 +20,7 @@ afterEach(() => {
   target.remove();
   view.setTab("home");
   view.filePane = "info";
+  appInfo.current = null;
 });
 
 function render(c: typeof FilePage | typeof OptionsPane, props: Record<string, unknown> = {}) {
@@ -52,6 +54,16 @@ describe("File page (T3.16)", () => {
     expect(target.querySelector("[data-testid='options-pane']")).not.toBeNull();
     target.querySelector<HTMLButtonElement>("[data-file='back']")?.click();
     expect(view.tab).toBe("drawing");
+  });
+
+  it("shows the app version below the rail (R.11)", async () => {
+    await appInfo.load(() =>
+      Promise.resolve({ version: "0.1.0", build_profile: "release", pdfium_available: true }),
+    );
+    render(FilePage);
+    expect(target.querySelector("[data-testid='file-version']")?.textContent.trim()).toBe(
+      "Version 0.1.0",
+    );
   });
 
   it("says Print is not there yet instead of hiding it", () => {
