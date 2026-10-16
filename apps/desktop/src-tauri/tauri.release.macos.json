@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "bundle": {
+    "targets": ["app", "dmg"],
+    "resources": {
+      "bundle-staging/licenses/": "licenses/",
+      "../../../LICENSE": "licenses/LICENSE",
+      "../../../NOTICE": "licenses/NOTICE"
+    },
+    "macOS": {
+      "frameworks": ["bundle-staging/pdfium/libpdfium.dylib"],
+      "signingIdentity": "-",
+      "hardenedRuntime": false,
+      "minimumSystemVersion": "12.0"
+    }
+  }
+}

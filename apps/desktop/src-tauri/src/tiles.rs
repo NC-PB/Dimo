@@ -6,10 +6,11 @@
 //! request to the tile service and returns at once; a worker thread answers later. Neither the
 //! main thread nor the tokio runtime ever waits for a render.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use dimo_pdf::PdfEngine;
+use dimo_pdf::library::{LIBRARY_FILE_NAME, PDFIUM_PATH_ENV};
 use dimo_pdf::tiles::{TILE_CONTENT_TYPE, Tile, TileConfig, TileError, TileKey, TileService};
 use tauri::http::{self, Method, StatusCode, header};
 use tauri::{Manager, Runtime, UriSchemeContext, UriSchemeResponder};
@@ -20,15 +21,43 @@ pub const SCHEME: &str = "dimo";
 /// Tiles are addressed by content hash and never change within an app version.
 const CACHE_CONTROL: &str = "private, max-age=31536000, immutable";
 
+/// Folder below the resource directory that holds the bundled PDFium on Windows and Linux.
+pub const PDFIUM_RESOURCE_DIR: &str = "pdfium";
+
+/// The PDFium library shipped with an installed app (R.13, ADR 0005), `None` in a source
+/// checkout. macOS keeps it in `Contents/Frameworks/` next to the executable's folder, where the
+/// bundle signs it; Windows and Linux in [`PDFIUM_RESOURCE_DIR`] below the resource directory
+/// (the folder of the executable on Windows, also for the portable zip). Only macOS looks next
+/// to the executable's folder, so a library in a neighbouring folder is never loaded elsewhere.
+pub fn bundled_pdfium(exe: Option<&Path>, resource_dir: Option<&Path>) -> Option<PathBuf> {
+    let frameworks = exe
+        .filter(|_| cfg!(target_os = "macos"))
+        .and_then(Path::parent)
+        .map(|dir| dir.join("../Frameworks").join(LIBRARY_FILE_NAME));
+    let resources = resource_dir.map(|dir| dir.join(PDFIUM_RESOURCE_DIR).join(LIBRARY_FILE_NAME));
+    [frameworks, resources]
+        .into_iter()
+        .flatten()
+        .find(|path| path.is_file())
+}
+
 /// The tile service of the app, or why it is missing (no PDFium library).
 pub struct TileState {
     service: Result<Arc<TileService>, String>,
 }
 
 impl TileState {
-    /// Loads PDFium and starts the tile service with its disk cache in `cache_dir`.
-    pub fn start(cache_dir: Option<PathBuf>) -> Self {
-        let service = PdfEngine::start()
+    /// Loads PDFium and starts the tile service with its disk cache in `cache_dir`. A set
+    /// `DIMO_PDFIUM_PATH` wins over the `bundled` library; without either the development default
+    /// in `vendor/pdfium/` is used (see `dimo_pdf::library`).
+    pub fn start(cache_dir: Option<PathBuf>, bundled: Option<PathBuf>) -> Self {
+        let engine = match bundled {
+            Some(path) if std::env::var_os(PDFIUM_PATH_ENV).is_none() => {
+                PdfEngine::start_with_library(&path)
+            }
+            _ => PdfEngine::start(),
+        };
+        let service = engine
             .map(|engine| {
                 let config = TileConfig {
                     disk_dir: cache_dir,
@@ -126,6 +155,41 @@ fn text(status: StatusCode, message: &str) -> http::Response<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bundled_pdfium_is_found_in_frameworks_or_resources() {
+        let dir = tempfile::tempdir().unwrap();
+        let exe = dir.path().join("MacOS").join("dimo");
+        let resources = dir.path().join("Resources");
+        assert_eq!(
+            bundled_pdfium(Some(&exe), Some(&resources)),
+            None,
+            "source checkout"
+        );
+
+        let in_resources = resources.join(PDFIUM_RESOURCE_DIR).join(LIBRARY_FILE_NAME);
+        std::fs::create_dir_all(in_resources.parent().unwrap()).unwrap();
+        std::fs::write(&in_resources, b"").unwrap();
+        assert_eq!(
+            bundled_pdfium(Some(&exe), Some(&resources)),
+            Some(in_resources),
+            "Windows and Linux"
+        );
+
+        let frameworks = dir.path().join("Frameworks");
+        std::fs::create_dir_all(&frameworks).unwrap();
+        std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
+        std::fs::write(frameworks.join(LIBRARY_FILE_NAME), b"").unwrap();
+        let found = bundled_pdfium(Some(&exe), Some(&resources)).unwrap();
+        assert!(found.is_file());
+        assert_eq!(
+            found.ends_with(Path::new("Frameworks").join(LIBRARY_FILE_NAME)),
+            cfg!(target_os = "macos"),
+            "macOS looks in Frameworks first, other platforms never: {}",
+            found.display()
+        );
+        assert_eq!(bundled_pdfium(None, None), None);
+    }
 
     #[test]
     fn tile_response_is_cacheable_png() {

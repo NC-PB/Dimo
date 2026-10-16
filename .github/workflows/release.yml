@@ -1,0 +1,246 @@
+# Release builds (R.13, D-04, D-08, D-10, D-11). On a version tag `v*` this workflow checks the
+# release gates, builds the installers on all three platforms and creates a DRAFT GitHub Release
+# with the files and SHA256SUMS.txt. The owner reviews the draft and publishes it by hand; the
+# workflow never publishes. A manual run (workflow_dispatch) builds and uploads the files as
+# workflow artifacts only, without a release.
+#
+# The full check.sh runs in ci.yml; the gates job waits for CI on the same commit and stops unless
+# every CI job passed. Smoke tests need a desktop session, so they do not run on the runners; the
+# owner's platform tests (R.14) cover the installed builds.
+# Actions are pinned like in ci.yml (full commit SHA, release at least 14 days old, rule 10).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+  CI: "true"
+
+jobs:
+  gates:
+    name: release gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      checks: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+
+      - name: Version in all manifests, and equal to the tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version=$(./scripts/check-version.sh "$GITHUB_REF_NAME")
+          else
+            version=$(./scripts/check-version.sh)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # ci.yml also runs for the tag push; wait until its jobs on this commit are finished.
+      - name: CI passed on this commit (check.sh on all platforms)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 100); do
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name | startswith("check (")
+                     or startswith("tolerance tables") or startswith("npm licenses"))]')
+            total=$(jq length <<<"$runs")
+            open=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+            bad=$(jq -r '.[] | select(.status == "completed"
+                    and (.conclusion != "success" and .conclusion != "skipped")) | .name' <<<"$runs")
+            if [[ -n "$bad" ]]; then
+              echo "CI failed on $GITHUB_SHA:"; echo "$bad"; exit 1
+            fi
+            if [[ "$total" -ge 5 && "$open" -eq 0 ]]; then
+              echo "CI green on $GITHUB_SHA ($total jobs)"; exit 0
+            fi
+            echo "waiting for CI: $total jobs found, $open running"
+            sleep 60
+          done
+          echo "CI did not finish in time" >&2
+          exit 1
+
+      - name: Tolerance tables verified (D-43)
+        run: DIMO_RELEASE=1 ./scripts/check-table-status.sh
+
+      - name: Dependencies at least 14 days old (rule 10)
+        run: ./scripts/check-lock-age.sh
+
+      - uses: taiki-e/install-action@dfae9bf3d6f6c6f20ef4ebb3486c01a51341ff12 # v2.87.18 (2026-09-22)
+        with:
+          tool: cargo-deny@0.20.2
+
+      - name: Licenses and advisories (cargo deny)
+        run: cargo deny check
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 (2026-07-14)
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: npm licenses
+        run: node scripts/check-npm-licenses.mjs
+
+  build:
+    name: build (${{ matrix.name }})
+    needs: gates
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Universal binary for Apple Silicon and Intel, macOS 12 or later (D-10).
+          - name: macos
+            os: macos-15
+            pdfium: mac-universal
+            config: tauri.release.macos.json
+            args: --target universal-apple-darwin
+            rust_targets: aarch64-apple-darwin x86_64-apple-darwin
+          # MSI with the WebView2 bootstrapper (D-11) and a portable zip.
+          - name: windows
+            os: windows-2025
+            pdfium: win-x64
+            config: tauri.release.windows.json
+            args: ""
+            rust_targets: ""
+          # Built on 22.04 so the AppImage and deb run on Ubuntu 22.04 and later (D-10).
+          - name: linux
+            os: ubuntu-22.04
+            pdfium: linux-x64
+            config: tauri.release.linux.json
+            args: ""
+            rust_targets: ""
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (2026-07-20)
+
+      - name: Install Tauri system packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential curl wget file patchelf libssl-dev libxdo-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      # rust-toolchain.toml pins the channel; the universal macOS build needs both targets.
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install
+          if [[ -n "${{ matrix.rust_targets }}" ]]; then
+            rustup target add ${{ matrix.rust_targets }}
+          fi
+          rustc --version
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 (2026-07-14)
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      - name: Stage PDFium and its licenses
+        run: ./scripts/stage-pdfium.sh "${{ matrix.pdfium }}"
+
+      - name: Build installers
+        working-directory: apps/desktop
+        run: pnpm tauri build --config "src-tauri/${{ matrix.config }}" ${{ matrix.args }}
+
+      - name: Collect files
+        env:
+          VERSION: ${{ needs.gates.outputs.version }}
+        run: |
+          mkdir -p dist-release
+          case "${{ matrix.name }}" in
+            macos)
+              cp target/universal-apple-darwin/release/bundle/dmg/*.dmg dist-release/
+              ;;
+            windows)
+              cp target/release/bundle/msi/*.msi dist-release/
+              # Portable build: the program with PDFium and the licenses next to it. The resource
+              # folder of a Windows program is its own folder, so the app finds pdfium/ there.
+              portable="Dimo_${VERSION}_x64_portable"
+              mkdir -p "$portable"
+              cp target/release/dimo-desktop.exe "$portable/Dimo.exe"
+              cp -R apps/desktop/src-tauri/bundle-staging/pdfium "$portable/"
+              cp -R apps/desktop/src-tauri/bundle-staging/licenses "$portable/"
+              cp LICENSE NOTICE "$portable/"
+              # D-11: the portable build needs the WebView2 runtime, which Windows 11 and updated
+              # Windows 10 already have.
+              printf '%s\r\n' \
+                "Dimo ${VERSION}, portable build for Windows 10 and 11 (x64)" \
+                "" \
+                "Start Dimo.exe. No installation and no administrator rights are needed." \
+                "Keep the folders pdfium and licenses next to Dimo.exe." \
+                "" \
+                "Dimo needs the Microsoft Edge WebView2 Runtime. Windows 11 and updated Windows 10" \
+                "have it. If Dimo does not start, install the Evergreen WebView2 Runtime from" \
+                "https://developer.microsoft.com/microsoft-edge/webview2/ or use the MSI installer," \
+                "which installs it when needed." > "$portable/README.txt"
+              7z a "dist-release/$portable.zip" "$portable" > /dev/null
+              ;;
+            linux)
+              cp target/release/bundle/appimage/*.AppImage dist-release/
+              cp target/release/bundle/deb/*.deb dist-release/
+              ;;
+          esac
+          ls -l dist-release
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (2026-04-10)
+        with:
+          name: dimo-${{ matrix.name }}
+          path: dist-release/
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: draft release
+    if: github.ref_type == 'tag'
+    needs: [gates, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1 (2026-03-11)
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: artifacts
+        run: |
+          sha256sum -- * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          prerelease=()
+          if [[ "$TAG" == *-* ]]; then
+            prerelease=(--prerelease)
+          fi
+          gh release create "$TAG" artifacts/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --draft "${prerelease[@]}" \
+            --title "Dimo ${TAG#v}" \
+            --notes "Draft created by the release workflow. Replace with the release notes before publishing."

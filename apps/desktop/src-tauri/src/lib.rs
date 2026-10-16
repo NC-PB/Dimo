@@ -173,7 +173,11 @@ pub fn run() -> tauri::Result<()> {
             // Tile cache in the user cache directory, never in the project (07 Data model).
             let cache_dir = dev::dev_folder("cache", app.path().app_cache_dir().ok())
                 .map(|dir| dir.join("tiles"));
-            app.manage(tiles::TileState::start(cache_dir));
+            let pdfium = tiles::bundled_pdfium(
+                std::env::current_exe().ok().as_deref(),
+                app.path().resource_dir().ok().as_deref(),
+            );
+            app.manage(tiles::TileState::start(cache_dir, pdfium));
             // Autosave of never saved projects in the app data directory (NFR-REL-01).
             let autosave_dir = dev::dev_folder("data", app.path().app_data_dir().ok())
                 .map(|dir| dir.join(AUTOSAVE_FOLDER));

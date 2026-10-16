@@ -33,3 +33,6 @@ apps/desktop/project.inlang/*
 
 # Agent worktrees
 .claude/worktrees/
+
+# PDFium staged for installer builds (scripts/stage-pdfium.sh)
+apps/desktop/src-tauri/bundle-staging/

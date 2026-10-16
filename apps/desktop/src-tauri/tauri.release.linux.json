@@ -1,0 +1,12 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "bundle": {
+    "targets": ["appimage", "deb"],
+    "resources": {
+      "bundle-staging/pdfium/": "pdfium/",
+      "bundle-staging/licenses/": "licenses/",
+      "../../../LICENSE": "licenses/LICENSE",
+      "../../../NOTICE": "licenses/NOTICE"
+    }
+  }
+}
