@@ -7,7 +7,10 @@ Auf der Zeichnung arbeitest du. Sie zeigt das Blatt in der Mitte, die Merkmalsta
 
 - **Titelleiste**: Speichern, Rückgängig und Wiederholen, der Name des Projekts mit "gespeichert"
   oder "nicht gespeichert", der Schalter hell oder dunkel und **Hilfe** (die Liste der
-  Tastenkürzel).
+  Tastenkürzel). Auf macOS ist sie zugleich die Titelleiste des Fensters: die Fensterknöpfe
+  sitzen links darin, du verschiebst das Fenster an einer freien Stelle der Leiste, und ein
+  Doppelklick zoomt das Fenster. Auf Windows und Linux behält das Fenster darüber den Rahmen des
+  Systems.
 - **Reiter**: **Datei** (Projektinfo, neu, öffnen mit den zuletzt geöffneten Projekten, speichern, speichern unter, schließen, Optionen, über DimoMark), **Start**
   (Ballons setzen und bearbeiten, Nummerierung, Allgemeintoleranz), **Zeichnung** (Drehung,
   Einheit, Maßstab, Zonenraster, Ansichten, Toleranzen, Projektinfo), **Überprüfen** (in dieser

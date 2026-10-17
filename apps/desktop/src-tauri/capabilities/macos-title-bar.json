@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "macos-title-bar",
+  "description": "macOS only: the window buttons sit in the app's title bar (T3.22), so the empty title bar area moves the window and a double click zooms it. Windows and Linux keep the native frame and do not get these permissions.",
+  "windows": ["main"],
+  "platforms": ["macOS"],
+  "permissions": ["core:window:allow-start-dragging", "core:window:allow-internal-toggle-maximize"]
+}

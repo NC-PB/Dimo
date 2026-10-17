@@ -6,7 +6,10 @@ The drawing is where you work. It shows the sheet in the middle, the characteris
 ## The window
 
 - **Title bar**: Save, Undo and Redo, the name of the project with "saved" or "not saved", the
-  light or dark switch and **Help** (the list of keyboard shortcuts).
+  light or dark switch and **Help** (the list of keyboard shortcuts). On macOS it is also the
+  window's title bar: the window buttons sit on its left, you move the window by dragging an
+  empty part of it, and a double click zooms the window. On Windows and Linux the window keeps
+  the frame of the system above it.
 - **Tabs**: **File** (project info, new, open with the recent projects, save, save as, close, options, about), **Home** (place and edit balloons,
   numbering, general tolerance), **Drawing** (rotation, unit, scale, zone grid, views,
   tolerances, project info), **Review** (a placeholder in this version), **Measure**

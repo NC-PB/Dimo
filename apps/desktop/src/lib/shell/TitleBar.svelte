@@ -3,14 +3,17 @@
   import { autosaveFailedText, autosaveLabel, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
   import { projectStore } from "$lib/stores/project.svelte";
+  import { isMacPlatform } from "$lib/shortcuts";
   import { settingsStore } from "$lib/stores/settings.svelte";
   import { effectiveTheme } from "$lib/theme/theme";
   import CommandButton from "./CommandButton.svelte";
+  import { titleBarFrame, watchFullScreen } from "./title-bar-frame";
 
   /**
    * Title bar inside the window (ADR 0007): brand mark, Save, Undo, Redo, the document name with
    * its saved state, the light/dark switch and help. Icon only buttons are limited to these
-   * well known actions; each has a tooltip and an accessible name (decision 26).
+   * well known actions; each has a tooltip and an accessible name (decision 26). On macOS it is
+   * also the window's title bar, with the window buttons on the left (T3.22).
    */
   const status = $derived(projectStore.status);
   const name = $derived(status?.file_name ?? m.untitled_project());
@@ -49,6 +52,19 @@
   );
   const dark = $derived(effectiveTheme(settingsStore.current.theme, systemDark) === "dark");
 
+  const mac = isMacPlatform();
+  let fullScreen = $state(false);
+  const frame = $derived(titleBarFrame(mac, fullScreen));
+
+  $effect(() => {
+    if (!mac) {
+      return;
+    }
+    return watchFullScreen((value) => {
+      fullScreen = value;
+    });
+  });
+
   $effect(() => {
     if (typeof window.matchMedia !== "function") {
       return;
@@ -64,7 +80,15 @@
   });
 </script>
 
-<header class="flex h-11 shrink-0 items-center gap-1 border-b border-border bg-surface px-3">
+<!-- "deep": empty areas and text move the window, buttons stay buttons (Tauri drag region). -->
+<header
+  class={[
+    "flex h-11 shrink-0 items-center gap-1 border-b border-border bg-surface px-3",
+    frame.windowButtons && "pl-[88px]",
+  ]}
+  data-tauri-drag-region={frame.drag ? "deep" : undefined}
+  data-testid="title-bar"
+>
   <div class="mr-2.5">
     <BrandMark />
   </div>
