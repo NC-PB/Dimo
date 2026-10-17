@@ -97,7 +97,7 @@ Plan: [R01.md](R01.md). Only tasks that have started are listed.
 | Task | State | Notes |
 |---|---|---|
 | R.4 Tolerance tables verified | done | Owner set `verified` in both tables and `checked_by_owner = true` in both vector files 2026-10-16; release gate passes |
-| R.13 Release workflow | in progress | `.github/workflows/release.yml` (gates, builds on macOS universal, Windows MSI and portable zip, Linux AppImage and deb on Ubuntu 22.04, draft release with SHA256SUMS), PDFium bundled (`scripts/stage-pdfium.sh`, `tauri.release.<os>.json`, `tiles::bundled_pdfium`). Local macOS release app loads PDFium from its Frameworks folder. Open: first workflow run, test tag |
+| R.13 Release workflow | done | `.github/workflows/release.yml`: gates (CI green on the commit, version equals tag, tables verified, dependency age, cargo deny, npm licenses), builds macOS universal DMG, Windows MSI and portable zip, Linux AppImage and deb (Ubuntu 22.04), draft release with SHA256SUMS. PDFium bundled (`scripts/stage-pdfium.sh`, `tauri.release.<os>.json`, `tiles::bundled_pdfium`). Test tag `v0.1.0-rc.2` gave a complete draft release 2026-10-17. Installers not yet run on Windows or Linux (R.14) |
 | R.10 Diagnostics and logs | review | File > About > Copy diagnostics (`diagnostics` command): version, platform, PDF engine, log file, settings with user and company name as set/empty, last 200 log lines; home folder, login, user and company name replaced. Log calls reviewed: paths, I/O errors, counters, Typst diagnostics, no drawing content. Owner: read one copied text from a release build |
 
 States: `todo`, `in progress`, `review` (waits for owner), `done`, `blocked` (reason in notes).
