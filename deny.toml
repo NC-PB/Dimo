@@ -26,6 +26,14 @@ ignore = [
   { id = "RUSTSEC-2026-0195", reason = "quick-xml via Typst citationberg, only CSL bibliography XML, never fed by DimoMark" },
   # Unmaintained notices, transitive through Typst, no fix upstream. Revisit on Typst updates.
   { id = "RUSTSEC-2025-0141", reason = "bincode via Typst syntect, no fix upstream, revisit on Typst updates" },
+  # zip 8.6 (dimo-io, rust_xlsxwriter): the three advisories of 2026-10-16 only concern
+  # ZipArchive::extract and ZipStreamReader, which unpack a whole archive to disk. DimoMark never
+  # calls them: it reads single entries of its own .dimo files and writes ZIP based exports. The
+  # fix (zip 9) is younger than 14 days (rule 10) and rust_xlsxwriter 0.99 still needs zip 8.
+  # Revisit when both allow zip 9.
+  { id = "RUSTSEC-2026-0367", reason = "zip extract() only (SUID bits), DimoMark never extracts archives to disk" },
+  { id = "RUSTSEC-2026-0368", reason = "zip extract() only (symlink targets), DimoMark never extracts archives to disk" },
+  { id = "RUSTSEC-2026-0369", reason = "zip extract() only (permissions through symlinks), DimoMark never extracts archives to disk" },
   { id = "RUSTSEC-2024-0320", reason = "yaml-rust via Typst syntect, no fix upstream, revisit on Typst updates" },
   { id = "RUSTSEC-2026-0206", reason = "rustybuzz via Typst layout and krilla, no fix upstream, revisit on Typst updates" },
   { id = "RUSTSEC-2026-0192", reason = "ttf-parser via Typst and krilla, no fix upstream, revisit on Typst updates" },
