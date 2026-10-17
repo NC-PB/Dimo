@@ -116,6 +116,31 @@ describe("title bar (ADR 0007)", () => {
       "true",
     );
   });
+
+  it.each([
+    ["MacIntel", "deep", true],
+    ["Win32", null, false],
+    ["Linux x86_64", null, false],
+  ])(
+    "on %s moves the window only where it is the window's title bar (T3.22)",
+    (platform, drag, room) => {
+      const original = Object.getOwnPropertyDescriptor(navigator, "platform");
+      Object.defineProperty(navigator, "platform", { value: platform, configurable: true });
+      try {
+        component = mount(TitleBar, { target });
+        flushSync();
+        const bar = target.querySelector("[data-testid=title-bar]");
+        expect(bar?.getAttribute("data-tauri-drag-region")).toBe(drag);
+        expect(bar?.classList.contains("pl-[88px]")).toBe(room);
+      } finally {
+        if (original) {
+          Object.defineProperty(navigator, "platform", original);
+        } else {
+          delete (navigator as { platform?: string }).platform;
+        }
+      }
+    },
+  );
 });
 
 describe("placing bar (M3 decision 19)", () => {
