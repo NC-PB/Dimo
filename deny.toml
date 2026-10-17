@@ -43,6 +43,10 @@ ignore = [
 ]
 
 [licenses]
+# Data inside crates that cargo deny cannot see (T3.23, listed in THIRD_PARTY_LICENSES): typst-assets
+# ships HTML and MathML tables under CC-BY-4.0 and the W3C Document License. Accepted by the owner
+# 2026-10-17. Its fonts feature (GPL and OFL fonts) stays off; scripts/third-party-licenses.mjs
+# fails if it is turned on.
 confidence-threshold = 0.8
 allow = [
   "MIT",
