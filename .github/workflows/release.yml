@@ -190,9 +190,9 @@ jobs:
                 "Keep the folders pdfium and licenses next to DimoMark.exe." \
                 "" \
                 "DimoMark needs the Microsoft Edge WebView2 Runtime. Windows 11 and updated Windows 10" \
-                "have it. If DimoMark does not start, install the Evergreen WebView2 Runtime from" \
-                "https://developer.microsoft.com/microsoft-edge/webview2/ or use the MSI installer," \
-                "which installs it when needed." > "$portable/README.txt"
+                "have it. Without it DimoMark shows a message and closes. Then install the" \
+                "Evergreen WebView2 Runtime from https://developer.microsoft.com/microsoft-edge/webview2/" \
+                "or use the MSI installer, which installs it when needed." > "$portable/README.txt"
               7z a "dist-release/$portable.zip" "$portable" > /dev/null
               ;;
             linux)

@@ -349,4 +349,37 @@ mod tests {
             PathBuf::from("/a/part.dimo.journal.stale")
         );
     }
+
+    /// NFR-PORT-02: journal and lock next to a project on a network share or a drive, with
+    /// spaces and umlauts; the UNC form stays as it is (no `\\?\UNC\`, no drive letter).
+    #[cfg(windows)]
+    #[test]
+    fn journal_and_lock_of_unc_and_drive_projects() {
+        use crate::lock::lock_path;
+        for (project, journal, lock) in [
+            (
+                r"\\server\share\Zeichnungen Müller\Prüfteil 1.dimo",
+                r"\\server\share\Zeichnungen Müller\Prüfteil 1.dimo.journal",
+                r"\\server\share\Zeichnungen Müller\Prüfteil 1.dimo.lock",
+            ),
+            (
+                r"\\server\share\part.dimo",
+                r"\\server\share\part.dimo.journal",
+                r"\\server\share\part.dimo.lock",
+            ),
+            (
+                r"Z:\Qualität\Prüfteil 1.dimo",
+                r"Z:\Qualität\Prüfteil 1.dimo.journal",
+                r"Z:\Qualität\Prüfteil 1.dimo.lock",
+            ),
+        ] {
+            let project = Path::new(project);
+            assert_eq!(journal_path(project).as_os_str(), journal);
+            assert_eq!(lock_path(project).as_os_str(), lock);
+            assert_eq!(
+                stale_path(&journal_path(project)).as_os_str(),
+                format!("{journal}.stale").as_str()
+            );
+        }
+    }
 }

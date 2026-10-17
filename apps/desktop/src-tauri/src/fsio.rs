@@ -218,6 +218,43 @@ mod tests {
         names
     }
 
+    /// NFR-PORT-02: atomic writes in folders with spaces, umlauts and a path over 260
+    /// characters (the Windows limit without the verbatim prefix).
+    #[test]
+    fn atomic_writes_work_in_folders_with_umlauts_and_long_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut folder = dir.path().join("Zeichnungen Müller");
+        // Windows counts the limit in UTF-16 units, not bytes.
+        let units = |p: &Path| p.to_string_lossy().encode_utf16().count();
+        while units(&folder) < 280 {
+            folder.push("Prüfteile der Baugruppe Größe 1");
+        }
+        std::fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("Prüfteil 1.json");
+        assert!(units(&path) > 260);
+        save_json(&path, &["ä", "ö", "ü"]).unwrap();
+        let read: Vec<String> =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(read, ["ä", "ö", "ü"]);
+        assert_eq!(names_in(&folder), ["Prüfteil 1.json"]);
+    }
+
+    /// The temporary file of an atomic write stays in the folder of the target, also on a
+    /// network share: no drive letter is assumed.
+    #[cfg(windows)]
+    #[test]
+    fn temporary_files_of_unc_targets_stay_on_the_share() {
+        let temporary = temporary_path(Path::new(r"\\server\share\Prüfteil 1.dimo")).unwrap();
+        assert_eq!(temporary.parent(), Some(Path::new(r"\\server\share\")));
+        let name = temporary
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        assert!(name.starts_with(".Prüfteil 1.dimo."), "{name}");
+        assert!(name.ends_with(".tmp"), "{name}");
+    }
+
     #[test]
     fn atomic_writes_replace_whole_files_and_leave_no_temporary_files() {
         let dir = tempfile::tempdir().unwrap();

@@ -54,7 +54,8 @@ warning sign if the journal could not be written.
 - A saved project keeps its journal next to the file: `part.dimo.journal`. Saving merges it into
   the project file and deletes it.
 - A project that was never saved keeps its journal in the DimoMark data folder (for example
-  `~/Library/Application Support/io.github.nc-pb.dimo/autosave` on macOS).
+  `~/Library/Application Support/io.github.nc-pb.dimo/autosave` on macOS,
+  `%APPDATA%\io.github.nc-pb.dimo\autosave` on Windows).
 
 If DimoMark or the computer stops unexpectedly, nothing older than 30 seconds is lost:
 
@@ -70,3 +71,25 @@ While a project is open, DimoMark keeps a lock file next to it (`part.dimo.lock`
 window that tries to open the same project gets a message naming the user who has it open. The
 lock ends when DimoMark closes, also after a crash, so a leftover lock file never blocks you. The lock
 only coordinates DimoMark windows; other programs can still change the file.
+
+## Windows: WebView2, paths and network drives
+
+DimoMark draws its window with the Microsoft Edge WebView2 Runtime. Windows 11 and updated
+Windows 10 have it. The MSI installer installs it when it is missing; the portable zip cannot. If
+the runtime is missing, the portable DimoMark shows a message with the download page
+(`https://developer.microsoft.com/microsoft-edge/webview2/`) and closes. Install the Evergreen
+WebView2 Runtime from there, or use the MSI, and start DimoMark again. The portable build needs
+no administrator rights; keep the folders `pdfium` and `licenses` next to `DimoMark.exe`.
+
+- **Names**: file and folder names may contain spaces and umlauts, for example
+  `Zeichnungen Müller\Prüfteil 1.dimo`.
+- **Long paths**: DimoMark opens, saves and exports projects whose path is longer than 260
+  characters. The Windows file dialog and the program that opens an exported file may refuse such
+  paths unless "Enable Win32 long paths" is switched on in Windows (an administrator setting).
+  If that happens, choose a shorter folder.
+- **Network drives**: projects on a network drive open and save like local ones, through a drive
+  letter (`Z:\Projekte`) or a network path (`\\server\share\Projekte`). The recent projects
+  list shows the path as you chose it. The lock file and the journal are written next to the
+  project, so you need the right to create files in that folder. If the connection drops,
+  autosave and saving fail with a message and your work stays in the open window: save again when
+  the drive is back, or use **Save as** to save on your own computer.

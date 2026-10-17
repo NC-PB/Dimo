@@ -68,11 +68,12 @@ impl Stored for RecentList {
     }
 }
 
-/// `path` made absolute and, if it exists, with links resolved, so one file has one entry.
+/// `path` made absolute, spelled as the user chose it (NFR-PORT-02). Not `canonicalize`: on
+/// Windows it returns `\\?\C:\...` and turns a mapped drive `Z:\...` into
+/// `\\?\UNC\server\share\...`, which the list would then show. [`same_entry`] resolves links
+/// and drive mappings, so one file still has one entry.
 fn absolute(path: &Path) -> PathBuf {
-    path.canonicalize()
-        .or_else(|_| std::path::absolute(path))
-        .unwrap_or_else(|_| path.to_path_buf())
+    std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf())
 }
 
 fn same_entry(a: &Path, b: &Path) -> bool {
@@ -237,6 +238,49 @@ mod tests {
         let path = dir.join(name);
         std::fs::write(&path, b"x").unwrap();
         path.canonicalize().unwrap()
+    }
+
+    /// NFR-PORT-02: entries keep the spelling of the user, in folders with spaces and umlauts,
+    /// never the verbatim form `\\?\C:\...` of `canonicalize` on Windows.
+    #[test]
+    fn entries_keep_the_path_as_chosen() {
+        let dir = tempfile::tempdir().unwrap();
+        let folder = dir.path().join("Zeichnungen Müller");
+        std::fs::create_dir_all(&folder).unwrap();
+        let file = folder.join("Prüfteil 1.dimo");
+        std::fs::write(&file, b"x").unwrap();
+        let mut list = RecentList::default();
+        list.add(&file);
+        assert_eq!(list.projects, std::slice::from_ref(&file));
+        let entry = &list.entries()[0];
+        assert!(!entry.path.starts_with(r"\\?\"), "{}", entry.path);
+        assert_eq!(entry.path, file.to_string_lossy());
+        assert_eq!(entry.name, "Prüfteil 1.dimo");
+        assert_eq!(entry.folder, folder.to_string_lossy());
+        assert!(entry.exists);
+        // The same file in its resolved spelling is still one entry, now in that spelling.
+        let resolved = file.canonicalize().unwrap();
+        list.add(&resolved);
+        assert_eq!(list.projects, [resolved]);
+    }
+
+    /// Network shares: a UNC path is kept as written and found by that spelling. Only the
+    /// list itself is tested: `exists` and `canonicalize` would ask the network (testing.md).
+    #[cfg(windows)]
+    #[test]
+    fn unc_paths_are_kept_as_written() {
+        let path = Path::new(r"\\nas.invalid\Qualität\Kunde A\Prüfteil 1.dimo");
+        let mut list = RecentList::default();
+        list.add(path);
+        assert_eq!(list.projects, [path.to_path_buf()]);
+        assert_eq!(
+            list.find(r"\\nas.invalid\Qualität\Kunde A\Prüfteil 1.dimo"),
+            Some(&path.to_path_buf())
+        );
+        assert_eq!(
+            path.parent(),
+            Some(Path::new(r"\\nas.invalid\Qualität\Kunde A"))
+        );
     }
 
     #[test]
