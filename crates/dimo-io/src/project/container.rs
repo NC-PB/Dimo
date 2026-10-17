@@ -371,7 +371,13 @@ pub(crate) fn write_atomic(path: &Path, data: &[u8]) -> Result<(), ProjectError>
     let mut temp = tempfile::NamedTempFile::new_in(dir).map_err(io)?;
     temp.write_all(data).map_err(io)?;
     temp.as_file().sync_all().map_err(io)?;
-    temp.persist(path).map_err(|e| io(e.error))?;
+    // `std::fs::rename`, not `persist`: on Windows the standard library also handles paths
+    // over 260 characters, `persist` does not (R.12, NFR-PORT-02). A failed rename leaves the
+    // temporary file to the drop of `temp`, which removes it.
+    let temp = temp.into_temp_path();
+    std::fs::rename(&temp, path).map_err(io)?;
+    // The file now lives at `path`; nothing is left to remove.
+    let _ = temp.keep();
     Ok(())
 }
 
