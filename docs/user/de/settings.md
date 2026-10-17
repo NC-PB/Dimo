@@ -131,3 +131,39 @@ Inhalt von Zeichnungen oder Projekten, und nichts wird verschickt. Erreicht sie 
 Zwischenablage: die Version von DimoMark, das Betriebssystem, deine Optionen und die letzten 200 Zeilen
 der Protokolldatei. Dein Name, der Firmenname und dein Benutzerordner werden ersetzt (`<user>`,
 `<company>`, `~`). Nichts wird gesendet; füge den Text dort ein, wo du den Fehler meldest.
+
+## Nach Update suchen
+
+DimoMark sucht nie von sich aus nach Updates. **Nach Update suchen** in **Über DimoMark** fragt
+GitHub einmal nach der neuesten veröffentlichten Version, nur wenn du darauf klickst. Die Anfrage
+geht an `api.github.com` und enthält nur, was die Anfrage selbst braucht: die Version von DimoMark
+als Programmname (`DimoMark/0.1.0`). Nichts wird heruntergeladen oder installiert.
+
+- Eine neuere Version: DimoMark zeigt ihre Nummer, und **Release-Seite öffnen** öffnet die Seite in
+  deinem Browser. Lade sie herunter und installiere sie selbst, wie beim ersten Mal.
+- Dieselbe Version: „Du hast die neueste Version“.
+- Keine Internetverbindung, oder GitHub ist nicht erreichbar: eine Meldung, sonst passiert nichts.
+
+DimoMark verwendet einen Proxyserver, wenn eine der üblichen Umgebungsvariablen gesetzt ist
+(`ALL_PROXY`, `HTTPS_PROXY`, `HTTP_PROXY`, auch kleingeschrieben; `NO_PROXY` nennt Hosts ohne
+Proxy). In einem Netzwerk, das HTTPS mit einem eigenen Zertifikat prüft, schlägt die Suche fehl:
+DimoMark vertraut nur den eingebauten Stammzertifikaten.
+
+### Die Suche für eine Organisation abschalten
+
+Ein Administrator kann die Schaltfläche für alle Benutzer eines Computers mit einer Richtliniendatei
+ausblenden:
+
+- macOS: `/Library/Application Support/DimoMark/policy.json`
+- Windows: `%ProgramData%\DimoMark\policy.json` (meist `C:\ProgramData\DimoMark\policy.json`)
+- Linux: `/etc/dimomark/policy.json`
+
+Die Datei enthält:
+
+```json
+{ "update_check": false }
+```
+
+`true` oder eine Datei ohne `update_check` zeigt die Schaltfläche. Eine Datei, die kein gültiges
+JSON ist, blendet die Schaltfläche ebenfalls aus, und der Grund steht in der Protokolldatei.
+DimoMark liest die Datei, wenn **Über DimoMark** geöffnet wird, und noch einmal vor der Anfrage.

@@ -37,6 +37,8 @@ png = { version = "=0.18.1" }
 miniz_oxide = { version = "=0.8.9" }
 # Property tests (T1.1). No fork or timeout support, keeps the dependency tree small.
 proptest = { version = "=1.11.0", default-features = false, features = ["std"] }
+# Version comparison of the update check (R.9). Already in the lock through the build tools.
+semver = { version = "=1.0.28" }
 sha2 = { version = "=0.10.9" }
 tempfile = { version = "=3.27.0" }
 # Characteristic list export (T1.4). csv: RFC 4180 writer. rust_xlsxwriter: new workbooks only.
@@ -72,6 +74,10 @@ tracing = { version = "=0.1.44" }
 windows-sys = { version = "=0.61.2", default-features = false }
 # Project container (T1.3). Reads stored and deflated entries, writes stored only (deterministic).
 zip = { version = "=8.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+# The one HTTPS request of the update check (R.9, ADR 0008), only dimo-desktop uses it. rustls
+# with ring and the built in Mozilla roots: no OpenSSL, no gzip, no JSON feature (serde_json is
+# used directly). Adds 11 crates to the lock (and windows-sys 0.52 for ring on Windows).
+ureq = { version = "=3.4.2", default-features = false, features = ["rustls"] }
 # Stable IDs of the domain model (FR-BAL-09). No generator features: IDs come from a provider.
 uuid = { version = "=1.26.1", default-features = false, features = ["std", "serde"] }
 

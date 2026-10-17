@@ -106,6 +106,7 @@ const LICENSES = [
   ["MIT-0", "MIT No Attribution"],
   ["CC0-1.0", "Creative Commons Zero v1.0 Universal"],
   ["MPL-2.0", "Mozilla Public License 2.0"],
+  ["CDLA-Permissive-2.0", "Community Data License Agreement Permissive 2.0"],
 ];
 const LICENSE_NAME = new Map(LICENSES);
 const LICENSE_RANK = new Map(LICENSES.map(([id], i) => [id, i]));
@@ -122,6 +123,10 @@ const DETECT = [
     (t) => /UNICODE, INC\. LICENSE AGREEMENT - DATA FILES AND SOFTWARE/i.test(t),
   ],
   ["CC0-1.0", (t) => /CC0 1\.0 Universal/i.test(t)],
+  [
+    "CDLA-Permissive-2.0",
+    (t) => /Community Data License Agreement - Permissive - Version 2\.0/i.test(t),
+  ],
   [
     "MIT-0",
     (t) =>
