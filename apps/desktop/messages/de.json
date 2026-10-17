@@ -780,7 +780,7 @@
   "about_copy": "Kopieren",
   "about_copy_aria": "Text kopieren: {name}",
   "about_third_party": "Open-Source-Bibliotheken",
-  "about_third_party_text": "DimoMark ist mit den Open-Source-Bibliotheken unten gebaut: den Rust-Crates des Programms, den Paketen der Benutzeroberfläche und der PDF-Bibliothek PDFium. Die Liste zeigt jede mit ihrem Copyright-Hinweis und dem vollständigen Text ihrer Lizenz. Dieselbe Liste liegt jedem Installationsprogramm als Datei THIRD_PARTY_LICENSES bei.",
+  "about_third_party_text": "DimoMark ist mit den Open-Source-Bibliotheken unten gebaut: den Rust-Crates des Programms, den Paketen der Benutzeroberfläche, der PDF-Bibliothek PDFium und, im Linux-AppImage, den mitgebrachten Systembibliotheken. Die Liste zeigt jede mit ihrem Copyright-Hinweis und dem vollständigen Text ihrer Lizenz. Dieselbe Liste liegt jedem Installationsprogramm als Datei THIRD_PARTY_LICENSES bei.",
   "about_diagnostics": "Diagnose",
   "about_diagnostics_text": "Für eine Fehlermeldung: kopiert die Version von DimoMark, das Betriebssystem, deine Einstellungen und die letzten Zeilen der Protokolldatei. Inhalte von Zeichnungen oder Projekten sind nie dabei. Dein Name, der Firmenname und dein Benutzerordner werden ersetzt. Dateinamen in den Protokollzeilen bleiben stehen, damit sich ein Problem mit einer Datei nachvollziehen lässt. Nichts wird gesendet; füge den Text dort ein, wo du den Fehler meldest.",
   "about_diagnostics_copy": "Diagnose kopieren",

@@ -1,0 +1,38 @@
+# License summary of each Ubuntu source package whose copyright file is not in the machine readable
+# Debian format (T3.23). Kept by hand from the copyright file; for the other packages the generator
+# lists the license names the file gives. The copyright file itself is what applies.
+# Tab separated: source package, licenses of the libraries DimoMark ships from it.
+atk1.0	LGPL-2+
+avahi	LGPL-2+
+cairo	LGPL-2.1 or MPL-1.1
+elfutils	LGPL-3+ or GPL-2+
+gcc-12	GPL-3+ with GCC Runtime Library Exception 3.1 (libatomic)
+glib2.0	LGPL-2.1+
+gnutls28	LGPL-2.1+
+krb5	MIT (Kerberos) and other permissive licenses
+libdbusmenu	LGPL-2.1 or LGPL-3
+libffi	MIT
+libgcrypt20	LGPL-2.1+
+libjpeg-turbo	IJG, BSD-3-Clause and Zlib
+libselinux	public domain
+libtasn1-6	LGPL-2.1+
+libwebp	BSD-3-Clause (Apache-2.0 for some files)
+libxau	MIT (X11)
+libxcb	MIT (X11)
+libxcomposite	MIT (X11)
+libxcursor	MIT (X11)
+libxdamage	MIT (X11)
+libxdmcp	MIT (X11)
+libxext	MIT (X11)
+libxfixes	MIT (X11)
+libxi	MIT (X11)
+libxinerama	MIT (X11)
+libxkbcommon	MIT
+libxrandr	MIT (X11)
+libxrender	MIT (X11)
+libxslt	MIT
+orc	BSD-2-Clause
+pcre2	BSD-3-Clause
+pcre3	BSD-3-Clause
+pixman	MIT
+wayland	MIT

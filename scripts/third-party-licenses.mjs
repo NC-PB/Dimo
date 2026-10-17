@@ -12,6 +12,9 @@
 // - npm packages: the packages whose code Vite puts into the production bundle, read from the
 //   module list of a real build, plus the packages that generate code or CSS into it
 //   (EXTRA_NPM). Build tools and dev dependencies whose code does not ship are left out.
+// - The system libraries and tools the Linux AppImage bundles, from scripts/appimage/ (see the
+//   README there): the Debian copyright file of each Ubuntu source package, unchanged, and the
+//   texts of /usr/share/common-licenses/ they refer to, from scripts/license-texts/.
 // - PDFium (scripts/pdfium.toml) and the code it bundles, from vendor/pdfium/<target>/
 //   (./scripts/fetch-pdfium.sh). The archives differ per platform only in line ends, encoding
 //   and comment markers; the texts are normalized, and every fetched target must give the same.
@@ -43,6 +46,32 @@ const DESKTOP = join(ROOT, "apps", "desktop");
 const OUTPUT = join(ROOT, "THIRD_PARTY_LICENSES");
 const STANDARD_TEXTS = join(ROOT, "scripts", "license-texts");
 const PDFIUM_VENDOR = join(ROOT, "vendor", "pdfium");
+const APPIMAGE = join(ROOT, "scripts", "appimage");
+
+/**
+ * Files in /usr/share/common-licenses/ of Debian and Ubuntu, by the SPDX id of their text in
+ * scripts/license-texts/. `GPL` and `LGPL` are links to version 3 there; some copyright files
+ * write `GPL-2.0` or `GPL-3.0` for the same files.
+ */
+const COMMON_LICENSES = {
+  "Apache-2.0": "Apache-2.0",
+  Artistic: "Artistic-1.0-Perl",
+  "CC0-1.0": "CC0-1.0",
+  "GFDL-1.2": "GFDL-1.2-only",
+  "GFDL-1.3": "GFDL-1.3-only",
+  GPL: "GPL-3.0-only",
+  "GPL-1": "GPL-1.0-only",
+  "GPL-2": "GPL-2.0-only",
+  "GPL-2.0": "GPL-2.0-only",
+  "GPL-3": "GPL-3.0-only",
+  "GPL-3.0": "GPL-3.0-only",
+  LGPL: "LGPL-3.0-only",
+  "LGPL-2": "LGPL-2.0-only",
+  "LGPL-2.1": "LGPL-2.1-only",
+  "LGPL-3": "LGPL-3.0-only",
+  "MPL-1.1": "MPL-1.1",
+  "MPL-2.0": "MPL-2.0",
+};
 
 /** Rust targets of the release builds (.github/workflows/release.yml). */
 const RUST_TARGETS = [
@@ -504,13 +533,130 @@ function pdfium() {
   return { version, release: toml.match(/^release\s*=\s*"([^"]+)"/m)[1], parts: result };
 }
 
+/** Data lines of a tab separated file in scripts/appimage/, without `#` comments. */
+function tsv(name) {
+  return readText(join(APPIMAGE, name))
+    .split("\n")
+    .filter((line) => line !== "" && !line.startsWith("#"))
+    .map((line) => line.split("\t"));
+}
+
+/** License names of a Debian copyright file in the machine readable format, or null. */
+function dep5Licenses(text) {
+  // Two GStreamer files put a free text note before the Format line.
+  if (!/^Format:.*copyright-format/m.test(text)) return null;
+  const names = new Set();
+  for (const stanza of text.split(/\n\s*\n/)) {
+    if (!/^Files:/m.test(stanza)) continue;
+    const license = stanza.match(/^License:[ \t]*(.*)$/m);
+    if (license && license[1].trim() !== "") names.add(license[1].trim());
+  }
+  return [...names].sort(compare).join("; ");
+}
+
+/**
+ * The Linux AppImage (T3.23): the Ubuntu source packages of the bundled system libraries with
+ * their binary packages, files and Debian copyright file, the tools of the AppImage itself, and
+ * the common license texts they refer to.
+ */
+function appimage() {
+  const sources = new Map();
+  const files = new Set();
+  const fail = (why) => {
+    throw new Error(`scripts/appimage/libs.txt: ${why}`);
+  };
+  for (const row of tsv("libs.txt")) {
+    const [file, pkg, version, source, sourceVersion] = row;
+    if (row.length !== 5 || row.some((field) => field === "" || field === "?")) {
+      fail(`incomplete line for ${file}`);
+    }
+    if (files.has(file)) fail(`${file} is listed twice`);
+    files.add(file);
+    if (!sources.has(source)) {
+      sources.set(source, { source, sourceVersion, packages: new Map(), files: [] });
+    }
+    const s = sources.get(source);
+    if (s.sourceVersion !== sourceVersion) fail(`two versions of the source package ${source}`);
+    if ((s.packages.get(pkg) ?? version) !== version) fail(`two versions of the package ${pkg}`);
+    s.packages.set(pkg, version);
+    s.files.push(file);
+  }
+  const summaries = new Map(tsv("sources.tsv"));
+  const copyrightDir = join(APPIMAGE, "copyright");
+  for (const file of readdirSync(copyrightDir)) {
+    if (!sources.has(file)) throw new Error(`scripts/appimage/copyright/${file} is not bundled`);
+  }
+  for (const s of sources.values()) {
+    const path = join(copyrightDir, s.source);
+    if (!existsSync(path)) throw new Error(`scripts/appimage/copyright/${s.source} is missing`);
+    s.copyright = readText(path);
+    const dep5 = dep5Licenses(s.copyright);
+    if (dep5 && summaries.has(s.source)) {
+      throw new Error(
+        `scripts/appimage/sources.tsv: ${s.source} needs no line, its file names its licenses`,
+      );
+    }
+    s.licenses = dep5 || summaries.get(s.source);
+    if (!s.licenses) {
+      throw new Error(`scripts/appimage/sources.tsv: add the license summary of ${s.source}`);
+    }
+  }
+  for (const source of summaries.keys()) {
+    if (!sources.has(source))
+      throw new Error(`scripts/appimage/sources.tsv: ${source} is not bundled`);
+  }
+  const tools = tsv("other.tsv").map(([name, part, license, textFile, copyright, source]) => ({
+    name,
+    part,
+    license,
+    copyright: copyright === "-" ? null : copyright,
+    source,
+    text: textFile.startsWith("other/") ? readText(join(APPIMAGE, textFile)) : null,
+    common: textFile.startsWith("other/") ? null : textFile,
+  }));
+  // Common license texts: by SPDX id, with the names the copyright files use for it.
+  const common = new Map();
+  const use = (id, name) => {
+    if (!common.has(id)) common.set(id, new Set());
+    common.get(id).add(name);
+  };
+  for (const s of sources.values()) {
+    for (const [, name] of s.copyright.matchAll(
+      /\/usr\/share\/common-licenses\/([A-Za-z0-9.+-]*[A-Za-z0-9+])/g,
+    )) {
+      if (!COMMON_LICENSES[name]) {
+        throw new Error(
+          `${s.source}: unknown /usr/share/common-licenses/${name}, add it to COMMON_LICENSES`,
+        );
+      }
+      // Debian has no GPL-2.0 or GPL-3.0 file; some copyright files still write it so.
+      use(
+        COMMON_LICENSES[name],
+        /\.0$/.test(name)
+          ? `${name} (as some copyright files write it)`
+          : `/usr/share/common-licenses/${name}`,
+      );
+    }
+  }
+  for (const t of tools) if (t.common) use(t.common, t.name);
+  return {
+    sources: [...sources.values()].sort((a, b) => compare(a.source, b.source)),
+    tools,
+    common: [...common.keys()].sort(compare).map((id) => ({
+      id,
+      names: [...common.get(id)].sort(compare),
+      text: standardText(id, "scripts/appimage"),
+    })),
+  };
+}
+
 // ---------------------------------------------------------------------------------------------
 // Output
 
 const RULE = "=".repeat(80);
 const THIN = "-".repeat(80);
 
-function render(components, pdf) {
+function render(components, pdf, linux) {
   // Group: license id -> distinct texts -> components.
   const groups = new Map();
   for (const c of components) {
@@ -542,6 +688,8 @@ function render(components, pdf) {
     `- the Rust standard library ${std.version} and ${rust} Rust crates in the program (all platforms)`,
     `- ${npm} npm packages in the user interface`,
     `- PDFium ${pdf.version} and the code it bundles`,
+    `- in the Linux AppImage only: ${linux.sources.length} Ubuntu 22.04 source packages of system`,
+    "  libraries and the tools that make up the AppImage",
     "",
     "Components that offer a choice of licenses are listed under the license DimoMark uses.",
     "Copyright notices are taken from the license files of each component and listed with it;",
@@ -604,6 +752,45 @@ function render(components, pdf) {
   for (const part of pdf.parts) {
     out.push("", THIN, part.file, THIN, part.text);
   }
+
+  out.push(
+    "",
+    "",
+    RULE,
+    "Linux AppImage: bundled system libraries",
+    RULE,
+    "",
+    "The AppImage for Linux brings the system libraries below with it, taken from the Ubuntu",
+    "22.04 packages it is built on. The macOS and Windows builds and the Linux .deb package do",
+    "not contain them. For each Ubuntu source package: its version, the binary packages and",
+    "files DimoMark takes from it, the licenses its copyright file names, and the Debian",
+    "copyright file itself, unchanged except for line ends and trailing spaces. The copyright",
+    "file is what applies. The texts it refers to in /usr/share/common-licenses/ follow at the",
+    "end of this part. The source code of each package is available from Ubuntu at the address",
+    "given.",
+  );
+  for (const s of linux.sources) {
+    out.push("", THIN, `* ${s.source} ${s.sourceVersion} (Ubuntu source package)`);
+    const packages = [...s.packages].sort(([a], [b]) => compare(a, b));
+    out.push(`    Packages: ${packages.map(([p, v]) => `${p} ${v}`).join(", ")}`);
+    out.push(`    Licenses: ${s.licenses}`);
+    out.push("    Files:", ...s.files.sort(compare).map((f) => `      ${f}`));
+    out.push(
+      `    Source code: https://launchpad.net/ubuntu/+source/${s.source}/${s.sourceVersion}`,
+    );
+    out.push(THIN, s.copyright);
+  }
+  out.push("", "", RULE, "Linux AppImage: the tools that make up the AppImage", RULE);
+  for (const t of linux.tools) {
+    out.push("", THIN, `* ${t.name} (${t.license})`, `    ${t.part}`);
+    if (t.copyright) out.push(`    ${t.copyright}`);
+    out.push(`    Source code: ${t.source}`);
+    out.push(THIN, t.text ?? `The text of ${t.common} follows below.`);
+  }
+  out.push("", "", RULE, "Linux AppImage: license texts referred to above", RULE);
+  for (const c of linux.common) {
+    out.push("", THIN, `${c.id}: ${c.names.join(", ")}`, THIN, c.text);
+  }
   return out.join("\n") + "\n";
 }
 
@@ -611,8 +798,9 @@ function render(components, pdf) {
 
 const check = process.argv.includes("--check");
 const pdf = pdfium();
+const linux = appimage();
 const components = [rustStd(), ...rustCrates(), ...(await npmPackages())];
-const text = render(components, pdf);
+const text = render(components, pdf, linux);
 
 if (check) {
   const current = existsSync(OUTPUT) ? readFileSync(OUTPUT, "utf8").replace(/\r\n/g, "\n") : "";

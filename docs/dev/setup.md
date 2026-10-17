@@ -79,4 +79,6 @@ and downgrade any crate it lists with `cargo update -p <crate>@<version> --preci
 
 After any change to `Cargo.lock`, `pnpm-lock.yaml`, `rust-toolchain.toml` or `scripts/pdfium.toml`
 run `node scripts/third-party-licenses.mjs` (needs `pnpm install` and a fetched PDFium) and commit
-the new `THIRD_PARTY_LICENSES` (T3.23); `check.sh` fails until then.
+the new `THIRD_PARTY_LICENSES` (T3.23); `check.sh` fails until then. The system libraries of the
+Linux AppImage come from `scripts/appimage/`, which the release job checks against the built
+AppImage; see `scripts/appimage/README.md` for updating it.

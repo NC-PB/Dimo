@@ -104,6 +104,9 @@ English.
 Under **Open source libraries** follows the list of all other parts DimoMark is built with: the Rust
 crates of the program, the packages of the user interface and the PDF library PDFium. Each is listed
 with its version and copyright notice, grouped by license, and each license text is shown once.
+The last part lists the system libraries that the Linux AppImage brings with it (GTK, WebKitGTK and
+others from Ubuntu 22.04), each with its Debian copyright file; the other builds do not contain
+them.
 **Copy** puts the whole list on the clipboard. The same list comes with every installer as the file
 `THIRD_PARTY_LICENSES` in the `licenses` folder of the installed app; the portable build has it next
 to `DimoMark.exe`.
