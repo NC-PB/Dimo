@@ -4,10 +4,13 @@
  * of the icon set (M3 decision 29, T3.16 acceptance; SIL OFL 1.1 condition).
  */
 import { flushSync, mount, unmount } from "svelte";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { BUNDLED, DIMO_LICENSE, DIMO_NOTICE } from "./about";
 import AboutPane from "./shell/AboutPane.svelte";
 import packageJson from "../../package.json";
+import cargoLock from "../../../../Cargo.lock?raw";
+import pdfiumToml from "../../../../scripts/pdfium.toml?raw";
+import THIRD_PARTY_LICENSES from "../../../../THIRD_PARTY_LICENSES?raw";
 
 /** Every font file in data/fonts, by file name. */
 const FONT_FILES = Object.keys(
@@ -111,6 +114,82 @@ describe("About licenses (M3 decision 29)", () => {
       expect(shown(asset.id), asset.id).toBe(asset.text);
       expect(target.textContent).toContain(asset.copyright);
     }
+  });
+});
+
+describe("Third party license list (T3.23)", () => {
+  /** The components the list names, as "name version". */
+  function listed(kind: "Rust crate" | "npm package"): string[] {
+    return [...THIRD_PARTY_LICENSES.matchAll(/^\* (\S+) (\S+) \((Rust crate|npm package)\)$/gm)]
+      .filter((match) => match[3] === kind)
+      .map((match) => `${match[1]} ${match[2]}`);
+  }
+
+  // A cheap guard next to `scripts/third-party-licenses.mjs --check` in check.sh: a changed
+  // dependency fails here too until the list is generated again.
+  it("lists Rust crates in the versions of Cargo.lock", () => {
+    const locked = new Set(
+      [...cargoLock.matchAll(/^name = "([^"]+)"\nversion = "([^"]+)"/gm)].map(
+        (match) => `${match[1]} ${match[2]}`,
+      ),
+    );
+    const crates = listed("Rust crate");
+    expect(crates.length).toBeGreaterThan(100);
+    for (const crate of crates) expect(locked, crate).toContain(crate);
+    for (const name of ["tauri", "typst", "pdfium-render", "rust_decimal"]) {
+      const version = [...locked].filter((entry) => entry.startsWith(`${name} `));
+      expect(version, name).toHaveLength(1);
+      expect(crates, name).toContain(version[0]);
+    }
+  });
+
+  it("lists the bundled npm packages in their pinned versions", () => {
+    const pinned: Record<string, string> = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
+    const packages = listed("npm package");
+    for (const name of [
+      "@lucide/svelte",
+      "@tanstack/svelte-table",
+      "@tanstack/virtual-core",
+      "@tauri-apps/api",
+      "@inlang/paraglide-js",
+      "bits-ui",
+      "svelte",
+      "tailwindcss",
+      "vite",
+    ]) {
+      expect(packages, name).toContain(`${name} ${pinned[name]}`);
+    }
+  });
+
+  it("includes PDFium in the pinned version with its bundled licenses", () => {
+    const version = /^version = "([^"]+)"/m.exec(pdfiumToml)?.[1];
+    expect(THIRD_PARTY_LICENSES).toContain(`PDFium ${version ?? "?"} (`);
+    expect(THIRD_PARTY_LICENSES).toContain("licenses/freetype.txt");
+  });
+
+  it("states the number of crates and packages it lists", () => {
+    const header =
+      /^- the Rust standard library \S+ and (\d+) Rust crates.*\n- (\d+) npm packages/m.exec(
+        THIRD_PARTY_LICENSES,
+      );
+    // A component under two licenses (AND) is listed in both groups.
+    expect(Number(header?.[1])).toBe(new Set(listed("Rust crate")).size);
+    expect(Number(header?.[2])).toBe(new Set(listed("npm package")).size);
+  });
+
+  it("shows the whole list on the About pane", async () => {
+    target = document.createElement("div");
+    document.body.append(target);
+    component = mount(AboutPane, { target });
+    flushSync();
+    await vi.waitFor(() =>
+      expect(target?.querySelector('[data-license="third-party"]')).not.toBeNull(),
+    );
+    const shown = target.querySelector<HTMLElement>('[data-license="third-party"]');
+    expect(shown?.textContent).toBe(THIRD_PARTY_LICENSES);
   });
 });
 

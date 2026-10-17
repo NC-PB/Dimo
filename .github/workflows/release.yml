@@ -180,7 +180,7 @@ jobs:
               cp target/release/dimo-desktop.exe "$portable/DimoMark.exe"
               cp -R apps/desktop/src-tauri/bundle-staging/pdfium "$portable/"
               cp -R apps/desktop/src-tauri/bundle-staging/licenses "$portable/"
-              cp LICENSE NOTICE "$portable/"
+              cp LICENSE NOTICE THIRD_PARTY_LICENSES "$portable/"
               # D-11: the portable build needs the WebView2 runtime, which Windows 11 and updated
               # Windows 10 already have.
               printf '%s\r\n' \

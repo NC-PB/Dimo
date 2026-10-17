@@ -1,14 +1,15 @@
 <script lang="ts">
   /**
    * File > About (M3 decision 29, T3.16): the DimoMark version, its Apache 2.0 license, the NOTICE
-   * file, and for every bundled font and icon set the copyright notice with the full license
-   * text. The texts are embedded in the app (`about.ts`), so they show without network. License
-   * texts are legal documents and stay in their original English.
+   * file, for every bundled font and icon set the copyright notice with the full license text,
+   * and the generated list of all other third party components (THIRD_PARTY_LICENSES, T3.23).
+   * The texts are embedded in the app (`about.ts`), so they show without network. License texts
+   * are legal documents and stay in their original English.
    *
    * "Copy diagnostics" (D-06, R.10) puts the text of the `diagnostics` command on the clipboard
    * for a bug report. Rust builds the text and leaves out personal data and drawing content.
    */
-  import { BUNDLED, DIMO_LICENSE, DIMO_NOTICE } from "$lib/about";
+  import { BUNDLED, DIMO_LICENSE, DIMO_NOTICE, loadThirdPartyLicenses } from "$lib/about";
   import { asCommandError, commandErrorMessage } from "$lib/errors";
   import { buildProfileLabel, m } from "$lib/i18n";
   import { icons } from "$lib/icons";
@@ -81,6 +82,15 @@
     }
     void loadDiagnostics();
   }
+
+  /** THIRD_PARTY_LICENSES, loaded when the pane opens (T3.23). */
+  let thirdParty = $state<string | null>(null);
+
+  $effect(() => {
+    void loadThirdPartyLicenses().then((text) => {
+      thirdParty = text;
+    });
+  });
 
   const boxClass = "flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-sm";
   const textClass =
@@ -179,5 +189,8 @@
       {m.about_third_party()}
     </h2>
     <p class="text-text-muted">{m.about_third_party_text()}</p>
+    {#if thirdParty !== null}
+      {@render licenseText("third-party", "THIRD_PARTY_LICENSES", thirdParty)}
+    {/if}
   </section>
 </div>

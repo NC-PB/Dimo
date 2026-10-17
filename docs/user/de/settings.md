@@ -104,8 +104,14 @@ schließt das Fenster.
 Dazu kommt jede Schrift und jeder Symbolsatz, den DimoMark mitbringt (Open Sans, Space Grotesk,
 JetBrains Mono und die Lucide-Symbole), mit Copyright-Hinweis und vollständigem Lizenztext. Die
 Texte sind Teil der App und erscheinen daher auch ohne Internetverbindung. Lizenztexte stehen im
-englischen Original. Die Lizenzen der übrigen Open-Source-Bibliotheken, mit denen DimoMark gebaut ist,
-stehen in der Datei `THIRD_PARTY_LICENSES`, die jeder Version beiliegt.
+englischen Original.
+
+Unter **Open-Source-Bibliotheken** folgt die Liste aller übrigen Bestandteile, mit denen DimoMark gebaut
+ist: die Rust-Crates des Programms, die Pakete der Benutzeroberfläche und die PDF-Bibliothek PDFium.
+Jeder steht mit Version und Copyright-Hinweis da, nach Lizenz gruppiert, und jeder Lizenztext
+erscheint einmal. **Kopieren** legt die ganze Liste in die Zwischenablage. Dieselbe Liste liegt jedem
+Installationsprogramm als Datei `THIRD_PARTY_LICENSES` bei, im Ordner `licenses` der installierten
+App; in der portablen Version liegt sie neben `DimoMark.exe`.
 
 ## Protokolldatei
 

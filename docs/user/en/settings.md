@@ -99,8 +99,14 @@ Each change in these windows applies at once and is one step of undo. **Close** 
 It also lists every font and icon set that comes with DimoMark (Open Sans, Space Grotesk, JetBrains
 Mono and the Lucide icons) with its copyright notice and full license text. The texts are part of
 the app, so they show without an internet connection. License texts are shown in their original
-English. The licenses of the other open source libraries DimoMark is built with are in the file
-`THIRD_PARTY_LICENSES` that comes with every release.
+English.
+
+Under **Open source libraries** follows the list of all other parts DimoMark is built with: the Rust
+crates of the program, the packages of the user interface and the PDF library PDFium. Each is listed
+with its version and copyright notice, grouped by license, and each license text is shown once.
+**Copy** puts the whole list on the clipboard. The same list comes with every installer as the file
+`THIRD_PARTY_LICENSES` in the `licenses` folder of the installed app; the portable build has it next
+to `DimoMark.exe`.
 
 ## Log file
 

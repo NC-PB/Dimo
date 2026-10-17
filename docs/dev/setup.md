@@ -76,3 +76,7 @@ Every dependency release must be at least 14 days old (AGENTS.md rule 10).
 pnpm enforces this itself (`minimumReleaseAge` in `pnpm-workspace.yaml`). Cargo cannot yet on
 stable, so after `cargo update` or adding a crate run `./scripts/check-lock-age.sh` (needs network)
 and downgrade any crate it lists with `cargo update -p <crate>@<version> --precise <older>`.
+
+After any change to `Cargo.lock`, `pnpm-lock.yaml`, `rust-toolchain.toml` or `scripts/pdfium.toml`
+run `node scripts/third-party-licenses.mjs` (needs `pnpm install` and a fetched PDFium) and commit
+the new `THIRD_PARTY_LICENSES` (T3.23); `check.sh` fails until then.
