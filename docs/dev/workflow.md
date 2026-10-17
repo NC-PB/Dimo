@@ -13,7 +13,7 @@
 `.github/workflows/ci.yml` runs on every push and pull request:
 
 - `check`: `./scripts/check.sh` on Ubuntu, macOS and Windows (fmt, clippy, tests, `cargo deny`,
-  frontend check, lint, npm licenses, tests).
+  frontend check, lint, npm licenses, tests, third party license list).
 - `npm-licenses`: `node scripts/check-npm-licenses.mjs`. The allow list mirrors `deny.toml`; the
   accepted build time exceptions are listed in the script and in the STATUS decision log.
 - `dco`: on pull requests, `./scripts/check-dco.sh <base> <head>` fails if a commit lacks

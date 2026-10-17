@@ -5,7 +5,8 @@
     "resources": {
       "bundle-staging/licenses/": "licenses/",
       "../../../LICENSE": "licenses/LICENSE",
-      "../../../NOTICE": "licenses/NOTICE"
+      "../../../NOTICE": "licenses/NOTICE",
+      "../../../THIRD_PARTY_LICENSES": "licenses/THIRD_PARTY_LICENSES"
     },
     "macOS": {
       "frameworks": ["bundle-staging/pdfium/libpdfium.dylib"],

@@ -2,8 +2,8 @@ DimoMark
 Copyright 2026 Peter Burgener and the DimoMark contributors
 
 This product is licensed under the Apache License, Version 2.0.
-Third party components and their licenses are listed in the release notes
-and in THIRD_PARTY_LICENSES (generated at release time).
+Third party components and their licenses are listed in THIRD_PARTY_LICENSES,
+which is generated from the dependencies by scripts/third-party-licenses.mjs.
 
 This product bundles the fonts Open Sans Regular and Open Sans Bold 1.10
 (data/fonts/OpenSans-Regular.ttf, data/fonts/OpenSans-Bold.ttf),

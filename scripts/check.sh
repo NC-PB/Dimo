@@ -54,6 +54,14 @@ if [[ -f apps/desktop/package.json ]]; then
     # MF F8: the production bundle holds no code of the development tools.
     step "release bundle without dev code"
     node scripts/check-release-bundle.mjs
+    # T3.23: THIRD_PARTY_LICENSES matches Cargo.lock, the frontend bundle and PDFium.
+    step "third party license list"
+    if compgen -G "vendor/pdfium/*/licenses" >/dev/null; then
+      node scripts/third-party-licenses.mjs --check
+    else
+      echo "PDFium not fetched, skipping (run ./scripts/fetch-pdfium.sh)" >&2
+      [[ "${CI:-}" == "true" ]] && exit 1
+    fi
     step "frontend test"
     pnpm -C apps/desktop test
   fi

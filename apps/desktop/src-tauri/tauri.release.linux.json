@@ -6,7 +6,8 @@
       "bundle-staging/pdfium/": "pdfium/",
       "bundle-staging/licenses/": "licenses/",
       "../../../LICENSE": "licenses/LICENSE",
-      "../../../NOTICE": "licenses/NOTICE"
+      "../../../NOTICE": "licenses/NOTICE",
+      "../../../THIRD_PARTY_LICENSES": "licenses/THIRD_PARTY_LICENSES"
     }
   }
 }
