@@ -162,6 +162,31 @@ jobs:
         working-directory: apps/desktop
         run: pnpm tauri build --config "src-tauri/${{ matrix.config }}" ${{ matrix.args }}
 
+      # T3.23: THIRD_PARTY_LICENSES lists the files the AppImage takes from Ubuntu packages, from
+      # scripts/appimage/. Only this job knows the real set, so it compares the built AppImage
+      # (files, packages, versions, Debian copyright files) with that data and fails on any
+      # difference. On failure it writes the updated data and uploads it as the artifact
+      # appimage-license-data: replace scripts/appimage/libs.txt and copyright/ with it, run
+      # `node scripts/third-party-licenses.mjs` and commit (scripts/appimage/README.md).
+      - name: AppImage libraries match the license list
+        id: appimage-licenses
+        if: matrix.name == 'linux'
+        run: |
+          appimage=$(ls target/release/bundle/appimage/*.AppImage)
+          if ! ./scripts/appimage-libs.sh --check "$appimage"; then
+            ./scripts/appimage-libs.sh --update "$appimage" || true
+            exit 1
+          fi
+
+      - name: Upload updated AppImage license data
+        if: failure() && steps.appimage-licenses.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (2026-04-10)
+        with:
+          name: appimage-license-data
+          path: scripts/appimage/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Collect files
         env:
           VERSION: ${{ needs.gates.outputs.version }}
@@ -221,6 +246,7 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1 (2026-03-11)
         with:
           path: artifacts
+          pattern: dimo-*
           merge-multiple: true
 
       - name: Checksums

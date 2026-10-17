@@ -11,6 +11,7 @@ import packageJson from "../../package.json";
 import cargoLock from "../../../../Cargo.lock?raw";
 import pdfiumToml from "../../../../scripts/pdfium.toml?raw";
 import THIRD_PARTY_LICENSES from "../../../../THIRD_PARTY_LICENSES?raw";
+import appimageLibs from "../../../../scripts/appimage/libs.txt?raw";
 
 /** Every font file in data/fonts, by file name. */
 const FONT_FILES = Object.keys(
@@ -168,6 +169,22 @@ describe("Third party license list (T3.23)", () => {
     const version = /^version = "([^"]+)"/m.exec(pdfiumToml)?.[1];
     expect(THIRD_PARTY_LICENSES).toContain(`PDFium ${version ?? "?"} (`);
     expect(THIRD_PARTY_LICENSES).toContain("licenses/freetype.txt");
+  });
+
+  it("lists every Ubuntu package the Linux AppImage bundles", () => {
+    const rows = appimageLibs
+      .split("\n")
+      .filter((line) => line !== "" && !line.startsWith("#"))
+      .map((line) => line.split("\t"));
+    expect(rows.length).toBeGreaterThan(100);
+    expect(THIRD_PARTY_LICENSES).toContain("Linux AppImage: bundled system libraries");
+    for (const [file, pkg, version, source, sourceVersion] of rows) {
+      expect(THIRD_PARTY_LICENSES, file).toContain(`      ${file ?? "?"}\n`);
+      expect(THIRD_PARTY_LICENSES, pkg).toContain(`${pkg ?? "?"} ${version ?? "?"}`);
+      expect(THIRD_PARTY_LICENSES, source).toContain(
+        `* ${source ?? "?"} ${sourceVersion ?? "?"} (Ubuntu source package)`,
+      );
+    }
   });
 
   it("states the number of crates and packages it lists", () => {

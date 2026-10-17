@@ -1,0 +1,13 @@
+# Parts of the Linux AppImage that do not come from an Ubuntu package (T3.23). Kept by hand.
+# Tab separated: name, what it is in the AppImage, license (SPDX), license text (other/<file>
+# or an SPDX id from scripts/license-texts/), copyright as stated by the project, source code.
+# tauri-cli downloads these tools at build time; check them when tauri-cli is updated.
+AppImage runtime (type2-runtime)	the program at the start of the AppImage file that mounts or extracts it	MIT	other/type2-runtime.txt	-	https://github.com/AppImage/type2-runtime
+musl libc	linked into the AppImage runtime	MIT	other/musl.txt	-	https://musl.libc.org
+libfuse	linked into the AppImage runtime	LGPL-2.1-only	LGPL-2.1-only	Copyright (C) 2001-2007 Miklos Szeredi	https://github.com/libfuse/libfuse
+squashfuse	linked into the AppImage runtime	BSD-2-Clause	other/squashfuse.txt	-	https://github.com/vasi/squashfuse
+zstd	linked into the AppImage runtime	BSD-3-Clause	other/zstd.txt	-	https://github.com/facebook/zstd
+zlib	linked into the AppImage runtime	Zlib	other/zlib.txt	-	https://zlib.net
+AppImageKit AppRun	AppRun.wrapped, the start program inside the AppImage	MIT	other/AppImageKit.txt	-	https://github.com/AppImage/AppImageKit
+linuxdeploy	AppRun, the start script it writes	MIT	other/linuxdeploy.txt	-	https://github.com/linuxdeploy/linuxdeploy
+linuxdeploy-plugin-gtk	apprun-hooks/linuxdeploy-plugin-gtk.sh, the GTK environment setup	MIT	other/linuxdeploy-plugin-gtk.txt	-	https://github.com/tauri-apps/linuxdeploy-plugin-gtk

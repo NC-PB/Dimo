@@ -109,7 +109,9 @@ englischen Original.
 Unter **Open-Source-Bibliotheken** folgt die Liste aller übrigen Bestandteile, mit denen DimoMark gebaut
 ist: die Rust-Crates des Programms, die Pakete der Benutzeroberfläche und die PDF-Bibliothek PDFium.
 Jeder steht mit Version und Copyright-Hinweis da, nach Lizenz gruppiert, und jeder Lizenztext
-erscheint einmal. **Kopieren** legt die ganze Liste in die Zwischenablage. Dieselbe Liste liegt jedem
+erscheint einmal. Der letzte Teil nennt die Systembibliotheken, die das Linux-AppImage mitbringt (GTK,
+WebKitGTK und weitere aus Ubuntu 22.04), jede mit ihrer Debian-Copyright-Datei; die anderen Versionen
+enthalten sie nicht. **Kopieren** legt die ganze Liste in die Zwischenablage. Dieselbe Liste liegt jedem
 Installationsprogramm als Datei `THIRD_PARTY_LICENSES` bei, im Ordner `licenses` der installierten
 App; in der portablen Version liegt sie neben `DimoMark.exe`.
 

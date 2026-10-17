@@ -780,7 +780,7 @@
   "about_copy": "Copy",
   "about_copy_aria": "Copy the text: {name}",
   "about_third_party": "Open source libraries",
-  "about_third_party_text": "DimoMark is built with the open source libraries below: the Rust crates of the program, the packages of the user interface and the PDF library PDFium. The list shows each one with its copyright notice and the full text of its license. The same list comes with every installer as the file THIRD_PARTY_LICENSES.",
+  "about_third_party_text": "DimoMark is built with the open source libraries below: the Rust crates of the program, the packages of the user interface, the PDF library PDFium and, in the Linux AppImage, the system libraries it brings with it. The list shows each one with its copyright notice and the full text of its license. The same list comes with every installer as the file THIRD_PARTY_LICENSES.",
   "about_diagnostics": "Diagnostics",
   "about_diagnostics_text": "For a bug report: copies the DimoMark version, the operating system, your settings and the last lines of the log file. It never contains drawing or project content. Your name, company name and home folder are replaced. File names in log lines stay, so a problem with a file can be traced. Nothing is sent; paste the text where you report the problem.",
   "about_diagnostics_copy": "Copy diagnostics",

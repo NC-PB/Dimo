@@ -14,3 +14,5 @@ crates/dimo-io/tests/golden/* binary
 apps/desktop/src/lib/ipc/bindings.ts linguist-generated=true
 *.ttf binary
 *.woff2 binary
+# Debian copyright files of the AppImage libraries, compared byte for byte in the release job (T3.23).
+scripts/appimage/copyright/* binary
