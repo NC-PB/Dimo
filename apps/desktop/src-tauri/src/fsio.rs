@@ -252,7 +252,11 @@ mod tests {
             .to_string_lossy()
             .into_owned();
         assert!(name.starts_with(".Prüfteil 1.dimo."), "{name}");
-        assert!(name.ends_with(".tmp"), "{name}");
+        assert_eq!(
+            temporary.extension(),
+            Some(std::ffi::OsStr::new("tmp")),
+            "{name}"
+        );
     }
 
     #[test]
