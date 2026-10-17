@@ -62,7 +62,12 @@
       "Bash(git blame:*)",
       "Bash(git stash list:*)",
       "Bash(git tag:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git rebase --continue:*)",
+      "Bash(git rebase --abort:*)",
+      "Bash(gh run watch:*)",
+      "Bash(lipo -info:*)",
+      "Bash(codesign -dv:*)"
     ],
     "ask": [
       "Bash(git push:*)",
