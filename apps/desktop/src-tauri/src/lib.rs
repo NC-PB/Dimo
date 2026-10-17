@@ -24,6 +24,7 @@ pub mod session;
 pub mod settings;
 pub mod tiles;
 pub mod tolerance;
+pub mod update;
 pub mod webview2;
 
 use std::path::{Path, PathBuf};
@@ -88,6 +89,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             settings::app_settings,
             settings::set_app_settings,
             diagnostics::diagnostics,
+            update::update_check_allowed,
+            update::check_for_update,
+            update::open_release_page,
             dev::dev_startup,
             dev::dev_report_frame_times,
             dev::dev_log

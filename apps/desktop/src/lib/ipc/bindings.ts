@@ -208,6 +208,21 @@ export const commands = {
 	 */
 	diagnostics: () => typedError<string, CommandError>(__TAURI_INVOKE("diagnostics")),
 	/**
+	 *  Whether "Check for update" is shown. Reads the policy file only, no network; on the
+	 *  blocking pool like every file access.
+	 */
+	updateCheckAllowed: () => typedError<boolean, CommandError>(__TAURI_INVOKE("update_check_allowed")),
+	/**
+	 *  Asks GitHub for the latest published release, once, and compares it with the running
+	 *  version. Runs on the blocking pool. The only caller of the network code (rule 9).
+	 */
+	checkForUpdate: () => typedError<UpdateCheck, CommandError>(__TAURI_INVOKE("check_for_update")),
+	/**
+	 *  Opens the release page `url` from [`UpdateCheck::Available`] in the browser. Any address
+	 *  that is not below [`RELEASES_URL`] is refused.
+	 */
+	openReleasePage: (url: string) => typedError<null, CommandError>(__TAURI_INVOKE("open_release_page", { url })),
+	/**
 	 *  Debug builds: the startup actions from the `DIMO_DEV_*` environment variables. Release
 	 *  builds: always the empty default.
 	 */
@@ -3025,6 +3040,32 @@ export type UnitRounding = {
 	/**  Decimal places of values converted to inch, 0 to 10. */
 	inch_places: number,
 };
+
+/**
+ *  Result of a click on "Check for update". Every case has its own message in the frontend, so
+ *  the command never fails with an error dump.
+ */
+export type UpdateCheck = 
+/**  A newer release exists. */
+{ kind: "available"; 
+/**  Its version, without a leading `v`, for example `0.2.0`. */
+version: string; 
+/**  Its release page, always below [`RELEASES_URL`]. */
+url: string } | 
+/**  The running version is the latest published one, or newer. */
+{ kind: "latest"; 
+/**  The running version. */
+version: string } | 
+/**  No release has been published yet. */
+{ kind: "no_release" } | 
+/**  GitHub could not be reached: no network, name lookup, connection, TLS or timeout. */
+{ kind: "offline" } | 
+/**  GitHub answered with something unexpected. `detail` is short English text, also logged. */
+{ kind: "failed"; 
+/**  What went wrong, for a bug report. */
+detail: string } | 
+/**  An organization policy file hides the update check. */
+{ kind: "disabled" };
 
 /**  Verdict of one cell: one sample and one characteristic (FR-MEA-03, decision 3). */
 export type Verdict = 

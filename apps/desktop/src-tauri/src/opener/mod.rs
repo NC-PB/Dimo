@@ -14,8 +14,9 @@ use std::path::Path;
 
 use crate::ipc::{CommandError, ExportReason};
 
-/// The only web address [`open_url`] opens, and the pages below it.
-pub const RELEASES_URL: &str = "https://github.com/NC-PB/dimo/releases";
+/// The only web address [`open_url`] opens, and the pages below it. Written as GitHub spells the
+/// repository in its answers; the comparison ignores case like GitHub does for owner and name.
+pub const RELEASES_URL: &str = "https://github.com/NC-PB/Dimo/releases";
 
 /// Opens the file `path` that DimoMark just wrote, through `opener`. Refused if its extension is not
 /// `extension`: the user can type any file name in the save dialog, and a file of another type
@@ -64,10 +65,13 @@ pub fn open_url(url: &str) -> std::io::Result<()> {
 
 /// True for [`RELEASES_URL`] and the pages below it, written with letters, digits and
 /// `- . _ ~ /` only: no query, fragment, escapes, spaces or `..`.
-fn is_release_page(url: &str) -> bool {
-    let Some(rest) = url.strip_prefix(RELEASES_URL) else {
+pub(crate) fn is_release_page(url: &str) -> bool {
+    let Some((prefix, rest)) = url.split_at_checked(RELEASES_URL.len()) else {
         return false;
     };
+    if !prefix.eq_ignore_ascii_case(RELEASES_URL) {
+        return false;
+    }
     (rest.is_empty() || rest.starts_with('/'))
         && !rest.contains("..")
         && rest
@@ -192,6 +196,7 @@ mod tests {
             "https://github.com/NC-PB/dimo/releases/",
             "https://github.com/NC-PB/dimo/releases/latest",
             "https://github.com/NC-PB/dimo/releases/tag/v0.1.0",
+            "https://github.com/nc-pb/DIMO/releases/tag/v0.1.0",
         ] {
             assert!(is_release_page(ok), "{ok}");
         }
@@ -199,6 +204,8 @@ mod tests {
             "",
             "https://github.com/NC-PB/dimo",
             "https://github.com/NC-PB/dimo/releasesX",
+            "https://github.com/NC-PB/dimo/releaseß",
+            "HTTPS://github.com/NC-PB/dimo/releases/../x",
             "https://github.com/NC-PB/dimo/releases.evil.example",
             "http://github.com/NC-PB/dimo/releases",
             "https://github.com/NC-PB/dimo/releases/../../other",

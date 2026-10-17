@@ -70,6 +70,11 @@ set_app_settings
 # diagnostics
 diagnostics
 
+# update
+update_check_allowed
+check_for_update
+open_release_page
+
 # dev
 dev_startup
 dev_report_frame_times

@@ -32,8 +32,9 @@ Fixed requirement: **Tauri**. Everything else is chosen below. All listed depend
 | XML (QIF) | quick-xml + serde | MIT | QIF plans and results |
 | Project container | zip + serde_json, schemars for JSON Schema | MIT | Documented, diffable format |
 | Testing | cargo test, insta (snapshots), proptest (parser), Vitest, WebdriverIO with tauri-driver | MIT | Unit, property, snapshot, end to end |
+| Update check | ureq with rustls (ring, built in Mozilla roots), semver | MIT / Apache 2.0, ISC, CDLA-Permissive-2.0 (roots) | One HTTPS GET on click only (ADR 0008, R.9), no OpenSSL |
 | License check | cargo-deny, license-checker for npm | MIT / Apache 2.0 | Enforce NFR-MNT-04 |
-| CI / release | GitHub Actions, Tauri bundler, signed updater | | Windows MSI and portable, macOS universal DMG, Linux AppImage and deb |
+| CI / release | GitHub Actions, Tauri bundler, no updater (ADR 0008) | | Windows MSI and portable, macOS universal DMG, Linux AppImage and deb |
 
 ## Frontend framework comparison
 

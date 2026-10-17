@@ -127,3 +127,38 @@ a problem, the log helps to find the cause:
 version of DimoMark, the operating system, your options and the last 200 lines of the log file. Your
 name, the company name and your home folder are replaced (`<user>`, `<company>`, `~`). Nothing is
 sent; paste the text where you report the problem.
+
+## Check for update
+
+DimoMark never looks for updates by itself. **Check for update** in **About DimoMark** asks GitHub
+once for the latest published version, only when you click it. The request goes to
+`api.github.com` and carries nothing but what the request itself needs: the DimoMark version as
+the program name (`DimoMark/0.1.0`). Nothing is downloaded or installed.
+
+- A newer version: DimoMark shows its number and **Open release page** opens the page in your
+  browser. Download and install it yourself, as you did the first time.
+- The same version: "You have the latest version".
+- No internet connection, or GitHub cannot be reached: a message, nothing else happens.
+
+DimoMark uses a proxy server if one of the usual environment variables is set (`ALL_PROXY`,
+`HTTPS_PROXY`, `HTTP_PROXY`, also in lower case; `NO_PROXY` lists hosts without proxy). A network
+that inspects HTTPS with its own certificate makes the check fail: DimoMark trusts only the root
+certificates built into it.
+
+### Turning the check off for an organization
+
+An administrator can hide the button for every user of a computer with a policy file:
+
+- macOS: `/Library/Application Support/DimoMark/policy.json`
+- Windows: `%ProgramData%\DimoMark\policy.json` (usually `C:\ProgramData\DimoMark\policy.json`)
+- Linux: `/etc/dimomark/policy.json`
+
+The file contains:
+
+```json
+{ "update_check": false }
+```
+
+`true` or a file without `update_check` shows the button. A file that is not valid JSON also hides
+the button, and the reason is written to the log file. DimoMark reads the file when **About
+DimoMark** opens and again before the request.

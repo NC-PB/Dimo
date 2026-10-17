@@ -34,6 +34,15 @@ ignore = [
   { id = "RUSTSEC-2026-0367", reason = "zip extract() only (SUID bits), DimoMark never extracts archives to disk" },
   { id = "RUSTSEC-2026-0368", reason = "zip extract() only (symlink targets), DimoMark never extracts archives to disk" },
   { id = "RUSTSEC-2026-0369", reason = "zip extract() only (permissions through symlinks), DimoMark never extracts archives to disk" },
+  # rustls 0.23.45 (update check, R.9): the four advisories of 2026-10-14 are fixed in 0.23.46,
+  # which is younger than 14 days (rule 10). None is reachable: ureq uses the built in session
+  # store and never formats session values, ECH is off, the brotli feature is off, and every
+  # click builds a new agent (no stored key share) for a public answer. Update to 0.23.46 and
+  # remove these entries from 2026-10-28.
+  { id = "RUSTSEC-2026-0346", reason = "rustls Debug of session values, only custom session stores, ureq has none" },
+  { id = "RUSTSEC-2026-0347", reason = "rustls ECH rejection, ECH is not enabled by ureq" },
+  { id = "RUSTSEC-2026-0348", reason = "rustls brotli certificate decompression, feature not enabled" },
+  { id = "RUSTSEC-2026-0349", reason = "rustls key share downgrade via the session store, a new agent per click, public data only" },
   { id = "RUSTSEC-2024-0320", reason = "yaml-rust via Typst syntect, no fix upstream, revisit on Typst updates" },
   { id = "RUSTSEC-2026-0206", reason = "rustybuzz via Typst layout and krilla, no fix upstream, revisit on Typst updates" },
   { id = "RUSTSEC-2026-0192", reason = "ttf-parser via Typst and krilla, no fix upstream, revisit on Typst updates" },
@@ -64,6 +73,9 @@ allow = [
   # File level copyleft. Allowed for unmodified upstream crates pulled in by Tauri (e.g. selectors,
   # cssparser). Using it unmodified is compatible with distributing DimoMark under Apache 2.0.
   "MPL-2.0",
+  # Permissive data license without copyleft. Only webpki-roots (the Mozilla root certificates)
+  # of the update check (R.9, ureq with rustls) uses it.
+  "CDLA-Permissive-2.0",
 ]
 
 [bans]
