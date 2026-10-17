@@ -59,7 +59,8 @@ Warnzeichen, wenn das Journal nicht geschrieben werden konnte.
 - Ein gespeichertes Projekt hat sein Journal neben der Datei: `part.dimo.journal`. Beim Speichern
   wird es in die Projektdatei übernommen und gelöscht.
 - Ein noch nie gespeichertes Projekt hat sein Journal im Datenordner von DimoMark (unter macOS zum
-  Beispiel `~/Library/Application Support/io.github.nc-pb.dimo/autosave`).
+  Beispiel `~/Library/Application Support/io.github.nc-pb.dimo/autosave`, unter Windows
+  `%APPDATA%\io.github.nc-pb.dimo\autosave`).
 
 Endet DimoMark oder der Computer unerwartet, gehen höchstens die letzten 30 Sekunden verloren:
 
@@ -77,3 +78,27 @@ zweites DimoMark-Fenster, das dasselbe Projekt öffnen will, erhält eine Meldun
 es geöffnet hat. Die Sperre endet, wenn DimoMark schließt, auch nach einem Absturz; eine
 liegengebliebene Sperrdatei blockiert also nie. Die Sperre gilt nur zwischen DimoMark-Fenstern;
 andere Programme können die Datei weiterhin ändern.
+
+## Windows: WebView2, Pfade und Netzlaufwerke
+
+DimoMark zeichnet sein Fenster mit der Microsoft Edge WebView2 Runtime. Windows 11 und
+aktualisiertes Windows 10 haben sie. Das MSI-Installationsprogramm installiert sie, wenn sie
+fehlt; die portable ZIP-Datei kann das nicht. Fehlt die Runtime, zeigt das portable DimoMark eine
+Meldung mit der Downloadseite (`https://developer.microsoft.com/microsoft-edge/webview2/`) und
+beendet sich. Installiere dort die Evergreen WebView2 Runtime oder verwende das MSI und starte
+DimoMark erneut. Die portable Version braucht keine Administratorrechte; lass die Ordner `pdfium`
+und `licenses` neben `DimoMark.exe`.
+
+- **Namen**: Datei- und Ordnernamen dürfen Leerzeichen und Umlaute enthalten, zum Beispiel
+  `Zeichnungen Müller\Prüfteil 1.dimo`.
+- **Lange Pfade**: DimoMark öffnet, speichert und exportiert Projekte, deren Pfad länger als 260
+  Zeichen ist. Der Dateidialog von Windows und das Programm, das eine exportierte Datei öffnet,
+  lehnen solche Pfade unter Umständen ab, wenn in Windows "Lange Win32-Pfade aktivieren" nicht
+  eingeschaltet ist (eine Einstellung für Administratoren). Wähle dann einen kürzeren Ordner.
+- **Netzlaufwerke**: Projekte auf einem Netzlaufwerk öffnen und speichern sich wie lokale, über
+  einen Laufwerksbuchstaben (`Z:\Projekte`) oder einen Netzwerkpfad (`\\server\share\Projekte`).
+  Die Liste der zuletzt geöffneten Projekte zeigt den Pfad so, wie du ihn gewählt hast.
+  Sperrdatei und Journal liegen neben dem Projekt, du brauchst also das Recht, in diesem Ordner
+  Dateien anzulegen. Bricht die Verbindung ab, schlagen automatisches Speichern und Speichern mit
+  einer Meldung fehl, und deine Arbeit bleibt im offenen Fenster: Speichere erneut, wenn das
+  Laufwerk wieder da ist, oder speichere mit **Speichern unter** auf deinem eigenen Computer.

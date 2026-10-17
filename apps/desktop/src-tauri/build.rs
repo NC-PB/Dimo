@@ -4,6 +4,8 @@
 //! an `allow-<command>` permission. One generated set, `allow-app-commands`, groups them all and
 //! the capability references only that set, so the webview can call only listed commands
 //! (NFR-SEC-01).
+//!
+//! On Windows the app executable gets `windows-app-manifest.xml` (long path aware, R.12).
 
 fn main() {
     println!("cargo:rerun-if-changed=commands.txt");
@@ -22,8 +24,14 @@ fn main() {
         panic!("cannot write the command permission set: {err}");
     }
     let manifest = tauri_build::AppManifest::new().commands(names);
-    if let Err(err) = tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest))
-    {
+    // The Windows manifest of the app executable: the default one plus long path awareness.
+    println!("cargo:rerun-if-changed=windows-app-manifest.xml");
+    let windows = tauri_build::WindowsAttributes::new()
+        .app_manifest(include_str!("windows-app-manifest.xml"));
+    let attributes = tauri_build::Attributes::new()
+        .app_manifest(manifest)
+        .windows_attributes(windows);
+    if let Err(err) = tauri_build::try_build(attributes) {
         panic!("tauri build failed: {err:#}");
     }
     embed_test_manifest();

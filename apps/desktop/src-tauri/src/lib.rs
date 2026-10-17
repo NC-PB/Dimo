@@ -24,6 +24,7 @@ pub mod session;
 pub mod settings;
 pub mod tiles;
 pub mod tolerance;
+pub mod webview2;
 
 use std::path::{Path, PathBuf};
 
@@ -139,12 +140,17 @@ fn refresh_bindings(
     Ok(())
 }
 
-/// Starts the desktop app. In debug builds the bindings are regenerated first.
+/// Starts the desktop app. Quits after a message if Windows has no WebView2 runtime. In debug
+/// builds the bindings are regenerated first.
 #[allow(
     clippy::print_stderr,
     reason = "binding export warning in debug builds, before the log file is opened"
 )]
 pub fn run() -> tauri::Result<()> {
+    // Windows without WebView2 (portable zip, D-11): a message instead of a silent end.
+    if !webview2::ensure_runtime() {
+        return Ok(());
+    }
     let builder = specta_builder();
 
     #[cfg(debug_assertions)]

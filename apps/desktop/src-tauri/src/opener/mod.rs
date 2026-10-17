@@ -169,6 +169,22 @@ mod tests {
         assert_eq!(command.get_program(), launcher);
     }
 
+    /// NFR-PORT-02: an export on a network share is opened by its UNC path, unchanged: no
+    /// `\\?\UNC\` form and no drive letter.
+    #[cfg(windows)]
+    #[test]
+    fn unc_paths_reach_the_opener_unchanged() {
+        let path = Path::new(r"\\server\share\Zeichnungen Müller\Prüfteil 1_check-sheet.pdf");
+        assert_eq!(std::path::absolute(path).unwrap(), path);
+        let mut opened = None;
+        open_written_file(path, "pdf", |p| {
+            opened = Some(p.to_path_buf());
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(opened.as_deref(), Some(path));
+    }
+
     #[test]
     fn only_the_release_page_is_opened() {
         for ok in [
