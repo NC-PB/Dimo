@@ -515,7 +515,7 @@ drawing_alerts=$(report errors "drawing refused")
 expect "errors: refused table in German with its reason" "yes" \
   "$(yesno grep -q 'Tabelle abgelehnt.*Die Datei entspricht nicht dem Tabellenformat' <<<"$table_alerts")"
 expect "errors: non-PDF drawing refused in German" "yes" \
-  "$(yesno grep -q 'Die Datei ist keine PDF-Zeichnung' <<<"$drawing_alerts")"
+  "$(yesno grep -q 'Die Datei ist keine Zeichnung, die DimoMark lesen kann' <<<"$drawing_alerts")"
 expect "errors: no English error text in the German messages" "no" \
   "$(yesno grep -qiE '\.toml|\.txt|cannot|expected|not a PDF|error|failed' <<<"$table_alerts $drawing_alerts")"
 

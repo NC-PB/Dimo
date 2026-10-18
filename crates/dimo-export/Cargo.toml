@@ -21,5 +21,9 @@ serde.workspace = true
 specta = { workspace = true, optional = true }
 thiserror.workspace = true
 
+[dev-dependencies]
+image.workspace = true
+tempfile.workspace = true
+
 [lints]
 workspace = true

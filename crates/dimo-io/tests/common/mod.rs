@@ -43,6 +43,7 @@ pub fn drawing(env: &mut FixedEnvironment) -> ImportedDrawing {
                 height: 841.89,
             },
             kind: SheetKind::VectorText,
+            raster_dpi: None,
         },
         SheetInfo {
             size: Size {
@@ -50,6 +51,7 @@ pub fn drawing(env: &mut FixedEnvironment) -> ImportedDrawing {
                 height: 841.89,
             },
             kind: SheetKind::Raster,
+            raster_dpi: None,
         },
     ];
     import_drawing(

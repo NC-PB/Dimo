@@ -2,13 +2,13 @@
 
 A project holds one drawing, its characteristics and balloons, and the log of every change. It is
 saved as one `.dimo` file. The drawing is stored inside the file unchanged, so the project still
-opens when the original PDF is moved or deleted.
+opens when the original file is moved or deleted.
 
 ## Create, open, save
 
 | Action | Where | macOS | Windows and Linux |
 |---|---|---|---|
-| New project from a PDF drawing | File > New project | ⌘N | Ctrl+N |
+| New project from a PDF drawing, a photo or a scan | File > New project | ⌘N | Ctrl+N |
 | Open a project | File > Open project | ⌘O | Ctrl+O |
 | Save | Save in the title bar, or File | ⌘S | Ctrl+S |
 | Save under a new name | File > Save as… | ⇧⌘S | Ctrl+Shift+S |
@@ -16,7 +16,8 @@ opens when the original PDF is moved or deleted.
 | Redo | Redo in the title bar | ⇧⌘Z | Ctrl+Shift+Z or Ctrl+Y |
 
 **New project** and **Open project** ask for a file with the operating system's file dialog. A
-project is made from a PDF drawing; other file types are not offered. A new project has no file
+project is made from a PDF drawing or from a photo or scan as JPEG, PNG or TIFF (see below);
+other file types are not offered. A new project has no file
 until you save it; the title bar shows "Untitled". The first save asks for a file name and adds
 `.dimo` if you leave it out. Undo has no limit while the project is open; the history starts fresh
 when you open a project again.
@@ -30,6 +31,23 @@ and offer a button for the next step.
 
 When a project has unsaved changes, DimoMark asks before it creates or opens another project and
 before the window closes or DimoMark quits: **Save**, **Don't save** or **Cancel**.
+
+## Drawings from photos and scans
+
+A photo or scan of a paper drawing opens like a PDF: pick the JPEG, PNG or TIFF file in
+**New project**. A TIFF with several pages gives one sheet per page. DimoMark turns a photo the way
+the phone recorded it and stores the image unchanged in the project.
+
+- **Size of the sheet:** a scan that states its resolution (100 to 1200 dpi) gets its real size.
+  A photo does not know its size, so its long side is set to 297 mm, the length of an A4 sheet.
+  Large images are kept at no more than 300 dpi at that size.
+- **No text in the image:** a box drawn around a dimension finds no text, so the balloon is placed
+  and you type the value, as for a PDF without text.
+- **HEIC photos** (the iPhone default) cannot be opened. On the iPhone choose Settings > Camera >
+  Formats > Most Compatible, or send the photo to yourself by mail or messenger, which usually
+  turns it into a JPEG.
+- The characteristic list and the reports work as for a PDF. The ballooned PDF of a photo or scan
+  is not available yet.
 
 ## What is in a project file
 

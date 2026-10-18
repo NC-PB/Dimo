@@ -23,6 +23,8 @@ pub struct SheetInfo {
     pub size: Size,
     /// How the text is stored.
     pub kind: SheetKind,
+    /// Resolution of a raster sheet in pixels per inch, `None` for a vector sheet (R.19).
+    pub raster_dpi: Option<u32>,
 }
 
 /// A drawing ready to become part of a project: the revision and the file bytes stored as
@@ -90,12 +92,14 @@ pub fn import_drawing(
     for (index, info) in sheets.iter().enumerate() {
         let index = u32::try_from(index)
             .map_err(|_| ProjectError::InvalidDrawing("too many sheets".into()))?;
-        sheet_list.push(Sheet::new(
+        let mut sheet = Sheet::new(
             SheetId::from_uuid(env.new_uuid()),
             index,
             info.size,
             info.kind,
-        ));
+        );
+        sheet.raster_dpi = info.raster_dpi;
+        sheet_list.push(sheet);
     }
     Ok(ImportedDrawing {
         revision: DrawingRevision {
@@ -123,6 +127,7 @@ mod tests {
             height: 842.0,
         },
         kind: SheetKind::VectorText,
+        raster_dpi: None,
     };
 
     #[test]

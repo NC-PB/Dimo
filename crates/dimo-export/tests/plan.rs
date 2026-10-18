@@ -146,3 +146,46 @@ fn reports_and_lists_render_the_same_bytes_twice() {
         assert!(first.len() > 100, "{format:?}");
     }
 }
+
+/// A drawing from a photo (R.19): lists and reports render as for a PDF, byte identical twice
+/// and with the name and fingerprint of the original image; the ballooned PDF follows with
+/// R.21 and is refused before any PDF engine is needed.
+#[test]
+fn image_drawings_export_lists_and_reports_but_no_ballooned_pdf_yet() {
+    let mut project = fixture::project();
+    let revision = project.current_revision;
+    for r in &mut project.revisions {
+        if r.id == revision {
+            r.source = dimo_core::DrawingSource::Image {
+                format: dimo_core::ImageFormat::Jpeg,
+                pages: vec![dimo_core::ImageEdit::default(); r.sheets.len()],
+            };
+            r.file_name = "photo.jpg".into();
+        }
+    }
+    assert!(dimo_export::is_image_drawing(&project));
+    assert!(!dimo_export::is_image_drawing(&fixture::project()));
+    let modified = Timestamp::parse("2026-10-13T08:00:00Z").unwrap();
+    let source = Source {
+        project: &project,
+        modified: &modified,
+        drawing: Some(b"\xFF\xD8\xFF"),
+    };
+    for format in ExportFormat::ALL {
+        let options = RenderOptions {
+            format,
+            language: Language::En,
+            balloons: BalloonMode::PageContent,
+            blank_columns: 4,
+        };
+        if format.needs_drawing() {
+            assert!(matches!(
+                render(&source, options, None),
+                Err(ExportError::ImageDrawing)
+            ));
+            continue;
+        }
+        let first = render(&source, options, None).unwrap();
+        assert_eq!(first, render(&source, options, None).unwrap(), "{format:?}");
+    }
+}

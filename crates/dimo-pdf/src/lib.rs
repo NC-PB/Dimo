@@ -17,7 +17,8 @@
 //! balloon layout rule shared with the viewport (`dimo_core::BALLOON_METRICS`).
 //!
 //! MF F1: [`RasterSource`] is what the tile service draws from; [`Document`] implements it,
-//! image drawings will too. [`RasterOpener`] opens drawing files as sources (see [`source`]).
+//! and so does [`ImageSource`] for photos and scans (R.19, see [`image_source`]).
+//! [`RasterOpener`] opens drawing files as sources (see [`source`]).
 //!
 //! T2.6: [`Document::region_text`] returns the characters, runs and basic dimension frames
 //! inside a region drawn by the user, also for rotated text (see [`region`]).
@@ -60,6 +61,7 @@
 //! filled by `scripts/fetch-pdfium.sh`. The pinned release is in `scripts/pdfium.toml`; its API
 //! level must match the `pdfium_*` feature of pdfium-render in the workspace `Cargo.toml`.
 
+pub mod image_source;
 pub mod library;
 pub mod overlay;
 pub mod project_overlay;
@@ -79,6 +81,7 @@ mod writer;
 
 pub use engine::{Document, MAX_RENDER_SIDE, PdfEngine};
 pub use error::PdfError;
+pub use image_source::ImageSource;
 pub use overlay::{
     Balloon, BalloonOutput, BalloonOverlay, BalloonShape, Leader, PdfDate, Rgb, SheetBalloons,
     SheetPoint, Stroke,

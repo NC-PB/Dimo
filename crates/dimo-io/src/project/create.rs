@@ -5,8 +5,9 @@
 //! file, finds out what it is from its first bytes, opens it through a
 //! [`RasterOpener`] (the tile service in the app, the PDF engine in tools), reads the sheets,
 //! imports the revision and starts the [`ProjectSession`], autosaved if an autosave folder is
-//! given. Callers never touch PDFium for this. PDFs are supported; JPEG, PNG and TIFF are
-//! recognized and refused with [`CreateError::ImageNotSupported`] until release 0.1 (R.19).
+//! given. Callers never touch PDFium for this. PDFs and JPEG, PNG and TIFF images (R.19) are
+//! supported; an image starts with the default edit settings on every page. HEIC photos are
+//! recognized and refused with [`CreateError::HeicNotSupported`] (R01 decision 7).
 //!
 //! [`open_drawing`] opens the drawing of the current revision of a project through the source
 //! its revision names.
@@ -15,7 +16,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use dimo_core::{DrawingSource, Environment, ImageFormat, ProjectInfo, ReportInfo, Size};
+use dimo_core::{
+    DrawingSource, Environment, ImageEdit, ImageFormat, ProjectInfo, ReportInfo, Size,
+};
 use dimo_pdf::{Opened, PdfError, RasterOpener, RasterSource};
 
 use super::Limits;
@@ -32,7 +35,14 @@ pub enum DrawingType {
     Pdf,
     /// A JPEG, PNG or TIFF image.
     Image(ImageFormat),
+    /// A HEIC or HEIF photo, which Dimo does not read (R01 decision 7).
+    Heic,
 }
+
+/// ISO base media file brands of HEIC and HEIF still images.
+const HEIF_BRANDS: [&[u8; 4]; 8] = [
+    b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1",
+];
 
 /// The type of a drawing file from its first bytes, `None` for anything else.
 pub fn sniff(bytes: &[u8]) -> Option<DrawingType> {
@@ -43,6 +53,12 @@ pub fn sniff(bytes: &[u8]) -> Option<DrawingType> {
         Some(DrawingType::Image(ImageFormat::Png))
     } else if head.starts_with(b"II*\0") || head.starts_with(b"MM\0*") {
         Some(DrawingType::Image(ImageFormat::Tiff))
+    } else if head.get(4..8) == Some(b"ftyp")
+        && head
+            .get(8..12)
+            .is_some_and(|brand| HEIF_BRANDS.iter().any(|b| b.as_slice() == brand))
+    {
+        Some(DrawingType::Heic)
     } else if head.windows(5).any(|w| w == b"%PDF-") {
         Some(DrawingType::Pdf)
     } else {
@@ -98,9 +114,9 @@ pub enum CreateError {
     /// Neither a PDF nor a supported image.
     #[error("not a PDF or image drawing")]
     UnknownType,
-    /// An image drawing; images become drawings with release 0.1 (R.19).
-    #[error("{} images are not supported yet", .0.extension())]
-    ImageNotSupported(ImageFormat),
+    /// A HEIC or HEIF photo (R01 decision 7).
+    #[error("HEIC photos are not supported; save the photo as JPEG")]
+    HeicNotSupported,
     /// The reader could not open the file or read its sheets.
     #[error(transparent)]
     Open(#[from] PdfError),
@@ -146,15 +162,23 @@ pub fn create_from_drawing(
     options: NewProject,
     env: &mut dyn Environment,
 ) -> Result<CreatedProject, CreateError> {
-    let source_kind = match sniff(&bytes) {
-        Some(DrawingType::Pdf) => DrawingSource::Pdf,
-        Some(DrawingType::Image(format)) => return Err(CreateError::ImageNotSupported(format)),
+    let kind = sniff(&bytes);
+    let handle = match kind {
+        Some(DrawingType::Pdf) => opener.open_pdf(bytes.clone())?,
+        Some(DrawingType::Image(format)) => opener.open_image(bytes.clone(), format, None)?,
+        Some(DrawingType::Heic) => return Err(CreateError::HeicNotSupported),
         None => return Err(CreateError::UnknownType),
     };
-    let handle = opener.open_pdf(bytes.clone())?;
     let source = &handle.source;
     let created = (|| {
         let sheets = sheets_of(source.as_ref())?;
+        let source_kind = match kind {
+            Some(DrawingType::Image(format)) => DrawingSource::Image {
+                format,
+                pages: vec![ImageEdit::default(); sheets.len()],
+            },
+            _ => DrawingSource::Pdf,
+        };
         let hash = *source.content_hash();
         let drawing = import_drawing(bytes, file_name, source_kind, &hash, &sheets, env)?;
         Ok::<_, CreateError>(start_session(drawing, options, env)?)
@@ -187,6 +211,7 @@ fn sheets_of(source: &dyn RasterSource) -> Result<Vec<SheetInfo>, PdfError> {
                     height: size.height,
                 },
                 kind: source.sheet_kind(sheet)?,
+                raster_dpi: source.raster_dpi(sheet),
             })
         })
         .collect()
@@ -251,7 +276,19 @@ pub fn open_drawing(
         .ok_or(ProjectError::MissingDrawing(revision.sha256))?;
     match &revision.source {
         DrawingSource::Pdf => Ok(opener.open_pdf(bytes.to_vec())?),
-        DrawingSource::Image { format, .. } => Err(CreateError::ImageNotSupported(*format)),
+        DrawingSource::Image { format, pages } => {
+            let image = opener.open_image(bytes.to_vec(), *format, Some(pages))?;
+            // Until R.20 derives sheet sizes from the edit settings in Rust, an edit that turns
+            // a page or sets a paper changes the source's sheets but not the project's.
+            let stored: Vec<Size> = revision.sheets.iter().map(|s| s.size).collect();
+            if image.source.sheet_sizes()? != stored {
+                tracing::warn!(
+                    revision = %revision.id,
+                    "image sheet sizes differ from the project sheets after an edit"
+                );
+            }
+            Ok(image)
+        }
     }
 }
 #[cfg(test)]
@@ -276,7 +313,15 @@ mod tests {
         );
         assert_eq!(sniff(b"II*\0"), Some(DrawingType::Image(ImageFormat::Tiff)));
         assert_eq!(sniff(b"MM\0*"), Some(DrawingType::Image(ImageFormat::Tiff)));
+        assert_eq!(
+            sniff(b"\0\0\0\x18ftypheic\0\0\0\0mif1heic"),
+            Some(DrawingType::Heic)
+        );
+        // mif1 is the generic HEIF brand; an AVIF file can carry it too and then gets the
+        // HEIC message, which also fits (neither is read).
+        assert_eq!(sniff(b"\0\0\0\x18ftypmif1"), Some(DrawingType::Heic));
+        // Other ISO media files (a video) are not drawings.
+        assert_eq!(sniff(b"\0\0\0\x18ftypisom"), None);
         assert_eq!(sniff(b""), None);
-        assert_eq!(sniff(b"\0\0\0\x18ftypheic"), None, "HEIC is not supported");
     }
 }

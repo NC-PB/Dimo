@@ -2,14 +2,14 @@
 
 Ein Projekt enthält eine Zeichnung, ihre Merkmale und Ballons sowie das Protokoll aller
 Änderungen. Es wird als eine `.dimo`-Datei gespeichert. Die Zeichnung liegt unverändert in der
-Datei, darum öffnet sich das Projekt auch dann, wenn das Original-PDF verschoben oder gelöscht
+Datei, darum öffnet sich das Projekt auch dann, wenn die Originaldatei verschoben oder gelöscht
 wurde.
 
 ## Anlegen, öffnen, speichern
 
 | Aktion | Wo | macOS | Windows und Linux |
 |---|---|---|---|
-| Neues Projekt aus einer PDF-Zeichnung | Datei > Neues Projekt | ⌘N | Ctrl+N |
+| Neues Projekt aus einer PDF-Zeichnung, einem Foto oder einem Scan | Datei > Neues Projekt | ⌘N | Ctrl+N |
 | Projekt öffnen | Datei > Projekt öffnen | ⌘O | Ctrl+O |
 | Speichern | Speichern in der Titelleiste, oder Datei | ⌘S | Ctrl+S |
 | Unter neuem Namen speichern | Datei > Speichern unter… | ⇧⌘S | Ctrl+Shift+S |
@@ -17,7 +17,8 @@ wurde.
 | Wiederholen | Wiederholen in der Titelleiste | ⇧⌘Z | Ctrl+Shift+Z oder Ctrl+Y |
 
 **Neues Projekt** und **Projekt öffnen** fragen mit dem Dateidialog des Betriebssystems nach einer
-Datei. Ein Projekt entsteht aus einer PDF-Zeichnung; andere Dateitypen werden nicht angeboten. Ein
+Datei. Ein Projekt entsteht aus einer PDF-Zeichnung oder aus einem Foto oder Scan als JPEG, PNG
+oder TIFF (siehe unten); andere Dateitypen werden nicht angeboten. Ein
 neues Projekt hat bis zum ersten Speichern keine Datei; die Titelleiste zeigt "Unbenannt".
 Beim ersten Speichern fragt DimoMark nach einem Dateinamen und hängt `.dimo` an, wenn du es weglässt.
 Rückgängig ist unbegrenzt, solange das Projekt offen ist; nach erneutem Öffnen beginnt der Verlauf
@@ -33,6 +34,24 @@ Messwerte) sagen, was fehlt, und bieten eine Schaltfläche für den nächsten Sc
 Hat ein Projekt ungespeicherte Änderungen, fragt DimoMark vor dem Anlegen oder Öffnen eines anderen
 Projekts und vor dem Schließen des Fensters oder dem Beenden von DimoMark: **Speichern**,
 **Nicht speichern** oder **Abbrechen**.
+
+## Zeichnungen aus Fotos und Scans
+
+Ein Foto oder Scan einer Papierzeichnung öffnet sich wie ein PDF: wähle die JPEG-, PNG- oder
+TIFF-Datei unter **Neues Projekt**. Ein TIFF mit mehreren Seiten ergibt ein Blatt pro Seite.
+DimoMark dreht ein Foto so, wie das Telefon es aufgenommen hat, und legt das Bild unverändert im
+Projekt ab.
+
+- **Blattgröße:** Ein Scan, der seine Auflösung angibt (100 bis 1200 dpi), bekommt seine echte
+  Größe. Ein Foto kennt seine Größe nicht, darum wird seine lange Seite auf 297 mm gesetzt, die
+  Länge eines A4-Blatts. Große Bilder werden bei dieser Größe mit höchstens 300 dpi gehalten.
+- **Kein Text im Bild:** Ein Rahmen um ein Maß findet keinen Text, also wird der Ballon gesetzt und
+  du tippst den Wert ein, wie bei einem PDF ohne Text.
+- **HEIC-Fotos** (Standard auf dem iPhone) können nicht geöffnet werden. Wähle auf dem iPhone
+  Einstellungen > Kamera > Formate > Maximale Kompatibilität, oder sende dir das Foto per Mail
+  oder Messenger, das macht meist ein JPEG daraus.
+- Merkmalsliste und Berichte funktionieren wie bei einem PDF. Das PDF mit Ballons gibt es für
+  Fotos und Scans noch nicht.
 
 ## Was in einer Projektdatei steht
 

@@ -162,6 +162,35 @@ fn older_versions_save_as_current_and_then_byte_identical() {
     }
 }
 
+/// A version 3 project opens and saves as version 4 (MF F1, R.19 acceptance): every revision
+/// becomes a PDF source, its drawing file keeps its bytes and is stored as `<sha256>.pdf`.
+#[test]
+fn version_3_projects_open_and_save_as_version_4() {
+    let opened = ProjectFile::from_folder(&fixture(3)).unwrap().file;
+    assert_ne!(opened.project.revisions.len(), 0);
+    for revision in &opened.project.revisions {
+        assert_eq!(revision.source, dimo_core::DrawingSource::Pdf);
+        assert_eq!(revision.stored_name(), format!("{}.pdf", revision.sha256));
+        let bytes = opened.drawing(&revision.sha256).unwrap();
+        assert_eq!(dimo_core::Sha256Hex::of(bytes), revision.sha256);
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let saved = dir.path().join("v3.dimo");
+    opened.save(&saved, Layout::Zip).unwrap();
+    let reopened = ProjectFile::load(&saved).unwrap();
+    assert_eq!(
+        reopened.migrated_from(),
+        None,
+        "saved as the current version"
+    );
+    assert_eq!(reopened.file.manifest().schema_version, SCHEMA_VERSION);
+    assert_eq!(reopened.file.project, opened.project);
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(fixture(3).join(MANIFEST)).unwrap()).unwrap();
+    assert_eq!(manifest["schema_version"], 3, "the fixture is version 3");
+    assert_eq!(SCHEMA_VERSION, 4);
+}
+
 /// What the version 2 to 3 migration makes of the version 2 data (T3.1): no samples, results
 /// or issued reports, empty report info, result type `auto`, and the shorter leg of T2.9a kept.
 #[test]

@@ -6,7 +6,7 @@ page, on the right the pane you chose. **Back** (or any other tab) returns to wh
 | Item | What it does |
 |---|---|
 | **Info** | The data saved with the project, see below |
-| **New project** | Starts a project from a PDF drawing (⌘N) |
+| **New project** | Starts a project from a PDF drawing, a photo or a scan (⌘N) |
 | **Open project** | Shows the recent projects and **Open project** for any other file (⌘O) |
 | **Save**, **Save as…** | Save the project ([Projects](projects.md)) |
 | **Export** | Opens the **Report** tab ([Exports](exports.md)) |

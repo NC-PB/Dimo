@@ -175,6 +175,9 @@ dem Status `rejected` erhalten im PDF keinen Ballon.
 Dasselbe Projekt ergibt dieselbe PDF-Datei, Byte für Byte. Bei Anmerkungen ist deren Datum der
 Zeitpunkt der letzten Änderung am Projekt, nicht der Zeitpunkt des Exports.
 
+Für eine Zeichnung aus einem Foto oder Scan gibt es das PDF mit Ballons noch nicht; die Karte sagt
+das, und ihre Schaltfläche ist aus ([Projekte](projects.md)).
+
 ## Merkmalsliste (CSV und XLSX)
 
 Die Merkmalsliste enthält eine Zeile pro Merkmal, sortiert nach Ballonnummer. Sie ist für die

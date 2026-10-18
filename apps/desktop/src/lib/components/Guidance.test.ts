@@ -180,6 +180,27 @@ describe("empty states (T3.17)", () => {
     expect(reportEmpty()).toEqual({ title: "Nothing to report yet", actions: ["place_tool"] });
   });
 
+  it("offers no ballooned PDF for a drawing from a photo yet (R.19)", () => {
+    const project = emptyProject();
+    render((t) => mount(ExportView, { target: t }));
+    projectStore.load(loaded(++session, project));
+    flushSync();
+    const pdfButton = () => card("Export PDF");
+    expect(pdfButton().disabled).toBe(false);
+    expect(target.querySelector("[data-testid=export-image-note]")).toBeNull();
+
+    const photo = structuredClone(project);
+    const revision = photo.revisions[0];
+    if (revision) {
+      revision.source = { type: "image", format: "jpeg", pages: [] };
+    }
+    projectStore.load(loaded(++session, photo));
+    flushSync();
+    expect(pdfButton().disabled).toBe(true);
+    expect(target.querySelector("[data-testid=export-image-note]")).not.toBeNull();
+    expect(card("Export CSV").disabled).toBe(false);
+  });
+
   it("guides the Report view from no project to measured values", () => {
     const store = new ReportViewStore(
       {

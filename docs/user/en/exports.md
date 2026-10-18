@@ -157,6 +157,9 @@ Characteristics with the status `rejected` get no balloon in the PDF.
 The same project gives the same PDF file, byte for byte. In annotation mode the date of the
 annotations is the time of the last change of the project, not the time of the export.
 
+For a drawing from a photo or scan the ballooned PDF is not available yet; the card says so and
+its button is off ([Projects](projects.md)).
+
 ## Characteristic list (CSV and XLSX)
 
 The characteristic list has one row per characteristic, in display number order. It is meant

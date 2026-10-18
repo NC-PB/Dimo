@@ -33,6 +33,12 @@ insta = { version = "=1.48.0" }
 pdfium-render = { version = "=0.9.4", default-features = false, features = ["pdfium_7881"] }
 # Tile encoding (T0.7), pure Rust PNG with fdeflate.
 png = { version = "=0.18.1" }
+# Image drawings (R.19, spec 06): JPEG and PNG decoding with EXIF orientation. Already in the
+# tree through typst-library; no default formats, no rayon.
+image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png"] }
+# Multi-page TIFF scans (R.19). Used directly because `image` reads only the first page. Default
+# features: deflate, LZW, JPEG and CCITT fax (G3/G4) compression, common in scans.
+tiff = { version = "=0.11.3" }
 # Flate compression of the stress PDF (T0.9). Already in the tree through png.
 miniz_oxide = { version = "=0.8.9" }
 # Property tests (T1.1). No fork or timeout support, keeps the dependency tree small.

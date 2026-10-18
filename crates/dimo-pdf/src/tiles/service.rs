@@ -12,10 +12,11 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, RwLock, mpsc};
 use std::thread::JoinHandle;
 use std::time::SystemTime;
 
-use dimo_core::Sha256Hex;
+use dimo_core::{ImageEdit, ImageFormat, Sha256Hex};
 
 use crate::engine::{Document, PdfEngine};
 use crate::error::PdfError;
+use crate::image_source::ImageSource;
 use crate::source::{Opened, RasterOpener, RasterSource, SourceKind};
 
 use super::disk::DiskCache;
@@ -461,6 +462,33 @@ impl RasterOpener for TileService {
         Ok(Opened {
             source: doc,
             newly_opened,
+        })
+    }
+
+    /// Registers the image under its render key. An image with the same bytes and settings
+    /// that is already open (the drawing of the open project, opened again) is returned
+    /// without decoding it again.
+    fn open_image(
+        &self,
+        bytes: Vec<u8>,
+        format: ImageFormat,
+        edits: Option<&[ImageEdit]>,
+    ) -> Result<Opened, PdfError> {
+        if let Some(edits) = edits {
+            let key = ImageSource::render_key_of(&bytes, edits)?;
+            if let Some(source) = self.source(&key) {
+                self.touch(source.kind(), &key);
+                return Ok(Opened {
+                    source,
+                    newly_opened: false,
+                });
+            }
+        }
+        let opened: Arc<dyn RasterSource> = Arc::new(ImageSource::open(bytes, format, edits)?);
+        let registered = self.insert_source(Arc::clone(&opened));
+        Ok(Opened {
+            newly_opened: Arc::ptr_eq(&registered, &opened),
+            source: registered,
         })
     }
 

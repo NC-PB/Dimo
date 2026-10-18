@@ -62,8 +62,9 @@ const IO: Texts<IoReason> = {
 
 const DOCUMENT: Texts<DocumentReason> = {
   not_a_pdf: m.error_document_not_a_pdf,
-  image_not_supported: m.error_document_image_not_supported,
+  heic_not_supported: m.error_document_heic_not_supported,
   damaged: m.error_document_damaged,
+  image_damaged: m.error_document_image_damaged,
   too_large: m.error_document_too_large,
   no_pdf_engine: m.error_document_no_pdf_engine,
 };
@@ -95,6 +96,7 @@ const EXPORT: Texts<ExportReason> = {
   invalid_file_name: m.error_export_invalid_file_name,
   no_pdf_engine: m.error_export_no_pdf_engine,
   pdf_failed: m.error_export_pdf_failed,
+  image_drawing: m.error_export_image_drawing,
   report_failed: m.error_export_report_failed,
   list_failed: m.error_export_list_failed,
   wrong_extension: m.error_export_wrong_extension,

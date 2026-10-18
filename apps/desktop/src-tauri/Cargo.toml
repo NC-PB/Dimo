@@ -46,6 +46,8 @@ windows-sys = { workspace = true, features = ["Win32_Foundation", "Win32_UI_Shel
 [dev-dependencies]
 # MF F2: the CLI export renders byte identical to the app (tests/cli_export.rs).
 dimo-cli = { path = "../../../crates/dimo-cli" }
+# R.19: photos made in tests/image_drawing.rs.
+image.workspace = true
 tempfile.workspace = true
 
 [lints]

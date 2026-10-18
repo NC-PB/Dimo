@@ -25,6 +25,7 @@ use dimo_detect::{
     BoxSelectContext, CalloutOnly, Interpreter, ToleranceEngine, box_select_with_notes,
     read_callout,
 };
+use dimo_pdf::RegionText;
 use dimo_pdf::tiles::TileService;
 use dimo_tolerance::{ExplainValues, Measures, Note, TableSet, ToleranceContext};
 use rust_decimal::Decimal;
@@ -173,14 +174,19 @@ pub fn propose(
     language: Language,
 ) -> Result<Vec<ProposalView>, CommandError> {
     check_region(&region)?;
-    let doc = tiles.document(&target.drawing).ok_or_else(|| {
-        CommandError::internal(
-            InternalReason::Bug,
-            "the drawing of the project is not open",
-        )
-    })?;
     let started = std::time::Instant::now();
-    let text = doc.region_text(target.page, region)?;
+    let text = match tiles.document(&target.drawing) {
+        Some(doc) => doc.region_text(target.page, region)?,
+        // A photo or scan has no text layer (R.19): no text found, so the box falls back to
+        // manual placement as for a PDF without text. OCR follows in M5.
+        None if tiles.source(&target.drawing).is_some() => RegionText::default(),
+        None => {
+            return Err(CommandError::internal(
+                InternalReason::Bug,
+                "the drawing of the project is not open",
+            ));
+        }
+    };
     let interpreter = interpreter(target);
     let proposals = box_select_with_notes(
         sheet,

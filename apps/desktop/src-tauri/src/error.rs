@@ -157,10 +157,12 @@ impl IoReason {
 pub enum DocumentReason {
     /// The file is neither a PDF nor an image.
     NotAPdf,
-    /// The file is an image; images become drawings with release 0.1 (R.19).
-    ImageNotSupported,
+    /// The file is a HEIC or HEIF photo, which DimoMark does not read (R01 decision 7).
+    HeicNotSupported,
     /// The PDF reader cannot read the file: damaged, password protected or unusual.
     Damaged,
+    /// A photo or scan cannot be read: damaged, too large or an unsupported colour type.
+    ImageDamaged,
     /// The file is larger than the limit for drawings.
     TooLarge,
     /// The PDF component (PDFium) is not loaded, so no PDF can be opened.
@@ -224,6 +226,8 @@ pub enum ExportReason {
     NoPdfEngine,
     /// The PDF component could not write the ballooned PDF.
     PdfFailed,
+    /// The drawing is a photo or scan; its ballooned PDF is not available yet (R.21).
+    ImageDrawing,
     /// The report could not be built or rendered.
     ReportFailed,
     /// The characteristic list (CSV, Excel) could not be written.
@@ -480,15 +484,21 @@ impl From<CreateError> for CommandError {
             CreateError::Project(error) => error.into(),
             CreateError::Open(error) => error.into(),
             CreateError::UnknownType => document(DocumentReason::NotAPdf),
-            CreateError::ImageNotSupported(_) => document(DocumentReason::ImageNotSupported),
+            CreateError::HeicNotSupported => document(DocumentReason::HeicNotSupported),
         }
     }
 }
 
 impl From<PdfError> for CommandError {
     fn from(error: PdfError) -> Self {
+        if matches!(error, PdfError::ImageEdit(_)) {
+            // Edit settings this version cannot draw; the app cannot make them before R.20.
+            return Self::internal(InternalReason::Bug, error);
+        }
         let reason = if is_engine_error(&error) {
             DocumentReason::NoPdfEngine
+        } else if matches!(error, PdfError::Image(_)) {
+            DocumentReason::ImageDamaged
         } else {
             DocumentReason::Damaged
         };
@@ -536,6 +546,7 @@ impl From<dimo_export::ExportError> for CommandError {
             E::List(e) => e.into(),
             E::Pdf(e) => Self::export_pdf(&e),
             E::NoPdfEngine => Self::export(ExportReason::NoPdfEngine, "no PDF engine"),
+            E::ImageDrawing => Self::export(ExportReason::ImageDrawing, error),
             E::NoDrawing | E::NotAReport(_) | E::NotPrepared | E::InvalidTime(_) => {
                 Self::internal(InternalReason::Bug, error)
             }
@@ -653,8 +664,8 @@ mod tests {
             Some(DocumentReason::NotAPdf)
         );
         assert_eq!(
-            reason(CreateError::ImageNotSupported(dimo_core::ImageFormat::Png)),
-            Some(DocumentReason::ImageNotSupported)
+            reason(CreateError::HeicNotSupported),
+            Some(DocumentReason::HeicNotSupported)
         );
         assert_eq!(
             reason(CreateError::Project(ProjectError::TooLarge {
@@ -670,6 +681,10 @@ mod tests {
         assert_eq!(
             reason(CreateError::Open(PdfError::NoPdfium)),
             Some(DocumentReason::NoPdfEngine)
+        );
+        assert_eq!(
+            reason(CreateError::Open(PdfError::Image("cut off".to_owned()))),
+            Some(DocumentReason::ImageDamaged)
         );
         assert!(matches!(
             CommandError::from(CreateError::Read {

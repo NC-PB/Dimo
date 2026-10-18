@@ -66,6 +66,16 @@ pub enum PdfError {
     #[error("writing the ballooned PDF failed: {0}")]
     Write(String),
 
+    /// An image drawing cannot be read: damaged, an unsupported colour type or too large
+    /// (R.19).
+    #[error("cannot open image: {0}")]
+    Image(String),
+
+    /// The edit settings of an image drawing do not fit the image or cannot be drawn yet
+    /// (fine angle, corners, trim and clean up come with R.20).
+    #[error("image edit settings: {0}")]
+    ImageEdit(String),
+
     /// The service was started without PDFium and cannot open PDFs (MF F1).
     #[error("PDFium is not loaded in this service")]
     NoPdfium,

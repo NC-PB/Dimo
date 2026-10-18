@@ -25,10 +25,12 @@ use crate::ipc::{CommandError, InternalReason, tile_service};
 use crate::session::{AppSession, CloseRequested, ProjectLoaded, ProjectPatched};
 use crate::tiles::TileState;
 
-/// File type of the drawing dialog.
-const PDF_FILTER: Filter = Filter {
-    name: "PDF",
-    extensions: &["pdf", "PDF"],
+/// File types of the drawing dialog: PDFs, photos and scans (R.19, R01 decision 7).
+const DRAWING_FILTER: Filter = Filter {
+    name: "PDF, JPEG, PNG, TIFF",
+    extensions: &[
+        "pdf", "PDF", "jpg", "JPG", "jpeg", "JPEG", "png", "PNG", "tif", "TIF", "tiff", "TIFF",
+    ],
 };
 
 /// File type of the project dialogs.
@@ -147,7 +149,8 @@ pub async fn new_project(
 ) -> Result<bool, CommandError> {
     check_unsaved(&app.state::<SessionState>(), discard)?;
     let tiles = tile_service(&app.state::<TileState>())?;
-    let Some(path) = dialogs::pick_file(&window, PDF_FILTER, DevOverride::NewDrawing).await else {
+    let Some(path) = dialogs::pick_file(&window, DRAWING_FILTER, DevOverride::NewDrawing).await
+    else {
         return Ok(false);
     };
     with_session(app, move |app, session| {

@@ -1810,7 +1810,7 @@
           "description": "How the text is stored."
         },
         "raster_dpi": {
-          "description": "Resolution of raster sheets.",
+          "description": "Resolution of raster sheets in pixels per inch at the sheet size. For an image drawing\n(R.19) it is the resolution DimoMark keeps after reducing the image to at most 300 dpi,\nset when the drawing is imported with the default edit settings; not the resolution the\nfile states.",
           "format": "uint32",
           "minimum": 0,
           "type": [

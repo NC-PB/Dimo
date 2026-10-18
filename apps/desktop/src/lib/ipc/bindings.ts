@@ -1252,10 +1252,12 @@ export type DocumentInfo = {
 export type DocumentReason = 
 /**  The file is neither a PDF nor an image. */
 "not_a_pdf" | 
-/**  The file is an image; images become drawings with release 0.1 (R.19). */
-"image_not_supported" | 
+/**  The file is a HEIC or HEIF photo, which DimoMark does not read (R01 decision 7). */
+"heic_not_supported" | 
 /**  The PDF reader cannot read the file: damaged, password protected or unusual. */
 "damaged" | 
+/**  A photo or scan cannot be read: damaged, too large or an unsupported colour type. */
+"image_damaged" | 
 /**  The file is larger than the limit for drawings. */
 "too_large" | 
 /**  The PDF component (PDFium) is not loaded, so no PDF can be opened. */
@@ -1359,6 +1361,8 @@ export type ExportReason =
 "no_pdf_engine" | 
 /**  The PDF component could not write the ballooned PDF. */
 "pdf_failed" | 
+/**  The drawing is a photo or scan; its ballooned PDF is not available yet (R.21). */
+"image_drawing" | 
 /**  The report could not be built or rendered. */
 "report_failed" | 
 /**  The characteristic list (CSV, Excel) could not be written. */
@@ -2635,7 +2639,12 @@ export type Sheet = {
 	rotation: Rotation,
 	/**  How the text is stored. */
 	kind: SheetKind,
-	/**  Resolution of raster sheets. */
+	/**
+	 *  Resolution of raster sheets in pixels per inch at the sheet size. For an image drawing
+	 *  (R.19) it is the resolution DimoMark keeps after reducing the image to at most 300 dpi,
+	 *  set when the drawing is imported with the default edit settings; not the resolution the
+	 *  file states.
+	 */
 	raster_dpi: number | null,
 	/**
 	 *  Length unit of the dimensions on this sheet, `mm` or `in`. Default `mm` (D-20: never

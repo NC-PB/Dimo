@@ -3,8 +3,8 @@
 //! The viewport, the tile caches and project creation see a drawing only through
 //! [`RasterSource`]: how many sheets, how big each sheet is in sheet space (rule 4: units of
 //! 1/72 inch, origin top left), and the pixels of a region at a zoom. A PDF [`Document`]
-//! implements it today; image drawings (release 0.1, R.19) add a second implementation
-//! without changes to the tile service.
+//! implements it, and so does an [`ImageSource`] for photos and scans (R.19), without changes
+//! to the tile service.
 //!
 //! [`RasterOpener`] opens a drawing file as a source. The tile service implements it, so a
 //! source it opened is ready for tiles, and so does the [`PdfEngine`] for tools without
@@ -15,10 +15,11 @@
 use std::fmt;
 use std::sync::Arc;
 
-use dimo_core::{Rect, Sha256Hex, SheetKind, Size};
+use dimo_core::{ImageEdit, ImageFormat, Rect, Sha256Hex, SheetKind, Size};
 
 use crate::engine::{Document, PdfEngine};
 use crate::error::PdfError;
+use crate::image_source::ImageSource;
 use crate::raster::RgbaImage;
 
 /// The kind of a source. Part of every tile cache key, so tiles of a PDF and of an image with
@@ -83,6 +84,12 @@ pub trait RasterSource: Send + Sync + fmt::Debug {
     /// Images are always [`SheetKind::Raster`].
     fn sheet_kind(&self, sheet: usize) -> Result<SheetKind, PdfError>;
 
+    /// Resolution of the pixels a raster sheet is drawn from, at its sheet size, in pixels per
+    /// inch. `None` for vector sheets (a PDF).
+    fn raster_dpi(&self, _sheet: usize) -> Option<u32> {
+        None
+    }
+
     /// Sizes of all sheets in order.
     fn sheet_sizes(&self) -> Result<Vec<Size>, PdfError> {
         (0..self.sheet_count())
@@ -127,10 +134,25 @@ pub struct Opened {
     pub newly_opened: bool,
 }
 
-/// Opens drawing files as raster sources (MF F1). Image formats follow in R.19.
+/// Opens drawing files as raster sources (MF F1, images R.19).
 pub trait RasterOpener {
     /// Opens a PDF from its bytes.
     fn open_pdf(&self, bytes: Vec<u8>) -> Result<Opened, PdfError>;
+
+    /// Opens a photo or scan from its bytes with the edit settings of its pages (`None`: the
+    /// default settings on every page, for a new drawing). The default decodes it without
+    /// registering it anywhere, right for tools and tests without tiles.
+    fn open_image(
+        &self,
+        bytes: Vec<u8>,
+        format: ImageFormat,
+        edits: Option<&[ImageEdit]>,
+    ) -> Result<Opened, PdfError> {
+        Ok(Opened {
+            source: Arc::new(ImageSource::open(bytes, format, edits)?),
+            newly_opened: true,
+        })
+    }
 
     /// Gives up a source this opener opened and that is not used after all, for example when
     /// creating a project from it failed. `key` is its [`RasterSource::render_key`]. Does

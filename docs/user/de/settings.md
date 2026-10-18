@@ -7,7 +7,7 @@ Reiter) bringt dich dahin, wo du warst.
 | Eintrag | Was er tut |
 |---|---|
 | **Info** | Die Daten, die mit dem Projekt gespeichert werden, siehe unten |
-| **Neues Projekt** | Startet ein Projekt aus einer PDF-Zeichnung (⌘N) |
+| **Neues Projekt** | Startet ein Projekt aus einer PDF-Zeichnung, einem Foto oder einem Scan (⌘N) |
 | **Projekt öffnen** | Zeigt die zuletzt geöffneten Projekte und **Projekt öffnen** für jede andere Datei (⌘O) |
 | **Speichern**, **Speichern unter…** | Speichern das Projekt ([Projekte](projects.md)) |
 | **Exportieren** | Öffnet den Reiter **Bericht** ([Exporte](exports.md)) |

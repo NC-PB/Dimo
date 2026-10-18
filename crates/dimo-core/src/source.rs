@@ -24,7 +24,11 @@ use rust_decimal::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use rust_decimal::prelude::ToPrimitive;
+
+use crate::balloon::UNITS_PER_MM;
 use crate::decimal::decimal_schema;
+use crate::geometry::Size;
 use crate::sheet::Rotation;
 
 /// The kind of file a drawing revision was imported from.
@@ -274,6 +278,35 @@ pub enum Paper {
     },
 }
 
+impl Paper {
+    /// Width and height in mm as the sheet reads, exact.
+    pub fn size_mm(&self) -> (Decimal, Decimal) {
+        match *self {
+            Self::Standard { size, orientation } => {
+                let (short, long) = size.portrait_mm();
+                match orientation {
+                    Orientation::Portrait => (short, long),
+                    Orientation::Landscape => (long, short),
+                }
+            }
+            Self::Custom {
+                width_mm,
+                height_mm,
+            } => (width_mm, height_mm),
+        }
+    }
+
+    /// The sheet this paper gives, in sheet units (rule 4).
+    pub fn sheet_size(&self) -> Size {
+        let (width, height) = self.size_mm();
+        let units = |mm: Decimal| mm.to_f64().unwrap_or(0.0) * UNITS_PER_MM;
+        Size {
+            width: units(width),
+            height: units(height),
+        }
+    }
+}
+
 /// Standard paper sizes (R01 decision 9).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -295,6 +328,24 @@ pub enum PaperSize {
     Tabloid,
 }
 
+impl PaperSize {
+    /// Short and long side in mm, exact.
+    pub const fn portrait_mm(self) -> (Decimal, Decimal) {
+        const fn mm(tenths: u32) -> Decimal {
+            Decimal::from_parts(tenths, 0, 0, false, 1)
+        }
+        match self {
+            Self::A4 => (mm(2100), mm(2970)),
+            Self::A3 => (mm(2970), mm(4200)),
+            Self::A2 => (mm(4200), mm(5940)),
+            Self::A1 => (mm(5940), mm(8410)),
+            Self::A0 => (mm(8410), mm(11890)),
+            Self::Letter => (mm(2159), mm(2794)),
+            Self::Tabloid => (mm(2794), mm(4318)),
+        }
+    }
+}
+
 /// Paper orientation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -314,6 +365,27 @@ mod tests {
 
     fn dec(text: &str) -> Decimal {
         text.parse().unwrap()
+    }
+
+    #[test]
+    fn paper_sizes_follow_orientation() {
+        let a4 = Paper::Standard {
+            size: PaperSize::A4,
+            orientation: Orientation::Landscape,
+        };
+        assert_eq!(a4.size_mm(), (dec("297.0"), dec("210.0")));
+        let letter = Paper::Standard {
+            size: PaperSize::Letter,
+            orientation: Orientation::Portrait,
+        };
+        let size = letter.sheet_size();
+        assert!((size.width - 612.0).abs() < 1e-9 && (size.height - 792.0).abs() < 1e-9);
+        let custom = Paper::Custom {
+            width_mm: dec("25.4"),
+            height_mm: dec("50.8"),
+        };
+        let size = custom.sheet_size();
+        assert!((size.width - 72.0).abs() < 1e-9 && (size.height - 144.0).abs() < 1e-9);
     }
 
     #[test]

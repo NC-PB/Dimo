@@ -165,22 +165,18 @@ fn a_pdf_becomes_a_project_with_the_sheets_the_reader_found() {
 }
 
 #[test]
-fn images_and_unknown_files_are_refused_before_opening() {
+fn heic_photos_and_unknown_files_are_refused_before_opening() {
     let opener = opener();
     let mut env = common::env();
-    for (bytes, format) in [
-        (&b"\xFF\xD8\xFF\xE0 jpeg"[..], ImageFormat::Jpeg),
-        (&b"\x89PNG\r\n\x1a\n png"[..], ImageFormat::Png),
-        (&b"II*\0 tiff"[..], ImageFormat::Tiff),
-        (&b"MM\0* tiff"[..], ImageFormat::Tiff),
-    ] {
-        let error =
-            create_from_drawing(bytes.to_vec(), "x", &opener, new_project(), &mut env).unwrap_err();
-        assert!(
-            matches!(error, CreateError::ImageNotSupported(f) if f == format),
-            "{error}"
-        );
-    }
+    let error = create_from_drawing(
+        b"\0\0\0\x18ftypheic\0\0\0\0mif1heic".to_vec(),
+        "IMG_0001.HEIC",
+        &opener,
+        new_project(),
+        &mut env,
+    )
+    .unwrap_err();
+    assert!(matches!(error, CreateError::HeicNotSupported), "{error}");
     let error = create_from_drawing(
         b"GIF89a".to_vec(),
         "x.gif",
@@ -191,6 +187,23 @@ fn images_and_unknown_files_are_refused_before_opening() {
     .unwrap_err();
     assert!(matches!(error, CreateError::UnknownType), "{error}");
     assert_eq!(*opener.opened.borrow(), 0, "nothing was opened");
+}
+
+#[test]
+fn a_damaged_image_is_an_open_error() {
+    let mut env = common::env();
+    let error = create_from_drawing(
+        b"\xFF\xD8\xFF\xE0 not really a jpeg".to_vec(),
+        "photo.jpg",
+        &opener(),
+        new_project(),
+        &mut env,
+    )
+    .unwrap_err();
+    assert!(
+        matches!(error, CreateError::Open(PdfError::Image(_))),
+        "{error}"
+    );
 }
 
 #[test]
@@ -306,7 +319,8 @@ fn the_drawing_of_a_project_opens_through_its_source() {
         &Sha256Hex::of(common::DRAWING)
     );
 
-    // An image revision (release 0.1) cannot be opened yet.
+    // An image revision opens through the image path: these bytes are a PDF, so it fails
+    // there (the real cases are in tests/images.rs).
     let mut file = ProjectFile::new(
         created.session.project().clone(),
         Timestamp::parse("2026-03-01T08:00:00Z").unwrap(),
@@ -319,7 +333,7 @@ fn the_drawing_of_a_project_opens_through_its_source() {
     let session = ProjectSession::from_file(file, None);
     assert!(matches!(
         open_drawing(&session, &opener),
-        Err(CreateError::ImageNotSupported(ImageFormat::Png))
+        Err(CreateError::Open(PdfError::Image(_)))
     ));
 }
 

@@ -355,7 +355,7 @@ impl Drop for Document {
 }
 
 /// Validates a render request and returns the output size in pixels.
-fn output_size(region: Rect, zoom: f64) -> Result<(u32, u32), PdfError> {
+pub(crate) fn output_size(region: Rect, zoom: f64) -> Result<(u32, u32), PdfError> {
     if !(zoom.is_finite() && zoom > 0.0) {
         return Err(PdfError::InvalidRender(format!(
             "zoom must be positive, got {zoom}"
