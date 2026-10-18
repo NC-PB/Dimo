@@ -33,7 +33,8 @@ To update:
 1. Download the artifact `appimage-license-data` of the failed run. Replace `libs.txt` and the
    whole `copyright/` folder with its content (delete the old folder first, so copyright files
    of packages that are gone disappear), or run `./scripts/appimage-libs.sh --update <AppImage>`
-   on Ubuntu 22.04.
+   on Ubuntu 22.04. Files from the artifact come back executable: run
+   `chmod 644 scripts/appimage/copyright/*` so git sees only real changes.
 2. Run `node scripts/third-party-licenses.mjs`. It stops when `sources.tsv` needs a change: a
    new source package whose copyright file is not in the machine readable Debian format needs a
    line, a line of a package that is gone or whose file is machine readable must go.

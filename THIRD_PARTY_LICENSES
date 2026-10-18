@@ -29956,13 +29956,13 @@ License: public-domain
  contributors.
 
 --------------------------------------------------------------------------------
-* systemd 249.11-0ubuntu3.23 (Ubuntu source package)
-    Packages: libsystemd0 249.11-0ubuntu3.23, libudev1 249.11-0ubuntu3.23
+* systemd 249.11-0ubuntu3.22 (Ubuntu source package)
+    Packages: libsystemd0 249.11-0ubuntu3.22, libudev1 249.11-0ubuntu3.22
     Licenses: CC0-1.0; Expat; GPL-2; GPL-2 with Linux-syscall-note exception; GPL-2+; LGPL-2.1+; public-domain
     Files:
       usr/lib/libsystemd.so.0
       usr/lib/libudev.so.1
-    Source code: https://launchpad.net/ubuntu/+source/systemd/249.11-0ubuntu3.23
+    Source code: https://launchpad.net/ubuntu/+source/systemd/249.11-0ubuntu3.22
 --------------------------------------------------------------------------------
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: systemd
