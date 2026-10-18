@@ -78,6 +78,7 @@ class FakeRust implements ProjectCommands {
       revision: this.revision,
       patch: { changes: step.changes },
       status: status({ modified: true, can_undo: step.canUndo, can_redo: step.canRedo }),
+      drawing: null,
     };
     if (this.eventsDelayed) {
       this.delayed.push(patched);
@@ -260,6 +261,7 @@ describe("project store (T1.5)", () => {
       revision,
       patch: { changes: addChanges(`c${String(revision)}`, revision, revision - 1) },
       status: status({ modified: true, can_undo: true }),
+      drawing: null,
     });
     rust.emitPatched(event(1, 1));
     rust.emitPatched(event(1, 1));

@@ -701,6 +701,7 @@ fn image_edit_is_refused_for_pdf_revisions_and_undoable_for_images() {
         revision,
         page,
         edit: Box::new(edit.clone()),
+        geometry: None,
     };
     assert_eq!(
         doc.execute(set(pdf, 0, &edit), &mut env),
@@ -762,4 +763,209 @@ fn image_edit_is_refused_for_pdf_revisions_and_undoable_for_images() {
     ));
     doc.undo(&mut env).unwrap();
     assert_eq!(*doc.project(), original);
+}
+
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one edit, every kind of sheet geometry"
+)]
+fn image_edit_with_geometry_moves_everything_on_the_sheet_and_undoes() {
+    // R.20: the sheet gets the new size, balloons, anchors, regions, views and the zone grid
+    // move with the map; undo restores all of it.
+    use dimo_core::{
+        DrawingSource, Homography, ImageEdit, ImageFormat, Rect, SheetMap, SheetView, ZoneGrid,
+        off_sheet_balloons,
+    };
+
+    let (doc, mut env) = doc_with(0);
+    let mut project = doc.project().clone();
+    let sheets = project.revisions[0].sheets.len();
+    project.revisions[0].source = DrawingSource::Image {
+        format: ImageFormat::Tiff,
+        pages: vec![ImageEdit::default(); sheets],
+    };
+    let mut doc = Document::new(project);
+    let image = doc.project().revisions[0].id;
+    let sheet = common::sheet(doc.project(), 0);
+    let region = OrientedBox {
+        center: Point { x: 80.0, y: 200.0 },
+        size: Size {
+            width: 30.0,
+            height: 8.0,
+        },
+        angle: 0.0,
+    };
+    doc.execute(
+        Command::AddCharacteristic {
+            sheet,
+            position: Point { x: 100.0, y: 180.0 },
+            anchor: Point { x: 90.0, y: 200.0 },
+            region: Some(region),
+            values: vec![],
+            insert_after: None,
+        },
+        &mut env,
+    )
+    .unwrap();
+    doc.execute(
+        Command::SetViews {
+            sheet,
+            views: vec![SheetView {
+                label: "A-A".into(),
+                rect: Rect::new(50.0, 50.0, 100.0, 40.0),
+            }],
+        },
+        &mut env,
+    )
+    .unwrap();
+    doc.execute(
+        Command::SetZoneGrid {
+            sheet,
+            grid: Some(ZoneGrid {
+                frame: Rect::new(10.0, 10.0, 500.0, 300.0),
+                column_labels: vec!["1".into(), "2".into()],
+                row_labels: vec!["A".into()],
+            }),
+        },
+        &mut env,
+    )
+    .unwrap();
+    let original = doc.project().clone();
+
+    // A clockwise quarter turn of the page: (x, y) -> (H - y, x), H the old sheet height.
+    let old = *original.sheet(sheet).map(|s| &s.size).unwrap();
+    let geometry = SheetMap {
+        size: Size {
+            width: old.height,
+            height: old.width,
+        },
+        raster_dpi: Some(200),
+        map: Homography::affine(0.0, -1.0, old.height, 1.0, 0.0, 0.0),
+    };
+    assert_eq!(off_sheet_balloons(&original, sheet, &geometry), 0);
+    let edit = ImageEdit {
+        rotation: Rotation::Deg90,
+        ..ImageEdit::default()
+    };
+    let patch = doc
+        .execute(
+            Command::SetImageEdit {
+                revision: image,
+                page: 0,
+                edit: Box::new(edit),
+                geometry: Some(Box::new(geometry)),
+            },
+            &mut env,
+        )
+        .unwrap();
+    let kinds: Vec<&str> = patch
+        .changes
+        .iter()
+        .map(|c| match c {
+            Change::RevisionChanged { .. } => "revision",
+            Change::SheetChanged { .. } => "sheet",
+            Change::BalloonChanged { .. } => "balloon",
+            Change::CharacteristicChanged { .. } => "characteristic",
+            _ => "other",
+        })
+        .collect();
+    assert_eq!(kinds, ["revision", "sheet", "balloon", "characteristic"]);
+    let project = doc.project();
+    let s = project.sheet(sheet).unwrap();
+    assert_eq!(s.size, geometry.size);
+    assert_eq!(s.raster_dpi, Some(200));
+    let h = old.height;
+    let view = s.views[0].rect;
+    assert!((view.origin.x - (h - 90.0)).abs() < 1e-9 && (view.origin.y - 50.0).abs() < 1e-9);
+    assert!((view.size.width - 40.0).abs() < 1e-9 && (view.size.height - 100.0).abs() < 1e-9);
+    assert!(s.zone_grid.is_some());
+    let balloon = &project.balloons[0];
+    assert_eq!(
+        balloon.position,
+        Point {
+            x: h - 180.0,
+            y: 100.0
+        }
+    );
+    assert_eq!(
+        balloon.anchor,
+        Point {
+            x: h - 200.0,
+            y: 90.0
+        }
+    );
+    let moved = project.characteristics[0].sources[0].region;
+    assert_eq!(
+        moved.center,
+        Point {
+            x: h - 200.0,
+            y: 80.0
+        }
+    );
+    assert!((moved.angle + 90.0).abs() < 1e-9);
+
+    doc.undo(&mut env).unwrap();
+    assert_eq!(
+        *doc.project(),
+        original,
+        "undo restores edit, sheet and balloons"
+    );
+    doc.redo(&mut env).unwrap();
+    assert_eq!(
+        doc.project().balloons[0].position,
+        Point {
+            x: h - 180.0,
+            y: 100.0
+        }
+    );
+    doc.undo(&mut env).unwrap();
+
+    // A map that pushes the balloon off the sheet is counted, and applied it clamps.
+    let shrink = SheetMap {
+        size: Size {
+            width: 50.0,
+            height: 50.0,
+        },
+        raster_dpi: Some(100),
+        map: Homography::IDENTITY,
+    };
+    assert_eq!(off_sheet_balloons(&original, sheet, &shrink), 1);
+    doc.execute(
+        Command::SetImageEdit {
+            revision: image,
+            page: 0,
+            edit: Box::new(ImageEdit {
+                clean_up: true,
+                ..ImageEdit::default()
+            }),
+            geometry: Some(Box::new(shrink)),
+        },
+        &mut env,
+    )
+    .unwrap();
+    let project = doc.project();
+    assert_eq!(project.balloons[0].position, Point { x: 50.0, y: 50.0 });
+    assert!(
+        project.sheet(sheet).unwrap().views.is_empty(),
+        "a view with nothing left on the sheet is removed"
+    );
+}
+
+#[test]
+fn image_edit_commands_written_before_r20_still_load() {
+    let json = serde_json::json!({
+        "type": "set_image_edit",
+        "revision": "00000000-0000-0000-0000-000000000000",
+        "page": 0,
+        "edit": {
+            "rotation": "deg0", "fine_angle": "0", "corners": null, "trim": null,
+            "paper": null, "clean_up": false
+        }
+    });
+    let command: Command = serde_json::from_value(json).unwrap();
+    assert!(matches!(
+        command,
+        Command::SetImageEdit { geometry: None, .. }
+    ));
 }

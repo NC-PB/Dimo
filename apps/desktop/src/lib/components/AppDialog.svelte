@@ -23,8 +23,8 @@
     closeLabel: string;
     /** A question that must be answered: no closing by a click outside. */
     alert?: boolean;
-    /** Width of the frame. */
-    width?: "narrow" | "wide";
+    /** Width of the frame; `editor` is a large frame for the image editor (R.20). */
+    width?: "narrow" | "wide" | "editor";
     testid?: string;
     /** Keys pressed inside the dialog, for example `?` closing the cheat sheet. */
     onkeydown?: (event: KeyboardEvent) => void;
@@ -50,6 +50,12 @@
     keyboard = appKeyboard,
   }: Props = $props();
 
+  const FRAME = {
+    narrow: "w-96 max-w-[90vw] overflow-y-auto",
+    wide: "w-[36rem] max-w-[92vw] overflow-y-auto",
+    editor: "h-[88vh] max-h-[88vh] w-[72rem] max-w-[94vw] overflow-hidden",
+  } as const;
+
   // Counted while open; untracked, so the count it changes does not run the effect again.
   $effect(() => {
     if (open) {
@@ -58,7 +64,7 @@
   });
 
   const contentClass = $derived(
-    `fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] ${width === "wide" ? "w-[36rem] max-w-[92vw]" : "w-96 max-w-[90vw]"} -translate-x-1/2 -translate-y-1/2 flex-col gap-3 overflow-y-auto rounded-xl border border-border bg-surface p-5 text-text shadow-lg`,
+    `fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] ${FRAME[width]} -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-xl border border-border bg-surface p-5 text-text shadow-lg`,
   );
   const overlayClass = "fixed inset-0 z-40 bg-black/40";
   const titleClass = "font-heading text-lg font-semibold";

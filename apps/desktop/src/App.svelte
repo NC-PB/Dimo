@@ -5,6 +5,7 @@
   import Shortcuts from "$lib/components/Shortcuts.svelte";
   import PropertiesPane from "$lib/components/PropertiesPane.svelte";
   import DeleteCharacteristicsDialog from "$lib/components/DeleteCharacteristicsDialog.svelte";
+  import ImageEditor from "$lib/components/ImageEditor.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import SetupPane from "$lib/components/SetupPane.svelte";
   import StartScreen from "$lib/components/StartScreen.svelte";
@@ -167,3 +168,4 @@
 <UnsavedChangesDialog />
 <DeleteCharacteristicsDialog />
 <ProjectSettingsDialog />
+<ImageEditor />

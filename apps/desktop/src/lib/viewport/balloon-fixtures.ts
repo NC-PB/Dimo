@@ -58,7 +58,13 @@ export class FakeCommands implements ProjectCommands {
 
   #patched(): ProjectPatched {
     this.revision += 1;
-    return { session: 1, revision: this.revision, patch: this.reply, status: status() };
+    return {
+      session: 1,
+      revision: this.revision,
+      patch: this.reply,
+      status: status(),
+      drawing: null,
+    };
   }
 }
 

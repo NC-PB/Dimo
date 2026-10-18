@@ -765,6 +765,17 @@ fn command(project: &Project, op: &Op) -> Command {
                 clean_up: *clean_up,
                 ..ImageEdit::default()
             }),
+            // Odd turns move the sheet geometry as an editor apply does (R.20).
+            geometry: (*turns % 2 == 1).then(|| {
+                Box::new(dimo_core::SheetMap {
+                    size: dimo_core::Size {
+                        width: 300.0,
+                        height: 400.0,
+                    },
+                    raster_dpi: Some(150),
+                    map: dimo_core::Homography::affine(0.5, 0.1, 3.0, -0.1, 0.5, 7.0),
+                })
+            }),
         },
         Op::RevisionLabel { label } => Command::UpdateRevisionLabel {
             revision: project.current_revision,

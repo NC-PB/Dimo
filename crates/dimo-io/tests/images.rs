@@ -12,6 +12,7 @@ use std::sync::Arc;
 use dimo_core::{DrawingSource, ImageEdit, ImageFormat, SheetKind};
 use dimo_io::project::{
     CreatedProject, Layout, NewProject, ProjectSession, create_from_drawing_file, open_drawing,
+    plan_image_edit,
 };
 use dimo_pdf::{Opened, PdfError, RasterOpener, RasterSource};
 use image::{ImageEncoder, RgbImage};
@@ -178,22 +179,13 @@ fn a_three_page_tiff_becomes_a_project_with_three_sheets() {
 fn reopening_uses_the_stored_edit_settings() {
     let (created, dir) = create("photo.png", &png());
     let mut session = created.session;
-    let revision = session.project().current_revision().unwrap().clone();
     let turned = ImageEdit {
         rotation: dimo_core::Rotation::Deg90,
         ..ImageEdit::default()
     };
     let mut env = common::env();
-    session
-        .execute(
-            dimo_core::Command::SetImageEdit {
-                revision: revision.id,
-                page: 0,
-                edit: Box::new(turned),
-            },
-            &mut env,
-        )
-        .unwrap();
+    let plan = plan_image_edit(session.project(), created.source.as_ref(), 0, &turned).unwrap();
+    session.execute(plan.command, &mut env).unwrap();
     let path = dir.path().join("turned.dimo");
     session.save_as(&path, Layout::Zip).unwrap();
     let (reopened, _) = ProjectSession::open(&path).unwrap();
@@ -205,4 +197,140 @@ fn reopening_uses_the_stored_edit_settings() {
         (size.width - before.height).abs() < 1e-9,
         "the turn swaps the sheet"
     );
+    // R.20: the project sheet follows the edit, nothing drifts.
+    let sheet = &reopened.project().current_revision().unwrap().sheets[0];
+    assert_eq!(sheet.size, size);
+}
+
+#[test]
+fn an_edit_keeps_balloons_on_their_features_and_undo_restores_it() {
+    // R.20 acceptance: turn, straighten, trim and put on A4; the balloon still points at the
+    // same pixel of the photo, and undo gives back edit, sheet and balloon.
+    let (created, _dir) = create("photo.png", &png());
+    let mut session = created.session;
+    let source = created.source;
+    let image = source.as_image().unwrap();
+    let mut env = common::env();
+    let sheet_id = session.project().current_revision().unwrap().sheets[0].id;
+    // The pixel (100, 200) of the photo has the colour (100, 200, 128).
+    let feature = dimo_core::Point { x: 100.5, y: 200.5 };
+    let on_sheet = image
+        .page_geometry(0)
+        .unwrap()
+        .to_sheet
+        .apply(feature)
+        .unwrap();
+    session
+        .execute(
+            dimo_core::Command::AddCharacteristic {
+                sheet: sheet_id,
+                position: dimo_core::Point {
+                    x: on_sheet.x + 20.0,
+                    y: on_sheet.y - 20.0,
+                },
+                anchor: on_sheet,
+                region: None,
+                values: vec![],
+                insert_after: None,
+            },
+            &mut env,
+        )
+        .unwrap();
+    let before = session.project().clone();
+    let edit = ImageEdit {
+        rotation: dimo_core::Rotation::Deg90,
+        fine_angle: "3.5".parse().unwrap(),
+        trim: Some(dimo_core::Trim {
+            left: "0.05".parse().unwrap(),
+            top: "0.1".parse().unwrap(),
+            right: "0.9".parse().unwrap(),
+            bottom: "0.95".parse().unwrap(),
+        }),
+        paper: Some(dimo_core::Paper::Standard {
+            size: dimo_core::PaperSize::A4,
+            orientation: dimo_core::Orientation::Portrait,
+        }),
+        ..ImageEdit::default()
+    };
+    let plan = plan_image_edit(session.project(), source.as_ref(), 0, &edit).unwrap();
+    assert_eq!(plan.off_sheet, 0);
+    session.execute(plan.command, &mut env).unwrap();
+
+    let edited = image.with_edits(std::slice::from_ref(&edit)).unwrap();
+    let project = session.project();
+    let sheet = &project.current_revision().unwrap().sheets[0];
+    assert_eq!(sheet.size, edited.sheet_size(0).unwrap());
+    assert_eq!(sheet.raster_dpi, edited.raster_dpi(0));
+    let anchor = project.balloons[0].anchor;
+    let back = edited.page_point(0, anchor).unwrap().unwrap();
+    assert!(
+        (back.x - feature.x).abs() < 1e-6 && (back.y - feature.y).abs() < 1e-6,
+        "{back:?}"
+    );
+    let tile = edited
+        .render_region(
+            0,
+            dimo_core::Rect::new(anchor.x - 0.05, anchor.y - 0.05, 0.1, 0.1),
+            10.0,
+        )
+        .unwrap();
+    let [r, g, b, _] = tile.pixel(0, 0).unwrap();
+    assert!(
+        r.abs_diff(100) <= 3 && g.abs_diff(200) <= 3 && b == 128,
+        "{r} {g} {b}"
+    );
+
+    session.document_mut().undo(&mut env).unwrap();
+    assert_eq!(
+        *session.project(),
+        before,
+        "undo restores edit, sheet and balloon"
+    );
+    session.document_mut().redo(&mut env).unwrap();
+    assert_eq!(session.project().balloons[0].anchor, anchor);
+}
+
+#[test]
+fn a_clean_up_only_edit_leaves_the_sheet_and_balloons_alone() {
+    // R.20 review: a balloon on the sheet edge is not counted as leaving the sheet, and no
+    // balloon changes, when only the clean up is switched.
+    let (created, _dir) = create("photo.png", &png());
+    let mut session = created.session;
+    let source = created.source;
+    let mut env = common::env();
+    let sheet = session.project().current_revision().unwrap().sheets[0].clone();
+    session
+        .execute(
+            dimo_core::Command::AddCharacteristic {
+                sheet: sheet.id,
+                position: dimo_core::Point {
+                    x: sheet.size.width,
+                    y: 10.0,
+                },
+                anchor: dimo_core::Point {
+                    x: sheet.size.width,
+                    y: sheet.size.height,
+                },
+                region: None,
+                values: vec![],
+                insert_after: None,
+            },
+            &mut env,
+        )
+        .unwrap();
+    let cleaned = ImageEdit {
+        clean_up: true,
+        ..ImageEdit::default()
+    };
+    let plan = plan_image_edit(session.project(), source.as_ref(), 0, &cleaned).unwrap();
+    assert_eq!(plan.off_sheet, 0);
+    assert!(matches!(
+        plan.command,
+        dimo_core::Command::SetImageEdit { geometry: None, .. }
+    ));
+    let patch = session.execute(plan.command, &mut env).unwrap();
+    assert!(matches!(
+        patch.changes[..],
+        [dimo_core::Change::RevisionChanged { .. }]
+    ));
 }

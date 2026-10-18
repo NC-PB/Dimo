@@ -53,6 +53,30 @@ Projekt ab.
 - Merkmalsliste und Berichte funktionieren wie bei einem PDF. Das PDF mit Ballons gibt es für
   Fotos und Scans noch nicht.
 
+### Bild anpassen
+
+**Zeichnung > Bild anpassen** (auch der erste Schritt im Einrichtungsbereich nach dem Öffnen eines
+Fotos) macht aus einem Foto ein gerades Blatt. Das Originalbild bleibt unverändert im Projekt; die
+Einstellungen lassen sich jederzeit wieder ändern.
+
+1. **Drehen:** in 90-Grad-Schritten drehen, dann mit dem Schieber gerade richten (bis 10 Grad in
+   beide Richtungen) oder einen Winkel eintippen (bis 45 Grad; positiv dreht im Uhrzeigersinn).
+2. **Ecken:** Bei einem schräg aufgenommenen Foto schalte "Ecken korrigieren" ein. DimoMark sucht
+   den Blattrand und setzt die vier Griffe auf seine Ecken; findet es ihn nicht, beginnen die
+   Griffe an den Bildecken. Zieh sie auf die Ecken des Blatts. Die Ecken richten das Blatt selbst
+   gerade, darum wird der Winkel auf 0 gesetzt.
+3. **Zuschneiden:** Zieh die Ecken des Rechtecks oder das Rechteck selbst, damit nur das Blatt
+   bleibt.
+4. **Papier:** Wähle das Papier, das das Foto zeigt (A4 bis A0, Letter, Tabloid oder eine eigene
+   Größe in mm) und Hoch- oder Querformat. Das zugeschnittene Bild kommt auf dieses Blatt, damit
+   gemessene Maße passen. "Wie im Foto" behält die Größe des Fotos.
+5. **Aufbereiten** (freiwillig) zeigt das Bild grau mit weißem Hintergrund und kräftigeren Linien.
+
+**Übernehmen** ist ein Schritt, den **Rückgängig** zurücknimmt. Bereits gesetzte Ballons bleiben
+an ihrer Stelle auf der Zeichnung. Würden Ballons außerhalb des neuen Blatts liegen, fragt DimoMark
+zuerst; "Trotzdem übernehmen" setzt sie an den Blattrand. **Zurücksetzen** stellt das Bild wieder
+so her, wie es geöffnet wurde.
+
 ## Was in einer Projektdatei steht
 
 Eine `.dimo`-Datei enthält die Zeichnung, wie du sie importiert hast, die Merkmale und Ballons,

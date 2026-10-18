@@ -13,6 +13,7 @@ import ChevronDown from "@lucide/svelte/icons/chevron-down";
 import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 import CircleDot from "@lucide/svelte/icons/circle-dot";
 import Copy from "@lucide/svelte/icons/copy";
+import Crop from "@lucide/svelte/icons/crop";
 import FileX from "@lucide/svelte/icons/file-x";
 import Printer from "@lucide/svelte/icons/printer";
 import X from "@lucide/svelte/icons/x";
@@ -68,6 +69,7 @@ export type Icon = Component<LucideProps>;
 
 export const icons = {
   about: BadgeInfo,
+  adjustImage: Crop,
   addParts: Plus,
   back: ChevronLeft,
   close: X,

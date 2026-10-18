@@ -1226,6 +1226,7 @@ dependencies = [
  "insta",
  "pdfium-render",
  "png 0.18.1",
+ "rust_decimal",
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",

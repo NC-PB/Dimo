@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { fieldClass } from "$lib/ui/fields";
+  import { buttonClass, fieldClass } from "$lib/ui/fields";
   import { m } from "$lib/i18n";
   import type { Scale, TableClass, ToleranceTableInfo, Unit } from "$lib/ipc/bindings";
   import { SCALE_PRESETS, SHEET_UNITS, presetFor, scaleText } from "$lib/sheet-properties";
   import { setupStore, type SetupAnswers, type SetupStore } from "$lib/stores/setup.svelte";
+  import { imageEditor, type ImageEditorStore } from "$lib/stores/image-editor.svelte";
   import { toleranceStore } from "$lib/stores/tolerance.svelte";
 
   /**
@@ -11,6 +12,7 @@
    * project. It asks for the general tolerance as large choices (the classes come from Rust's
    * table list, never from a fixed list here), unit and scale, and part number and customer.
    * Start ballooning sends the answers through the setup store; Skip closes it unchanged.
+   * For a photo or scan the first step opens the image editor (R.20).
    */
   interface Props {
     setup?: SetupStore;
@@ -18,9 +20,19 @@
     tables?: { readonly generalTables: readonly ToleranceTableInfo[] };
     /** Number of sheets of the drawing, for the "all sheets" hint. */
     sheetCount?: number;
+    /** The image editor, offered as the first step for a photo or scan. */
+    editor?: ImageEditorStore;
   }
 
-  let { setup = setupStore, tables = toleranceStore, sheetCount = 1 }: Props = $props();
+  let {
+    setup = setupStore,
+    tables = toleranceStore,
+    sheetCount = 1,
+    editor = imageEditor,
+  }: Props = $props();
+
+  // Step numbers move down by one when the image step comes first.
+  const first = $derived(editor.available ? 2 : 1);
 
   const NONE = "none";
 
@@ -150,10 +162,26 @@
         <p class="text-[13px] leading-normal text-text-muted">{m.setup_lead()}</p>
       </div>
 
+      {#if editor.available}
+        <div class="border-b border-border px-4 py-3.5" data-testid="setup-image">
+          <h3 class="mb-2 flex items-center gap-2.5 font-semibold">
+            <span class={stepNumber} aria-hidden="true">1</span>
+            {m.setup_image_title()}
+          </h3>
+          <p class="mb-2 text-xs leading-snug text-text-muted">{m.setup_image_hint()}</p>
+          <button
+            type="button"
+            class={buttonClass.secondary}
+            onclick={() => {
+              editor.show();
+            }}>{m.setup_image_button()}</button
+          >
+        </div>
+      {/if}
       <fieldset class="border-b border-border px-4 py-3.5">
         <legend class="contents">
           <span class="mb-2 flex items-center gap-2.5 font-semibold">
-            <span class={stepNumber} aria-hidden="true">1</span>
+            <span class={stepNumber} aria-hidden="true">{first}</span>
             {m.tolerance_general()}
             {#if anyDraft}
               <span
@@ -190,7 +218,7 @@
 
       <div class="border-b border-border px-4 py-3.5">
         <h3 class="mb-2 flex items-center gap-2.5 font-semibold">
-          <span class={stepNumber} aria-hidden="true">2</span>
+          <span class={stepNumber} aria-hidden="true">{first + 1}</span>
           {m.setup_sheet_title()}
         </h3>
         <div class="flex flex-wrap gap-2">
@@ -235,7 +263,7 @@
 
       <div class="px-4 py-3.5">
         <h3 class="mb-2 flex items-center gap-2.5 font-semibold">
-          <span class={stepNumber} aria-hidden="true">3</span>
+          <span class={stepNumber} aria-hidden="true">{first + 2}</span>
           {m.setup_part_title()}
         </h3>
         <div class="flex flex-wrap gap-2">

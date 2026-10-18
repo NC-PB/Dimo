@@ -36,6 +36,7 @@ pub mod project;
 pub mod proposal;
 pub mod report;
 pub mod sheet;
+pub mod sheet_map;
 pub mod source;
 pub mod truth;
 pub mod zip_host;
@@ -50,7 +51,7 @@ pub use characteristic::{
     FieldValue, Inspection, InvalidLength, Length, Origin, SourceRegion, TextSource, ToleranceRule,
     Unit,
 };
-pub use command::{BalloonMove, Command, CommandError, RejectReason};
+pub use command::{BalloonMove, Command, CommandError, RejectReason, off_sheet_balloons};
 pub use derivation::{
     DerivationHint, DerivationRule, RangeBound, SizeRange, TableLookup, TableRef,
     ToleranceDerivation, UnitConversion,
@@ -87,6 +88,7 @@ pub use report::{
 pub use sheet::{
     DrawingRevision, Rotation, Scale, Sha256Hex, Sheet, SheetField, SheetKind, SheetView, ZoneGrid,
 };
+pub use sheet_map::{Homography, SheetMap};
 pub use source::{
     DrawingSource, ImageEdit, ImageFormat, ImagePoint, Orientation, Paper, PaperSize, SheetCorners,
     Trim,

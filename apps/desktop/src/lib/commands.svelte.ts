@@ -26,6 +26,7 @@ import {
 import { balloonTools } from "$lib/stores/balloon-tools.svelte";
 import { documentStore } from "$lib/stores/document.svelte";
 import { exportStore } from "$lib/stores/export.svelte";
+import { imageEditor } from "$lib/stores/image-editor.svelte";
 import { numberingStore } from "$lib/stores/numbering.svelte";
 import { projectStore } from "$lib/stores/project.svelte";
 import { selection } from "$lib/stores/selection.svelte";
@@ -336,6 +337,16 @@ export const COMMANDS = {
   },
 
   // Drawing: sheet, zones and views, tolerances, project.
+  // R.20: the image editor of photo and scan drawings.
+  adjust_image: {
+    label: () => m.cmd_adjust_image(),
+    icon: icons.adjustImage,
+    description: () => m.cmd_adjust_image_desc(),
+    disabled: () => needSheet() ?? (imageEditor.available ? null : m.reason_not_image()),
+    run: () => {
+      imageEditor.show();
+    },
+  },
   rotate_left: {
     label: () => m.rotate_left(),
     icon: icons.rotateLeft,

@@ -19,6 +19,7 @@
 
   /**
    * Drawing tab (ADR 0007, mockup "Drawing tab"): sheet, zones and views, tolerances, project.
+   * The sheet group starts with Adjust image, on for photo and scan drawings (R.20).
    * Decimal rules, company tables and the project balloon style open a small dialog
    * (`ProjectSettingsDialog`, T3.16).
    * Unit and scale act on the sheet on screen with an undoable `update_sheet`; a scale that is
@@ -50,6 +51,7 @@
 </script>
 
 {#snippet sheetGroup()}
+  <CommandButton id="adjust_image" size="large" />
   <CommandButton id="rotate_left" size="large" />
   <CommandButton id="rotate_right" size="large" />
   <div class="flex flex-col gap-1">

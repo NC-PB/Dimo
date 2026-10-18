@@ -28,13 +28,15 @@ mod payload;
 mod reads;
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use dimo_core::{Command, Environment, Patch, ProjectInfo, Sha256Hex};
+use dimo_core::{Command, Environment, ImageEdit, Patch, ProjectInfo, Sha256Hex};
 use dimo_io::autosave;
 use dimo_io::lock::{LockOwner, ProjectLock};
 use dimo_io::project::{
     AutosaveTarget, Layout, NewProject, ProjectSession, create_from_drawing_file, open_drawing,
 };
+use dimo_pdf::RasterSource;
 use dimo_pdf::tiles::TileService;
 use dimo_report::issue::IssueDefaults;
 
@@ -42,8 +44,9 @@ use crate::env::DesktopEnvironment;
 use crate::ipc::{AutosaveReason, CommandError, DocumentInfo};
 use open::{OpenProject, same_file};
 pub use payload::{
-    Autosave, CloseRequested, ExportSnapshot, OpenNotice, ProjectLoaded, ProjectPatched,
-    ProjectSnapshot, ProjectStatus, ProjectStatusChanged, RecognitionTarget, SnapshotState,
+    Autosave, CloseRequested, ExportSnapshot, ImageEditOutcome, OpenNotice, ProjectLoaded,
+    ProjectPatched, ProjectSnapshot, ProjectStatus, ProjectStatusChanged, RecognitionTarget,
+    SnapshotState,
 };
 
 /// The project state of the app window. See the module docs.
@@ -219,6 +222,7 @@ impl AppSession {
         let open = OpenProject {
             drawing: DocumentInfo::of(created.source.as_ref(), &name)?,
             hash: created.source.render_key(),
+            source: created.source,
             project: created.session,
             lock: created.lock,
             revision: 0,
@@ -293,6 +297,7 @@ impl AppSession {
         Ok(OpenProject {
             drawing: DocumentInfo::of(opened.source.as_ref(), &name)?,
             hash: opened.source.render_key(),
+            source: opened.source,
             project,
             lock,
             revision: 0,
@@ -403,11 +408,121 @@ impl AppSession {
         })
     }
 
-    /// Executes a document command as one undo step and journals it (D-28).
+    /// Executes a document command as one undo step and journals it (D-28). Image edits are
+    /// refused here: their sheet geometry is derived in Rust by
+    /// [`AppSession::apply_image_edit`], never taken from the frontend (R.20, rule 2).
     pub fn execute(&mut self, command: Command) -> Result<ProjectPatched, CommandError> {
+        if has_image_edit(&command) {
+            return Err(CommandError::Rejected {
+                reason: dimo_core::RejectReason::InvalidImageEdit,
+                message: "image edits are applied through apply_image_edit".to_owned(),
+            });
+        }
+        self.execute_trusted(command)
+    }
+
+    fn execute_trusted(&mut self, command: Command) -> Result<ProjectPatched, CommandError> {
         let open = self.open.as_mut().ok_or(CommandError::NoProject)?;
         let patch = open.project.execute(command, &mut self.env)?;
         Ok(Self::patched(self.session, open, patch))
+    }
+
+    /// Plans new edit settings for one page of the image drawing (R.20): the command with
+    /// its sheet map, and how many balloons it would move off the sheet.
+    pub fn plan_image_edit(
+        &self,
+        page: u32,
+        edit: &ImageEdit,
+    ) -> Result<dimo_io::project::ImageEditPlan, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        Ok(dimo_io::project::plan_image_edit(
+            open.project.project(),
+            open.source.as_ref(),
+            page,
+            edit,
+        )?)
+    }
+
+    /// Applies new edit settings to one page of the image drawing as one undo step, with the
+    /// sheet size and balloon positions derived in Rust (R.20). If balloons would leave the
+    /// sheet and `move_off_sheet` is not set, nothing changes and their number comes back, so
+    /// the user can be asked (R01 decision 10). The new drawing is registered in `tiles`.
+    pub fn apply_image_edit(
+        &mut self,
+        tiles: &TileService,
+        page: u32,
+        edit: &ImageEdit,
+        move_off_sheet: bool,
+    ) -> Result<ImageEditOutcome, CommandError> {
+        let plan = self.plan_image_edit(page, edit)?;
+        if plan.off_sheet > 0 && !move_off_sheet {
+            return Ok(ImageEditOutcome::OffSheet {
+                balloons: plan.off_sheet,
+            });
+        }
+        let mut patched = self.execute_trusted(plan.command)?;
+        patched.drawing = self.sync_drawing_or_log(tiles);
+        Ok(ImageEditOutcome::Applied { patched })
+    }
+
+    /// [`AppSession::sync_drawing`] after a change that is already made: a failure is logged
+    /// and the drawing stays as it was, so the patch still reaches the frontend.
+    pub fn sync_drawing_or_log(&mut self, tiles: &TileService) -> Option<DocumentInfo> {
+        self.sync_drawing(tiles).unwrap_or_else(|error| {
+            tracing::warn!("cannot draw the image with its new edit settings: {error}");
+            None
+        })
+    }
+
+    /// Draws the drawing with the edit settings the project now holds, after an image edit or
+    /// its undo or redo (R.20). Registers the new source in `tiles`, releases the old one and
+    /// returns its description; `None` if nothing changed. Reuses the decoded pages.
+    pub fn sync_drawing(
+        &mut self,
+        tiles: &TileService,
+    ) -> Result<Option<DocumentInfo>, CommandError> {
+        let open = self.open.as_mut().ok_or(CommandError::NoProject)?;
+        let Some(image) = open.source.as_image() else {
+            return Ok(None);
+        };
+        let Some(pages) = open
+            .project
+            .project()
+            .current_revision()
+            .and_then(|r| r.source.image_pages())
+        else {
+            return Ok(None);
+        };
+        if image.edits() == pages {
+            return Ok(None);
+        }
+        let edited: Arc<dyn RasterSource> = Arc::new(image.with_edits(pages)?);
+        let registered = tiles.insert_source(edited);
+        let info = DocumentInfo::of(registered.as_ref(), &open.drawing.name)?;
+        let old = std::mem::replace(&mut open.hash, registered.render_key());
+        open.source = registered;
+        open.drawing = info.clone();
+        if old != open.hash {
+            tiles.close_document(&old);
+        }
+        Ok(Some(info))
+    }
+
+    /// The image drawing source of the open project, for the image editor (R.20).
+    pub fn image_source(&self) -> Result<Arc<dyn RasterSource>, CommandError> {
+        let open = self.open.as_ref().ok_or(CommandError::NoProject)?;
+        if open.source.as_image().is_none() {
+            return Err(CommandError::Rejected {
+                reason: dimo_core::RejectReason::NotAnImage,
+                message: "the drawing is not a photo or scan".to_owned(),
+            });
+        }
+        Ok(Arc::clone(&open.source))
+    }
+
+    /// Render key of the open drawing, `None` without a project.
+    pub fn drawing_key(&self) -> Option<Sha256Hex> {
+        self.open.as_ref().map(|o| o.hash)
     }
 
     /// Undoes the last command (NFR-REL-02).
@@ -434,6 +549,7 @@ impl AppSession {
             revision: open.revision,
             patch,
             status: open.status(),
+            drawing: None,
         }
     }
 
@@ -449,6 +565,15 @@ impl AppSession {
             session: self.session,
             status: open.status(),
         })
+    }
+}
+
+/// True if `command` is or contains an image edit.
+fn has_image_edit(command: &Command) -> bool {
+    match command {
+        Command::SetImageEdit { .. } => true,
+        Command::Batch { commands } => commands.iter().any(has_image_edit),
+        _ => false,
     }
 }
 

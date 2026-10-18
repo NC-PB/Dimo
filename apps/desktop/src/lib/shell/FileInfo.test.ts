@@ -231,6 +231,7 @@ describe("project settings dialogs of the Drawing tab (T3.16)", () => {
         ],
       },
       status: status(),
+      drawing: null,
     });
     await settle();
     const rule = [...target.querySelectorAll<HTMLInputElement>("input")].find(

@@ -492,8 +492,11 @@ impl From<CreateError> for CommandError {
 impl From<PdfError> for CommandError {
     fn from(error: PdfError) -> Self {
         if matches!(error, PdfError::ImageEdit(_)) {
-            // Edit settings this version cannot draw; the app cannot make them before R.20.
-            return Self::internal(InternalReason::Bug, error);
+            // Settings of the image editor that give no sheet (R.20).
+            return Self::Rejected {
+                reason: RejectReason::InvalidImageEdit,
+                message: error.to_string(),
+            };
         }
         let reason = if is_engine_error(&error) {
             DocumentReason::NoPdfEngine

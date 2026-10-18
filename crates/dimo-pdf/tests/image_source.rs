@@ -414,12 +414,19 @@ fn damaged_and_unsupported_files_are_refused_with_a_reason() {
     };
     edit_refused(bytes.clone(), &[]);
     edit_refused(bytes.clone(), &[ImageEdit::default(), ImageEdit::default()]);
-    let cleaned = ImageEdit {
-        clean_up: true,
+    // R.20: corners straighten the sheet, so a fine angle with them is refused.
+    let twice = ImageEdit {
+        fine_angle: "2".parse().unwrap(),
+        corners: Some(
+            ImageSource::open(bytes.clone(), ImageFormat::Png, None)
+                .unwrap()
+                .page_corners(0, dimo_core::Rotation::Deg0)
+                .unwrap(),
+        ),
         ..ImageEdit::default()
     };
-    let reason = edit_refused(bytes, &[cleaned]);
-    assert!(reason.contains("not supported yet"), "{reason}");
+    let reason = edit_refused(bytes, &[twice]);
+    assert!(reason.contains("fine angle"), "{reason}");
 
     // CMYK TIFF.
     let mut out = Cursor::new(Vec::new());
@@ -488,4 +495,146 @@ fn the_pdf_engine_opens_images_without_registering_them() {
             height: 297.0 * UNITS_PER_MM / 2.0,
         }
     );
+}
+
+/// A pixel position `(x, y)`.
+type Pixel = (f64, f64);
+
+/// A photo of a sheet on a table (R.20): grey table, a skewed white sheet with a black dot
+/// near its top left corner. Returns the PNG, the sheet corners and the dot center in pixels.
+fn skewed_photo() -> (Vec<u8>, [Pixel; 4], Pixel) {
+    let corners = [(80.0, 60.0), (560.0, 90.0), (540.0, 420.0), (60.0, 400.0)];
+    let dot = (150.0, 130.0);
+    let inside = |x: f64, y: f64| {
+        (0..4).all(|i| {
+            let (a, b) = (corners[i], corners[(i + 1) % 4]);
+            (b.0 - a.0) * (y - a.1) - (b.1 - a.1) * (x - a.0) >= 0.0
+        })
+    };
+    let image = RgbImage::from_fn(640, 480, |x, y| {
+        let (px, py) = (f64::from(x) + 0.5, f64::from(y) + 0.5);
+        if (px - dot.0).powi(2) + (py - dot.1).powi(2) < 64.0 {
+            image::Rgb([0, 0, 0])
+        } else if inside(px, py) {
+            image::Rgb([240, 240, 235])
+        } else {
+            image::Rgb([90, 80, 70])
+        }
+    });
+    (png(&image), corners, dot)
+}
+
+#[test]
+fn corners_of_a_photographed_sheet_are_proposed() {
+    let (bytes, corners, _) = skewed_photo();
+    let source = ImageSource::open(bytes, ImageFormat::Png, None).unwrap();
+    let found = source.propose_corners(0, Rotation::Deg0).unwrap().unwrap();
+    for (p, want) in found.points().iter().zip(corners) {
+        let (x, y): (f64, f64) = (p.x.try_into().unwrap(), p.y.try_into().unwrap());
+        assert!(
+            (x - want.0).abs() < 6.0 && (y - want.1).abs() < 6.0,
+            "{p:?} {want:?}"
+        );
+    }
+    // Turned once, the sheet's top left is the page's bottom left.
+    let turned = source.propose_corners(0, Rotation::Deg90).unwrap().unwrap();
+    assert_eq!(turned.top_left, found.bottom_left);
+    let plain = ImageSource::open(png(&halves(40, 40)), ImageFormat::Png, None).unwrap();
+    assert_eq!(plain.propose_corners(0, Rotation::Deg0).unwrap(), None);
+}
+
+#[test]
+fn an_edited_photo_keeps_its_features_where_the_map_says() {
+    // R.20 acceptance: the sheet map moves a point on the old sheet onto the same feature of
+    // the new sheet, through corners, trim and paper.
+    let (bytes, corners, dot) = skewed_photo();
+    let source = ImageSource::open(bytes.clone(), ImageFormat::Png, None).unwrap();
+    let found = source.propose_corners(0, Rotation::Deg0).unwrap().unwrap();
+    let edit = ImageEdit {
+        corners: Some(found),
+        trim: Some(dimo_core::Trim {
+            left: "0.02".parse().unwrap(),
+            top: "0.02".parse().unwrap(),
+            right: "0.98".parse().unwrap(),
+            bottom: "0.98".parse().unwrap(),
+        }),
+        paper: Some(Paper::Standard {
+            size: PaperSize::A4,
+            orientation: Orientation::Landscape,
+        }),
+        clean_up: true,
+        ..ImageEdit::default()
+    };
+    let old = source.page_geometry(0).unwrap();
+    let on_old = old
+        .to_sheet
+        .apply(dimo_core::Point { x: dot.0, y: dot.1 })
+        .unwrap();
+    let map = source.sheet_map(0, &edit).unwrap();
+    assert!(close(map.size.width, 297.0 * UNITS_PER_MM));
+    let on_new = map.map.apply(on_old).unwrap();
+
+    let edited = source.with_edits(std::slice::from_ref(&edit)).unwrap();
+    let reopened = ImageSource::open(bytes, ImageFormat::Png, Some(&[edit])).unwrap();
+    assert_eq!(edited.render_key(), reopened.render_key());
+    let back = edited.page_point(0, on_new).unwrap().unwrap();
+    assert!((back.x - dot.0).abs() < 1e-6 && (back.y - dot.1).abs() < 1e-6);
+    // The dot is black on the new sheet, the paper around it white (clean up), the table gone.
+    let zoom = 2.0;
+    let around = Rect::new(on_new.x - 20.0, on_new.y - 20.0, 40.0, 40.0);
+    let tile = edited.render_region(0, around, zoom).unwrap();
+    let (w, h) = (tile.width(), tile.height());
+    assert_eq!(tile.pixel(w / 2, h / 2), Some(BLACK));
+    assert_eq!(tile.pixel(1, 1), Some(WHITE));
+    let corner = edited
+        .render_region(0, Rect::new(0.0, 0.0, 4.0, 4.0), 1.0)
+        .unwrap();
+    assert_eq!(corner.pixel(2, 2), Some(WHITE), "{:?}", corners[0]);
+    // Same edit, same pixels, opened either way.
+    assert_eq!(
+        tile.as_bytes(),
+        reopened.render_region(0, around, zoom).unwrap().as_bytes()
+    );
+}
+
+#[test]
+fn a_fine_angle_straightens_a_turned_line() {
+    // A horizontal black bar drawn 4 degrees clockwise; -4 degrees makes it level again.
+    let tilt = 4.0_f64.to_radians();
+    let image = RgbImage::from_fn(400, 300, |x, y| {
+        let (dx, dy) = (f64::from(x) - 200.0, f64::from(y) - 150.0);
+        // Undo the tilt to see where the point was on the level bar.
+        let level_y = -dx * tilt.sin() + dy * tilt.cos();
+        if level_y.abs() < 3.0 && dx.abs() < 150.0 {
+            image::Rgb([0, 0, 0])
+        } else {
+            image::Rgb([255, 255, 255])
+        }
+    });
+    let edit = ImageEdit {
+        fine_angle: "-4".parse().unwrap(),
+        ..ImageEdit::default()
+    };
+    let source = ImageSource::open(png(&image), ImageFormat::Png, Some(&[edit])).unwrap();
+    let size = source.sheet_size(0).unwrap();
+    let to_sheet = source.page_geometry(0).unwrap().to_sheet;
+    for side in [-1.0, 1.0] {
+        let end = dimo_core::Point {
+            x: 200.0 + side * 120.0 * tilt.cos(),
+            y: 150.0 + side * 120.0 * tilt.sin(),
+        };
+        let on_sheet = to_sheet.apply(end).unwrap();
+        assert!(
+            (on_sheet.y - size.height / 2.0).abs() < 0.01,
+            "level: {on_sheet:?}"
+        );
+        let dot = source
+            .render_region(
+                0,
+                Rect::new(on_sheet.x - 0.5, on_sheet.y - 0.5, 1.0, 1.0),
+                1.0,
+            )
+            .unwrap();
+        assert_eq!(dot.pixel(0, 0), Some(BLACK));
+    }
 }

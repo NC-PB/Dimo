@@ -39,7 +39,13 @@ function setup() {
       return Promise.resolve({
         status: "ok",
         data: {
-          patched: { session: 1, revision: 0, patch: { changes: [] }, status: status() },
+          patched: {
+            session: 1,
+            revision: 0,
+            patch: { changes: [] },
+            status: status(),
+            drawing: null,
+          },
           reinterpreted: ids.length,
           skipped_manual: 0,
           skipped_unreadable: 0,

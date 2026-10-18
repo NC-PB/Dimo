@@ -6,6 +6,7 @@ import {
   type Command,
   type CommandError,
   type DocumentInfo,
+  type ImageEdit,
   type OpenNotice,
   type Patch,
   type Project,
@@ -95,20 +96,24 @@ export class ProjectStore {
   readonly #api: ProjectCommands;
   readonly #ask: () => Promise<UnsavedChoice>;
   readonly #onDrawing: (drawing: DocumentInfo | null) => void;
+  readonly #onRedraw: (drawing: DocumentInfo) => void;
 
   /**
    * @param api project commands
    * @param ask asks the user what to do with unsaved changes
    * @param onDrawing called when the shown drawing changes (new project, open, close)
+   * @param onRedraw called when a patch draws the same drawing anew (image edit, R.20)
    */
   constructor(
     api: ProjectCommands = commands,
     ask: () => Promise<UnsavedChoice> = () => Promise.resolve("cancel"),
     onDrawing: (drawing: DocumentInfo | null) => void = () => undefined,
+    onRedraw: (drawing: DocumentInfo) => void = onDrawing,
   ) {
     this.#api = api;
     this.#ask = ask;
     this.#onDrawing = onDrawing;
+    this.#onRedraw = onRedraw;
   }
 
   get isOpen(): boolean {
@@ -123,6 +128,16 @@ export class ProjectStore {
   get sheets(): readonly Sheet[] {
     const project = this.project;
     return project?.revisions.find((r) => r.id === project.current_revision)?.sheets ?? [];
+  }
+
+  /**
+   * Edit settings of every page when the current revision is a photo or scan (R.19, R.20),
+   * `null` for a PDF or without a project.
+   */
+  get imagePages(): readonly ImageEdit[] | null {
+    const project = this.project;
+    const source = project?.revisions.find((r) => r.id === project.current_revision)?.source;
+    return source?.type === "image" ? source.pages : null;
   }
 
   /** Balloons on one sheet, in placement order. */
@@ -228,6 +243,10 @@ export class ProjectStore {
     }
     this.revision = event.revision;
     this.status = event.status;
+    if (event.drawing !== null) {
+      this.drawing = event.drawing;
+      this.#onRedraw(event.drawing);
+    }
   }
 
   /** Applies a status event (save, autosave). */
@@ -426,6 +445,26 @@ export class ProjectStore {
     });
   }
 
+  /**
+   * Runs an edit whose command Rust builds itself, for example the apply of the image editor
+   * (R.20), in turn with the other edits. `patchedOf` picks the patch out of the answer, or
+   * `null` when the answer changed nothing. Refused calls set `error` and return `undefined`.
+   */
+  editWith<T>(
+    send: () => Promise<Result<T>>,
+    patchedOf: (answer: T) => ProjectPatched | null,
+  ): Promise<T | undefined> {
+    let answer: T | undefined;
+    return this.#edit(async () => {
+      const result = await send();
+      if (result.status === "error") {
+        return result;
+      }
+      answer = result.data;
+      return { status: "ok", data: patchedOf(result.data) ?? this.#unchanged() };
+    }).then(() => answer);
+  }
+
   /** Undoes the last command, if there is one when its turn comes. */
   async undo(): Promise<void> {
     await this.#edit(() =>
@@ -446,6 +485,7 @@ export class ProjectStore {
       session: this.session,
       revision: this.revision,
       patch: { changes: [] },
+      drawing: null,
       status: this.status ?? {
         file_name: null,
         modified: false,
@@ -471,5 +511,8 @@ export const projectStore = new ProjectStore(
   () => unsavedPrompt.ask(),
   (drawing) => {
     documentStore.show(drawing);
+  },
+  (drawing) => {
+    documentStore.redraw(drawing);
   },
 );

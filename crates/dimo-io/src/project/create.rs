@@ -278,8 +278,9 @@ pub fn open_drawing(
         DrawingSource::Pdf => Ok(opener.open_pdf(bytes.to_vec())?),
         DrawingSource::Image { format, pages } => {
             let image = opener.open_image(bytes.to_vec(), *format, Some(pages))?;
-            // Until R.20 derives sheet sizes from the edit settings in Rust, an edit that turns
-            // a page or sets a paper changes the source's sheets but not the project's.
+            // Since R.20 an edit sets the sheet sizes with the settings (`plan_image_edit`).
+            // Projects edited before then can still differ; their balloons keep the sheet
+            // space of the project.
             let stored: Vec<Size> = revision.sheets.iter().map(|s| s.size).collect();
             if image.source.sheet_sizes()? != stored {
                 tracing::warn!(

@@ -34,6 +34,7 @@
 mod container;
 pub mod create;
 mod error;
+mod image_edit;
 pub mod import;
 mod manifest;
 pub mod migrate;
@@ -53,6 +54,7 @@ pub use create::{
     create_from_drawing_file, open_drawing, sniff,
 };
 pub use error::ProjectError;
+pub use image_edit::{ImageEditPlan, plan_image_edit};
 pub use import::{ImportedDrawing, SheetInfo, import_drawing};
 pub use manifest::Manifest;
 pub use session::{CreateOptions, OpenReport, ProjectSession};

@@ -39,6 +39,12 @@ report_preview
 report_checks
 print_report
 
+# image_edit
+preview_image_edit
+close_image_preview
+image_corner_start
+apply_image_edit
+
 # recognition
 propose_from_region
 read_callout_text

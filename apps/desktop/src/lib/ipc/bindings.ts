@@ -67,7 +67,10 @@ export const commands = {
 	 *  A command that changes nothing returns an empty patch with the unchanged revision.
 	 */
 	execute: (command: Command) => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("execute", { command })),
-	/**  Undoes the last command (NFR-REL-02). Also sent as `project-patched`. */
+	/**
+	 *  Undoes the last command (NFR-REL-02). Also sent as `project-patched`. Undoing an image edit
+	 *  switches the drawing back to the settings before it (R.20).
+	 */
 	undo: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("undo")),
 	/**  Applies the last undone command again. Also sent as `project-patched`. */
 	redo: () => typedError<ProjectPatched, CommandError>(__TAURI_INVOKE("redo")),
@@ -94,6 +97,25 @@ export const commands = {
 	 *  pages are the sheets of the returned document.
 	 */
 	reportPreview: (view: ReportView) => typedError<DocumentInfo, CommandError>(__TAURI_INVOKE("report_preview", { view })),
+	/**
+	 *  Previews `edit` on `page` of the open image drawing at `stage` (R.20). Returns the preview
+	 *  drawing for the tile route and the map between stored pixels and the preview sheet.
+	 */
+	previewImageEdit: (page: number, edit: ImageEdit, stage: PreviewStage) => typedError<ImagePreview, CommandError>(__TAURI_INVOKE("preview_image_edit", { page, edit, stage })),
+	/**  Closes the preview of the image editor. */
+	closeImagePreview: () => typedError<null, CommandError>(__TAURI_INVOKE("close_image_preview")),
+	/**
+	 *  Where the corner handles of `page` start for the quarter turns `rotation`: the sheet edges
+	 *  found in the photo, and the page corners (R01 decision 8).
+	 */
+	imageCornerStart: (page: number, rotation: Rotation) => typedError<CornerStart, CommandError>(__TAURI_INVOKE("image_corner_start", { page, rotation })),
+	/**
+	 *  Applies `edit` to `page` of the open image drawing as one undo step (R.20): the sheet gets
+	 *  the size the settings give and balloons move with the image. If balloons would leave the
+	 *  sheet, nothing changes unless `move_off_sheet` is set (they are then put on the sheet edge).
+	 *  The patch is also sent as `project-patched`.
+	 */
+	applyImageEdit: (page: number, edit: ImageEdit, moveOffSheet: boolean) => typedError<ImageEditOutcome, CommandError>(__TAURI_INVOKE("apply_image_edit", { page, edit, moveOffSheet })),
 	/**
 	 *  What to look at before report `kind` of the open project is issued: warnings with counts
 	 *  and empty header fields. Never blocks issuing.
@@ -1012,9 +1034,11 @@ label: string } |
 /**
  *  Replaces the image edit settings of one page of an image drawing revision: rotation,
  *  fine angle, corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1).
- *  Refused for a PDF revision. Sheets and balloons do not change yet; the sheet size and
- *  balloon positions that follow from an edit are derived in Rust when the image editor
- *  comes (R.20, rule 2), never in the frontend.
+ *  Refused for a PDF revision. With `geometry` the page's sheet gets the new size and
+ *  resolution, and balloons, anchors, source regions, views and the zone grid on it move
+ *  with the map, so they stay on their features (R.20, R01 decision 10); points that would
+ *  leave the sheet are put on its edge (the app asks first). Rust derives the geometry from
+ *  the image (rule 2); the desktop app never takes it from the frontend.
  */
 { type: "set_image_edit"; 
 /**  The revision. */
@@ -1022,7 +1046,12 @@ revision: RevisionId;
 /**  Zero based page, the index of its sheet. */
 page: number; 
 /**  New settings. */
-edit: ImageEdit } | 
+edit: ImageEdit; 
+/**
+ *  The sheet the new settings give and the map from the old sheet to it; `null`
+ *  changes only the settings (entries written before R.20).
+ */
+geometry?: SheetMap | null } | 
 /**
  *  Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
  *  are those of the current revision, the time comes from the environment clock. Exports
@@ -1111,6 +1140,14 @@ message: string } |
 reason: InternalReason; 
 /**  What went wrong. */
 message: string };
+
+/**  Where the corner handles start (R01 decision 8). */
+export type CornerStart = {
+	/**  The sheet edges found in the photo, if they were easy to find. */
+	proposed: SheetCorners | null,
+	/**  The corners of the whole page. */
+	page: SheetCorners,
+};
 
 /**
  *  A custom tolerance table stored in the project container as `tolerances/<id>.toml`
@@ -1488,6 +1525,9 @@ export type HistoryEntry = {
 	fields: CharacteristicField[],
 };
 
+/**  A projective map of the plane, a 3 x 3 matrix in row order acting on `(x, y, 1)`. */
+export type Homography = [(number | null), (number | null), (number | null), (number | null), (number | null), (number | null), (number | null), (number | null), (number | null)];
+
 /**
  *  Non-destructive settings that turn a stored image into a sheet (R01 decisions 8 to 11).
  *  See the module docs for coordinates and order. [`ImageEdit::default`] leaves the image as
@@ -1517,6 +1557,20 @@ export type ImageEdit = {
 	clean_up: boolean,
 };
 
+/**  Answer of `apply_image_edit` (R.20). */
+export type ImageEditOutcome = 
+/**  The edit is applied as one undo step. */
+{ type: "applied"; 
+/**  The patch, with the new drawing. */
+patched: ProjectPatched } | 
+/**
+ *  Nothing changed: the edit would move balloons off the sheet. Ask the user, then apply
+ *  again with `move_off_sheet` to put them on the sheet edge.
+ */
+{ type: "off_sheet"; 
+/**  How many balloons. */
+balloons: number };
+
 /**  Image file formats a drawing can be imported from (R01 decision 7). HEIC is not supported. */
 export type ImageFormat = 
 /**  JPEG, one sheet. */
@@ -1532,6 +1586,16 @@ export type ImagePoint = {
 	x: string,
 	/**  Pixels from the top edge. */
 	y: string,
+};
+
+/**  A preview of one page, ready for the `dimo://tile/...` route. */
+export type ImagePreview = {
+	/**  The preview drawing; the page is its sheet with the same index. */
+	doc: DocumentInfo,
+	/**  From pixels of the stored page to the preview sheet, so corner handles can be drawn. */
+	to_view: Homography,
+	/**  From the preview sheet back to pixels of the stored page. */
+	from_view: Homography,
 };
 
 /**
@@ -2008,6 +2072,15 @@ export type Point = {
 	y: number | null,
 };
 
+/**  Which step of the edit a preview shows. */
+export type PreviewStage = 
+/**  The page with its quarter turns only, for the corner handles. */
+"corners" | 
+/**  The corrected page without trim and paper, for the trim rectangle. */
+"trim" | 
+/**  The sheet as the settings make it. */
+"result";
+
 /**
  *  A DimoMark project (data model `Project`).
  * 
@@ -2093,6 +2166,11 @@ export type ProjectPatched = {
 	patch: Patch,
 	/**  State after the patch. */
 	status: ProjectStatus,
+	/**
+	 *  The drawing, if the patch changed how it is drawn (image edit settings, R.20): its
+	 *  render key and sheet sizes replace the old ones. `null` if it stays as it was.
+	 */
+	drawing: DocumentInfo | null,
 };
 
 /**  Why a project file cannot be read or used. */
@@ -2642,7 +2720,7 @@ export type Sheet = {
 	/**
 	 *  Resolution of raster sheets in pixels per inch at the sheet size. For an image drawing
 	 *  (R.19) it is the resolution DimoMark keeps after reducing the image to at most 300 dpi,
-	 *  set when the drawing is imported with the default edit settings; not the resolution the
+	 *  set when the drawing is imported and by every image edit (R.20); not the resolution the
 	 *  file states.
 	 */
 	raster_dpi: number | null,
@@ -2714,6 +2792,16 @@ export type SheetKind =
 "vector_outlined" | 
 /**  Scanned or image only. */
 "raster";
+
+/**  The sheet an image edit gives and how positions on the old sheet move onto it (R.20). */
+export type SheetMap = {
+	/**  Size of the new sheet in sheet units. */
+	size: Size,
+	/**  Resolution of the kept pixels at the new sheet size. */
+	raster_dpi: number | null,
+	/**  From the old sheet to the new sheet. */
+	map: Homography,
+};
 
 /**  A point in sheet space (PDF user units, origin top left). */
 export type SheetPoint = {

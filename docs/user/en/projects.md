@@ -49,6 +49,28 @@ the phone recorded it and stores the image unchanged in the project.
 - The characteristic list and the reports work as for a PDF. The ballooned PDF of a photo or scan
   is not available yet.
 
+### Adjust image
+
+**Drawing > Adjust image** (also the first step of the setup pane after opening a photo) makes a
+photo a straight sheet. The original image stays in the project unchanged; the settings can be
+changed again at any time.
+
+1. **Rotate:** turn in 90 degree steps, then straighten with the slider (up to 10 degrees either
+   way) or type an angle (up to 45 degrees; positive turns clockwise).
+2. **Corners:** for a photo taken at a slant, switch on "Correct the corners". DimoMark looks for
+   the edge of the sheet and puts the four handles on its corners; if it does not find it, the
+   handles start at the image corners. Drag them onto the corners of the sheet. The corners
+   straighten the sheet themselves, so the angle is set back to 0.
+3. **Trim:** drag the corners of the rectangle, or the rectangle itself, to keep only the sheet.
+4. **Paper:** pick the paper the photo shows (A4 to A0, Letter, Tabloid or a custom size in mm)
+   and portrait or landscape. The trimmed image is put on that sheet, so measured sizes fit.
+   "From the photo" keeps the size of the photo.
+5. **Clean up** (optional) shows the image in grey with a white background and stronger lines.
+
+**Apply** is one step that **Undo** takes back. Balloons already placed keep their place on the
+drawing. If the new sheet would leave balloons outside, DimoMark asks first; "Apply anyway" puts
+them on the edge of the sheet. **Reset** goes back to the image as it was opened.
+
 ## What is in a project file
 
 One `.dimo` file holds the drawing as you imported it, the characteristics and balloons, the

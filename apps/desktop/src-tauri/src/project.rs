@@ -307,18 +307,50 @@ pub async fn execute(app: AppHandle, command: Command) -> Result<ProjectPatched,
     .await
 }
 
-/// Undoes the last command (NFR-REL-02). Also sent as `project-patched`.
+/// Undoes the last command (NFR-REL-02). Also sent as `project-patched`. Undoing an image edit
+/// switches the drawing back to the settings before it (R.20).
 #[tauri::command]
 #[specta::specta]
 pub async fn undo(app: AppHandle) -> Result<ProjectPatched, CommandError> {
-    with_session(app, |app, session| Ok(emit_patched(app, session.undo()?))).await
+    let tiles = tile_service(&app.state::<TileState>()).ok();
+    with_session(app, move |app, session| {
+        let patched = session.undo()?;
+        Ok(emit_patched(
+            app,
+            with_drawing(session, tiles.as_deref(), patched),
+        ))
+    })
+    .await
 }
 
 /// Applies the last undone command again. Also sent as `project-patched`.
 #[tauri::command]
 #[specta::specta]
 pub async fn redo(app: AppHandle) -> Result<ProjectPatched, CommandError> {
-    with_session(app, |app, session| Ok(emit_patched(app, session.redo()?))).await
+    let tiles = tile_service(&app.state::<TileState>()).ok();
+    with_session(app, move |app, session| {
+        let patched = session.redo()?;
+        Ok(emit_patched(
+            app,
+            with_drawing(session, tiles.as_deref(), patched),
+        ))
+    })
+    .await
+}
+
+/// `patched` with the drawing as the project now says it is drawn (image edits, R.20). The
+/// change is made already, so a drawing that cannot follow is logged, never an error.
+fn with_drawing(
+    session: &mut AppSession,
+    tiles: Option<&TileService>,
+    mut patched: ProjectPatched,
+) -> ProjectPatched {
+    if let Some(tiles) = tiles {
+        patched.drawing = session.sync_drawing_or_log(tiles);
+    } else {
+        tracing::warn!("no tile service: the drawing does not follow the patch");
+    }
+    patched
 }
 
 pub(crate) fn emit_patched(app: &AppHandle, patched: ProjectPatched) -> ProjectPatched {

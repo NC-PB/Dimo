@@ -10,6 +10,7 @@
 
 mod balloons;
 mod characteristics;
+mod image;
 mod measurement;
 mod numbering;
 mod reject;
@@ -39,8 +40,10 @@ use crate::project::{
 use crate::proposal::{BalloonPlacement, Proposal};
 use crate::report::{ReportFormat, ReportInfoField, ReportKind, TemplateRef};
 use crate::sheet::{Sha256Hex, SheetField, SheetView, ZoneGrid};
+use crate::sheet_map::SheetMap;
 use crate::source::ImageEdit;
 
+pub use image::off_sheet_balloons;
 pub use reject::RejectReason;
 
 /// New position of one balloon.
@@ -275,9 +278,11 @@ pub enum Command {
     },
     /// Replaces the image edit settings of one page of an image drawing revision: rotation,
     /// fine angle, corners, trim, paper format and clean up (R01 decisions 8 to 11, MF F1).
-    /// Refused for a PDF revision. Sheets and balloons do not change yet; the sheet size and
-    /// balloon positions that follow from an edit are derived in Rust when the image editor
-    /// comes (R.20, rule 2), never in the frontend.
+    /// Refused for a PDF revision. With `geometry` the page's sheet gets the new size and
+    /// resolution, and balloons, anchors, source regions, views and the zone grid on it move
+    /// with the map, so they stay on their features (R.20, R01 decision 10); points that would
+    /// leave the sheet are put on its edge (the app asks first). Rust derives the geometry from
+    /// the image (rule 2); the desktop app never takes it from the frontend.
     SetImageEdit {
         /// The revision.
         revision: RevisionId,
@@ -285,6 +290,10 @@ pub enum Command {
         page: u32,
         /// New settings.
         edit: Box<ImageEdit>,
+        /// The sheet the new settings give and the map from the old sheet to it; `null`
+        /// changes only the settings (entries written before R.20).
+        #[serde(default)]
+        geometry: Option<Box<SheetMap>>,
     },
     /// Records a report exported as issued (D-23, M3 decision 17). Revision and drawing hash
     /// are those of the current revision, the time comes from the environment clock. Exports
@@ -492,7 +501,8 @@ fn run(tx: &mut Tx<'_>, command: &Command, env: &mut dyn Environment) -> Result<
             revision,
             page,
             edit,
-        } => reports::set_image_edit(tx, *revision, *page, edit),
+            geometry,
+        } => image::set_image_edit(tx, *revision, *page, edit, geometry.as_deref()),
         C::RecordIssuedReport {
             kind,
             template,

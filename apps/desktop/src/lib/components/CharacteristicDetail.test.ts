@@ -93,7 +93,7 @@ function projectOf(): Project {
 }
 
 function patched(): ProjectPatched {
-  return { session: 1, revision: 1, patch: { changes: [] }, status: status() };
+  return { session: 1, revision: 1, patch: { changes: [] }, status: status(), drawing: null };
 }
 
 const HISTORY: HistoryEntry[] = [
@@ -648,6 +648,7 @@ describe("tolerance settings (T2.8, T3.16)", () => {
       revision: stores.projectStore.revision + 1,
       patch: { changes: [] },
       status: status(),
+      drawing: null,
     });
     await settle();
     expect(target.querySelector("[data-testid='general-offer']")).toBeNull();

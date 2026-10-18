@@ -121,6 +121,26 @@ pub struct ProjectPatched {
     pub patch: Patch,
     /// State after the patch.
     pub status: ProjectStatus,
+    /// The drawing, if the patch changed how it is drawn (image edit settings, R.20): its
+    /// render key and sheet sizes replace the old ones. `null` if it stays as it was.
+    pub drawing: Option<DocumentInfo>,
+}
+
+/// Answer of `apply_image_edit` (R.20).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ImageEditOutcome {
+    /// The edit is applied as one undo step.
+    Applied {
+        /// The patch, with the new drawing.
+        patched: ProjectPatched,
+    },
+    /// Nothing changed: the edit would move balloons off the sheet. Ask the user, then apply
+    /// again with `move_off_sheet` to put them on the sheet edge.
+    OffSheet {
+        /// How many balloons.
+        balloons: u32,
+    },
 }
 
 /// File or autosave state changed without a patch: after save, save as, or an autosave write

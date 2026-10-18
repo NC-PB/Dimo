@@ -10,6 +10,7 @@ pub mod env;
 pub mod error;
 pub mod export;
 pub mod fsio;
+pub mod image_edit;
 pub mod ipc;
 pub mod job;
 pub mod logging;
@@ -68,6 +69,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             job::cancel_job,
             export::report_export_warnings,
             report::report_preview,
+            image_edit::preview_image_edit,
+            image_edit::close_image_preview,
+            image_edit::image_corner_start,
+            image_edit::apply_image_edit,
             report::report_checks,
             report::print_report,
             recognition::propose_from_region,
@@ -194,6 +199,7 @@ pub fn run() -> tauri::Result<()> {
             app.manage(project::SessionState::new(autosave_dir));
             app.manage(job::JobRegistry::default());
             app.manage(report::PreviewState::default());
+            app.manage(image_edit::ImagePreviewState::default());
             // Settings of the user in the app config directory (T1.9).
             let settings_path = dev::dev_folder("config", app.path().app_config_dir().ok())
                 .map(|dir| dir.join(settings::SETTINGS_FILE));

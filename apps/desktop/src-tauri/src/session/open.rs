@@ -2,10 +2,12 @@
 //! and autosave state.
 
 use std::path::Path;
+use std::sync::Arc;
 
 use dimo_core::Sha256Hex;
 use dimo_io::lock::ProjectLock;
 use dimo_io::project::ProjectSession;
+use dimo_pdf::RasterSource;
 
 use super::{Autosave, ProjectSnapshot, ProjectStatus};
 use crate::ipc::{AutosaveReason, DocumentInfo};
@@ -19,6 +21,8 @@ pub(super) struct OpenProject {
     pub(super) lock: Option<ProjectLock>,
     pub(super) drawing: DocumentInfo,
     pub(super) hash: Sha256Hex,
+    /// The drawing source registered in the tile service under `hash`.
+    pub(super) source: Arc<dyn RasterSource>,
     pub(super) revision: u32,
     /// Error of the last journal write, cleared by the next successful one.
     pub(super) journal_error: Option<(AutosaveReason, String)>,

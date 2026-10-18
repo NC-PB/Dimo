@@ -1,30 +1,39 @@
-//! Photos and scans as drawings: the image [`RasterSource`] (R.19, ADR 0010).
+//! Photos and scans as drawings: the image [`RasterSource`] (R.19, R.20, ADR 0010).
 //!
 //! An [`ImageSource`] draws the sheets of a stored JPEG, PNG or TIFF with the edit settings of
 //! each page ([`ImageEdit`]). Opening decodes every page once (which checks the whole file and
 //! gives the page sizes); afterwards at most [`PAGE_CACHE`] pages are kept in memory and others
-//! are decoded again when a tile needs them.
+//! are decoded again when a tile needs them. [`ImageSource::with_edits`] gives the same image
+//! with other settings without decoding it again (the image editor, R.20).
 //!
 //! # Sheet size
 //!
 //! - With a paper set (R01 decision 9) the sheet is the paper.
 //! - Without one, a resolution the file states between [`MIN_SCAN_DPI`] and [`MAX_SCAN_DPI`]
 //!   gives the size (a scan). Otherwise (a phone photo says 72 dpi or nothing) the long side is
-//!   297 mm, the length of an A4 sheet, and the aspect ratio is kept.
+//!   297 mm, the length of an A4 sheet, and the aspect ratio is kept. A trim makes the sheet
+//!   smaller at the same scale.
 //!
 //! The page is then reduced to at most [`MAX_DPI`] at the sheet size (R01 decision 9) by
 //! averaging square blocks of whole pixels, so the same file always gives the same pixels.
 //!
 //! # Edits
 //!
-//! Quarter turns and the paper apply now. Fine angle, corner correction, trim and clean up
-//! come with the image editor (R.20); a page that uses them is refused until then.
+//! Quarter turns, fine angle, corners, trim and paper are one projective map per page
+//! (`geometry.rs`); a tile pixel is sampled from the page point the inverse map gives. Clean up
+//! (R01 decision 11) is applied to the kept pixels before the reductions (`clean.rs`).
 
+mod clean;
+mod corners;
 mod decode;
+mod geometry;
 
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 
-use dimo_core::{ImageEdit, ImageFormat, Rect, Rotation, Sha256Hex, SheetKind, Size, UNITS_PER_MM};
+use dimo_core::{
+    Homography, ImageEdit, ImageFormat, Point, Rect, Rotation, Sha256Hex, SheetCorners, SheetKind,
+    SheetMap, Size,
+};
 use image::DynamicImage;
 
 use crate::engine::output_size;
@@ -33,6 +42,8 @@ use crate::raster::RgbaImage;
 use crate::source::{RasterSource, SourceKind};
 
 pub use decode::{MAX_DECODE_BYTES, MAX_PAGES};
+use geometry::PageInfo;
+pub use geometry::{EditStage, PageGeometry};
 
 /// Highest resolution a page is kept at, at its sheet size (R01 decision 9).
 pub const MAX_DPI: f64 = 300.0;
@@ -55,10 +66,7 @@ const MIN_LEVEL_SIDE: u32 = 64;
 /// Version of the pixels an image source draws, part of every render key. Raise it whenever
 /// decoding, reduction or rendering gives other pixels for the same file and settings, so the
 /// tile disk cache never serves tiles of the old code.
-const PIXELS_VERSION: &[u8] = b"dimo image source 2\n";
-
-/// Sheet units per inch.
-const UNITS_PER_INCH: f64 = 72.0;
+const PIXELS_VERSION: &[u8] = b"dimo image source 3\n";
 
 /// A photo or scan with the edit settings of its pages.
 pub struct ImageSource {
@@ -66,6 +74,7 @@ pub struct ImageSource {
     format: ImageFormat,
     content_hash: Sha256Hex,
     render_key: Sha256Hex,
+    edits: Vec<ImageEdit>,
     pages: Vec<PageLayout>,
     /// Recently used pages, most recent last. Each entry is filled once outside the lock, so a
     /// page that is decoding does not block tiles of other pages.
@@ -78,18 +87,42 @@ type PageCell = OnceLock<Result<Arc<Pyramid>, String>>;
 /// How one page becomes a sheet.
 #[derive(Debug, Clone)]
 struct PageLayout {
-    rotation: Rotation,
-    /// Sheet size in sheet units, after quarter turns.
-    sheet: Size,
-    /// Block size of the reduction (1 keeps every pixel).
-    block: u32,
-    /// Effective resolution of the kept pixels at the sheet size.
-    dpi: u32,
+    info: PageInfo,
+    geometry: PageGeometry,
+    /// From sheet units back to upright page pixels.
+    from_sheet: Homography,
+    clean_up: bool,
     /// Index of the TIFF directory (or 0) the page is read from; thumbnails are skipped.
     directory: usize,
 }
 
-/// Pixels of a page, upright (before quarter turns), 1 or 3 channels.
+impl PageLayout {
+    fn new(info: PageInfo, edit: &ImageEdit, directory: usize) -> Result<Self, PdfError> {
+        edit.validate()
+            .map_err(|e| PdfError::ImageEdit(e.to_owned()))?;
+        let geometry = geometry::page_geometry(&info, edit)?;
+        let from_sheet = geometry
+            .to_sheet
+            .inverse()
+            .ok_or_else(|| PdfError::ImageEdit("the edit flattens the page".to_owned()))?;
+        Ok(Self {
+            info,
+            geometry,
+            from_sheet,
+            clean_up: edit.clean_up,
+            directory,
+        })
+    }
+
+    /// True if both layouts keep the same pixels, so a decoded page can be shared.
+    fn same_pixels(&self, other: &Self) -> bool {
+        self.geometry.block == other.geometry.block
+            && self.clean_up == other.clean_up
+            && self.directory == other.directory
+    }
+}
+
+/// Pixels of a page, upright (before any edit), 1 or 3 channels.
 struct Level {
     width: u32,
     height: u32,
@@ -123,9 +156,9 @@ impl ImageSource {
                     .ok_or_else(|| edit_count(edits.len()))?,
                 None => &default,
             };
-            let layout = layout(&page, edit, directory)?;
+            let layout = PageLayout::new(page_info(&page), edit, directory)?;
             if first.is_none() {
-                first = Some(Arc::new(pyramid(&page.image, layout.block)));
+                first = Some(Arc::new(pyramid(&page.image, &layout)));
             }
             layouts.push(layout);
             Ok(())
@@ -136,9 +169,8 @@ impl ImageSource {
             return Err(edit_count(edits.len()));
         }
         let content_hash = Sha256Hex::of(&bytes);
-        let all_default = vec![ImageEdit::default(); layouts.len()];
-        let edits = edits.unwrap_or(&all_default);
-        let render_key = render_key(&content_hash, edits)?;
+        let edits = edits.map_or_else(|| vec![ImageEdit::default(); layouts.len()], <[_]>::to_vec);
+        let render_key = render_key(&content_hash, &edits)?;
         tracing::debug!(
             pages = layouts.len(),
             format = format.extension(),
@@ -149,6 +181,7 @@ impl ImageSource {
             format,
             content_hash,
             render_key,
+            edits,
             pages: layouts,
             cache: Mutex::new(
                 first
@@ -156,6 +189,35 @@ impl ImageSource {
                     .into_iter()
                     .collect(),
             ),
+        })
+    }
+
+    /// The same image with other edit settings (one per page), without decoding it again.
+    /// Decoded pages whose kept pixels do not change are shared, so the editor preview stays
+    /// fast (R.20).
+    pub fn with_edits(&self, edits: &[ImageEdit]) -> Result<Self, PdfError> {
+        if edits.len() != self.pages.len() {
+            return Err(edit_count(edits.len()));
+        }
+        let pages = self
+            .pages
+            .iter()
+            .zip(edits)
+            .map(|(page, edit)| PageLayout::new(page.info, edit, page.directory))
+            .collect::<Result<Vec<_>, _>>()?;
+        let cache = lock(&self.cache)
+            .iter()
+            .filter(|(i, _)| pages[*i].same_pixels(&self.pages[*i]))
+            .map(|(i, cell)| (*i, Arc::clone(cell)))
+            .collect();
+        Ok(Self {
+            bytes: Arc::clone(&self.bytes),
+            format: self.format,
+            content_hash: self.content_hash,
+            render_key: render_key(&self.content_hash, edits)?,
+            edits: edits.to_vec(),
+            pages,
+            cache: Mutex::new(cache),
         })
     }
 
@@ -168,6 +230,93 @@ impl ImageSource {
     /// The file format.
     pub const fn format(&self) -> ImageFormat {
         self.format
+    }
+
+    /// The edit settings of every page, in page order.
+    pub fn edits(&self) -> &[ImageEdit] {
+        &self.edits
+    }
+
+    /// Width and height of an upright page in pixels of the stored image, the frame of the
+    /// corner points.
+    pub fn page_pixels(&self, sheet: usize) -> Result<(u32, u32), PdfError> {
+        let info = self.page(sheet)?.info;
+        Ok((info.width, info.height))
+    }
+
+    /// The geometry of a page with its current settings.
+    pub fn page_geometry(&self, sheet: usize) -> Result<PageGeometry, PdfError> {
+        Ok(self.page(sheet)?.geometry)
+    }
+
+    /// The geometry a page would get with `edit` at an editor `stage`.
+    pub fn stage_geometry(
+        &self,
+        sheet: usize,
+        edit: &ImageEdit,
+        stage: EditStage,
+    ) -> Result<PageGeometry, PdfError> {
+        edit.validate()
+            .map_err(|e| PdfError::ImageEdit(e.to_owned()))?;
+        geometry::stage_geometry(&self.page(sheet)?.info, edit, stage)
+    }
+
+    /// The sheet a page gets with `edit` and the map from its current sheet to it, so balloons
+    /// stay on their features (R.20, R01 decision 10).
+    pub fn sheet_map(&self, sheet: usize, edit: &ImageEdit) -> Result<SheetMap, PdfError> {
+        let page = self.page(sheet)?;
+        let new = PageLayout::new(page.info, edit, page.directory)?;
+        Ok(SheetMap {
+            size: new.geometry.sheet,
+            raster_dpi: Some(new.geometry.raster_dpi),
+            map: new.geometry.to_sheet.after(&page.from_sheet),
+        })
+    }
+
+    /// The upright page point under a sheet point, in stored pixels.
+    pub fn page_point(&self, sheet: usize, at: Point) -> Result<Option<Point>, PdfError> {
+        Ok(self.page(sheet)?.from_sheet.apply(at))
+    }
+
+    /// The corners of the whole page, named as the sheet reads after `rotation`: where the
+    /// editor starts when no sheet edge is found.
+    pub fn page_corners(&self, sheet: usize, rotation: Rotation) -> Result<SheetCorners, PdfError> {
+        Ok(geometry::page_corners(&self.page(sheet)?.info, rotation))
+    }
+
+    /// The corners of a bright sheet on a darker background, if one is easy to find (R01
+    /// decision 8), named as the sheet reads after `rotation`.
+    pub fn propose_corners(
+        &self,
+        sheet: usize,
+        rotation: Rotation,
+    ) -> Result<Option<SheetCorners>, PdfError> {
+        let layout = self.page(sheet)?;
+        if layout.clean_up {
+            // The proposal needs the photo as taken; a cleaned page has a white background.
+            let plain = self.with_edits(
+                &self
+                    .edits
+                    .iter()
+                    .enumerate()
+                    .map(|(i, e)| {
+                        if i == sheet {
+                            ImageEdit {
+                                clean_up: false,
+                                ..e.clone()
+                            }
+                        } else {
+                            e.clone()
+                        }
+                    })
+                    .collect::<Vec<_>>(),
+            )?;
+            return plain.propose_corners(sheet, rotation);
+        }
+        let pyramid = self.reduced(sheet)?;
+        let scale = f64::from(layout.geometry.block);
+        Ok(corners::propose(&pyramid.levels, scale, &layout.info)
+            .map(|page| geometry::corners_named(page, rotation)))
     }
 
     fn page(&self, sheet: usize) -> Result<&PageLayout, PdfError> {
@@ -183,7 +332,7 @@ impl ImageSource {
     fn reduced(&self, sheet: usize) -> Result<Arc<Pyramid>, PdfError> {
         let layout = self.page(sheet)?;
         let cell = {
-            let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut cache = lock(&self.cache);
             let entry = match cache.iter().position(|(i, _)| *i == sheet) {
                 Some(at) => cache.remove(at),
                 None => (sheet, Arc::new(PageCell::new())),
@@ -197,11 +346,23 @@ impl ImageSource {
         };
         cell.get_or_init(|| {
             decode::decode_page(&self.bytes, self.format, layout.directory)
-                .map(|page| Arc::new(pyramid(&page.image, layout.block)))
+                .map(|page| Arc::new(pyramid(&page.image, layout)))
                 .map_err(|e| e.to_string())
         })
         .clone()
         .map_err(PdfError::Image)
+    }
+}
+
+fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+fn page_info(page: &decode::Page) -> PageInfo {
+    PageInfo {
+        width: page.image.width(),
+        height: page.image.height(),
+        dpi: page.dpi,
     }
 }
 
@@ -234,7 +395,7 @@ impl RasterSource for ImageSource {
     }
 
     fn sheet_size(&self, sheet: usize) -> Result<Size, PdfError> {
-        Ok(self.page(sheet)?.sheet)
+        Ok(self.page(sheet)?.geometry.sheet)
     }
 
     fn render_region(&self, sheet: usize, region: Rect, zoom: f64) -> Result<RgbaImage, PdfError> {
@@ -250,7 +411,11 @@ impl RasterSource for ImageSource {
     }
 
     fn raster_dpi(&self, sheet: usize) -> Option<u32> {
-        self.pages.get(sheet).map(|p| p.dpi)
+        self.pages.get(sheet).map(|p| p.geometry.raster_dpi)
+    }
+
+    fn as_image(&self) -> Option<&ImageSource> {
+        Some(self)
     }
 }
 
@@ -271,80 +436,10 @@ fn edit_count(edits: usize) -> PdfError {
     ))
 }
 
-/// Sheet size, reduction and resolution of a page with its edit.
-fn layout(page: &decode::Page, edit: &ImageEdit, directory: usize) -> Result<PageLayout, PdfError> {
-    if !edit.fine_angle.is_zero() || edit.corners.is_some() || edit.trim.is_some() || edit.clean_up
-    {
-        return Err(PdfError::ImageEdit(
-            "fine rotation, corner correction, trim and clean up are not supported yet".to_owned(),
-        ));
-    }
-    let (width, height) = page.image.dimensions_f64();
-    let turned = matches!(edit.rotation, Rotation::Deg90 | Rotation::Deg270);
-    let upright = match page.dpi {
-        Some((x, y)) if is_scan_dpi(x) && is_scan_dpi(y) => Size {
-            width: width / x * UNITS_PER_INCH,
-            height: height / y * UNITS_PER_INCH,
-        },
-        _ => {
-            let long = DEFAULT_LONG_SIDE_MM * UNITS_PER_MM;
-            let scale = long / width.max(height);
-            Size {
-                width: width * scale,
-                height: height * scale,
-            }
-        }
-    };
-    let sheet = match &edit.paper {
-        Some(paper) => paper.sheet_size(),
-        None if turned => Size {
-            width: upright.height,
-            height: upright.width,
-        },
-        None => upright,
-    };
-    // Pixels across the sheet as it reads, after the quarter turns.
-    let (across, down) = if turned {
-        (height, width)
-    } else {
-        (width, height)
-    };
-    let max_across = sheet.width / UNITS_PER_INCH * MAX_DPI;
-    let max_down = sheet.height / UNITS_PER_INCH * MAX_DPI;
-    let block = to_u32((across / max_across).max(down / max_down).ceil()).max(1);
-    let kept = (across / f64::from(block)).ceil();
-    Ok(PageLayout {
-        rotation: edit.rotation,
-        sheet,
-        block,
-        dpi: to_u32((kept / (sheet.width / UNITS_PER_INCH)).round()),
-        directory,
-    })
-}
-
-/// A whole number of 0 or more as `u32`, saturating; 0 for NaN.
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn to_u32(value: f64) -> u32 {
-    // Float to int `as` casts saturate and turn NaN into 0.
-    value as u32
-}
-
-fn is_scan_dpi(dpi: f64) -> bool {
-    (MIN_SCAN_DPI..=MAX_SCAN_DPI).contains(&dpi)
-}
-
-trait DimensionsF64 {
-    fn dimensions_f64(&self) -> (f64, f64);
-}
-
-impl DimensionsF64 for DynamicImage {
-    fn dimensions_f64(&self) -> (f64, f64) {
-        (f64::from(self.width()), f64::from(self.height()))
-    }
-}
-
-/// Level 0 reduced by `block`, then halvings down to [`MIN_LEVEL_SIDE`].
-fn pyramid(image: &DynamicImage, block: u32) -> Pyramid {
+/// Level 0 reduced by the layout's block (and cleaned up if it says so), then halvings down
+/// to [`MIN_LEVEL_SIDE`].
+fn pyramid(image: &DynamicImage, layout: &PageLayout) -> Pyramid {
+    let block = layout.geometry.block;
     let channels = if matches!(image, DynamicImage::ImageLuma8(_)) {
         1
     } else {
@@ -356,7 +451,7 @@ fn pyramid(image: &DynamicImage, block: u32) -> Pyramid {
         channels,
         pixels: Vec::new(),
     };
-    let first = if block <= 1 {
+    let mut first = if block <= 1 {
         Level {
             pixels: image.as_bytes().to_vec(),
             ..base
@@ -364,6 +459,9 @@ fn pyramid(image: &DynamicImage, block: u32) -> Pyramid {
     } else {
         reduce(&base, image.as_bytes(), block)
     };
+    if layout.clean_up {
+        first = clean::clean_up(&first);
+    }
     let mut levels = vec![first];
     while let Some(last) = levels.last()
         && last.width.max(last.height) > MIN_LEVEL_SIDE
@@ -412,8 +510,9 @@ fn reduce(shape: &Level, src: &[u8], block: u32) -> Level {
     }
 }
 
-/// Draws `region` of the sheet at `zoom` with bilinear sampling of the reduction level that
-/// has about one to two pixels per output pixel; white outside the sheet.
+/// Draws `region` of the sheet at `zoom`: every output pixel is sampled bilinearly at the page
+/// point the inverse edit map gives, from the reduction level with about one to two pixels per
+/// output pixel; white outside the sheet and outside the page.
 fn render(
     pages: &Pyramid,
     layout: &PageLayout,
@@ -422,41 +521,57 @@ fn render(
     width: u32,
     height: u32,
 ) -> Result<RgbaImage, PdfError> {
-    let base = &pages.levels[0];
-    let turned = matches!(layout.rotation, Rotation::Deg90 | Rotation::Deg270);
-    // Level 0 pixels per output pixel, across the sheet.
-    let across = if turned { base.height } else { base.width };
-    let footprint = f64::from(across) / layout.sheet.width / zoom;
-    let wanted = if footprint >= 2.0 {
-        to_u32(footprint.log2().floor())
-    } else {
-        0
+    let sheet = layout.geometry.sheet;
+    let back = &layout.from_sheet;
+    let block = f64::from(layout.geometry.block);
+    // Level 0 pixels per output pixel at the middle of the region.
+    let center = region.center();
+    let step = 1.0 / zoom;
+    let footprint = match (
+        back.apply(center),
+        back.apply(Point {
+            x: center.x + step,
+            y: center.y,
+        }),
+        back.apply(Point {
+            x: center.x,
+            y: center.y + step,
+        }),
+    ) {
+        (Some(c), Some(x), Some(y)) => {
+            let d = |a: Point, b: Point| ((b.x - a.x).powi(2) + (b.y - a.y).powi(2)).sqrt();
+            d(c, x).max(d(c, y)) / block
+        }
+        _ => 1.0,
     };
-    let page = &pages.levels[(wanted as usize).min(pages.levels.len() - 1)];
-    let (pw, ph) = (f64::from(page.width), f64::from(page.height));
-    // Page size as the sheet reads (after the quarter turns).
-    let (rw, rh) = if turned { (ph, pw) } else { (pw, ph) };
-    let sx = rw / layout.sheet.width;
-    let sy = rh / layout.sheet.height;
+    let mut wanted = 0;
+    let mut f = footprint;
+    while f >= 2.0 && wanted + 1 < pages.levels.len() {
+        f /= 2.0;
+        wanted += 1;
+    }
+    let page = &pages.levels[wanted];
+    // Full size page pixels per pixel of this level.
+    let per_level = block * f64::from(1_u32 << wanted.min(31));
+    let (full_w, full_h) = (f64::from(layout.info.width), f64::from(layout.info.height));
     let mut out = Vec::with_capacity(width as usize * height as usize * 4);
     for j in 0..height {
         let y = region.origin.y + (f64::from(j) + 0.5) / zoom;
         for i in 0..width {
             let x = region.origin.x + (f64::from(i) + 0.5) / zoom;
-            if x < 0.0 || y < 0.0 || x >= layout.sheet.width || y >= layout.sheet.height {
-                out.extend_from_slice(&[255, 255, 255, 255]);
-                continue;
-            }
-            let (u, v) = (x * sx, y * sy);
-            // Back from the turned page to the upright page.
-            let (px, py) = match layout.rotation {
-                Rotation::Deg0 => (u, v),
-                Rotation::Deg90 => (v, ph - u),
-                Rotation::Deg180 => (pw - u, ph - v),
-                Rotation::Deg270 => (pw - v, u),
+            let inside_sheet = x >= 0.0 && y >= 0.0 && x < sheet.width && y < sheet.height;
+            let at = if inside_sheet {
+                back.apply(Point { x, y })
+            } else {
+                None
             };
-            let rgb = sample(page, px, py);
-            out.extend_from_slice(&[rgb[0], rgb[1], rgb[2], 255]);
+            match at {
+                Some(p) if p.x >= 0.0 && p.y >= 0.0 && p.x < full_w && p.y < full_h => {
+                    let rgb = sample(page, p.x / per_level, p.y / per_level);
+                    out.extend_from_slice(&[rgb[0], rgb[1], rgb[2], 255]);
+                }
+                _ => out.extend_from_slice(&[255, 255, 255, 255]),
+            }
         }
     }
     RgbaImage::from_raw(width, height, out)
@@ -499,10 +614,25 @@ mod tests {
         DynamicImage::ImageLuma8(image::GrayImage::from_raw(width, height, pixels).unwrap())
     }
 
+    fn layout(width: u32, height: u32, edit: &ImageEdit) -> PageLayout {
+        let info = PageInfo {
+            width,
+            height,
+            dpi: Some((72.0, 72.0)),
+        };
+        PageLayout::new(info, edit, 0).unwrap()
+    }
+
     #[test]
     fn reduce_averages_blocks_and_partial_edges() {
         let image = grey(3, 1, vec![0, 100, 255]);
-        let r = pyramid(&image, 2).levels.remove(0);
+        let base = Level {
+            width: 3,
+            height: 1,
+            channels: 1,
+            pixels: Vec::new(),
+        };
+        let r = reduce(&base, image.as_bytes(), 2);
         assert_eq!((r.width, r.height), (2, 1));
         assert_eq!(r.pixels, vec![50, 255]);
     }
@@ -510,43 +640,15 @@ mod tests {
     #[test]
     fn pyramid_halves_down_to_the_smallest_level() {
         let image = grey(1000, 300, vec![200; 300_000]);
-        let levels = pyramid(&image, 1).levels;
+        let edit = ImageEdit::default();
+        let mut layout = layout(1000, 300, &edit);
+        layout.geometry.block = 1;
+        let levels = pyramid(&image, &layout).levels;
         let sizes: Vec<_> = levels.iter().map(|l| (l.width, l.height)).collect();
         assert_eq!(
             sizes,
             [(1000, 300), (500, 150), (250, 75), (125, 38), (63, 19)]
         );
-    }
-
-    #[test]
-    fn photo_without_resolution_gets_an_a4_long_side() {
-        let page = decode::Page {
-            image: grey(4000, 3000, vec![0; 12_000_000]),
-            dpi: Some((72.0, 72.0)),
-        };
-        let layout = layout(&page, &ImageEdit::default(), 0).unwrap();
-        let long = 297.0 * UNITS_PER_MM;
-        assert!((layout.sheet.width - long).abs() < 1e-9);
-        assert!((layout.sheet.height - long * 0.75).abs() < 1e-9);
-        // 4000 px over 11.7 in is 342 dpi, so blocks of 2 keep 171 dpi.
-        assert_eq!(layout.block, 2);
-        assert_eq!(layout.dpi, 171);
-    }
-
-    #[test]
-    fn scan_resolution_gives_the_real_size_and_turns_swap_it() {
-        let page = decode::Page {
-            image: grey(600, 300, vec![0; 180_000]),
-            dpi: Some((200.0, 200.0)),
-        };
-        let edit = ImageEdit {
-            rotation: Rotation::Deg90,
-            ..ImageEdit::default()
-        };
-        let layout = layout(&page, &edit, 0).unwrap();
-        assert!((layout.sheet.width - 108.0).abs() < 1e-9);
-        assert!((layout.sheet.height - 216.0).abs() < 1e-9);
-        assert_eq!((layout.block, layout.dpi), (1, 200));
     }
 
     #[test]
@@ -558,20 +660,58 @@ mod tests {
             channels: 1,
             pixels: vec![0, 255],
         };
-        let layout = PageLayout {
+        let edit = ImageEdit {
             rotation: Rotation::Deg90,
-            sheet: Size {
-                width: 1.0,
-                height: 2.0,
-            },
-            block: 1,
-            dpi: 72,
-            directory: 0,
+            ..ImageEdit::default()
         };
+        let layout = layout(2, 1, &edit);
+        let sheet = layout.geometry.sheet;
         let pages = Pyramid { levels: vec![page] };
-        let out = render(&pages, &layout, Rect::new(0.0, 0.0, 1.0, 2.0), 1.0, 1, 2).unwrap();
+        let zoom = 1.0 / sheet.width;
+        let out = render(
+            &pages,
+            &layout,
+            Rect::new(0.0, 0.0, sheet.width, sheet.height),
+            zoom,
+            1,
+            2,
+        )
+        .unwrap();
         // Turned clockwise, the left (black) pixel is on top.
         assert_eq!(out.pixel(0, 0), Some([0, 0, 0, 255]));
         assert_eq!(out.pixel(0, 1), Some([255, 255, 255, 255]));
+    }
+
+    #[test]
+    fn outside_the_page_is_white_after_a_fine_angle() {
+        let page = Level {
+            width: 4,
+            height: 4,
+            channels: 1,
+            pixels: vec![0; 16],
+        };
+        let edit = ImageEdit {
+            fine_angle: "10".parse().unwrap(),
+            ..ImageEdit::default()
+        };
+        let layout = layout(4, 4, &edit);
+        let sheet = layout.geometry.sheet;
+        let pages = Pyramid { levels: vec![page] };
+        let zoom = 8.0 / sheet.width;
+        let out = render(
+            &pages,
+            &layout,
+            Rect::new(0.0, 0.0, sheet.width, sheet.height),
+            zoom,
+            8,
+            8,
+        )
+        .unwrap();
+        assert_eq!(
+            out.pixel(0, 0),
+            Some([255, 255, 255, 255]),
+            "corner of the box"
+        );
+        assert_eq!(out.pixel(4, 4), Some([0, 0, 0, 255]), "middle of the page");
     }
 }

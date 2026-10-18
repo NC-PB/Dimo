@@ -3,8 +3,7 @@
 //! A revision is either a PDF, whose pages are the sheets, or a photo or scan (JPEG, PNG or
 //! TIFF, one sheet per page, R01 decision 7). An image is stored unchanged; how each page is
 //! turned into a sheet is kept as non-destructive [`ImageEdit`] settings, one per page, that
-//! can be changed later (R01 decisions 8 to 11). Image revisions are part of the data model from schema 4 on, but
-//! they cannot be created yet (release 0.1, R.19 to R.21).
+//! can be changed later (R01 decisions 8 to 11, R.19 and R.20).
 //!
 //! # Image edit coordinates
 //!
@@ -18,7 +17,10 @@
 //!   and corner correction, as the sheet reads.
 //!
 //! The edit is applied in this order: quarter turns, fine angle, four-corner correction, trim,
-//! paper format.
+//! paper format (R.20). Corners replace the quarter turns and the fine angle in the geometry:
+//! they map the sheet in the stored page straight onto a rectangle, and the quarter turns only
+//! tell which corner is the top left. The fine angle turns the page about its center onto the
+//! bounding box of the turned page, so nothing is cut off before the trim.
 
 use rust_decimal::Decimal;
 use schemars::JsonSchema;
@@ -128,17 +130,21 @@ const MAX_FINE_ANGLE: Decimal = Decimal::from_parts(45, 0, 0, false, 0);
 const MAX_PAPER_MM: Decimal = Decimal::from_parts(10_000, 0, 0, false, 0);
 
 impl ImageEdit {
-    /// Checks the ranges: fine angle from -45 to 45 degrees, no negative corner coordinates,
+    /// Checks the ranges: fine angle from -45 to 45 degrees and 0 when corners are set (they
+    /// straighten the sheet themselves, R.20), no negative corner coordinates,
     /// a trim inside 0 to 1 with a positive size, custom paper more than 0 and at most 10 m a
     /// side.
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.fine_angle.abs() > MAX_FINE_ANGLE {
             return Err("the fine angle is between -45 and 45 degrees");
         }
-        if let Some(corners) = &self.corners
-            && corners.points().iter().any(|p| !p.is_valid())
-        {
-            return Err("corner points need coordinates of 0 or more");
+        if let Some(corners) = &self.corners {
+            if corners.points().iter().any(|p| !p.is_valid()) {
+                return Err("corner points need coordinates of 0 or more");
+            }
+            if !self.fine_angle.is_zero() {
+                return Err("corners straighten the sheet, the fine angle is 0 with corners");
+            }
         }
         if let Some(trim) = &self.trim
             && !trim.is_valid()
@@ -474,6 +480,14 @@ mod tests {
         };
         assert!(corners("10").validate().is_ok());
         assert!(corners("-1").validate().is_err());
+        let straightened_twice = ImageEdit {
+            fine_angle: dec("1.5"),
+            ..corners("10")
+        };
+        assert!(
+            straightened_twice.validate().is_err(),
+            "corners or fine angle"
+        );
         let trim = |left: &str, right: &str| ImageEdit {
             trim: Some(Trim {
                 left: dec(left),

@@ -63,6 +63,7 @@ fn an_image_revision_saves_loads_and_keeps_its_edit() {
                 revision: scan,
                 page: 0,
                 edit: Box::new(edit.clone()),
+                geometry: None,
             },
             &mut env,
         )

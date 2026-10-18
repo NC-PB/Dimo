@@ -90,6 +90,11 @@ pub trait RasterSource: Send + Sync + fmt::Debug {
         None
     }
 
+    /// The image source behind this source, for the image editor (R.20); `None` for a PDF.
+    fn as_image(&self) -> Option<&ImageSource> {
+        None
+    }
+
     /// Sizes of all sheets in order.
     fn sheet_sizes(&self) -> Result<Vec<Size>, PdfError> {
         (0..self.sheet_count())

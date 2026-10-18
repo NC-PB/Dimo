@@ -127,7 +127,7 @@ pub struct Sheet {
     pub kind: SheetKind,
     /// Resolution of raster sheets in pixels per inch at the sheet size. For an image drawing
     /// (R.19) it is the resolution DimoMark keeps after reducing the image to at most 300 dpi,
-    /// set when the drawing is imported with the default edit settings; not the resolution the
+    /// set when the drawing is imported and by every image edit (R.20); not the resolution the
     /// file states.
     pub raster_dpi: Option<u32>,
     /// Length unit of the dimensions on this sheet, `mm` or `in`. Default `mm` (D-20: never

@@ -29,6 +29,16 @@ export class DocumentStore {
     this.sheet = 0;
   }
 
+  /**
+   * The same drawing drawn anew, for example after an image edit (R.20): new tiles and sheet
+   * sizes, the same sheet stays on screen.
+   */
+  redraw(info: DocumentInfo): void {
+    const sheet = this.sheet;
+    this.current = info;
+    this.sheet = sheet < info.sheets.length ? sheet : 0;
+  }
+
   /** Switches to sheet `index` if the drawing has it. */
   setSheet(index: number): void {
     if (Number.isInteger(index) && index >= 0 && index < this.sheetCount) {

@@ -33,7 +33,7 @@ export function unused(): Promise<never> {
 
 /** A patch event with no changes, as Rust sends it for a command that changed nothing. */
 export function emptyPatch(session = 1, revision = 0): ProjectPatched {
-  return { session, revision, patch: { changes: [] }, status: status() };
+  return { session, revision, patch: { changes: [] }, status: status(), drawing: null };
 }
 
 /** What Rust answers to one document command. */
