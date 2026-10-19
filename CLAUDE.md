@@ -35,7 +35,10 @@ The shared instructions above apply. This section only adds what is specific to 
 
 - Edits that set a tolerance table to `verified` are blocked (rule 7).
 - Edits to `corpus/drawings/`, `LICENSE` and accepted ADRs are blocked (rule 12).
-- Rust and frontend files are formatted after every edit.
+- Rust and frontend files are formatted after every edit with Edit or Write. Change files with
+  those tools: they run the format hook and refuse an ambiguous match. After any scripted edit
+  (sed, Python), run `cargo fmt --all` and Prettier yourself.
+- Generated files (schemas, bindings, license list): `./scripts/regen.sh` rebuilds them all.
 
 If a hook blocks you, do not work around it. Explain to the user why you wanted the change.
 

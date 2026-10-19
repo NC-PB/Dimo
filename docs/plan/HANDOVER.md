@@ -30,7 +30,7 @@ Nothing below blocks M2 planning, but M2 tolerance work needs item 4.
    dialogs, close prompt, crash recovery, trackpad gestures, exports in other programs, settings).
 2. **Exit criterion M1.** Follow [docs/perf/M1-exit.md](../perf/M1-exit.md) and record the result
    in STATUS.md.
-3. **Open decisions** marked "Owner: confirm" in the STATUS decision log. The ones with the most
+3. **Open decisions** marked "Owner: confirm" in the decision log ([decisions.md](decisions.md)). The ones with the most
    impact:
    - Numbering: unlock renumbers to 1..n immediately; an "issued" lock stays if the export fails.
    - Exports: 20 columns, German headers, umlauts in CSV without BOM, rejected characteristics left

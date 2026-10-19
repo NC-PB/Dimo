@@ -32,7 +32,7 @@ The specification is complete and binding. Read before you design anything.
 
 Precedence when documents disagree: ADR (accepted) > spec 12 defaults > other spec files > this file.
 If something is genuinely unspecified, choose the simplest option consistent with the spec,
-write it into the decision log in `docs/plan/STATUS.md`, and tell the owner in your summary.
+write it into the decision log `docs/plan/decisions.md`, and tell the owner in your summary.
 Do not stop work to ask about things the spec already answers.
 
 ## Hard rules

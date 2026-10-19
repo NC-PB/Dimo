@@ -12,6 +12,7 @@ Process:
 
 1. Get the diff the caller names (default: `git diff HEAD` plus untracked files from `git status`).
 2. Identify which task and requirement IDs it implements (`docs/plan/STATUS.md`, milestone file).
+   Decisions taken for the task are the rows of `docs/plan/decisions.md` that name it (newest first).
 3. Read the relevant parts of `docs/spec/`, `docs/adr/`, `docs/spec/12-implementation-defaults.md`
    and `docs/dev/`.
 4. Check, in this order:
@@ -22,7 +23,9 @@ Process:
    - Crate dependency direction from `docs/dev/rust.md`
    - Error handling, no `unwrap` in library code, no blocking on async runtime or main thread
    - Tests: meaningful, regression tests for fixes, snapshots reviewed
-   - STATUS.md and docs updated
+   - Assertions and tolerances in existing tests: any one made weaker is a finding unless the
+     commit or STATUS.md says why
+   - STATUS.md, `docs/plan/decisions.md` and docs updated
 5. Report findings grouped as **Must fix** (spec violation, bug, missing proof),
    **Should fix**, **Note**. Each finding: file and line, what is wrong, which rule or ID, suggested fix.
    If everything is fine, say so in one line. No praise, no filler.

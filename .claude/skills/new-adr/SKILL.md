@@ -27,6 +27,6 @@ What we do. One paragraph or a few bullets.
 
 3. Status is always `proposed`. Only the owner sets `accepted`. Accepted ADRs are never edited
    (a hook blocks it); if one is superseded, tell the owner which line to change in the old file.
-4. Add the decision to the decision log in `docs/plan/STATUS.md` with a link to the ADR.
+4. Add the decision to the decision log `docs/plan/decisions.md` with a link to the ADR.
 5. If the ADR changes something in `docs/spec/`, update the spec in the same commit and mention it.
 6. Keep it short. Plain language, no dashes as sentence breaks.

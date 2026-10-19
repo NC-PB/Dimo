@@ -22,7 +22,7 @@ const ALLOWED = new Set([
   "Unicode-DFS-2016",
 ]);
 
-// Accepted build time exceptions (decision log in docs/plan/STATUS.md, 2026-10-08).
+// Accepted build time exceptions (decision log docs/plan/decisions.md, 2026-10-08).
 // None of this code ships in the app bundle. Each entry: package name pattern -> license.
 const EXCEPTIONS = [
   { name: /^lightningcss(-.+)?$/, license: "MPL-2.0" }, // used by Tailwind and Vite

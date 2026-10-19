@@ -15,7 +15,8 @@ description: Close a DimoMark task properly. Runs all checks, reviews the diff a
 4. Update docs:
    - tick criteria in `docs/plan/M<n>.md`
    - in `docs/plan/STATUS.md`: task state (`done`, or `review` if the owner must check something),
-     notes, the next task, new decisions in the decision log, a log line with the date
+     notes, the next task, a log line with the date
+   - in `docs/plan/decisions.md`: new decisions as the top rows
    - user docs or crate READMEs if behavior changed
 5. Stage only files that belong to the task. Commit with sign-off:
    `git commit -s -m "<type>(<scope>): <summary>"` and a body listing requirement IDs.
