@@ -15,7 +15,7 @@
 | Recognition quality | corpus evaluation (recall, precision, field accuracy, calibration) | from M4, gated in CI (NFR-REC-05) |
 | Frontend units | Vitest; fakes of the Rust commands from `src/lib/test/fakes.ts` | `apps/desktop/src/**/*.test.ts` |
 | Release bundle | `scripts/check-release-bundle.mjs` builds the production frontend and fails if it holds code of `src/lib/dev` (run by `check.sh`) | `scripts/` |
-| End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` to `m3` |
+| End to end | `scripts/e2e-smoke.sh` drives the real app through the development hooks (see "End to end tests" below); manual script for the rest | `scripts/e2e/`, `docs/dev/manual-test-m1.md` to `m3`, `manual-test-r01-images.md` |
 | User guide shortcut reference | vitest compares the generated tables in `docs/user/<lang>/shortcuts.md` with `shortcuts.ts` and the message files; a mismatch prints the tables to paste | `apps/desktop/src/lib/shortcuts-docs.test.ts` |
 | Timing bounds | `#[ignore]` tests named `perf_*` (measurement state 20 ms, box select 50 ms, XLSX report 5 s), never in the default run; `scripts/perf-tests.sh` runs them one at a time, CI job `perf-tests` on macOS (informative, shared runners vary) | `src-tauri/tests/measurement.rs`, `src-tauri/tests/recognition.rs`, `dimo-report/tests/xlsx.rs` |
 | Performance | timed harness with a synthetic 50 sheet PDF, run by `scripts/perf.sh` (release build, takes minutes, not in CI) | `crates/dimo-pdf/examples/perf.rs`, generator `dimo-synth --stress`, results in `docs/perf/` |
@@ -76,7 +76,7 @@ measurements and screenshots.
 ./scripts/e2e-smoke.sh --keep   # keep the work folder (always kept on failure)
 ```
 
-It builds the app and the `text_runs` example, starts the Vite dev server (port 1420 must be
+It builds the app and the `text_runs` and `photo` examples, starts the Vite dev server (port 1420 must be
 free, so stop `tauri dev` first), and runs the app several times. The window opens on screen and
 the test needs a desktop session. It is not part of `check.sh`. Moving the mouse over the window
 while it runs is harmless: the UI script's pointer events carry their own pointer ID, so the
@@ -116,6 +116,15 @@ drawing gestures ignore the real mouse, and the script prints how many real poin
     script clicks it on the start screen (the `button` step matches the path in the title; the
     test writes the path into a copy of the script). The alert must show the newer version
     message, and the file must be unchanged.
+12. Photo drawing (`image.json`, `image-reexport.json`, R.22): the `photo` example renders the
+    corpus drawing to a JPEG turned a quarter to the left, so no binary fixture is needed. The
+    project made from it is adjusted in the image editor (rotate right, angle 0.5, A3 landscape,
+    clean up), gets two typed balloons and is saved, and the ballooned PDF is exported. Checked:
+    the edit and the A3 raster sheet in the project, the stored image equal to the file with its
+    SHA-256 as fingerprint, the PDF page size, only the two balloon numbers as text, and a byte
+    identical PDF after reopening the project and exporting again. While a modal dialog is
+    open, the `button`, `select`, `fill` and `check` steps look only inside it, and `button` waits for an
+    enabled button.
 
 The last check makes sure the dev server never reloaded the page during the run.
 
@@ -144,7 +153,9 @@ What the script cannot reach (native file dialogs, the close prompt, pinch zoom 
 the result) is in `docs/dev/manual-test-m1.md`. Run it before a release and after changes to
 dialogs, window events or viewport gestures. `docs/dev/manual-test-m2.md` covers box select and
 the tolerance views, `docs/dev/manual-test-m3.md` the measurement grid with the real clipboard,
-the reports in a spreadsheet program and in print, and the German wording.
+the reports in a spreadsheet program and in print, and the German wording, and
+`docs/dev/manual-test-r01-images.md` drawings from real phone photos and scans (EXIF
+orientation, corner handles, TIFF pages, HEIC, the printed size of the ballooned PDF).
 
 ### Other platforms
 

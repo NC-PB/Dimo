@@ -160,7 +160,7 @@ annotations is the time of the last change of the project, not the time of the e
 For a drawing from a photo or scan the PDF shows the sheet as **Adjust image** made it:
 straightened, trimmed, at the chosen paper size, cleaned up if that is on. Each sheet is one
 picture at the resolution DimoMark keeps (at most 300 dpi), grey pages in full quality, colour
-pages as JPEG. The balloons are drawn on top as for a PDF drawing ([Projects](projects.md)).
+pages as JPEG. The balloons are drawn on top as for a PDF drawing ([Drawings from photos and scans](photos.md)).
 
 ## Characteristic list (CSV and XLSX)
 

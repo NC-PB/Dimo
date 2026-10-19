@@ -34,42 +34,9 @@ before the window closes or DimoMark quits: **Save**, **Don't save** or **Cancel
 
 ## Drawings from photos and scans
 
-A photo or scan of a paper drawing opens like a PDF: pick the JPEG, PNG or TIFF file in
-**New project**. A TIFF with several pages gives one sheet per page. DimoMark turns a photo the way
-the phone recorded it and stores the image unchanged in the project.
-
-- **Size of the sheet:** a scan that states its resolution (100 to 1200 dpi) gets its real size.
-  A photo does not know its size, so its long side is set to 297 mm, the length of an A4 sheet.
-  Large images are kept at no more than 300 dpi at that size.
-- **No text in the image:** a box drawn around a dimension finds no text, so the balloon is placed
-  and you type the value, as for a PDF without text.
-- **HEIC photos** (the iPhone default) cannot be opened. On the iPhone choose Settings > Camera >
-  Formats > Most Compatible, or send the photo to yourself by mail or messenger, which usually
-  turns it into a JPEG.
-- The characteristic list, the reports and the ballooned PDF work as for a PDF. The ballooned PDF
-  shows the adjusted sheet at its paper size ([Exports](exports.md)).
-
-### Adjust image
-
-**Drawing > Adjust image** (also the first step of the setup pane after opening a photo) makes a
-photo a straight sheet. The original image stays in the project unchanged; the settings can be
-changed again at any time.
-
-1. **Rotate:** turn in 90 degree steps, then straighten with the slider (up to 10 degrees either
-   way) or type an angle (up to 45 degrees; positive turns clockwise).
-2. **Corners:** for a photo taken at a slant, switch on "Correct the corners". DimoMark looks for
-   the edge of the sheet and puts the four handles on its corners; if it does not find it, the
-   handles start at the image corners. Drag them onto the corners of the sheet. The corners
-   straighten the sheet themselves, so the angle is set back to 0.
-3. **Trim:** drag the corners of the rectangle, or the rectangle itself, to keep only the sheet.
-4. **Paper:** pick the paper the photo shows (A4 to A0, Letter, Tabloid or a custom size in mm)
-   and portrait or landscape. The trimmed image is put on that sheet, so measured sizes fit.
-   "From the photo" keeps the size of the photo.
-5. **Clean up** (optional) shows the image in grey with a white background and stronger lines.
-
-**Apply** is one step that **Undo** takes back. Balloons already placed keep their place on the
-drawing. If the new sheet would leave balloons outside, DimoMark asks first; "Apply anyway" puts
-them on the edge of the sheet. **Reset** goes back to the image as it was opened.
+A photo or scan of a paper drawing (JPEG, PNG or TIFF) opens like a PDF in **New project**.
+Tips for the photo, the size of the sheet and **Adjust image** are on their own page:
+[Drawings from photos and scans](photos.md).
 
 ## What is in a project file
 

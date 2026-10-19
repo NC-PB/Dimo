@@ -1,0 +1,32 @@
+[
+  { "mark": "image start" },
+  { "wait": 800 },
+  { "show": "tab:drawing" },
+  { "button": "Adjust image" },
+  { "button": "Rotate right" },
+  { "fill": ["Angle", "0.5"] },
+  { "button": "Paper" },
+  { "select": ["Paper format", "a3"] },
+  { "check": ["Landscape", true] },
+  { "check": ["Clean up", true] },
+  { "wait": 500 },
+  { "button": "Apply" },
+  { "until": "sheet 1190.6x841.9" },
+  { "report": "adjusted" },
+
+  { "key": "b" },
+  { "click": [310, 110], "pause": false },
+  { "keys": "Ø8 f7\n" },
+  { "click": [400, 300], "pause": false },
+  { "keys": "100 +0 -0.6\n" },
+  { "until": "2 balloons" },
+  { "report": "placed" },
+
+  { "key": "s", "mod": true, "shift": true },
+  { "wait": 800 },
+
+  { "show": "file:export" },
+  { "button": "Export PDF…" },
+  { "until": "ballooned_pdf done" },
+  { "report": "exported" }
+]

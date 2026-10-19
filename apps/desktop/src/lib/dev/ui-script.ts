@@ -30,7 +30,9 @@
  *   placing click).
  * - `button`: clicks the button whose text is this label (or, for icon buttons, whose
  *   `aria-label` is, or whose `aria-labelledby` element has this text, like the start screen
- *   cards, or else whose `title` is, such as the path of a recent project).
+ *   cards, or else whose `title` is, such as the path of a recent project). Only enabled
+ *   buttons count, and while a modal dialog is open only its buttons; the same holds for the fields
+ *   of `select`, `fill` and `check` (R.22, the image editor).
  * - `balloon`: clicks the balloon with this number (`shift`, `mod`).
  * - `row`: clicks the requirement cell of the table row with this balloon number (`shift`, `mod`).
  * - `cell`: `[row, sample]` clicks a cell of the measurement grid, both one based (row 1 is the
@@ -248,9 +250,22 @@ async function typeKeys(text: string): Promise<void> {
   }
 }
 
+/**
+ * Where steps look for buttons and fields: the open modal dialog if there is one, as a person
+ * can only reach its controls then (the image editor's "Rotate right" is also a ribbon button).
+ */
+function scope(): ParentNode {
+  const dialogs = [
+    ...document.querySelectorAll<HTMLElement>(
+      '[role="dialog"][aria-modal="true"], [role="alertdialog"][aria-modal="true"]',
+    ),
+  ];
+  return dialogs.at(-1) ?? document;
+}
+
 /** The label element whose text starts with `text`. */
 function labelled(text: string): HTMLLabelElement | undefined {
-  return [...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith(text));
+  return [...scope().querySelectorAll("label")].find((l) => l.textContent.trim().startsWith(text));
 }
 
 /**
@@ -307,6 +322,9 @@ function report(label: string): string {
     .map(exportState)
     .join(", ");
   const theme = document.documentElement.dataset.theme ?? "-";
+  // Size of the sheet on screen in sheet units: shows that an image edit was applied (R.22).
+  const size = projectStore.sheets[documentStore.sheet]?.size;
+  const sheetSize = size ? `${(size.width ?? 0).toFixed(1)}x${(size.height ?? 0).toFixed(1)}` : "-";
   // The open proposal card of box select (T2.6): text, limits and rule of each proposal.
   const card = boxSelect.proposals
     .map(
@@ -368,7 +386,7 @@ function report(label: string): string {
     })
     .map((s) => s.textContent.trim());
   const ribbon = `ribbon ${String(groupsInRow)} groups more ${more ? "yes" : "no"} tall [${tall.join("; ")}] width ${String(window.innerWidth)} [${groupWidths.join(" ")}]`;
-  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}], ${ribbon}`;
+  return `${label}: ${measure}, card [${card}]${region}, view ${view.current}, theme ${theme}, lang ${document.documentElement.lang}, exports [${exports}], locked ${String(project?.numbering.lock?.reason ?? "no")}, ${String(balloons.length)} balloons [${balloons.join("; ")}], selected ${String(selection.size)} [${chosen}], table rows [${rows}], rotation ${String(viewport.view.rotation)}, sheet ${sheetSize}, undo ${String(projectStore.canUndo)}, restored ${String(projectStore.notice?.restored_unsaved ?? false)}, focus ${focus}, editor ${String(editor)} ${balloonTools.editing ?? "-"}, ${document.visibilityState}, numbering ${projectStore.project?.settings.numbering.strategy ?? "-"} ghosts [${ghosts}] zones ${zones} views ${String(sheet?.views.length ?? 0)}, tool ${balloonTools.tool} on [${toolOn}], limits [${limits}], ${ribbon}`;
 }
 
 async function run(step: UiStep): Promise<void> {
@@ -406,8 +424,10 @@ async function run(step: UiStep): Promise<void> {
       const id = b.getAttribute("aria-labelledby");
       return id === null ? undefined : document.getElementById(id)?.textContent.trim();
     };
+    // A disabled button ignores the click, so the step waits until it is enabled, for example
+    // a command that needs the drawing still loading.
     const button = await waitFor(() => {
-      const buttons = [...document.querySelectorAll<HTMLElement>("button")];
+      const buttons = [...scope().querySelectorAll<HTMLButtonElement>("button:enabled")];
       return (
         buttons.find((b) => b.textContent.trim() === step.button) ??
         buttons.find((b) => b.getAttribute("aria-label") === step.button) ??
@@ -516,7 +536,7 @@ async function run(step: UiStep): Promise<void> {
     const field = await waitFor(() => {
       const select =
         labelledField<HTMLSelectElement>(label, "select") ??
-        [...document.querySelectorAll("select")].find((f) =>
+        [...scope().querySelectorAll("select")].find((f) =>
           (f.getAttribute("aria-label") ?? "").startsWith(label),
         );
       return select && [...select.options].some((o) => o.value === value) ? select : null;
@@ -532,7 +552,7 @@ async function run(step: UiStep): Promise<void> {
       () =>
         labelledField<HTMLInputElement | HTMLTextAreaElement>(
           step.fill[0],
-          "input[type=text], input[type=number], input[type=date], textarea",
+          "input:not([type]), input[type=text], input[type=number], input[type=date], textarea",
         ),
       `field "${step.fill[0]}"`,
     );

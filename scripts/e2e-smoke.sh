@@ -32,6 +32,11 @@
 #  11. Newer project (NFR-REL-04): a project whose manifest has a schema version above the
 #      supported one is opened from the recent list on the start screen; the app refuses it with
 #      the newer version message and leaves the file untouched.
+#  12. Photo drawing (R.22): a JPEG made from the corpus drawing, turned a quarter as a phone
+#      photo held the wrong way, becomes a new project; the image editor turns it upright,
+#      straightens it by 0.5 degrees, puts it on A3 landscape with clean up, two balloons are
+#      typed, the project is saved and the ballooned PDF exported. The saved project is opened
+#      again and exported once more: both PDFs are byte identical.
 #
 # Not part of check.sh: it opens the app window, needs a desktop session and takes about
 # 30 seconds after the build. tauri-driver cannot drive WKWebView on macOS, so this is not a
@@ -95,8 +100,9 @@ fi
 step "build"
 pnpm -C apps/desktop i18n >/dev/null
 cargo build -q -p dimo-desktop
-cargo build -q -p dimo-pdf --example text_runs
+cargo build -q -p dimo-pdf --example text_runs --example photo
 TEXT_RUNS="$TARGET/debug/examples/text_runs"
+PHOTO="$TARGET/debug/examples/photo"
 
 mkdir -p "$TARGET"
 WORK=$(mktemp -d "$TARGET/e2e-XXXXXX")
@@ -544,6 +550,49 @@ run_app newer "$WORK/newer-version.json" term home11
 expect "newer project: refused with the newer version message" "yes" \
   "$(yesno grep -q 'written by a newer DimoMark version (file format 999, this version reads up to' <<<"$(report newer 'newer refused')")"
 expect "newer project: file left untouched" "$before_sum" "$(cksum <"$NEWER")"
+
+step "12. photo drawing (R.22)"
+mkdir -p "$WORK/out12a" "$WORK/out12b"
+IMG="$WORK/photo.jpg"
+"$PHOTO" "$DRAWING" "$IMG"
+run_app image "$SCRIPTS/image.json" term home12a \
+  DIMO_DEV_OPEN="$IMG" DIMO_DEV_EXPORT_DIR="$WORK/out12a" DIMO_DEV_SAVE_AS="$WORK/photo.dimo"
+PHO="$WORK/photo.dimo"
+if [[ -s "$PHO" ]]; then
+  PJSON=$(unzip -p "$PHO" project.json)
+  pjq() { jq -r "$1" <<<"$PJSON"; }
+  expect "photo: image source with the edit from the editor" \
+    "image jpeg deg90 0.5 a3 landscape true" \
+    "$(pjq '.revisions[0].source as $s | $s.pages[0] as $e | "\($s.type) \($s.format) \($e.rotation) \($e.fine_angle) \($e.paper.size) \($e.paper.orientation) \($e.clean_up)"')"
+  expect "photo: raster sheet of A3 landscape in points" "raster 1190.55 841.89" \
+    "$(pjq '.revisions[0].sheets[0] | "\(.kind) \(.size.width * 100 | round / 100) \(.size.height * 100 | round / 100)"')"
+  if command -v sha256sum >/dev/null; then sum=$(sha256sum <"$IMG"); else sum=$(shasum -a 256 <"$IMG"); fi
+  expect "photo: original stored unchanged, fingerprint of the file" "${sum%% *}" "$(pjq '.revisions[0].sha256')"
+  expect "photo: stored image is the original" "yes" \
+    "$(yesno cmp -s "$IMG" <(unzip -p "$PHO" "drawings/${sum%% *}.jpg"))"
+  expect "photo: typed balloons" "1:Ø8 f7|2:100 +0 -0.6" \
+    "$(pjq '[.characteristics | sort_by(.number | tonumber)[] | "\(.number):\(.requirement_text)"] | join("|")')"
+  run_app image-again "$SCRIPTS/image-reexport.json" term home12b \
+    DIMO_DEV_OPEN="$PHO" DIMO_DEV_EXPORT_DIR="$WORK/out12b"
+else
+  fail "missing or empty: $PHO"
+fi
+IPDF="$WORK/out12a/photo_ballooned.pdf"
+if [[ -s "$IPDF" ]]; then
+  expect "photo pdf: page is A3 landscape" "0 0 1190.55115 841.88977" \
+    "$(grep -a -o 'MediaBox\[[^]]*\]' "$IPDF" | head -1 | sed -E 's/MediaBox\[ *//; s/ *\]$//')"
+  expect "photo pdf: two text runs, no text from the image" "2" \
+    "$("$TEXT_RUNS" "$IPDF" | head -1 | sed -E 's/.*: ([0-9]+) runs/\1/')"
+  expect "photo pdf: the runs are the balloon numbers in the balloon font" "1 2" \
+    "$("$TEXT_RUNS" "$IPDF" | tail -n +2 | awk '$5 == "OpenSans-Bold" { print $6 }' | sort | tr '\n' ' ' | sed 's/ $//')"
+  if cmp -s "$IPDF" "$WORK/out12b/photo_ballooned.pdf"; then
+    pass "photo pdf: byte identical after reopening the project"
+  else
+    fail "photo pdf: the export after reopening differs or is missing"
+  fi
+else
+  fail "missing or empty: $IPDF"
+fi
 
 step "dev server"
 check_no_reload

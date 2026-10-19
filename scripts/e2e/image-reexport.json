@@ -1,0 +1,8 @@
+[
+  { "mark": "image re-export start" },
+  { "wait": 800 },
+  { "show": "file:export" },
+  { "button": "Export PDF…" },
+  { "until": "ballooned_pdf done" },
+  { "report": "re-exported" }
+]

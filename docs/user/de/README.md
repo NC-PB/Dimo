@@ -27,6 +27,7 @@ festgelegt" markiert; wähle eine im Feld **Allgemeintoleranz** des Reiters **St
 | [Projekt- und Berichtsdaten](project-details.md) | Teil, Kunde, Änderungsstand, Zeichnungs-Hash, Berichtskopf und Freigabefelder |
 | [Ergebnisse eingeben](measuring.md) | Teile, Messwerttabelle, Eingabe mit der Tastatur, Einfügen, Markierungen für i.O. und n.i.O., Ergebnisarten |
 | [Projekte](projects.md) | Neu, öffnen, speichern, automatische Sicherung, Wiederherstellung |
+| [Zeichnungen aus Fotos und Scans](photos.md) | Tipps für das Foto, Foto oder Scan öffnen, Bild anpassen (drehen, Ecken, zuschneiden, Papier) |
 | [Exporte](exports.md) | Prüfblatt und Prüfbericht, PDF mit Ballons, CSV- und Excel-Liste, ausgegebene Zeichnungen und Berichte |
 | [Toleranzen](tolerances.md) | Regeln, Allgemeintoleranz, Firmentabellen, Erklärungen, Entwurfstabellen, Verlauf |
 | [Datei-Seite, Optionen und Über DimoMark](settings.md) | Projektinfo, zuletzt geöffnete Projekte, Optionen (Farbschema, Sprache, Benutzername, Firmenname, Vorgaben für Exporte), Projekteinstellungen im Reiter Zeichnung, Lizenzen |

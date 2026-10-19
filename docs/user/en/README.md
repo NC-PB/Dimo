@@ -26,6 +26,7 @@ tolerance is marked "No tolerance defined"; choose one in the **General toleranc
 | [Project and report details](project-details.md) | Part, customer, revision, drawing hash, report header and approval fields |
 | [Entering results](measuring.md) | Parts, the measurement grid, keyboard entry, pasting, pass/fail marks, result types |
 | [Projects](projects.md) | New, open, save, autosave, recovery |
+| [Drawings from photos and scans](photos.md) | Photo tips, opening a photo or scan, Adjust image (rotate, corners, trim, paper) |
 | [Exports](exports.md) | Check sheet and inspection report, ballooned PDF, CSV and Excel list, issued drawings and reports |
 | [Tolerances](tolerances.md) | Rules, general tolerance, company tables, explanations, draft tables, history |
 | [File page, options and About](settings.md) | Project info, recent projects, options (theme, language, user name, company name, export defaults), project settings of the Drawing tab, licenses |

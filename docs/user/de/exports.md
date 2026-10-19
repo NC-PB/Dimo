@@ -179,7 +179,7 @@ Bei einer Zeichnung aus einem Foto oder Scan zeigt das PDF das Blatt so, wie **B
 gemacht hat: gerade gerichtet, zugeschnitten, im gewählten Papierformat, bereinigt, falls das
 eingeschaltet ist. Jedes Blatt ist ein Bild in der Auflösung, die DimoMark behält (höchstens
 300 dpi), graue Seiten in voller Qualität, farbige als JPEG. Die Ballons liegen darüber wie bei
-einer PDF-Zeichnung ([Projekte](projects.md)).
+einer PDF-Zeichnung ([Zeichnungen aus Fotos und Scans](photos.md)).
 
 ## Merkmalsliste (CSV und XLSX)
 
