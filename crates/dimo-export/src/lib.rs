@@ -12,9 +12,11 @@
 
 pub mod plan;
 
-use dimo_core::{Language, Project, ReportFormat, ReportKind, TemplateRef, Timestamp};
+use dimo_core::{
+    DrawingSource, Language, Project, ReportFormat, ReportKind, TemplateRef, Timestamp,
+};
 use dimo_io::export::{CsvListExporter, ExportOptions, Exporter, XlsxListExporter};
-use dimo_pdf::{BalloonOutput, PdfDate, PdfEngine, PdfError, project_overlay};
+use dimo_pdf::{BalloonOutput, ImageSource, PdfDate, PdfEngine, PdfError, project_overlay};
 use dimo_report::{ReportError, ReportModel, ReportOptions, TemplateSet};
 use serde::{Deserialize, Serialize};
 
@@ -166,10 +168,6 @@ pub enum ExportError {
     /// The ballooned PDF needs a PDF engine and none was given.
     #[error("no PDF engine")]
     NoPdfEngine,
-    /// The drawing of the current revision is a photo or scan; its ballooned PDF follows with
-    /// R.21.
-    #[error("the ballooned PDF of an image drawing is not available yet")]
-    ImageDrawing,
     /// The ballooned PDF needs the drawing and the source has none.
     #[error("the export source has no drawing")]
     NoDrawing,
@@ -279,9 +277,6 @@ fn ballooned(
     mode: BalloonMode,
     pdf: Option<&PdfEngine>,
 ) -> Result<Vec<u8>, ExportError> {
-    if is_image_drawing(source.project) {
-        return Err(ExportError::ImageDrawing);
-    }
     let engine = pdf.ok_or(ExportError::NoPdfEngine)?;
     let drawing = source.drawing.ok_or(ExportError::NoDrawing)?;
     let output = match mode {
@@ -292,15 +287,15 @@ fn ballooned(
         },
     };
     let overlay = project_overlay(source.project, output);
-    Ok(engine.write_ballooned(drawing.to_vec(), overlay)?)
-}
-
-/// Whether the current drawing revision of `project` is a photo or scan (R.19). Its ballooned
-/// PDF follows with R.21; every other export works as for a PDF.
-pub fn is_image_drawing(project: &Project) -> bool {
-    project
-        .current_revision()
-        .is_some_and(|r| r.source.image_pages().is_some())
+    // A photo or scan becomes a PDF of its edited sheets first (R.21); the balloons are then
+    // added by the same writer as for a PDF drawing.
+    let base = match source.project.current_revision().map(|r| &r.source) {
+        Some(DrawingSource::Image { format, pages }) => {
+            ImageSource::open(drawing.to_vec(), *format, Some(pages))?.to_pdf()?
+        }
+        _ => drawing.to_vec(),
+    };
+    Ok(engine.write_ballooned(base, overlay)?)
 }
 
 /// The bytes of an export of `source`: [`prepare`] then [`Prepared::render`]. Pure apart from

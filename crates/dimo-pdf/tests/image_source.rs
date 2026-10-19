@@ -1,5 +1,6 @@
-//! Photos and scans as raster sources (R.19). Every image is made in the test, so no binary
-//! fixtures are needed and no PDFium either.
+//! Photos and scans as raster sources (R.19 to R.21). Every image is made in the test, so no
+//! binary fixtures are needed. Only the tests that read a written PDF back use PDFium; they
+//! skip without it locally and fail instead with `CI=true` or `DIMO_REQUIRE_PDFIUM=1`.
 
 #![allow(clippy::unwrap_used)] // Test crate; rust.md allows unwrap in tests.
 
@@ -637,4 +638,157 @@ fn a_fine_angle_straightens_a_turned_line() {
             .unwrap();
         assert_eq!(dot.pixel(0, 0), Some(BLACK));
     }
+}
+
+fn pdfium_required() -> bool {
+    std::env::var("CI").is_ok_and(|v| v == "true")
+        || std::env::var("DIMO_REQUIRE_PDFIUM").is_ok_and(|v| !v.is_empty() && v != "0")
+}
+
+/// PDFium for the tests that read the written PDF back; `None` (skip) without it locally.
+fn engine() -> Option<PdfEngine> {
+    match PdfEngine::start() {
+        Ok(engine) => Some(engine),
+        Err(e @ PdfError::LibraryNotFound { .. }) if !pdfium_required() => {
+            #[allow(clippy::print_stderr)]
+            {
+                eprintln!("SKIPPED (PDFium missing): {e}");
+            }
+            None
+        }
+        Err(e) => panic!("{e}"),
+    }
+}
+
+fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack.windows(needle.len()).any(|w| w == needle)
+}
+
+/// R.21: the edited sheet as a PDF page, the same bytes every time.
+#[test]
+fn an_image_drawing_becomes_a_pdf_with_one_page_per_sheet() {
+    let a4 = ImageEdit {
+        paper: Some(Paper::Standard {
+            size: PaperSize::A4,
+            orientation: Orientation::Landscape,
+        }),
+        ..ImageEdit::default()
+    };
+    // Blue band on top, then red left and white right: a flip either way would show.
+    let colour = RgbImage::from_fn(400, 280, |x, y| {
+        if y < 40 {
+            image::Rgb([30, 30, 200])
+        } else if x < 200 {
+            image::Rgb([200, 30, 30])
+        } else {
+            image::Rgb([255, 255, 255])
+        }
+    });
+    let source = ImageSource::open(
+        png(&colour),
+        ImageFormat::Png,
+        Some(std::slice::from_ref(&a4)),
+    )
+    .unwrap();
+    let pdf = source.to_pdf().unwrap();
+    assert_eq!(pdf, source.to_pdf().unwrap(), "same bytes twice");
+    assert!(pdf.starts_with(b"%PDF-1.7\n"));
+    assert!(contains(&pdf, b"/MediaBox [0 0 841.8898 595.2756]"));
+    assert!(contains(&pdf, b"/DCTDecode") && !contains(&pdf, b"/FlateDecode"));
+    assert!(!contains(&pdf, b"CreationDate") && !contains(&pdf, b"Producer"));
+
+    // A grey three page scan: Flate grey pages.
+    let scan = ImageSource::open(three_page_tiff(), ImageFormat::Tiff, None).unwrap();
+    let scan_pdf = scan.to_pdf().unwrap();
+    assert!(contains(&scan_pdf, b"/Count 3"));
+    assert!(
+        contains(&scan_pdf, b"/DeviceGray"),
+        "the 16 and 8 bit grey pages"
+    );
+    assert!(contains(&scan_pdf, b"/DeviceRGB"), "the RGB page");
+
+    let Some(engine) = engine() else { return };
+    let doc = engine.open(pdf.clone()).unwrap();
+    assert_eq!(doc.sheet_count(), 1);
+    let size = doc.sheet_size(0).unwrap();
+    // The media box has 4 decimals and PDFium reads it as 32 bit floats.
+    let near = |a: f64, b: f64| (a - b).abs() < 1e-3;
+    assert!(near(size.width, 297.0 * UNITS_PER_MM) && near(size.height, 210.0 * UNITS_PER_MM));
+    let page = doc
+        .render_region(0, Rect::new(0.0, 0.0, size.width, size.height), 0.5)
+        .unwrap();
+    let blue = page.pixel(page.width() / 2, 5).unwrap();
+    assert!(blue[2] > 150 && blue[0] < 80, "blue band on top: {blue:?}");
+    let red = page.pixel(20, page.height() - 20).unwrap();
+    let white = page.pixel(page.width() - 20, page.height() - 20).unwrap();
+    assert!(red[0] > 150 && red[1] < 80, "red half: {red:?}");
+    assert!(white.iter().all(|&c| c > 240), "white half: {white:?}");
+    let scan_doc = engine.open(scan_pdf).unwrap();
+    for (pdf_size, sheet) in scan_doc
+        .sheet_sizes()
+        .iter()
+        .zip(scan.sheet_sizes().unwrap())
+    {
+        assert!(near(pdf_size.width, sheet.width) && near(pdf_size.height, sheet.height));
+    }
+    assert_eq!(scan_doc.sheet_count(), 3);
+
+    // The balloon writer takes it like any PDF, byte identical twice.
+    let overlay = || dimo_pdf::BalloonOverlay {
+        sheets: vec![dimo_pdf::SheetBalloons {
+            sheet: 0,
+            balloons: vec![dimo_pdf::Balloon {
+                shape: dimo_pdf::BalloonShape::Circle,
+                center: dimo_pdf::SheetPoint::new(600.0, 300.0),
+                width: 20.0,
+                height: 20.0,
+                fill: Some(dimo_pdf::Rgb::WHITE),
+                outline: Some(dimo_pdf::Stroke {
+                    color: dimo_pdf::Rgb::new(0x00, 0x57, 0xB8),
+                    width: 1.0,
+                }),
+                text: "17".to_owned(),
+                text_color: dimo_pdf::Rgb::BLACK,
+                text_size: 10.0,
+                leader: None,
+            }],
+        }],
+        output: dimo_pdf::BalloonOutput::PageContent,
+    };
+    let ballooned = engine.write_ballooned(pdf.clone(), overlay()).unwrap();
+    assert_eq!(ballooned, engine.write_ballooned(pdf, overlay()).unwrap());
+    let doc = engine.open(ballooned).unwrap();
+    let runs = doc.text_runs(0).unwrap();
+    let number = runs.iter().find(|r| r.text.trim() == "17").unwrap();
+    let b = number.bbox;
+    let (x, y) = (
+        b.origin.x + b.size.width / 2.0,
+        b.origin.y + b.size.height / 2.0,
+    );
+    assert!(
+        (x - 600.0).abs() < 6.0 && (y - 300.0).abs() < 6.0,
+        "balloon number at {x}, {y}"
+    );
+}
+
+/// A sheet wider than one render call allows (an A0 length at 300 dpi is about 14000 pixels)
+/// is drawn in blocks and still becomes one page image.
+#[test]
+fn a_very_wide_scan_becomes_one_pdf_page() {
+    let (width, height) = (17_000u32, 60u32);
+    let grey: Vec<u8> = (0..width * height)
+        .map(|i| if (i % width) < width / 2 { 0 } else { 255 })
+        .collect();
+    let mut out = Cursor::new(Vec::new());
+    let mut encoder = TiffEncoder::new(&mut out).unwrap();
+    let mut page = encoder
+        .new_image::<colortype::Gray8>(width, height)
+        .unwrap();
+    page.resolution(ResolutionUnit::Inch, Rational { n: 300, d: 1 });
+    page.write_data(&grey).unwrap();
+    let source = ImageSource::open(out.into_inner(), ImageFormat::Tiff, None).unwrap();
+    assert_eq!(source.raster_dpi(0), Some(300));
+    let pdf = source.to_pdf().unwrap();
+    assert!(contains(&pdf, b"/Width 17000 /Height 60"));
+    assert!(contains(&pdf, b"/DeviceGray"));
 }

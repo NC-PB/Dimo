@@ -147,11 +147,11 @@ fn reports_and_lists_render_the_same_bytes_twice() {
     }
 }
 
-/// A drawing from a photo (R.19): lists and reports render as for a PDF, byte identical twice
-/// and with the name and fingerprint of the original image; the ballooned PDF follows with
-/// R.21 and is refused before any PDF engine is needed.
+/// A drawing from a photo (R.19, R.21): lists and reports render as for a PDF, byte identical
+/// twice, and name the original image and its fingerprint; the ballooned PDF needs the PDF
+/// engine like any other (rendered in `tests/image_drawing.rs`).
 #[test]
-fn image_drawings_export_lists_and_reports_but_no_ballooned_pdf_yet() {
+fn image_drawings_export_like_pdf_drawings() {
     let mut project = fixture::project();
     let revision = project.current_revision;
     for r in &mut project.revisions {
@@ -163,8 +163,19 @@ fn image_drawings_export_lists_and_reports_but_no_ballooned_pdf_yet() {
             r.file_name = "photo.jpg".into();
         }
     }
-    assert!(dimo_export::is_image_drawing(&project));
-    assert!(!dimo_export::is_image_drawing(&fixture::project()));
+    let sha256 = project.current_revision().unwrap().sha256.to_hex();
+    let model = dimo_report::ReportModel::build(
+        &project,
+        &dimo_report::ReportOptions {
+            kind: dimo_core::ReportKind::InspectionReport,
+            language: Language::En,
+            blank_columns: 4,
+            fallback_date: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(model.header.drawing_file, "photo.jpg");
+    assert_eq!(model.header.sha256, sha256);
     let modified = Timestamp::parse("2026-10-13T08:00:00Z").unwrap();
     let source = Source {
         project: &project,
@@ -181,7 +192,7 @@ fn image_drawings_export_lists_and_reports_but_no_ballooned_pdf_yet() {
         if format.needs_drawing() {
             assert!(matches!(
                 render(&source, options, None),
-                Err(ExportError::ImageDrawing)
+                Err(ExportError::NoPdfEngine)
             ));
             continue;
         }

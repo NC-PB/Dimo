@@ -157,8 +157,10 @@ Characteristics with the status `rejected` get no balloon in the PDF.
 The same project gives the same PDF file, byte for byte. In annotation mode the date of the
 annotations is the time of the last change of the project, not the time of the export.
 
-For a drawing from a photo or scan the ballooned PDF is not available yet; the card says so and
-its button is off ([Projects](projects.md)).
+For a drawing from a photo or scan the PDF shows the sheet as **Adjust image** made it:
+straightened, trimmed, at the chosen paper size, cleaned up if that is on. Each sheet is one
+picture at the resolution DimoMark keeps (at most 300 dpi), grey pages in full quality, colour
+pages as JPEG. The balloons are drawn on top as for a PDF drawing ([Projects](projects.md)).
 
 ## Characteristic list (CSV and XLSX)
 

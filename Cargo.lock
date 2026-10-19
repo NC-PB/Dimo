@@ -1224,6 +1224,7 @@ dependencies = [
  "dimo-core",
  "image",
  "insta",
+ "miniz_oxide 0.8.9",
  "pdfium-render",
  "png 0.18.1",
  "rust_decimal",

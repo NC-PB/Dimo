@@ -46,8 +46,8 @@ the phone recorded it and stores the image unchanged in the project.
 - **HEIC photos** (the iPhone default) cannot be opened. On the iPhone choose Settings > Camera >
   Formats > Most Compatible, or send the photo to yourself by mail or messenger, which usually
   turns it into a JPEG.
-- The characteristic list and the reports work as for a PDF. The ballooned PDF of a photo or scan
-  is not available yet.
+- The characteristic list, the reports and the ballooned PDF work as for a PDF. The ballooned PDF
+  shows the adjusted sheet at its paper size ([Exports](exports.md)).
 
 ### Adjust image
 

@@ -75,13 +75,12 @@ pub async fn export_project(
     request: ExportRequest,
 ) -> Result<Option<JobId>, CommandError> {
     let format = request.format;
-    let stem = with_session(app.clone(), move |_, session| {
-        let project = session.project().ok_or(CommandError::NoProject)?;
-        // Refused before the save dialog, so nobody picks a file for nothing (R.19).
-        if format == ExportFormat::BalloonedPdf && dimo_export::is_image_drawing(project) {
-            return Err(dimo_export::ExportError::ImageDrawing.into());
+    let stem = with_session(app.clone(), |_, session| {
+        if session.is_open() {
+            Ok(session.file_stem())
+        } else {
+            Err(CommandError::NoProject)
         }
-        Ok(session.file_stem())
     })
     .await?;
     let suggested = format.file_name(&stem);

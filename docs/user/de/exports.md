@@ -175,8 +175,11 @@ dem Status `rejected` erhalten im PDF keinen Ballon.
 Dasselbe Projekt ergibt dieselbe PDF-Datei, Byte für Byte. Bei Anmerkungen ist deren Datum der
 Zeitpunkt der letzten Änderung am Projekt, nicht der Zeitpunkt des Exports.
 
-Für eine Zeichnung aus einem Foto oder Scan gibt es das PDF mit Ballons noch nicht; die Karte sagt
-das, und ihre Schaltfläche ist aus ([Projekte](projects.md)).
+Bei einer Zeichnung aus einem Foto oder Scan zeigt das PDF das Blatt so, wie **Bild anpassen** es
+gemacht hat: gerade gerichtet, zugeschnitten, im gewählten Papierformat, bereinigt, falls das
+eingeschaltet ist. Jedes Blatt ist ein Bild in der Auflösung, die DimoMark behält (höchstens
+300 dpi), graue Seiten in voller Qualität, farbige als JPEG. Die Ballons liegen darüber wie bei
+einer PDF-Zeichnung ([Projekte](projects.md)).
 
 ## Merkmalsliste (CSV und XLSX)
 

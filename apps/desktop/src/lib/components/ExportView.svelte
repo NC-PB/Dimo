@@ -27,15 +27,6 @@
   const prefs = $derived(settingsStore.current.export);
   const open = $derived(projectStore.project !== null);
   const locked = $derived(projectStore.project?.numbering.lock != null);
-  // The ballooned PDF of a photo or scan follows with R.21; lists work for every drawing.
-  const imageDrawing = $derived.by(() => {
-    const p = projectStore.project;
-    const revision = p?.revisions.find((r) => r.id === p.current_revision);
-    return revision?.source.type === "image";
-  });
-  function unavailable(format: ExportFormat): boolean {
-    return format === "ballooned_pdf" && imageDrawing;
-  }
 
   function title(format: ExportFormat): string {
     switch (format) {
@@ -186,16 +177,11 @@
             <div class="flex-1">
               <h3 class="font-semibold">{title(format)}</h3>
               <p class="text-text-muted">{description(format)}</p>
-              {#if unavailable(format)}
-                <p class="mt-1 text-text-muted" data-testid="export-image-note">
-                  {m.export_pdf_image_note()}
-                </p>
-              {/if}
             </div>
             <button
               type="button"
               class={buttonClass}
-              disabled={exportStore.busy(format) || unavailable(format)}
+              disabled={exportStore.busy(format)}
               onclick={() => void exportStore.start(format)}
             >
               {buttonLabel(format)}

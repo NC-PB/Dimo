@@ -226,8 +226,6 @@ pub enum ExportReason {
     NoPdfEngine,
     /// The PDF component could not write the ballooned PDF.
     PdfFailed,
-    /// The drawing is a photo or scan; its ballooned PDF is not available yet (R.21).
-    ImageDrawing,
     /// The report could not be built or rendered.
     ReportFailed,
     /// The characteristic list (CSV, Excel) could not be written.
@@ -549,7 +547,6 @@ impl From<dimo_export::ExportError> for CommandError {
             E::List(e) => e.into(),
             E::Pdf(e) => Self::export_pdf(&e),
             E::NoPdfEngine => Self::export(ExportReason::NoPdfEngine, "no PDF engine"),
-            E::ImageDrawing => Self::export(ExportReason::ImageDrawing, error),
             E::NoDrawing | E::NotAReport(_) | E::NotPrepared | E::InvalidTime(_) => {
                 Self::internal(InternalReason::Bug, error)
             }

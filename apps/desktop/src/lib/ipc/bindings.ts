@@ -1398,8 +1398,6 @@ export type ExportReason =
 "no_pdf_engine" | 
 /**  The PDF component could not write the ballooned PDF. */
 "pdf_failed" | 
-/**  The drawing is a photo or scan; its ballooned PDF is not available yet (R.21). */
-"image_drawing" | 
 /**  The report could not be built or rendered. */
 "report_failed" | 
 /**  The characteristic list (CSV, Excel) could not be written. */

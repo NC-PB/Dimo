@@ -50,8 +50,8 @@ Projekt ab.
 - **HEIC-Fotos** (Standard auf dem iPhone) können nicht geöffnet werden. Wähle auf dem iPhone
   Einstellungen > Kamera > Formate > Maximale Kompatibilität, oder sende dir das Foto per Mail
   oder Messenger, das macht meist ein JPEG daraus.
-- Merkmalsliste und Berichte funktionieren wie bei einem PDF. Das PDF mit Ballons gibt es für
-  Fotos und Scans noch nicht.
+- Merkmalsliste, Berichte und das PDF mit Ballons funktionieren wie bei einem PDF. Das PDF mit
+  Ballons zeigt das angepasste Blatt in seinem Papierformat ([Exporte](exports.md)).
 
 ### Bild anpassen
 

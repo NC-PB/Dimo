@@ -27,6 +27,7 @@ mod clean;
 mod corners;
 mod decode;
 mod geometry;
+mod pdf;
 
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 

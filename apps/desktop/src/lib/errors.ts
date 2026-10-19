@@ -96,7 +96,6 @@ const EXPORT: Texts<ExportReason> = {
   invalid_file_name: m.error_export_invalid_file_name,
   no_pdf_engine: m.error_export_no_pdf_engine,
   pdf_failed: m.error_export_pdf_failed,
-  image_drawing: m.error_export_image_drawing,
   report_failed: m.error_export_report_failed,
   list_failed: m.error_export_list_failed,
   wrong_extension: m.error_export_wrong_extension,
