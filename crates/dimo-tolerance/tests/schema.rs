@@ -26,7 +26,7 @@ fn committed_schema_is_current() {
     let committed = fs::read_to_string(schema_path()).unwrap_or_default();
     assert!(
         committed == generated,
-        "docs/schema/tolerance-table.schema.json is stale. Regenerate with \
+        "docs/schema/tolerance-table.schema.json is stale. Regenerate with ./scripts/regen.sh or \
          DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-tolerance --test schema"
     );
 }

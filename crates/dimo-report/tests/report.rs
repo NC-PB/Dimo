@@ -243,7 +243,7 @@ fn committed_schema_is_current() {
     let committed = std::fs::read_to_string(&path).unwrap_or_default();
     assert!(
         committed == generated,
-        "docs/schema/report-data.schema.json is stale. Regenerate with \
+        "docs/schema/report-data.schema.json is stale. Regenerate with ./scripts/regen.sh or \
          DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-report --test report, update \
          data/templates/README.md, and increase DATA_FORMAT_VERSION if a field was removed or \
          changed meaning"

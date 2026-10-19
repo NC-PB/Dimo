@@ -53,7 +53,7 @@ fn viewport_fixture_matches_the_export_layout() {
     if committed != generated {
         fs::write(&path, &generated).expect("write fixture");
         panic!(
-            "{} was out of date and has been regenerated. Review and commit it.",
+            "{} was out of date and has been regenerated (./scripts/regen.sh does all generated files). Review and commit it.",
             path.display()
         );
     }

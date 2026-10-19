@@ -57,7 +57,7 @@ fn committed_schema_is_current() {
     let committed = fs::read_to_string(schema_path()).unwrap_or_default();
     assert!(
         committed == generated,
-        "docs/schema/truth.schema.json is stale. Regenerate with \
+        "docs/schema/truth.schema.json is stale. Regenerate with ./scripts/regen.sh or \
          DIMO_UPDATE_SCHEMA=1 cargo test -p dimo-core --test corpus_truth"
     );
 }

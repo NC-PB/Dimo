@@ -23,7 +23,7 @@ fn committed_bindings_match_rust_types() {
     if committed != generated {
         fs::write(&committed_path, &generated).expect("write regenerated bindings");
         panic!(
-            "{} was out of date and has been regenerated. Review and commit it.",
+            "{} was out of date and has been regenerated (./scripts/regen.sh does all generated files). Review and commit it.",
             committed_path.display()
         );
     }

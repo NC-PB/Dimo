@@ -14,8 +14,22 @@ if [[ -f Cargo.toml ]]; then
   cargo fmt --all -- --check
   step "cargo clippy"
   cargo clippy --workspace --all-targets -- -D warnings
+  # Before the long test run: committed generated files match the code (seconds instead of
+  # half an hour into `cargo test`). Fix a failure with ./scripts/regen.sh and review the diff.
+  step "generated files"
+  for target in "dimo-core corpus_truth" "dimo-io schema" "dimo-report report" "dimo-tolerance schema"; do
+    read -r crate test <<<"$target"
+    cargo test -q -p "$crate" --test "$test" committed_schema_is_current
+  done
+  cargo test -q -p dimo-desktop --test bindings
+  cargo test -q -p dimo-desktop --test balloon_layout
+  if [[ $FAST -eq 0 && -f apps/desktop/package.json ]] && compgen -G "vendor/pdfium/*/licenses" >/dev/null; then
+    # T3.23: THIRD_PARTY_LICENSES matches Cargo.lock, the frontend bundle and PDFium.
+    node scripts/third-party-licenses.mjs --check
+  fi
   step "cargo test"
-  cargo test --workspace
+  # --no-fail-fast: one failing test binary does not hide the failures of the next ones.
+  cargo test --workspace --no-fail-fast
   # T2.9: the M2 exit criterion is also a test in dimo-cli; this prints the per category
   # report. Needs PDFium, so it runs where PDFium is required (CI, DIMO_REQUIRE_PDFIUM=1).
   if [[ "${CI:-}" == "true" || ( -n "${DIMO_REQUIRE_PDFIUM:-}" && "${DIMO_REQUIRE_PDFIUM}" != "0" ) ]]; then
@@ -54,12 +68,9 @@ if [[ -f apps/desktop/package.json ]]; then
     # MF F8: the production bundle holds no code of the development tools.
     step "release bundle without dev code"
     node scripts/check-release-bundle.mjs
-    # T3.23: THIRD_PARTY_LICENSES matches Cargo.lock, the frontend bundle and PDFium.
-    step "third party license list"
-    if compgen -G "vendor/pdfium/*/licenses" >/dev/null; then
-      node scripts/third-party-licenses.mjs --check
-    else
-      echo "PDFium not fetched, skipping (run ./scripts/fetch-pdfium.sh)" >&2
+    # T3.23: the license list itself is checked with the generated files above.
+    if ! compgen -G "vendor/pdfium/*/licenses" >/dev/null; then
+      echo "PDFium not fetched, third party license list not checked (run ./scripts/fetch-pdfium.sh)" >&2
       [[ "${CI:-}" == "true" ]] && exit 1
     fi
     step "frontend test"
