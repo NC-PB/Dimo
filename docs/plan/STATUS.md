@@ -7,7 +7,7 @@ Session handover with context, pitfalls and owner items: [HANDOVER.md](HANDOVER.
 
 - **Release 0.1 in progress** ([plan](R01.md)). Done: R.4 tables, R.10 diagnostics, R.11 version 0.1.0 and icon, R.13 release workflow (draft `v0.1.0-rc.2`), T3.22 title bar, T3.23 license list, R.12 agent part. R.9 update check, R.19 images open and store, R.20 image editor. Next agent tasks: R.21 (ballooned PDF of images), R.8 after the demo drawing
 - Product renamed to DimoMark (owner, 2026-10-16, trademark check by the owner pending); bundle id and paths stay `dimo`
-- Owner, for 0.1: demo drawing (R.7), trademark check for DimoMark (R.5), the rc.2 installers on Windows 10 and 11 (`docs/perf/R01-platforms.md`), T3.21 shop floor user test and T3.11 exit run
+- Owner, for 0.1: demo drawing (R.7), trademark check for DimoMark (R.5), the rc.2 installers on Windows 10 and 11 step by step (`docs/perf/R01-platforms.md`; rc.2 installer works on the owner's Windows PC, 2026-10-18), T3.21 shop floor user test and T3.11 exit run
 - Roadmap after 0.1 merged to three milestones M4 to M6 ([ADR 0009](../adr/0009-roadmap-consolidation.md), accepted 2026-10-16); ADR 0010 accepted 2026-10-16
 - M3 built incl. UI rework; M2 implemented, owner exit open; M0 and M1 implemented, owner reviews open
 

@@ -57,6 +57,10 @@ drawing from the corpus or one of your own.
 
 ## Results
 
+2026-10-18, owner: the `v0.1.0-rc.2` installer of the draft release on the owner's Windows PC
+works as intended (Windows version and the single steps not recorded). The table below is still
+to fill in.
+
 | Step | Windows 10 22H2 | Windows 11 | Notes |
 |---|---|---|---|
 | M1 | | | |
