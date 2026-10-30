@@ -681,7 +681,7 @@ Text 1 of 6
     Authors: The Rust Project Developers
 * rustix 1.1.5 (Rust crate)
     Authors: Dan Gohman, Jakub Konka
-* rustls 0.23.45 (Rust crate)
+* rustls 0.23.46 (Rust crate)
     Copyright (c) 2016, Joseph Birr-Pixton <jpixton@gmail.com>
     Copyright (c) 2016 Joseph Birr-Pixton <jpixton@gmail.com>
 * rustls-pki-types 1.15.1 (Rust crate)
